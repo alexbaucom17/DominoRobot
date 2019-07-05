@@ -2,6 +2,7 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import skimage.transform as sktf
 import numpy as np
+import matplotlib.patches as patches
 
 
 def generateField(cfg):
@@ -81,19 +82,75 @@ class DominoField:
         n_tiles_y = int(self.cfg.desired_height / self.cfg.tile_height)
 
         # Loop over tiles and assign id and colors to each
-        id_counter = 0
-        tile_map = {}
+        tiles = TileCollection(self.cfg)
         for i in range(n_tiles_x):
             x_start_idx = i * self.cfg.tile_width
             x_end_idx = (i + 1) * self.cfg.tile_width
 
             for j in range(n_tiles_y):
-                y_start_idx = i * self.cfg.tile_height
-                y_end_idx = (i + 1) * self.cfg.tile_height
+                # Need to account for flipped y axis with array
+                y_start_idx =  - j * self.cfg.tile_height - 1
+                y_end_idx = - (j + 1) * self.cfg.tile_height - 1
 
-                tile_values = np.copy(self.img_parsed_ids[y_start_idx:y_end_idx, x_start_idx:x_end_idx])
-                tile_coord = [i, j]
-                tile_map[id_counter] = (tile_coord, tile_values)
-                id_counter = id_counter + 1
+                tile_values = np.copy(self.img_parsed_ids[y_start_idx:y_end_idx:-1, x_start_idx:x_end_idx])
+                tile_coord = [i,j]
+                tiles.addTile(tile_coord, tile_values)
 
-        return tile_map
+        return tiles
+
+
+
+class Tile:
+
+    def __init__(self, cfg, id, coordinate, values):
+        self.id = id
+        self.coordinate = coordinate
+        self.values = values
+        self.cfg = cfg
+
+    def draw(self, axes):
+        # Determine tile location
+        tile_size_x_in_meters = (self.cfg.domino_width + self.cfg.domino_spacing_x) * self.cfg.tile_width
+        tile_size_y_in_meters = (self.cfg.domino_height + self.cfg.domino_spacing_y) * self.cfg.tile_height
+        tile_start_x = self.coordinate[0] * tile_size_x_in_meters
+        tile_start_y = self.coordinate[1] * tile_size_y_in_meters
+
+        # Draw tile
+        axes.add_patch(patches.Rectangle((tile_start_x,tile_start_y), tile_size_x_in_meters, tile_size_y_in_meters,
+                                         edgecolor=self.cfg.tile_edge_color, facecolor=self.cfg.tile_background_color,
+                                         zorder=1))
+
+        # Draw dominoes
+        for i in range(self.cfg.tile_width):
+            domino_start_x = tile_start_x + 0.5 * self.cfg.domino_spacing_x + (self.cfg.domino_width + self.cfg.domino_spacing_x) * i
+            for j in range(self.cfg.tile_height):
+                domino_start_y = tile_start_y + 0.5 * self.cfg.domino_spacing_y + (self.cfg.domino_height + self.cfg.domino_spacing_y) * j
+                domino_id = self.values[j,i]
+                domino_color = self.cfg.dominoes[domino_id][1]
+                axes.add_patch(patches.Rectangle((domino_start_x, domino_start_y), self.cfg.domino_width, self.cfg.domino_height,
+                                      color=domino_color,zorder=2))
+
+
+class TileCollection:
+
+    def __init__(self, cfg):
+        self.tiles = []
+        self.next_id = 0
+        self.cfg = cfg
+
+    def addTile(self, tile_coordinate, tile_values):
+
+        new_tile = Tile(self.cfg, self.next_id, tile_coordinate, tile_values)
+        self.tiles.append(new_tile)
+
+        self.next_id = self.next_id + 1
+
+    def draw(self):
+        plt.figure()
+        axes = plt.gca()
+        for tile in self.tiles:
+            tile.draw(axes)
+
+        axes.axis('equal')
+        axes.autoscale()
+        plt.show()

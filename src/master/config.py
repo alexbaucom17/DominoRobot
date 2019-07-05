@@ -2,8 +2,8 @@ import numpy as np
 
 # Image configuration
 image_name = 'MR.jpg'
-desired_width = 300
-desired_height = 300
+desired_width = 200
+desired_height = 200
 dominoes = np.array(
             [('black', (0,0,0)),
              ('red',   (1,0,0)),
@@ -13,9 +13,18 @@ dominoes = np.array(
              ])
 
 # Tile configuration
-tile_width = 10
-tile_height = 30
+tile_width = 20
+tile_height = 20
 n_available_tiles = 10
+tile_background_color = (0.8, 0.8, 0.8)
+tile_edge_color = (0,0,1)
+
+# To get image to look right, need spacing to create square pixels for now
+# could fix this later by making image field creation take into account non-square pixels
+domino_width  = 0.0240 # meters
+domino_height = 0.0075 # meters
+domino_spacing_x = 0.011 # meters
+domino_spacing_y = 0.0275 # meters
 
 # Arm configuration
 n_arms = 3
