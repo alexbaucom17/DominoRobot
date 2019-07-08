@@ -26,6 +26,12 @@ domino_height = 0.0075 # meters
 domino_spacing_x = 0.011 # meters
 domino_spacing_y = 0.0275 # meters
 
+# Spacing for drawing dominoes as pixels instead of rectangles
+domino_width_px = 3
+domino_height_px = 1
+domino_spacing_x_px = 1
+domino_spacing_y_px = 3
+
 # Arm configuration
 n_arms = 3
 

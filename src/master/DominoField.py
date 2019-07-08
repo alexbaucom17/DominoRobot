@@ -130,6 +130,44 @@ class Tile:
                 axes.add_patch(patches.Rectangle((domino_start_x, domino_start_y), self.cfg.domino_width, self.cfg.domino_height,
                                       color=domino_color,zorder=2))
 
+    def draw_px(self, array):
+        # Note that this function draws pixels assuming the array is indexed as x,y instead of rows and columns
+        # the array is flipped to plot as an image in the parent function
+
+        # Determine tile location
+        tile_size_x_in_px = (self.cfg.domino_width_px + self.cfg.domino_spacing_x_px) * self.cfg.tile_width
+        tile_size_y_in_px = (self.cfg.domino_height_px + self.cfg.domino_spacing_y_px) * self.cfg.tile_height
+        tile_start_x_px = self.coordinate[0] * tile_size_x_in_px
+        tile_start_y_px = self.coordinate[1] * tile_size_y_in_px
+        tile_end_x_px = tile_start_x_px + tile_size_x_in_px
+        tile_end_y_px = tile_start_y_px + tile_size_y_in_px
+
+        # Fill in tile with background color
+        array[tile_start_x_px:tile_end_x_px, tile_start_y_px:tile_end_y_px, 0] = self.cfg.tile_background_color[0]
+        array[tile_start_x_px:tile_end_x_px, tile_start_y_px:tile_end_y_px, 1] = self.cfg.tile_background_color[1]
+        array[tile_start_x_px:tile_end_x_px, tile_start_y_px:tile_end_y_px, 2] = self.cfg.tile_background_color[2]
+
+        # Fill in tile edge color (only have to do start locations since next tile over will fill in end locations)
+        array[tile_start_x_px:tile_end_x_px, tile_start_y_px, 0] = self.cfg.tile_edge_color[0]
+        array[tile_start_x_px:tile_end_x_px, tile_start_y_px, 1] = self.cfg.tile_edge_color[1]
+        array[tile_start_x_px:tile_end_x_px, tile_start_y_px, 2] = self.cfg.tile_edge_color[2]
+        array[tile_start_x_px, tile_start_y_px:tile_end_y_px, 0] = self.cfg.tile_edge_color[0]
+        array[tile_start_x_px, tile_start_y_px:tile_end_y_px, 1] = self.cfg.tile_edge_color[1]
+        array[tile_start_x_px, tile_start_y_px:tile_end_y_px, 2] = self.cfg.tile_edge_color[2]
+
+        # Draw dominoes
+        for i in range(self.cfg.tile_width):
+            domino_start_x = tile_start_x_px + self.cfg.domino_spacing_x_px + (self.cfg.domino_width_px + self.cfg.domino_spacing_x_px) * i
+            domino_end_x = domino_start_x + self.cfg.domino_width_px
+            for j in range(self.cfg.tile_height):
+                domino_start_y = tile_start_y_px + self.cfg.domino_spacing_y_px + (self.cfg.domino_height_px + self.cfg.domino_spacing_y_px) * j
+                domino_end_y = domino_start_y + self.cfg.domino_height_px
+                domino_id = self.values[j, i]
+                domino_color = self.cfg.dominoes[domino_id][1]
+                array[domino_start_x:domino_end_x, domino_start_y:domino_end_y, 0] = domino_color[0]
+                array[domino_start_x:domino_end_x, domino_start_y:domino_end_y, 1] = domino_color[1]
+                array[domino_start_x:domino_end_x, domino_start_y:domino_end_y, 2] = domino_color[2]
+
 
 class TileCollection:
 
@@ -137,6 +175,8 @@ class TileCollection:
         self.tiles = []
         self.next_id = 0
         self.cfg = cfg
+        self.n_tiles_x = 0
+        self.n_tiles_y = 0
 
     def addTile(self, tile_coordinate, tile_values):
 
@@ -144,6 +184,10 @@ class TileCollection:
         self.tiles.append(new_tile)
 
         self.next_id = self.next_id + 1
+        if tile_coordinate[0] > self.n_tiles_x:
+            self.n_tiles_x = tile_coordinate[0] + 1
+        if tile_coordinate[1] > self.n_tiles_y:
+            self.n_tiles_y = tile_coordinate[1] + 1
 
     def draw(self):
         plt.figure()
@@ -153,4 +197,25 @@ class TileCollection:
 
         axes.axis('equal')
         axes.autoscale()
+        plt.show()
+
+    def draw_px(self):
+
+        # Allocate memory for image
+        tile_size_x_in_px = (self.cfg.domino_width_px + self.cfg.domino_spacing_x_px) * self.cfg.tile_width
+        tile_size_y_in_px = (self.cfg.domino_height_px + self.cfg.domino_spacing_y_px) * self.cfg.tile_height
+        array_size_x = tile_size_x_in_px * self.n_tiles_x
+        array_size_y = tile_size_y_in_px * self.n_tiles_y
+        image_array = np.zeros((array_size_x, array_size_y, 3))
+
+        # Generate image
+        for tile in self.tiles:
+            tile.draw_px(image_array)
+
+        # Modify array to show image correctly
+        image_array = np.transpose(image_array, (1, 0, 2))
+        image_array = np.flip(image_array, 0)
+
+        # Actually show image
+        plt.imshow(image_array)
         plt.show()
