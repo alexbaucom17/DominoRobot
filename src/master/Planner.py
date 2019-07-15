@@ -87,7 +87,7 @@ def generateWaypoints(tiles, cfg):
         tile_pos_in_field_frame = np.array(tile.getPlacementPositionInMeters())
         tile_pos_in_global_frame = tile_pos_in_field_frame + cfg.domino_field_origin
         robot_pos_for_tile_placement = tile_pos_in_global_frame + cfg.frame_tile_to_robot
-        waypoint_for_tile_placement = Waypoint(robot_pos_for_tile_placement[0], robot_pos_for_tile_placement[1], 0)
+        waypoint_for_tile_placement = Waypoint(robot_pos_for_tile_placement[0], robot_pos_for_tile_placement[1], 90)
 
         # Prep position is where the robot lines up with the tile x position outside of the field boundaries
         # and prepares to drive forward to place the tile
@@ -102,10 +102,10 @@ def generateWaypoints(tiles, cfg):
         waypoint_for_exit_pos = Waypoint(exit_x, exit_y, exit_a)
 
         # Dropoff location
-        waypoint_for_dropoff = Waypoint(cfg.tile_drop_location[0], cfg.tile_drop_location[1], 270)
+        waypoint_for_dropoff = Waypoint(cfg.tile_drop_location[0] + 0.5, cfg.tile_drop_location[1] + 0.5, 270)
 
         # Pickup location
-        waypoint_for_pickup = Waypoint(cfg.tile_pickup_location[0], cfg.tile_pickup_location[1], 270)
+        waypoint_for_pickup = Waypoint(cfg.tile_pickup_location[0] + 0.5, cfg.tile_pickup_location[1] + 0.5, 270)
 
         path = (waypoint_for_pickup, waypoint_for_prep_pos, waypoint_for_tile_placement, waypoint_for_exit_pos, waypoint_for_dropoff)
         waypoints_by_tile_order[counter] = path
@@ -342,11 +342,31 @@ class Waypoint:
 
     def draw(self, ax):
 
-       # TODO: show angle
-       ax.add_patch(patches.Circle((self.x, self.y), 0.3,
-                                      fill=True,
-                                      edgecolor='c',
-                                      facecolor='c'))
+       # Base triangle at 0 degrees
+       scale = 0.3
+       p1 = np.array([scale, 0])
+       s = math.sin(45*math.pi/180.0)
+       c = math.cos(45 * math.pi / 180.0)
+       p2 = np.array([-scale*s, scale*c])
+       p3 = np.array([-scale*s, -scale*c])
+       points = np.vstack((p1, p2 ,p3))
+
+       # Rotate for orientation
+       s = math.sin(self.getAngleRadians())
+       c = math.cos(self.getAngleRadians())
+       R = np.array([[c, -s],[s, c]])
+
+       for i in range(3):
+           # Do local rotation
+           points[i,:] = np.matmul(R, np.reshape(points[i,:],(2,1))).ravel()
+
+           # Then offset for position
+           points[i, :] = points[i, :] + self.getPos()
+
+       ax.add_patch(patches.Polygon(points,
+                                    fill=True,
+                                    edgecolor='c',
+                                    facecolor='c'))
 
 class WaypointManager:
 
