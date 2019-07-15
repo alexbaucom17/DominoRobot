@@ -1,16 +1,16 @@
-import DominoField as df
+import Planner
 import config as cfg
 
 print('Generating domino field from image...',end='',flush=True)
-field = df.generateField(cfg)
+field = Planner.generateField(cfg)
 print('done.')
 
 print('Generating tiles from field...',end='',flush=True)
 tiles = field.generateTiles()
 print('done.')
 
-print('Generating robot paths and placement instructions...',end='',flush=True)
-#placement_instructions = tiles.generatePlacementInstructions()
+print('Generating robot paths...',end='',flush=True)
+waypoints = Planner.generateWaypoints(tiles, cfg)
 print('done.')
 
 print('Generating tile build instructions...',end='',flush=True)
@@ -18,7 +18,7 @@ print('Generating tile build instructions...',end='',flush=True)
 print('done.')
 
 print('Generating output diagrams:')
-#field.printStats()
+field.printStats()
 #field.show()
-#tiles.draw_px()
-tiles.show_ordering()
+#tiles.draw()
+#tiles.show_ordering()

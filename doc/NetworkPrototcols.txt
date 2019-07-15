@@ -1,0 +1,32 @@
+
+
+Master to robot commands:
+
+Move:
+ // Move to a waypoint in a straight line
+ float x
+ float y
+ float a
+ 
+Place:
+ // Place dominoes on the floor
+ null
+ 
+Dock:
+ // Dock at charging station
+ 
+Undock:
+ // Undock from charging station
+ 
+Dropoff:
+ // Drop off pallete on conveyor
+ 
+Pickup:
+ // Pick up pallete from conveyor
+ 
+ 
+Master to base station commands:
+
+NextTile:
+ // The next tile to fill
+ int[tile_x*tile_y] dominoes

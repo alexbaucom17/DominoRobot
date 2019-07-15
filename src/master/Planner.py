@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import skimage.transform as sktf
 import numpy as np
 import matplotlib.patches as patches
+import math
 
 
 def generateField(cfg):
@@ -72,6 +73,45 @@ def generateTileOrdering(num_x, num_y):
             done = True
 
     return order_map
+
+
+def generateWaypoints(tiles, cfg):
+    # All waypoint positions are with respect to the marvelmind sensor frame
+
+    counter = 0
+    waypoints_by_tile_order = {}
+    while counter < tiles.getNumberOfTiles():
+
+        # Calculate tile placement position
+        tile = tiles.getTileByOrder(counter)
+        tile_pos_in_field_frame = np.array(tile.getPlacementPositionInMeters())
+        tile_pos_in_global_frame = tile_pos_in_field_frame + cfg.domino_field_origin
+        robot_pos_for_tile_placement = tile_pos_in_global_frame + cfg.frame_tile_to_robot
+        waypoint_for_tile_placement = Waypoint(robot_pos_for_tile_placement[0], robot_pos_for_tile_placement[1], 0)
+
+        # Prep position is where the robot lines up with the tile x position outside of the field boundaries
+        # and prepares to drive forward to place the tile
+        prep_x = waypoint_for_tile_placement.x
+        prep_y = cfg.domino_field_origin[1] - cfg.prep_position_distance
+        waypoint_for_prep_pos = Waypoint(prep_x, prep_y, 90)
+
+        # Exit position is where the robot exits the field boundaries and drives to tile dropoff location
+        exit_x = cfg.domino_field_origin[0] - cfg.exit_position_distance
+        exit_y = waypoint_for_tile_placement.y
+        exit_a = 180
+        waypoint_for_exit_pos = Waypoint(exit_x, exit_y, exit_a)
+
+        # Dropoff location
+        waypoint_for_dropoff = Waypoint(cfg.tile_drop_location[0], cfg.tile_drop_location[1], 270)
+
+        # Pickup location
+        waypoint_for_pickup = Waypoint(cfg.tile_pickup_location[0], cfg.tile_pickup_location[1], 270)
+
+        path = (waypoint_for_pickup, waypoint_for_prep_pos, waypoint_for_tile_placement, waypoint_for_exit_pos, waypoint_for_dropoff)
+        waypoints_by_tile_order[counter] = path
+        counter += 1
+
+    return WaypointManager(cfg, waypoints_by_tile_order, tiles)
 
 class DominoField:
 
@@ -144,36 +184,21 @@ class DominoField:
 
 class Tile:
 
-    def __init__(self, cfg, id, coordinate, values, order):
-        self.id = id
+    def __init__(self, cfg, coordinate, values, order):
         self.coordinate = coordinate
         self.values = values
         self.cfg = cfg
         self.order = order
 
-    def draw(self, axes):
-        # Determine tile location
-        tile_size_x_in_meters = (self.cfg.domino_width + self.cfg.domino_spacing_x) * self.cfg.tile_width
-        tile_size_y_in_meters = (self.cfg.domino_height + self.cfg.domino_spacing_y) * self.cfg.tile_height
-        tile_start_x = self.coordinate[0] * tile_size_x_in_meters
-        tile_start_y = self.coordinate[1] * tile_size_y_in_meters
+    def getPlacementPositionInMeters(self):
+        # Returns bottom left corner position of the tile relative to the origin of the field
 
-        # Draw tile
-        axes.add_patch(patches.Rectangle((tile_start_x,tile_start_y), tile_size_x_in_meters, tile_size_y_in_meters,
-                                         edgecolor=self.cfg.tile_edge_color, facecolor=self.cfg.tile_background_color,
-                                         zorder=1))
+        tile_start_x = self.coordinate[0] * self.cfg.tile_size_x_meters
+        tile_start_y = self.coordinate[1] * self.cfg.tile_size_y_meters
+        return (tile_start_x, tile_start_y)
 
-        # Draw dominoes
-        for i in range(self.cfg.tile_width):
-            domino_start_x = tile_start_x + 0.5 * self.cfg.domino_spacing_x + (self.cfg.domino_width + self.cfg.domino_spacing_x) * i
-            for j in range(self.cfg.tile_height):
-                domino_start_y = tile_start_y + 0.5 * self.cfg.domino_spacing_y + (self.cfg.domino_height + self.cfg.domino_spacing_y) * j
-                domino_id = self.values[j,i]
-                domino_color = self.cfg.dominoes[domino_id][1]
-                axes.add_patch(patches.Rectangle((domino_start_x, domino_start_y), self.cfg.domino_width, self.cfg.domino_height,
-                                      color=domino_color,zorder=2))
 
-    def draw_px(self, array):
+    def draw(self, array):
         # Note that this function draws pixels assuming the array is indexed as x,y instead of rows and columns
         # the array is flipped to plot as an image in the parent function
 
@@ -216,35 +241,29 @@ class TileCollection:
 
     def __init__(self, cfg):
         self.tiles = []
-        self.next_id = 0
         self.cfg = cfg
         self.n_tiles_x = 0
         self.n_tiles_y = 0
+        self.tile_order_map = {}
 
     def addTile(self, tile_coordinate, tile_values, tile_order):
 
-        new_tile = Tile(self.cfg, self.next_id, tile_coordinate, tile_values, tile_order)
+        new_tile = Tile(self.cfg, tile_coordinate, tile_values, tile_order)
         self.tiles.append(new_tile)
+        self.tile_order_map[tile_order] = new_tile
 
-        self.next_id = self.next_id + 1
         if tile_coordinate[0] > self.n_tiles_x:
             self.n_tiles_x = tile_coordinate[0] + 1
         if tile_coordinate[1] > self.n_tiles_y:
             self.n_tiles_y = tile_coordinate[1] + 1
 
+    def getTileByOrder(self, order):
+        return self.tile_order_map[order]
+
+    def getNumberOfTiles(self):
+        return self.n_tiles_y * self.n_tiles_x
+
     def draw(self):
-        plt.figure()
-        axes = plt.gca()
-        for tile in self.tiles:
-            tile.draw(axes)
-
-        axes.axis('equal')
-        axes.autoscale()
-        figManager = plt.get_current_fig_manager()
-        figManager.window.state('zoomed')
-        plt.show()
-
-    def draw_px(self):
 
         # Allocate memory for image
         tile_size_x_in_px = (self.cfg.domino_width_px + self.cfg.domino_spacing_x_px) * self.cfg.tile_width
@@ -255,7 +274,7 @@ class TileCollection:
 
         # Generate image
         for tile in self.tiles:
-            tile.draw_px(image_array)
+            tile.draw(image_array)
 
         # Modify array to show image correctly
         image_array = np.transpose(image_array, (1, 0, 2))
@@ -276,7 +295,6 @@ class TileCollection:
 
         # Modify array to show image correctly
         order_array = np.transpose(order_array, (1, 0))
-        #order_array = np.flip(order_array, 0)
 
         # Show figure with colors
         fig = plt.figure()
@@ -290,5 +308,57 @@ class TileCollection:
 
         fig.colorbar(im)
         plt.show()
+
+
+class Waypoint:
+
+    def __init__(self, x, y, a):
+        # X position [m]
+        # Y position [m]
+        # Angle [deg]
+
+        self.x = float(x)
+        self.y = float(y)
+        self.a = float(a)
+
+    def getPos(self):
+        return np.array([self.x, self.y])
+
+    def getAngleDegrees(self):
+        return self.a
+
+    def getAngleRadians(self):
+        return self.a * math.pi/180.0
+
+    def __add__(self, other):
+        self.x = self.x + other.x
+        self.y = self.y + other.y
+        self.a = self.a + other.a
+
+    def __sub__(self, other):
+        self.x = self.x - other.x
+        self.y = self.y - other.y
+        self.a = self.a - other.a
+
+
+class WaypointManager:
+
+    def __init__(self, cfg, waypoints, tiles):
+        self.cfg = cfg
+        self.waypoints_by_tile_order = waypoints
+        self.tiles = tiles
+
+    def getWaypointsByOrder(self, order):
+        return self.waypopints_by_tile_order[order]
+
+    def drawWaypoints(self, order):
+        pass
+
+
+
+
+
+
+
 
 
