@@ -36,11 +36,11 @@ tile_size_y_meters = tile_height * (domino_spacing_y + domino_height)
 
 # Map configuration (distances in meters, angles in degrees)
 robot_boundaries = np.array([[0,0],[20,15]])
-base_station_boundaries = np.array([[7,0],[14,2]])
-charge_station_boundaries = np.array([[7,5],[8,8]])
-tile_drop_location = np.array([8,1,-90]) # X, Y, theta
-tile_pickup_location = np.array([13,1,-90]) # X, Y, theta
-domino_field_origin = np.array([14,4])
+base_station_boundaries = np.array([[3,0],[10,2]])
+charge_station_boundaries = np.array([[3,10],[4,13]])
+tile_drop_location = np.array([3,2,-90]) # X, Y, theta
+tile_pickup_location = np.array([9,2,-90]) # X, Y, theta
+domino_field_origin = np.array([12,6])
 field_width = tile_size_x_meters * desired_width/tile_width
 field_height = tile_size_y_meters * desired_height/tile_height
 domino_field_boundaries = np.array([domino_field_origin,domino_field_origin + np.array([field_width,field_height])])

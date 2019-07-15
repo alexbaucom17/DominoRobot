@@ -340,6 +340,13 @@ class Waypoint:
         self.y = self.y - other.y
         self.a = self.a - other.a
 
+    def draw(self, ax):
+
+       # TODO: show angle
+       ax.add_patch(patches.Circle((self.x, self.y), 0.3,
+                                      fill=True,
+                                      edgecolor='c',
+                                      facecolor='c'))
 
 class WaypointManager:
 
@@ -349,12 +356,83 @@ class WaypointManager:
         self.tiles = tiles
 
     def getWaypointsByOrder(self, order):
-        return self.waypopints_by_tile_order[order]
+        return self.waypoints_by_tile_order[order]
 
     def drawWaypoints(self, order):
-        pass
+
+        # Draw overall map
+        m = Map(self.cfg)
+        ax = m.draw()
+
+        # Draw waypoints
+        for wpts in self.getWaypointsByOrder(order):
+            wpts.draw(ax)
+
+        # Configure limits and show
+        ax.set_xlim(left=-1, right=self.cfg.robot_boundaries[1][0]+1)
+        ax.set_ylim(bottom=-1, top=self.cfg.robot_boundaries[1][1]+1)
+        ax.axis('equal')
+        figManager = plt.get_current_fig_manager()
+        figManager.window.state('zoomed')
+        plt.show()
 
 
+
+
+class Map:
+
+    def __init__(self, cfg):
+        self.cfg = cfg
+
+    def draw(self):
+
+        fig,ax = plt.subplots(1)
+
+        # Draw overall map boundaries
+        ax.add_patch(patches.Rectangle(self.cfg.robot_boundaries[0],
+                                       self.cfg.robot_boundaries[1][0] - self.cfg.robot_boundaries[0][0],
+                                       self.cfg.robot_boundaries[1][1] - self.cfg.robot_boundaries[0][1],
+                                       fill=False,
+                                       edgecolor='b'))
+
+        # Draw field boundaries
+        ax.add_patch(patches.Rectangle(self.cfg.domino_field_origin,
+                                       self.cfg.field_width,
+                                       self.cfg.field_height,
+                                       fill=False,
+                                       edgecolor='r'))
+
+        # Draw base station
+        ax.add_patch(patches.Rectangle(self.cfg.base_station_boundaries[0],
+                                       self.cfg.base_station_boundaries[1][0] - self.cfg.base_station_boundaries[0][0],
+                                       self.cfg.base_station_boundaries[1][1] - self.cfg.base_station_boundaries[0][1],
+                                       fill=True,
+                                       edgecolor='k',
+                                       facecolor='k'))
+
+        # Draw charging station
+        ax.add_patch(patches.Rectangle(self.cfg.charge_station_boundaries[0],
+                                       self.cfg.charge_station_boundaries[1][0] - self.cfg.charge_station_boundaries[0][0],
+                                       self.cfg.charge_station_boundaries[1][1] - self.cfg.charge_station_boundaries[0][1],
+                                       fill=True,
+                                       edgecolor='g',
+                                       facecolor='g'))
+
+        # Draw pickup location
+        ax.add_patch(patches.Rectangle(self.cfg.tile_pickup_location,
+                                       1,
+                                       1,
+                                       fill=False,
+                                       edgecolor='m'))
+
+        # Draw dropoff location
+        ax.add_patch(patches.Rectangle(self.cfg.tile_drop_location,
+                                       1,
+                                       1,
+                                       fill=False,
+                                       edgecolor='c'))
+
+        return ax
 
 
 
