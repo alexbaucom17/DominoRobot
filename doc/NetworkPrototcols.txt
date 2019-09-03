@@ -1,4 +1,9 @@
 
+Message spec
+- All messages are sent as json encoded byte strings
+- All messages will contain a 'type' field that will be a string denoting the command type
+- All messages will contain a 'sn' field that will be an int denoting the message serial number
+- All messages will contain a 'data' field that will house any additional data required by the message type. This field may be empty
 
 Master to robot commands:
 
@@ -23,10 +28,69 @@ Dropoff:
  
 Pickup:
  // Pick up pallete from conveyor
+
+Position:
+ // Fallback for sending position data if usb controller for marvelmind sensor doesn't work
+ float x
+ float y
+ float a
+ float time
+
+
+Robot to master commands:
+
+RobotStatus:
+ // Give a status update to server
+ float est_pos_x
+ float est_pos_y
+ float est_pos_a
+ float est_cur_vel_x
+ float est_cur_vel_y
+ float est_cur_vel_a
+ string cur_task
+ int cur_task_msg_sn
+ int bat_percent //Can we even get this?
+ string error_msg
+ bool error_present
+ //Add other fields/sensor statuses as needed
  
- 
+
+
 Master to base station commands:
 
 NextTile:
  // The next tile to fill
  int[tile_x*tile_y] dominoes
+ int tile_id
+
+
+
+Base Station to master commands:
+
+BaseStatus:
+ // Status update for server
+ int cur_tile_id
+ float est_time_to_tile_full
+ // Other sensor statuses
+
+
+General commands:
+
+StatusRequest:
+ // Request status from robot
+
+KeepAlive:
+  // Keep the connection alive
+
+Ack:
+ //Acknowledge that command was recieved
+ int sn
+
+Done:
+ //Let the server know the command was done
+ int sn
+
+
+
+
+
