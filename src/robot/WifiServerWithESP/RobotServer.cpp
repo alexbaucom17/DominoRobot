@@ -1,5 +1,7 @@
+#include <Arduino.h> // This has to be before ArduinoJson.h to fix compiler issues
 #include "RobotServer.h"
 #include <ArduinoJson.h>
+
 
 RobotServer::RobotServer(HardwareSerial& serial, HardwareSerial& debug)
 : serial_(serial),
