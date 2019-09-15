@@ -38,10 +38,13 @@ class RobotServer
     HardwareSerial& serial_;
     HardwareSerial& debug_;
     bool clientConnected_;
+    bool wifiConnected_;
 
     String getAnyIncomingMessage();
+    String cleanString(String message);
     COMMAND getCommand(String message);
-    void sendMessage(String message);
+    
+    void sendMsg(String msg);
     void sendAck(String data);
     void sendErr(String data);
     void sendStatus();

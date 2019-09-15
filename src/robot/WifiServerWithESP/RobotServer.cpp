@@ -6,35 +6,61 @@
 RobotServer::RobotServer(HardwareSerial& serial, HardwareSerial& debug)
 : serial_(serial),
   debug_(debug),
-  clientConnected_(false)
+  clientConnected_(false),
+  wifiConnected_(false)
 {
     serial_.begin(115200);
 }
 
 RobotServer::oneLoop()
 {
-    String newMsg = getAnyIncomingMessage();
     COMMAND cmd = COMMAND::NONE;
+    String newMsg = getAnyIncomingMessage();
+    
     if(newMsg.length() != 0)
     {
         debug_.print("[RobotServer] ");
+        debug_.print("RCV: ");
         debug_.println(newMsg);
-
+        
         if(newMsg == "Client connected")
         {
             clientConnected_ = true;
+            wifiConnected_ = true;
         }
         else if(newMsg == "Client disconnected")
         {
             clientConnected_ = false;
+            wifiConnected_ = true;
+        }
+        else if(newMsg == "Connecting..")
+        {
+            wifiConnected_ = false;
+            clientConnected_ = false;
+        }
+        else if(newMsg.startsWith("Connected to WiFi."))
+        {
+            clientConnected_ = false;
+            wifiConnected_ = true;
+        }
+        else if(newMsg == "Waiting for client connection")
+        {
+            clientConnected_ = false;
+            wifiConnected_ = true;
         }
         else
         {
-            cmd = getCommand(newMsg);
+            cmd = getCommand(cleanString(newMsg));
         }
     }
-
     return cmd;
+}
+
+String RobotServer::cleanString(String message)
+{
+  int idx_start = message.indexOf("{");
+  int idx_end = message.lastIndexOf("}") + 1;
+  return message.substring(idx_start, idx_end);
 }
 
 String RobotServer::getAnyIncomingMessage()
@@ -53,6 +79,9 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
     StaticJsonDocument<256> doc;
     DeserializationError err = deserializeJson(doc, message);
 
+    debug_.print("[RobotServer] GetCommand(): ");
+    debug_.println(message);
+
     if(err)
     {
         debug_.print("[RobotServer] Error parsing JSON: ");
@@ -65,61 +94,61 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
         String type = doc["type"];
         if(type == "move")
         {
-            debug_.print("[RobotServer] Got MOVE command ");
+            debug_.println("[RobotServer] Got MOVE command ");
             cmd = COMMAND::MOVE;
             sendAck(type);
         }
         else if(type == "place")
         {
-            debug_.print("[RobotServer] Got PLACE command ");
+            debug_.println("[RobotServer] Got PLACE command ");
             cmd = COMMAND::PLACE;
             sendAck(type);
         }
         else if(type == "dock")
         {
-            debug_.print("[RobotServer] Got DOCK command ");
+            debug_.println("[RobotServer] Got DOCK command ");
             cmd = COMMAND::DOCK;
             sendAck(type);
         }
         else if(type == "undock")
         {
-            debug_.print("[RobotServer] Got UNDOCK command ");
+            debug_.println("[RobotServer] Got UNDOCK command ");
             cmd = COMMAND::UNDOCK;
             sendAck(type);
         }
         else if(type == "dropoff")
         {
-            debug_.print("[RobotServer] Got DROPOFF command ");
+            debug_.println("[RobotServer] Got DROPOFF command ");
             cmd = COMMAND::DROPOFF;
             sendAck(type);
         }
         else if(type == "pickup")
         {
-            debug_.print("[RobotServer] Got PICKUP command ");
+            debug_.println("[RobotServer] Got PICKUP command ");
             cmd = COMMAND::PICKUP;
             sendAck(type);
         }
         else if(type == "position")
         {
-            debug_.print("[RobotServer] Got POSITION command ");
+            debug_.println("[RobotServer] Got POSITION command ");
             cmd = COMMAND::POSITION;
             sendAck(type);
         }
         else if(type == "status")
         {
-            debug_.print("[RobotServer] Got STATUS command ");
+            debug_.println("[RobotServer] Got STATUS command ");
             cmd = COMMAND::STATUS;
             sendStatus();
         }
         else if(type == "")
         {
-            debug_.print("[RobotServer] ERROR: Type field empty or not specified ");
+            debug_.println("[RobotServer] ERROR: Type field empty or not specified ");
             cmd = COMMAND::ERROR_NO_TYPE;
             sendErr("no_type");
         }
         else
         {
-            debug_.print("[RobotServer] ERROR: Unkown type field ");
+            debug_.println("[RobotServer] ERROR: Unkown type field ");
             cmd = COMMAND::ERROR_UNKOWN_TYPE;
             sendErr("unkown_type");
         }
@@ -127,20 +156,31 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
     return cmd;    
 }
 
+void RobotServer::sendMsg(String msg)
+{
+    serial_.print(msg + '\0');
+    debug_.print("[RobotServer] Send: ");
+    debug_.println(msg);
+}
+
 void RobotServer::sendAck(String data)
 {
     StaticJsonDocument<256> doc;
     doc["type"] = "ack";
     doc["data"] = data;
-    serializeJson(doc, serial_);
+    String msg;
+    serializeJson(doc, msg);
+    sendMsg(msg);
 }
 
 void RobotServer::sendErr(String data)
 {
     StaticJsonDocument<256> doc;
-    doc["type"] = "error";
+    doc["type"] = "ack";
     doc["data"] = data;
-    serializeJson(doc, serial_);
+    String msg;
+    serializeJson(doc, msg);
+    sendMsg(msg);
 }
 
 void RobotServer::sendStatus()
@@ -148,5 +188,7 @@ void RobotServer::sendStatus()
     StaticJsonDocument<256> doc;
     doc["type"] = "status";
     doc["data"] = "not implimented";
-    serializeJson(doc, serial_);
+    String msg;
+    serializeJson(doc, msg);
+    sendMsg(msg);
 }

@@ -17,5 +17,6 @@ void loop() {
   // put your main code here, to run repeatedly:
 
   int cmd = server.oneLoop();
+  delay(50);
 
 }

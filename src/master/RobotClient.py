@@ -22,6 +22,7 @@ class TcpClient:
         totalsent = 0
         msg = msg + '\0'
         msg_bytes = msg.encode()
+        print("TX: " + msg)
         while totalsent < len(msg):
             sent = self.socket.send(msg_bytes[totalsent:])
             if sent == 0:
@@ -30,23 +31,26 @@ class TcpClient:
 
     def recieve(self):
 
-        socket_ready, _, _ = select.select(self.socket , [], [])
+        socket_ready, _, _ = select.select([self.socket], [], [])
         if not socket_ready:
+            print("Not ready")
             return None
 
         chunks = []
-        null_term_found = False
-        while not null_term_found:
+        term_char_found = False
+        while not term_char_found:
             chunk = self.socket.recv(2048)
             if chunk == b'':
                 raise RuntimeError("socket connection broken")
-            if chunk[-1] == '\0':
-                null_term_found = True
-                chunk = chunk[:-2]
+            if chunk[-1] == 0:
+                term_char_found = True
+                chunk = chunk[:-1]
             chunks.append(chunk)
 
         msg_bytes = b''.join(chunks)
-        return msg_bytes.decode()
+        msg_str = msg_bytes.decode()
+        print("RX: " + msg_str)
+        return msg_str
 
 
 class RobotClient:
@@ -134,3 +138,14 @@ class RobotClient:
 
 
 
+if __name__== '__main__':
+    r = RobotClient(1)
+    
+    r.dock()
+    r.move(1,2,3)
+    r.place()
+    r.undock()
+    r.dropoff()
+    r.pickup()
+    r.position(4,5,6,7)
+    r.request_status()
