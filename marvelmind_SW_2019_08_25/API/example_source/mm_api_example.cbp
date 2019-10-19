@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="mm_api_example" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/mm_api_example" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/mm_api_example" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+		</Compiler>
+		<Unit filename="main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="marvelmind_api.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="marvelmind_api.h" />
+		<Unit filename="marvelmind_devices.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="marvelmind_devices.h" />
+		<Unit filename="marvelmind_example.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="marvelmind_example.h" />
+		<Unit filename="marvelmind_pos.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="marvelmind_pos.h" />
+		<Unit filename="marvelmind_utils.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="marvelmind_utils.h" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
