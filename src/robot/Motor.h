@@ -15,6 +15,7 @@ const unsigned int COUNTS_PER_MOTOR_REV = 44;
 const unsigned int MOTOR_GEAR_RATIO = 40;
 const double FUDGE_FACTOR = 1.5;
 const double COUNTS_PER_SHAFT_REV = COUNTS_PER_MOTOR_REV * MOTOR_GEAR_RATIO * FUDGE_FACTOR;
+#define VEL_FILTER_FREQ 10 // HZ
 
 class Motor
 {
@@ -29,9 +30,8 @@ class Motor
      * Kp - Proportional gain
      * Ki - Integral gain
      * Kd - Derrivative gain
-     * velFilterFreq - frequency to use for velocity lowpass filter
      */
-    Motor(int pwmPin, int dirPin, int encPinA, int encPinB, double Kp, double Ki, double Kd, float velFilterFreq);
+    Motor(int pwmPin, int dirPin, int encPinA, int encPinB, double Kp, double Ki, double Kd);
     
     /*
      * Set the desired velocity in revs/second

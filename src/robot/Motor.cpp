@@ -1,7 +1,7 @@
 #include "Motor.h"
 #include <math.h>
 
-Motor::Motor(int pwmPin, int dirPin, int encPinA, int encPinB, double Kp, double Ki, double Kd, float velFilterFreq)
+Motor::Motor(int pwmPin, int dirPin, int encPinA, int encPinB, double Kp, double Ki, double Kd)
 : pwmPin_(pwmPin),
   dirPin_(dirPin),
   inputVel_(0.0),
@@ -12,7 +12,7 @@ Motor::Motor(int pwmPin, int dirPin, int encPinA, int encPinB, double Kp, double
   prevMillis_(millis()),
   enc_(encPinA, encPinB),
   controller_(&currentVelFiltered_, &outputCmd_, &inputVel_, Kp, Ki, Kd, DIRECT),
-  velFilter_(LOWPASS, velFilterFreq)
+  velFilter_(LOWPASS, VEL_FILTER_FREQ)
 {
   pinMode(pwmPin_, OUTPUT);
   pinMode(dirPin_, OUTPUT);
@@ -70,13 +70,13 @@ void Motor::runLoop()
 //  Serial.print(" ");
 //  Serial.print(currentVelRaw_);
 //  Serial.print(" ");
-  Serial.print(currentVelFiltered_);
-  Serial.print(" ");
-  Serial.print(inputVel_);
-  Serial.print(" ");
-  Serial.print(outputCmd_/255.0);
-//  Serial.print(" ");
-//  Serial.print(deltaMillis);
-  Serial.println("");
+//   Serial.print(currentVelFiltered_);
+//   Serial.print(" ");
+//   Serial.print(inputVel_);
+//   Serial.print(" ");
+//   Serial.print(outputCmd_/255.0);
+// //  Serial.print(" ");
+// //  Serial.print(deltaMillis);
+//   Serial.println("");
   
 }

@@ -31,7 +31,7 @@ class RobotServer
     // Constructor
     RobotServer(HardwareSerial& serial, HardwareSerial& debug);
 
-    int oneLoop();
+    RobotServer::COMMAND oneLoop();
 
   private:
 

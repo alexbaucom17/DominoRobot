@@ -1,19 +1,17 @@
 // Pins
-#define PIN_FR_ENC_A 20
-#define PIN_FR_ENC_B 35
-#define PIN_FL_ENC_A 21
-#define PIN_FL_ENC_B 41
-#define PIN_BR_ENC_A 18
-#define PIN_BR_ENC_B 23
-#define PIN_BL_ENC_A 19
-#define PIN_BL_ENC_B 29
+#define PIN_ENCA_1 21
+#define PIN_ENCA_2 20
+#define PIN_ENCA_3 19
+#define PIN_ENCA_4 18
+
+#define PIN_ENCB_1 25
+#define PIN_ENCB_2 24
+#define PIN_ENCB_3 23
+#define PIN_ENCB_4 22
 
 #include <Encoder.h>
 
-Encoder encoderFR(PIN_FR_ENC_A, PIN_FR_ENC_B);
-Encoder encoderFL(PIN_FL_ENC_A, PIN_FL_ENC_B);
-Encoder encoderBR(PIN_BR_ENC_A, PIN_BR_ENC_B);
-Encoder encoderBL(PIN_BL_ENC_A, PIN_BL_ENC_B);
+Encoder encoder(PIN_ENCA_2, PIN_ENCB_2);
 
 long pos = -999;
 
@@ -26,7 +24,7 @@ void setup() {
 void loop() {
   // Check for new value
   long newPos;
-  newPos = encoderFL.read();
+  newPos = encoder.read();
   if(newPos != pos)
   {
     Serial.print("Pos = ");
@@ -41,7 +39,7 @@ void loop() {
   {
     Serial.read();
     Serial.println("Reset position to zero");
-    encoderFL.write(0);
+    encoder.write(0);
   }
 
 

@@ -12,18 +12,16 @@ RobotServer::RobotServer(HardwareSerial& serial, HardwareSerial& debug)
     serial_.begin(115200);
 }
 
-RobotServer::oneLoop()
+RobotServer::COMMAND RobotServer::oneLoop()
 {
     COMMAND cmd = COMMAND::NONE;
     String newMsg = getAnyIncomingMessage();
     
     if(newMsg.length() != 0)
-    {
-        debug_.print("[RobotServer] ");
-        debug_.print("RCV: ");
-        debug_.println(newMsg);
-        
-        if(newMsg == "Client connected")
+    {    
+        debug_.println("Got msg");
+        bool printDebug = false;    
+        if(newMsg.lastIndexOf("Client connected") > 0)
         {
             clientConnected_ = true;
             wifiConnected_ = true;
@@ -43,7 +41,7 @@ RobotServer::oneLoop()
             clientConnected_ = false;
             wifiConnected_ = true;
         }
-        else if(newMsg == "Waiting for client connection")
+        else if(newMsg.lastIndexOf("Waiting for client connection") > 0)
         {
             clientConnected_ = false;
             wifiConnected_ = true;
@@ -51,8 +49,17 @@ RobotServer::oneLoop()
         else
         {
             cmd = getCommand(cleanString(newMsg));
+            printDebug = true;
+        }
+
+        if(printDebug)
+        {
+            debug_.print("[RobotServer] ");
+            debug_.print("RCV: ");
+            debug_.println(newMsg);
         }
     }
+    //debug_.println("Loop check");
     return cmd;
 }
 

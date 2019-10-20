@@ -48,8 +48,9 @@ class TcpClient:
             chunks.append(chunk)
 
         msg_bytes = b''.join(chunks)
-        msg_str = msg_bytes.decode()
-        print("RX: " + msg_str)
+        msg_str = msg_bytes.decode(encoding='UTF-8',errors='strict').rstrip('\0')
+        print("RX:", end =' ')
+        print(msg_bytes)
         return msg_str
 
 
@@ -140,12 +141,9 @@ class RobotClient:
 
 if __name__== '__main__':
     r = RobotClient(1)
-    
+    time.sleep(5)
     r.dock()
+    time.sleep(5)
     r.move(1,2,3)
-    r.place()
-    r.undock()
-    r.dropoff()
-    r.pickup()
-    r.position(4,5,6,7)
-    r.request_status()
+    # time.sleep(5)
+    # r.place()
