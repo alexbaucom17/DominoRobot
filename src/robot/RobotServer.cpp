@@ -1,7 +1,7 @@
+
 #include <Arduino.h> // This has to be before ArduinoJson.h to fix compiler issues
 #include "RobotServer.h"
 #include <ArduinoJson.h>
-
 
 RobotServer::RobotServer(HardwareSerial& serial, HardwareSerial& debug)
 : serial_(serial),
@@ -10,7 +10,8 @@ RobotServer::RobotServer(HardwareSerial& serial, HardwareSerial& debug)
   wifiConnected_(false),
   recvInProgress_(false),
   recvIdx_(0),
-  buffer_("")
+  buffer_(""),
+  moveData_()
 {
     serial_.begin(115200);
 }
@@ -134,6 +135,9 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
         {
             debug_.println("[RobotServer] Got MOVE command ");
             cmd = COMMAND::MOVE;
+            moveData_.x = doc["data"]["x"];
+            moveData_.y = doc["data"]["y"];
+            moveData_.a = doc["data"]["a"];
             sendAck(type);
         }
         else if(type == "place")
@@ -192,6 +196,11 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
         }
     }
     return cmd;    
+}
+
+RobotServer::MoveData RobotServer::getMoveData()
+{
+    return moveData_;
 }
 
 void RobotServer::sendMsg(String msg)

@@ -7,6 +7,7 @@
 #define RobotServer_h
 
 #include <HardwareSerial.h>
+
 #define START_CHAR '<'
 #define END_CHAR '>'
 
@@ -29,11 +30,20 @@ class RobotServer
        POSITION,
        STATUS
     };
+
+    struct MoveData
+    {
+      float x;
+      float y;
+      float a;
+    };
     
     // Constructor
     RobotServer(HardwareSerial& serial, HardwareSerial& debug);
 
     RobotServer::COMMAND oneLoop();
+
+    RobotServer::MoveData getMoveData();
 
   private:
 
@@ -44,6 +54,7 @@ class RobotServer
     bool recvInProgress_;
     int recvIdx_;
     String buffer_;
+    MoveData moveData_;
 
     String getAnyIncomingMessage();
     String cleanString(String message);

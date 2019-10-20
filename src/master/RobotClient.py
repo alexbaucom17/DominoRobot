@@ -159,8 +159,24 @@ class RobotClient:
 if __name__== '__main__':
     r = RobotClient(1)
     time.sleep(2)
-    r.dock()
-    time.sleep(5)
-    r.move(1,2,3)
-    # time.sleep(5)
-    # r.place()
+    
+    while(True):
+        dir = input("Direction to move: ")
+        if dir == "forward":
+            r.move(1.0,0.0,0.0)
+        elif dir == "backward":
+            r.move(-1.0,0.0,0.0)
+        elif dir == "left":
+            r.move(0.0,1.0,0.0)
+        elif dir == "right":
+            r.move(0,-1,0)
+        elif dir == "cw":
+            r.move(0.0,0.0,-1.0)
+        elif dir == "ccw":
+            r.move(0,0,1)
+        elif dir == "exit":
+            exit()
+        else:
+            print("Unknown direction")
+
+        time.sleep(2)
