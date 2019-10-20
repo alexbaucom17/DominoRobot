@@ -10,6 +10,8 @@ PORT = 1234
 ID_TO_IP_DICT = {1: '192.168.1.13',
                  2: '192.168.1.14'}
 NET_TIMEOUT = 10 # seconds
+START_CHAR = "<"
+END_CHAR = ">"
 
 class TcpClient:
 
@@ -20,38 +22,53 @@ class TcpClient:
 
     def send(self, msg):
         totalsent = 0
-        msg = msg + '\0'
-        msg_bytes = msg.encode()
         print("TX: " + msg)
+        msg = START_CHAR + msg + END_CHAR
+        msg_bytes = msg.encode()
         while totalsent < len(msg):
             sent = self.socket.send(msg_bytes[totalsent:])
             if sent == 0:
                 raise RuntimeError("socket connection broken")
             totalsent = totalsent + sent
 
-    def recieve(self):
+    def recieve(self, timeout=1):
 
         socket_ready, _, _ = select.select([self.socket], [], [])
         if not socket_ready:
-            print("Not ready")
-            return None
+            return ""
 
-        chunks = []
-        term_char_found = False
-        while not term_char_found:
-            chunk = self.socket.recv(2048)
-            if chunk == b'':
+        new_msg = ""
+        new_msg_ready = False
+        msg_rcv_in_progress = False
+        start_time = time.time()
+        while not new_msg_ready and time.time() - start_time < timeout:
+            # Get new data
+            data = self.socket.recv(2048)
+            if data == b'':
                 raise RuntimeError("socket connection broken")
-            if chunk[-1] == 0:
-                term_char_found = True
-                chunk = chunk[:-1]
-            chunks.append(chunk)
 
-        msg_bytes = b''.join(chunks)
-        msg_str = msg_bytes.decode(encoding='UTF-8',errors='strict').rstrip('\0')
-        print("RX:", end =' ')
-        print(msg_bytes)
-        return msg_str
+            # Decode data and parse into message
+            new_str = data.decode(encoding='UTF-8',errors='strict')
+            if not msg_rcv_in_progress:
+                start_idx = new_str.find(START_CHAR)
+                if start_idx != -1:
+                    new_msg += new_str[start_idx+1:]
+                    msg_rcv_in_progress = True
+            else:
+                end_idx = new_str.find(END_CHAR)
+                if end_idx != -1:
+                    new_msg += new_str[:end_idx]
+                    msg_rcv_in_progress = False
+                    new_msg_ready = True
+                else:
+                    new_msg += new_str
+
+        print("RX: " + new_msg)
+        if not new_msg_ready:
+            print("Timeout")
+            new_msg = ""
+
+        return new_msg
 
 
 class RobotClient:
@@ -141,7 +158,7 @@ class RobotClient:
 
 if __name__== '__main__':
     r = RobotClient(1)
-    time.sleep(5)
+    time.sleep(2)
     r.dock()
     time.sleep(5)
     r.move(1,2,3)

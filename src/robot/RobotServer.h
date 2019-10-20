@@ -7,6 +7,8 @@
 #define RobotServer_h
 
 #include <HardwareSerial.h>
+#define START_CHAR '<'
+#define END_CHAR '>'
 
 class RobotServer
 {
@@ -39,6 +41,9 @@ class RobotServer
     HardwareSerial& debug_;
     bool clientConnected_;
     bool wifiConnected_;
+    bool recvInProgress_;
+    int recvIdx_;
+    String buffer_;
 
     String getAnyIncomingMessage();
     String cleanString(String message);

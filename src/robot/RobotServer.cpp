@@ -7,7 +7,10 @@ RobotServer::RobotServer(HardwareSerial& serial, HardwareSerial& debug)
 : serial_(serial),
   debug_(debug),
   clientConnected_(false),
-  wifiConnected_(false)
+  wifiConnected_(false),
+  recvInProgress_(false),
+  recvIdx_(0),
+  buffer_("")
 {
     serial_.begin(115200);
 }
@@ -19,36 +22,37 @@ RobotServer::COMMAND RobotServer::oneLoop()
     
     if(newMsg.length() != 0)
     {    
-        debug_.println("Got msg");
-        bool printDebug = false;    
-        if(newMsg.lastIndexOf("Client connected") > 0)
+        bool printDebug = true;    
+        bool checkCommand = false;
+        if(newMsg.lastIndexOf("Client connected") >= 0)
         {
             clientConnected_ = true;
             wifiConnected_ = true;
         }
-        else if(newMsg == "Client disconnected")
+        else if(newMsg.lastIndexOf("Client disconnected") >= 0)
         {
             clientConnected_ = false;
             wifiConnected_ = true;
         }
-        else if(newMsg == "Connecting..")
+        else if(newMsg.lastIndexOf("Connecting..") >= 0)
         {
             wifiConnected_ = false;
             clientConnected_ = false;
         }
-        else if(newMsg.startsWith("Connected to WiFi."))
+        else if(newMsg.lastIndexOf("Connected to WiFi.") >= 0)
         {
             clientConnected_ = false;
             wifiConnected_ = true;
         }
-        else if(newMsg.lastIndexOf("Waiting for client connection") > 0)
+        else if(newMsg.lastIndexOf('*') >= 0)
         {
             clientConnected_ = false;
             wifiConnected_ = true;
+            printDebug = false;
         }
         else
         {
-            cmd = getCommand(cleanString(newMsg));
+            checkCommand = true;
             printDebug = true;
         }
 
@@ -58,8 +62,12 @@ RobotServer::COMMAND RobotServer::oneLoop()
             debug_.print("RCV: ");
             debug_.println(newMsg);
         }
+
+        if(checkCommand)
+        {
+            cmd = getCommand(cleanString(newMsg));
+        }
     }
-    //debug_.println("Loop check");
     return cmd;
 }
 
@@ -72,12 +80,35 @@ String RobotServer::cleanString(String message)
 
 String RobotServer::getAnyIncomingMessage()
 {
-    String msg = "";
-    if(serial_.available())
+    bool newData = false;
+    String new_msg;
+    while (serial_.available() > 0 && newData == false) 
     {
-        msg = serial_.readString();
+        char rc = serial_.read();
+        //debug_.print("data: ");
+        //debug_.println(rc);
+        if (recvInProgress_ == true) 
+        {
+            if (rc != END_CHAR) 
+            {
+                buffer_ += rc;
+            }
+            else 
+            {
+                recvInProgress_ = false;
+                newData = true;
+                new_msg = buffer_;
+                buffer_ = "";
+                //debug_.println("Found end char");
+            }
+        }
+        else if (rc == START_CHAR) 
+        {
+            recvInProgress_ = true;
+            //debug_.println("Found start char");
+        }
     }
-    return msg;
+    return new_msg;
 }
 
 RobotServer::COMMAND RobotServer::getCommand(String message)
@@ -165,7 +196,9 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
 
 void RobotServer::sendMsg(String msg)
 {
-    serial_.print(msg + '\0');
+    serial_.print(START_CHAR);
+    serial_.print(msg);
+    serial_.print(END_CHAR);
     debug_.print("[RobotServer] Send: ");
     debug_.println(msg);
 }

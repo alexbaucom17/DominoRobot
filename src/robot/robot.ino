@@ -72,22 +72,22 @@ void runMotors()
 void loop() 
 {
     // Check for new command
-    // RobotServer::COMMAND newCmd = server.oneLoop();
+    RobotServer::COMMAND newCmd = server.oneLoop();
 
-    // if(newCmd != RobotServer::COMMAND::NONE)
-    // {
-    //     Serial.print("New command: ");
-    //     Serial.println(newCmd);
-    // }
-
-    RobotServer::COMMAND newCmd = RobotServer::COMMAND::NONE;
-    if (!moveSet && millis() - start1 > 5000)
+    if(newCmd != RobotServer::COMMAND::NONE)
     {
-        newCmd = RobotServer::COMMAND::MOVE;
-        curCmd = RobotServer::COMMAND::NONE;
-        moveSet = true;
-        Serial.println("Move set");
+        Serial.print("New command: ");
+        Serial.println(newCmd);
     }
+
+    // RobotServer::COMMAND newCmd = RobotServer::COMMAND::NONE;
+    // if (!moveSet && millis() - start1 > 5000)
+    // {
+    //     newCmd = RobotServer::COMMAND::MOVE;
+    //     curCmd = RobotServer::COMMAND::NONE;
+    //     moveSet = true;
+    //     Serial.println("Move set");
+    // }
 
     if(newCmd == RobotServer::COMMAND::MOVE && curCmd == RobotServer::COMMAND::NONE)
     {
