@@ -1,5 +1,6 @@
 #include "RobotController.h"
 #include "globals.h"
+#include <math.h>
 
 #define targetDelta 15
 #define targetMoveTime 3000
@@ -9,6 +10,13 @@ const float speed = 0.5;
 const double Kp = 200;
 const double Ki = 2000;
 const double Kd = 0;
+
+// Utility for getting sign of values
+// From: https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
+template <typename T> int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
+}
+
 
 RobotController::RobotController(HardwareSerial& debug)
 : motors{
@@ -65,75 +73,41 @@ void RobotController::update()
 
 void RobotController::setCommand(float x, float y, float a)
 {
-    // TODO: Make this use an actual controller method :)
+    // For now this is setting the velocity command. Eventually this will be setting the position command
 
-    int motorDirs[4];
 
-    // Forward
-    if(x == 1)
+    // TODO - handle total transtlational vel magnitude correctly
+    // Clamp input velocities
+    if(abs(x) > MAX_TRANS_SPEED)
     {
-        motorDirs[0] = -1;
-        motorDirs[1] = 1;
-        motorDirs[2] = -1;
-        motorDirs[3] = 1;
-        debug_.println("Setting motion to forward");
+        debug_.println("Capping x velocity");
+        x = sgn(x) * MAX_TRANS_SPEED;
     }
-    // Backwards
-    else if(x == -1)
+    if(abs(y) > MAX_TRANS_SPEED)
     {
-        motorDirs[0] = 1;
-        motorDirs[1] = -1;
-        motorDirs[2] = 1;
-        motorDirs[3] = -1;
-        debug_.println("Setting motion to backward");
+        debug_.println("Capping y velocity");
+        y = sgn(y) * MAX_TRANS_SPEED;
     }
-    // Left
-    else if(y == 1)
+    if(abs(a) > MAX_ROT_SPEED)
     {
-        motorDirs[0] = 1;
-        motorDirs[1] = 1;
-        motorDirs[2] = -1;
-        motorDirs[3] = -1;
-        debug_.println("Setting motion to left");
+        debug_.println("Capping angular velocity");
+        a = sgn(a) * MAX_ROT_SPEED;
     }
-    // Right
-    else if(y == -1)
-    {
-        motorDirs[0] = -1;
-        motorDirs[1] = -1;
-        motorDirs[2] = 1;
-        motorDirs[3] = 1;
-        debug_.println("Setting motion to right");
-    }
-    // Clockwise
-    else if(a == -1)
-    {
-        motorDirs[0] = -1;
-        motorDirs[1] = -1;
-        motorDirs[2] = -1;
-        motorDirs[3] = -1;
-        debug_.println("Setting motion to cw");
-    }
-    // Counter Clockwise
-    else if(a == 1)
-    {
-        motorDirs[0] = 1;
-        motorDirs[1] = 1;
-        motorDirs[2] = 1;
-        motorDirs[3] = 1;
-        debug_.println("Setting motion to ccw");
-    }
-    // Invalid
-    else
-    {
-        debug_.println("Invalid motion");
-        return;
-    }
+
+    // Convert input velocities to wheel speeds
+    float motorSpeed[4];
+    double s0 = sin(PI/4);
+    double c0 = cos(PI/4);
+
+    motorSpeed[0] = 1/WHEEL_DIAMETER * (-c0*x + s0*y + WHEEL_DIST_FROM_CENTER*a);
+    motorSpeed[1] = 1/WHEEL_DIAMETER * ( s0*x + c0*y + WHEEL_DIST_FROM_CENTER*a);
+    motorSpeed[2] = 1/WHEEL_DIAMETER * ( c0*x - s0*y + WHEEL_DIST_FROM_CENTER*a);
+    motorSpeed[3] = 1/WHEEL_DIAMETER * (-s0*x - c0*y + WHEEL_DIST_FROM_CENTER*a);
 
     // Set the commanded values for each motor
     for (int i = 0; i < 4; i++)
     {
-        motors[i].setCommand(speed * motorDirs[i]);
+        motors[i].setCommand(motorSpeed[i]);
     }
 
     moveStartTime_ = millis();

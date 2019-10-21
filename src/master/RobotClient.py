@@ -161,22 +161,14 @@ if __name__== '__main__':
     time.sleep(2)
     
     while(True):
-        dir = input("Direction to move: ")
-        if dir == "forward":
-            r.move(1.0,0.0,0.0)
-        elif dir == "backward":
-            r.move(-1.0,0.0,0.0)
-        elif dir == "left":
-            r.move(0.0,1.0,0.0)
-        elif dir == "right":
-            r.move(0,-1,0)
-        elif dir == "cw":
-            r.move(0.0,0.0,-1.0)
-        elif dir == "ccw":
-            r.move(0,0,1)
-        elif dir == "exit":
-            exit()
+        speed = input("Input move speed [x,y,a]: ").strip().split(',')
+        if len(speed) != 3:
+            print("Need to provide comma separated values.")
         else:
-            print("Unknown direction")
+            x = float(speed[0])
+            y = float(speed[1])
+            a = float(speed[2])
+            r.move(x,y,a)
+        
 
-        time.sleep(2)
+        time.sleep(3)
