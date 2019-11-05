@@ -6,7 +6,6 @@ import ctypes
 
 API_PATH = "marvelmind_SW_2019_08_25\\API\\api_windows_64bit\\dashapi.dll"
 
-
 def uint8_to_int32(uint8_arr):
     out_val = ctypes.c_int32()
     out_val = uint8_arr[0]
@@ -74,27 +73,28 @@ class MarvelMindWrapper:
         fn.restype = ctypes.c_bool
         fn.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
     
-        dataptr = ctypes.pointer(ctypes.c_uint8())
-        # status = fn(dataptr)
+        buff_size = 20 # TODO: Verify this
+        dataptr = (ctypes.c_uint8*buff_size)()
+        dataptr = ctypes.cast(dataptr, ctypes.POINTER(ctypes.c_uint8))
+        status = fn(dataptr)
 
-        # num_devices = dataptr[0]
+        num_devices = dataptr[0]
 
-        # print("Num devices: " + str(num_devices))
-        # idx = 1
-        # device_offset = 9
-        # addr_offset = 0
-        # sleep_offset = 2
-        # device_list = []
-        # for i in range(num_devices):
-        #     addr = dataptr[idx + addr_offset]
-        #     sleep = dataptr[idx + sleep_offset]
-        #     idx += device_offset
-        #     device = MarvelMindDevice(addr, sleep)
-        #     print(device)
-        #     device_list.append(device)
-
-        print("Returning")     
-        #return device_list
+        print("Num devices: " + str(num_devices))
+        idx = 1
+        device_offset = 9
+        addr_offset = 0
+        sleep_offset = 2
+        device_list = []
+        for i in range(num_devices):
+            addr = dataptr[idx + addr_offset]
+            sleep = dataptr[idx + sleep_offset]
+            idx += device_offset
+            device = MarvelMindDevice(addr, sleep)
+            print(device)
+            device_list.append(device)
+    
+        return device_list
 
     def wake_device(self, device):
         """
@@ -111,6 +111,8 @@ class MarvelMindWrapper:
             status = fn(device.address)
             if not status:
                 print("Warning: unable to wake device {}".format(device.address))
+            else:
+                device.sleep_status = 0
         else:
             print("Not waking device {}, already awake".format(device.address))
 
@@ -130,6 +132,8 @@ class MarvelMindWrapper:
             status = fn(device.address)
             if not status:
                 print("Warning: unable to sleep device {}".format(device.address))
+            else:
+                device.sleep_status = 1
         else:
             print("Not sleeping device {}, already asleep".format(device.address))
 
@@ -146,7 +150,9 @@ class MarvelMindWrapper:
         fn.restype = ctypes.c_bool
         fn.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
     
-        dataptr = ctypes.pointer(ctypes.c_uint8())
+        buff_size = 255 # TODO: Verify this
+        dataptr = (ctypes.c_uint8*buff_size)()
+        dataptr = ctypes.cast(dataptr, ctypes.POINTER(ctypes.c_uint8))
         status = fn(dataptr)
 
         num_points = 6 # Always returns last 6 points
@@ -165,36 +171,84 @@ class MarvelMindWrapper:
             z_point_offset = 10
             for i in range(num_points):
                 tmp_uint8_arr_type = ctypes.c_uint8 * 4
-                tmp_uint8_arr = tmp_uint8_arr_type(dataptr[idx + x_point_offset + 0],
-                                                   dataptr[idx + x_point_offset + 1],
+                tmp_uint8_arr = tmp_uint8_arr_type(dataptr[idx + x_point_offset + 3],
                                                    dataptr[idx + x_point_offset + 2],
-                                                   dataptr[idx + x_point_offset + 3])
+                                                   dataptr[idx + x_point_offset + 1],
+                                                   dataptr[idx + x_point_offset + 0])
                 x_point = uint8_to_int32(tmp_uint8_arr)
                 addr = dataptr[idx + dev_addr_offset]
                 print("New point")
                 print(addr)
-                print(tmp_uint8_arr[0])
-                print(tmp_uint8_arr[1])
-                print(tmp_uint8_arr[2])
                 print(tmp_uint8_arr[3])
+                print(tmp_uint8_arr[2])
+                print(tmp_uint8_arr[1])
+                print(tmp_uint8_arr[0])
                 print(x_point)
                 idx += point_size
 
 
+class RobotPositionHandler():
+
+    def __init__(self):
+
+        # Robot position queues
+        self.prev_positions = []
+
+        # TODO: Actually use config for root path and robot/mm device map
+        ROOT_PATH = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\"
+        self._mm = MarvelMindWrapper(ROOT_PATH)
+        self._mm._open_serial_port()
+
+        # Wake static beacons
+        static_beacons = DEVICE_MAP["static"]
+        for beacon in static_beacons:
+            self._mm.wake_device(beacon)
+
+    def close(self):
+        # Sleep static beacons
+        static_beacons = DEVICE_MAP["static"]
+        for beacon in static_beacons:
+            self._mm.sleep_device(beacon)
+
+        self._mm._close_serial_port()
+
+    def wake_robot(self, robot_number):
+        # Wake up all beacons on the given robot
+        robot_beacons = DEVICE_MAP[str(robot_number)]
+        for beacon in robot_beacons:
+            self._mm.wake_device(beacon)
+
+    def sleep_robot(self, robot_number):
+        # Sleep all beacons on the given robot
+        robot_beacons = DEVICE_MAP[str(robot_number)]
+        for beacon in robot_beacons:
+            self._mm.sleep_device(beacon)
+
+    def loop(self):
+        # Main loop that gets data from the marvelmind system and makes sense of it
+
+        for i in range(5):
+            self._mm.get_latest_location_data()
+
+    def get_all_devices(self):
+        a = self._mm.get_all_devices()
+
+        
+
+
+# Maps robot (or static) to sets of marvel mind beacons
+DEVICE_MAP = {
+    "static": (MarvelMindDevice(20,1), MarvelMindDevice(21,1)),
+    "1": (MarvelMindDevice(10,1), MarvelMindDevice(11,1))
+}
+    
+
 
 if __name__ == '__main__':
-    ROOT_PATH = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\"
-    #with MarvelMindWrapper(ROOT_PATH) as mm:
-    mm = MarvelMindWrapper(ROOT_PATH)
-    mm._open_serial_port()
-
-    mm.get_all_devices()
-
-    #devices = 
-    devices = [MarvelMindDevice(21,0), MarvelMindDevice(20,0)]
-    print(devices)
-    for d in devices:
-        mm.sleep_device(d)
-    mm.get_latest_location_data()
-
-    mm._close_serial_port()
+    
+    r = RobotPositionHandler()
+    r.wake_robot(1)
+    r.loop()
+    #r.get_all_devices()
+    r.sleep_robot(1)
+    r.close()
