@@ -148,7 +148,7 @@ class Master:
 
         while True:
             self.check_input()
-            #self.pos_handler.service_queues()
+            self.pos_handler.service_queues()
             self.rate.sleep()
 
 
