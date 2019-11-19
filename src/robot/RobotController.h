@@ -32,15 +32,18 @@ class RobotController
 
     // Member variables
     Motor motors[4];
-    unsigned long prevTime_;
-    unsigned long moveStartTime_;
+    unsigned long prevMotorLoopTime_;
     HardwareSerial& debug_;
     bool enabled_;
     TrajectoryGenerator trajGen_;
     Point cartPos_;
+    Point cartVel_;
     bool trajRunning_;
     unsigned long trajTime_;
-
+    float errSumX_;
+    float errSumY_;
+    float errSumA_;
+    float prevControlLoopTime_;
 
 };
 

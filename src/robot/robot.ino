@@ -31,7 +31,7 @@ void loop()
     if(newCmd == RobotServer::COMMAND::MOVE)
     {
         RobotServer::MoveData data = server.getMoveData();
-        controller.setCommand(data.x, data.y, data.a);
+        controller.moveToPosition(data.x, data.y, data.a);
     }
 
     // Service controller
