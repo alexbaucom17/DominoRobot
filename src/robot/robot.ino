@@ -30,8 +30,13 @@ void loop()
     // Handle new command
     if(newCmd == RobotServer::COMMAND::MOVE)
     {
-        RobotServer::MoveData data = server.getMoveData();
+        RobotServer::PositionData data = server.getMoveData();
         controller.moveToPosition(data.x, data.y, data.a);
+    }
+    else if (newCmd == RobotServer::COMMAND::POSITION)
+    {
+        RobotServer::PositionData data = server.getPositionData();
+        controller.inputPosition(data.x, data.y, data.a);
     }
 
     // Service controller

@@ -43,6 +43,11 @@ class Motor
      */
     void runLoop();
 
+    /*
+    * Get the current measured motor velocity
+    */
+    float getCurrentVelocity();
+
   private:
 
     // Pins

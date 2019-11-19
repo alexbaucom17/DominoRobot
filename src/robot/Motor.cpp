@@ -26,6 +26,11 @@ void Motor::setCommand(double vel)
   inputVel_ = vel;  
 }
 
+float Motor::getCurrentVelocity()
+{
+  return static_cast<float>(currentVelFiltered_);
+}
+
 void Motor::runLoop()
 {
 

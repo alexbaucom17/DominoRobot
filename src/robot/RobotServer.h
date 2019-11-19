@@ -31,7 +31,7 @@ class RobotServer
        STATUS
     };
 
-    struct MoveData
+    struct PositionData
     {
       float x;
       float y;
@@ -43,7 +43,9 @@ class RobotServer
 
     RobotServer::COMMAND oneLoop();
 
-    RobotServer::MoveData getMoveData();
+    RobotServer::PositionData getMoveData();
+
+    RobotServer::PositionData getPositionData();
 
   private:
 
@@ -54,7 +56,8 @@ class RobotServer
     bool recvInProgress_;
     int recvIdx_;
     String buffer_;
-    MoveData moveData_;
+    PositionData moveData_;
+    PositionData positionData_;
 
     String getAnyIncomingMessage();
     String cleanString(String message);

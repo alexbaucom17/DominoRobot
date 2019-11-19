@@ -174,6 +174,9 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
         {
             debug_.println("[RobotServer] Got POSITION command ");
             cmd = COMMAND::POSITION;
+            positionData_.x = doc["data"]["x"];
+            positionData_.y = doc["data"]["y"];
+            positionData_.a = doc["data"]["a"];
             sendAck(type);
         }
         else if(type == "status")
@@ -198,9 +201,14 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
     return cmd;    
 }
 
-RobotServer::MoveData RobotServer::getMoveData()
+RobotServer::PositionData RobotServer::getMoveData()
 {
     return moveData_;
+}
+
+RobotServer::PositionData RobotServer::getPositionData()
+{
+    return positionData_;
 }
 
 void RobotServer::sendMsg(String msg)

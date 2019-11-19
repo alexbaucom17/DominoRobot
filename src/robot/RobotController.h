@@ -21,7 +21,7 @@ class RobotController
 
     void disableAllMotors();
 
-    void inputPosition();
+    void inputPosition(float x, float y, float a);
 
   private:
 

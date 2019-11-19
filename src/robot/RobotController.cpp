@@ -71,8 +71,8 @@ void RobotController::update()
         computeControl(cmd);
         updateMotors();
 
-        // TODO: stop traj
-        if (something)
+        // Stop trajectory
+        if (checkForCompletedTrajectory(cmd))
         {
             disableAllMotors();
             trajRunning_ = false;
@@ -106,6 +106,18 @@ void RobotController::computeControl(PVTPoint cmd)
     setCartVelCommand(x_cmd, y_cmd, a_cmd);
 }
 
+bool RobotController::checkForCompletedTrajectory(PVTPoint cmd)
+{
+    if(cmd.velocity_.x_ == 0 && cmd.velocity_.y_ == 0 && cmd.velocity_.a_ == 0)
+    {
+        return true;
+    } 
+    else
+    {
+        return false;
+    }
+}
+
 void RobotController::enableAllMotors()
 {
     digitalWrite(PIN_ENABLE, 1);
@@ -124,9 +136,11 @@ void RobotController::disableAllMotors()
     debug_.println("Disabling motors");
 }
 
-void RobotController::inputPosition()
+void RobotController::inputPosition(float x, float y, float a)
 {
-  //TODO   
+    cartPos_.x_ = x;
+    cartPos_.y_ = y;
+    cartPos_.a_ = a;
 }
 
 void RobotController::updateMotors()
@@ -143,6 +157,17 @@ void RobotController::updateMotors()
             prevMotorLoopTime_ = millis();
         }
     }
+}
+
+void RobotController::computeOdometry()
+{
+    float cur_vel[4]
+    for(int i = 0; i < 4; i++)
+    {
+        cur_vel[i] = motors[i].getCurrentVelocity();
+    }
+
+    // TODO: Forward kinematics
 }
 
 void RobotController::setCartVelCommand(float vx, float vy, float va)
