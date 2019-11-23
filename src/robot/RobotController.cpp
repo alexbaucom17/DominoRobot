@@ -3,7 +3,7 @@
 #include <math.h>
 
 // Motor command loop time
-#define targetDelta 15
+#define targetDeltaMillis 15
 
 // Motor control gains
 const double Kp = 200;
@@ -67,6 +67,7 @@ void RobotController::update()
     if(trajRunning_)
     {
         float dt = static_cast<float>((millis() - trajTime_) / 1000.0); // Convert to seconds
+        trajTime_ = millis();
         PVTPoint cmd = trajGen_.lookup(dt);
         computeControl(cmd);
         updateMotors();
@@ -138,6 +139,8 @@ void RobotController::disableAllMotors()
 
 void RobotController::inputPosition(float x, float y, float a)
 {
+    // TODO - fuse with odom
+    // For now, just assume it is ground truth
     cartPos_.x_ = x;
     cartPos_.y_ = y;
     cartPos_.a_ = a;
@@ -148,26 +151,50 @@ void RobotController::updateMotors()
     if(enabled_)
     {
         unsigned long curTime = millis();
-        if(curTime - prevMotorLoopTime_ > targetDelta)
+        unsigned long deltaMillis = curTime - prevMotorLoopTime_;
+        if( deltaMillis > targetDeltaMillis)
         {
             for(int i = 0; i < 4; i++)
             {
                 motors[i].runLoop();
             }
+            computeOdometry(deltaMillis);
             prevMotorLoopTime_ = millis();
         }
     }
 }
 
-void RobotController::computeOdometry()
+void RobotController::computeOdometry(unsigned long deltaMillis)
 {
-    float cur_vel[4]
+    // Get wheel velocities from each motor
+    float motor_vel[4]
     for(int i = 0; i < 4; i++)
     {
-        cur_vel[i] = motors[i].getCurrentVelocity();
+        motor_vel[i] = motors[i].getCurrentVelocity();
     }
 
-    // TODO: Forward kinematics
+    // Do forward kinematics to compute local cartesian velocity
+    float local_cart_vel[3];
+    float s0 = 0.5 * WHEEL_DIAMETER * sin(PI/4);
+    float c0 = 0.5 * WHEEL_DIAMETER * cos(PI/4);
+    float d0 = WHEEL_DIAMETER / (4 * WHEEL_DIST_FROM_CENTER);
+    local_cart_vel[0] = -c0 * motor_vel[0] + s0 * motor_vel[1] + c0 * motor_vel[2] - s0 * motor_vel[3];
+    local_cart_vel[1] =  s0 * motor_vel[0] + c0 * motor_vel[1] - s0 * motor_vel[2] - c0 * motor_vel[3];
+    local_cart_vel[2] =  d0 * motor_vel[0] + d0 * motor_vel[1] + d0 * motor_vel[2] + d0 * motor_vel[3];
+
+    // Convert local cartesian velocity to global cartesian velocity using the last estimated angle
+    float cA = cos(cartPos_.a_);
+    float sA = sin(cartPos_.a_);
+    cartVel_.x_ = cA * local_cart_vel[0] - sA * local_cart_vel[1];
+    cartVel_.y_ = sA * local_cart_vel[0] + cA * local_cart_vel[1];
+    cartVel_.x_ = local_cart_vel[2];
+
+    // Use global velocity to compute global position
+    float dt = static_cast<float>(deltaMillis) / 1000.0;
+    cartPos_.x_ += cartVel_.x_ * dt; 
+    cartPos_.y_ += cartVel_.y_ * dt; 
+    cartPos_.a_ += cartVel_.a_ * dt; 
+
 }
 
 void RobotController::setCartVelCommand(float vx, float vy, float va)
@@ -190,15 +217,22 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
         va = sgn(va) * MAX_ROT_SPEED;
     }
 
-    // Convert input velocities to wheel speeds
-    float motorSpeed[4];
-    double s0 = sin(PI/4);
-    double c0 = cos(PI/4);
+    // Convert input global velocities to local velocities
+    float local_cart_vel[3];
+    float cA = cos(cartPos_.a_);
+    float sA = sin(cartPos_.a_);
+    local_cart_vel[0] = cA * vx - sA * vy;
+    local_cart_vel[1] = sA * vx + cA * vy;
+    local_cart_vel[2] = va;
 
-    motorSpeed[0] = 1/WHEEL_DIAMETER * (-c0*vx + s0*vy + WHEEL_DIST_FROM_CENTER*va);
-    motorSpeed[1] = 1/WHEEL_DIAMETER * ( s0*vx + c0*vy + WHEEL_DIST_FROM_CENTER*va);
-    motorSpeed[2] = 1/WHEEL_DIAMETER * ( c0*vx - s0*vy + WHEEL_DIST_FROM_CENTER*va);
-    motorSpeed[3] = 1/WHEEL_DIAMETER * (-s0*vx - c0*vy + WHEEL_DIST_FROM_CENTER*va);
+    // Convert local velocities to wheel speeds with inverse kinematics
+    float motorSpeed[4];
+    float s0 = sin(PI/4);
+    float c0 = cos(PI/4);
+    motorSpeed[0] = 1/WHEEL_DIAMETER * (-c0*local_cart_vel[0] + s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motorSpeed[1] = 1/WHEEL_DIAMETER * ( s0*local_cart_vel[0] + c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motorSpeed[2] = 1/WHEEL_DIAMETER * ( c0*local_cart_vel[0] - s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motorSpeed[3] = 1/WHEEL_DIAMETER * (-s0*local_cart_vel[0] - c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
 
     // Set the commanded values for each motor
     for (int i = 0; i < 4; i++)
