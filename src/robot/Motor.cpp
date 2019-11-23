@@ -1,5 +1,4 @@
 #include "Motor.h"
-#include <math.h>
 
 Motor::Motor(int pwmPin, int dirPin, int encPinA, int encPinB, double Kp, double Ki, double Kd)
 : pwmPin_(pwmPin),

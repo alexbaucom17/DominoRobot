@@ -2,6 +2,7 @@
 #define TrajectoryGenerator_h
 
 #include "globals.h"
+#include <ArduinoSTL.h>
 
 struct Point
 {
@@ -23,12 +24,18 @@ struct Point
 
     Point& operator+(const Point& p)
     {
-        return Point(x_ + p.x_, y_ + p.y_, a_ + p.a_);
+        x_ += p.x_;
+        y_ += p.y_;
+        a_ += p.a_;
+        return *this;
     }
 
     Point& operator-(const Point& p)
     {
-        return Point(x_ - p.x_, y_ - p.y_, a_ - p.a_);
+        x_ -= p.x_;
+        y_ -= p.y_;
+        a_ -= p.a_;
+        return *this;
     }
 };
 
@@ -38,6 +45,16 @@ struct PVTPoint
     Point position_;
     Point velocity_;
     float time_;
+};
+
+// Parameters for a 1D constant acceleration trajectory
+struct trajParams
+{
+    float p0_;    // Start position
+    float v0_;    // Start velocity
+    float t0_;    // Start time
+    float a_;     // Const acceleration
+    float t_end_; // End time
 };
 
 
@@ -52,16 +69,6 @@ class TrajectoryGenerator
 
     private:
 
-        // Parameters for a 1D constant acceleration trajectory
-        struct trajParams
-        {
-            float p0_;    // Start position
-            float v0_;    // Start velocity
-            float t0_;    // Start time
-            float a_;     // Const acceleration
-            float t_end_; // End time
-        };
-
         // Doesn't handle magnitude of 2D trajectories right now, but that
         // can be a future improvement if needed
         struct MultiTrajectory
@@ -72,8 +79,8 @@ class TrajectoryGenerator
         };
         
         // Helper functions
-        std::vector<trajParams> generate_triangle_1D(float startPos, float endPos) const;
-        std::vector<trajParams> generate_trapazoid_1D(float startPos, float endPos) const;
+        std::vector<trajParams> generate_triangle_1D(float startPos, float endPos, float maxVel, float maxAcc) const;
+        std::vector<trajParams> generate_trapazoid_1D(float startPos, float endPos, float maxVel, float maxAcc) const;
         std::vector<float> lookup_1D(float time, std::vector<trajParams> traj) const;
 
         MultiTrajectory currentTraj_;

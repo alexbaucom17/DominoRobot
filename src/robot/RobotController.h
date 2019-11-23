@@ -42,7 +42,7 @@ class RobotController
     // Check if the current trajectory is done
     bool checkForCompletedTrajectory(PVTPoint cmd);
     // Calculate wheel odometry
-    void computeOdometry(unsigned long deltaMillis)
+    void computeOdometry(unsigned long deltaMillis);
 
     // Member variables
     Motor motors[4];                       // Motor interface objects

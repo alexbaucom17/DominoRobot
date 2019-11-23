@@ -41,7 +41,7 @@ RobotController::RobotController(HardwareSerial& debug)
   trajTime_(0),
   errSumX_(0),
   errSumY_(0),
-  errSumY_(0),
+  errSumA_(0),
   prevControlLoopTime_(0)
 {
     pinMode(PIN_ENABLE,OUTPUT);
@@ -49,7 +49,7 @@ RobotController::RobotController(HardwareSerial& debug)
 
 void RobotController::moveToPosition(float x, float y, float a)
 {
-    trajGen_.generate(cartPos_, Point(x,y,a))
+    trajGen_.generate(cartPos_, Point(x,y,a));
     trajRunning_ = true;
     trajTime_ = millis();
     prevControlLoopTime_ = 0;
@@ -100,7 +100,7 @@ void RobotController::computeControl(PVTPoint cmd)
 
     // a control 
     float posErrA = cmd.position_.a_ - cartPos_.a_;
-    float velErrA = cmd.velocity_.a_ - cartVel_.a_
+    float velErrA = cmd.velocity_.a_ - cartVel_.a_;
     errSumA_ += posErrA * dt;
     float a_cmd = cartRotKp * posErrA + cartRotKd * velErrA + cartRotKi * errSumA_;
 
@@ -167,7 +167,7 @@ void RobotController::updateMotors()
 void RobotController::computeOdometry(unsigned long deltaMillis)
 {
     // Get wheel velocities from each motor
-    float motor_vel[4]
+    float motor_vel[4];
     for(int i = 0; i < 4; i++)
     {
         motor_vel[i] = motors[i].getCurrentVelocity();

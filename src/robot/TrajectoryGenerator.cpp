@@ -1,8 +1,15 @@
 #include "TrajectoryGenerator.h"
 #include <math.h>
 
+// Utility for getting sign of values
+// From: https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
+template <typename T> int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
+}
+
+
 TrajectoryGenerator::TrajectoryGenerator()
-  : currentTraj_(0),
+  : currentTraj_(),
     timeForConstVelTrans_(MAX_TRANS_SPEED / MAX_TRANS_ACC),
     posForConstVelTrans_(0.5 * MAX_TRANS_ACC * timeForConstVelTrans_ * timeForConstVelTrans_),
     timeForConstVelRot_(MAX_ROT_SPEED / MAX_ROT_ACC),
@@ -15,7 +22,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     Point deltaPoint = targetPoint - initialPoint;
 
     // Compute X trajectory
-    if(math.abs(deltaPoint.x_) < posForConstVelTrans_)
+    if(abs(deltaPoint.x_) < posForConstVelTrans_)
     {
         currentTraj_.xtraj_ = generate_triangle_1D(initialPoint.x_, targetPoint.x_, MAX_TRANS_SPEED, MAX_TRANS_ACC);
     }
@@ -25,7 +32,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     }
 
     // Compute y trajectory
-    if(math.abs(deltaPoint.y_) < posForConstVelTrans_)
+    if(abs(deltaPoint.y_) < posForConstVelTrans_)
     {
         currentTraj_.ytraj_ = generate_triangle_1D(initialPoint.y_, targetPoint.y_, MAX_TRANS_SPEED, MAX_TRANS_ACC);
     }
@@ -35,7 +42,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     }
 
     // Compute angle trajectory
-    if(math.abs(deltaPoint.a_) < posForConstVelRot_)
+    if(abs(deltaPoint.a_) < posForConstVelRot_)
     {
         currentTraj_.atraj_ = generate_triangle_1D(initialPoint.a_, targetPoint.a_, MAX_ROT_SPEED, MAX_ROT_ACC);
     }
@@ -52,8 +59,8 @@ std::vector<trajParams> TrajectoryGenerator::generate_triangle_1D(float startPos
     std::vector<trajParams> outTraj;
 
     float deltaPosition = endPos - startPos;
-    int dir = math.sign(deltaPosition);
-    float halfwayTime = math.sqrt(2 * math.abs(deltaPosition) / maxAcc);
+    int dir = sgn(deltaPosition);
+    float halfwayTime = sqrt(2 * abs(deltaPosition) / maxAcc);
 
     // First phase - acceleration
     trajParams phase1;
@@ -62,7 +69,7 @@ std::vector<trajParams> TrajectoryGenerator::generate_triangle_1D(float startPos
     phase1.p0_ = startPos;
     phase1.v0_ = 0;
     phase1.a_ = dir*maxAcc;
-    outTraj.extend(phase1);
+    outTraj.push_back(phase1);
 
     // Second phase - deceleration
     trajParams phase2;
@@ -71,7 +78,7 @@ std::vector<trajParams> TrajectoryGenerator::generate_triangle_1D(float startPos
     phase2.p0_ = phase1.p0_ + 0.5 * phase1.a_ * halfwayTime * halfwayTime;
     phase2.v0_ = phase1.a_ * halfwayTime;
     phase2.a_ = -1 * phase1.a_;
-    outTraj.extend(phase2);
+    outTraj.push_back(phase2);
 
     return outTraj;
 }
@@ -81,12 +88,12 @@ std::vector<trajParams> TrajectoryGenerator::generate_trapazoid_1D(float startPo
     std::vector<trajParams> outTraj;
 
     float deltaPosition = endPos - startPos;
-    int dir = math.sign(deltaPosition);
+    int dir = sgn(deltaPosition);
     
     float timeToReachConstVel = maxVel / maxAcc;
     float posToReachConstVel = 0.5 * maxAcc * timeToReachConstVel * timeToReachConstVel;
-    float deltaPositionConstVel = math.abs(deltaPosition) - 2 * posToReachConstVel;
-    float deltaTimeConstVel = math.abs(deltaPosition) / maxVel;
+    float deltaPositionConstVel = abs(deltaPosition) - 2 * posToReachConstVel;
+    float deltaTimeConstVel = abs(deltaPosition) / maxVel;
 
     // First phase - acceleration to max vel
     trajParams phase1;
@@ -95,7 +102,7 @@ std::vector<trajParams> TrajectoryGenerator::generate_trapazoid_1D(float startPo
     phase1.p0_ = startPos;
     phase1.v0_ = 0;
     phase1.a_ = dir*maxAcc;
-    outTraj.extend(phase1);
+    outTraj.push_back(phase1);
 
     // Second phase - constant velocity
     trajParams phase2;
@@ -104,7 +111,7 @@ std::vector<trajParams> TrajectoryGenerator::generate_trapazoid_1D(float startPo
     phase2.p0_ = phase1.p0_ + dir * posToReachConstVel;
     phase2.v0_ = maxVel;
     phase2.a_ = 0;
-    outTraj.extend(phase2);
+    outTraj.push_back(phase2);
 
     // Third phase - deceleration
     trajParams phase3;
@@ -113,7 +120,7 @@ std::vector<trajParams> TrajectoryGenerator::generate_trapazoid_1D(float startPo
     phase3.p0_ = phase2.p0_ + dir * deltaPositionConstVel; // Same position change for deceleration
     phase3.v0_ = maxVel;
     phase3.a_ = -1 * phase1.a_;
-    outTraj.extend(phase3);
+    outTraj.push_back(phase3);
 
     return outTraj;
 }
@@ -138,7 +145,7 @@ PVTPoint TrajectoryGenerator::lookup(float time)
     return outPoint;
 }
 
-std::vector<float> TrajectoryGenerator:lookup_1D(float time, std::vector<trajParams> traj) const
+std::vector<float> TrajectoryGenerator::lookup_1D(float time, std::vector<trajParams> traj) const
 {
     // Returns [pos, vel] at current time
 
@@ -175,6 +182,7 @@ std::vector<float> TrajectoryGenerator:lookup_1D(float time, std::vector<trajPar
             }
         }
     }
-    
-    return std::vector<float>(pos, vel);
+
+    std::vector<float> rtn = {pos, vel};
+    return rtn;
 }
