@@ -3,13 +3,16 @@ import os
 
 class Config:
 
+    # ====== PATHS ========
 
-    # Paths
     root_path = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\"
     api_relative_path = "marvelmind_SW_2019_08_25\\API\\api_windows_64bit\\dashapi.dll"
     config_dir_path = os.path.dirname(os.path.realpath(__file__))
     plan_file = os.path.join(config_dir_path, 'plan.p')
     api_path = os.path.join(root_path, api_relative_path)
+
+
+    # ====== ROBOT CONFIG ========
 
     # Maps robot (or static) to sets of marvel mind beacons
     # Defining first device in list as the one on the left side of the robot
@@ -17,6 +20,12 @@ class Config:
     "static": (1, 2),
     "1": (5, 6)
     }
+
+    # Specifies which IP address each robot has
+    ip_map = {1: '192.168.1.3'}
+
+
+    # ====== PLAN GENERATION ========
 
     # Image configuration
     image_name = os.path.join(config_dir_path, 'MR.jpg')
@@ -52,6 +61,9 @@ class Config:
     tile_size_x_meters = tile_width * (domino_spacing_x + domino_width)
     tile_size_y_meters = tile_height * (domino_spacing_y + domino_height)
 
+
+    # ====== ENVIRONMENT CONFIGURATION ========
+
     # Map configuration (distances in meters, angles in degrees)
     robot_boundaries = np.array([[0,0],[20,15]])
     base_station_boundaries = np.array([[3,0],[10,2]])
@@ -64,11 +76,3 @@ class Config:
     domino_field_boundaries = np.array([domino_field_origin,domino_field_origin + np.array([field_width,field_height])])
     prep_position_distance = 2 # How far out of field boundaries to do robot prep move
     exit_position_distance = 2 # How far out of the field boundaries to move to exit
-
-    # Arm configuration
-    n_arms = 3
-
-    # Robot configuration
-    n_available_robots = 4
-    n_charging_ports = 2
-    frame_tile_to_robot = np.array([0.2, -0.25])

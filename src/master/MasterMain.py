@@ -107,7 +107,7 @@ class Master:
         self.pos_handler.wake_robot(robot_id)
 
         # Setup robot clients and communication
-        self.robot_client = RobotClient(robot_id)
+        self.robot_client = RobotClient(cfg, robot_id)
 
         # Setup other miscellaneous variables
         self.rate = Rate(20)

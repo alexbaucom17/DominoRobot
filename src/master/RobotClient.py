@@ -7,8 +7,6 @@ import json
 import time
 
 PORT = 1234
-ID_TO_IP_DICT = {1: '192.168.1.13',
-                 2: '192.168.1.14'}
 NET_TIMEOUT = 10 # seconds
 START_CHAR = "<"
 END_CHAR = ">"
@@ -73,9 +71,10 @@ class TcpClient:
 
 class RobotClient:
 
-    def __init__(self, robot_id):
+    def __init__(self, cfg, robot_id):
         self.robot_id = robot_id
-        self.client = TcpClient(ID_TO_IP_DICT[self.robot_id], PORT, NET_TIMEOUT)
+        self.client = TcpClient(cfg.ip_map[self.robot_id], PORT, NET_TIMEOUT)
+        self.cfg = cfg
 
     def wait_for_server_response(self, timeout=3):
         """
