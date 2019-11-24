@@ -1,13 +1,13 @@
-import FieldPlanner
-import config
 import os
 import pickle
-from MarvelMindHandler import RobotPositionHandler
 import time
-from RobotClient import RobotClient
 import msvcrt
 import copy
 import sys
+import config
+import FieldPlanner
+from MarvelMindHandler import RobotPositionHandler
+from RobotClient import RobotClient
 
 
 def doWaypointGeneration(cfg, draw = False):
@@ -103,7 +103,7 @@ class Master:
         robot_id = 1
 
         # Setup marvelmind devices and position handler
-        self.pos_handler = RobotPositionHandler()
+        self.pos_handler = RobotPositionHandler(cfg)
         self.pos_handler.wake_robot(robot_id)
 
         # Setup robot clients and communication

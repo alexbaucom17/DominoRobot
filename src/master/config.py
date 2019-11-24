@@ -3,9 +3,20 @@ import os
 
 class Config:
 
+
+    # Paths
+    root_path = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\"
+    api_relative_path = "marvelmind_SW_2019_08_25\\API\\api_windows_64bit\\dashapi.dll"
     config_dir_path = os.path.dirname(os.path.realpath(__file__))
     plan_file = os.path.join(config_dir_path, 'plan.p')
+    api_path = os.path.join(root_path, api_relative_path)
 
+    # Maps robot (or static) to sets of marvel mind beacons
+    # Defining first device in list as the one on the left side of the robot
+    device_map = {
+    "static": (1, 2),
+    "1": (5, 6)
+    }
 
     # Image configuration
     image_name = os.path.join(config_dir_path, 'MR.jpg')

@@ -30,17 +30,6 @@ class MarvelMindPoint:
         else:
             return False
 
-class MarvelMindDevice:
-    """
-    Simple class to hold device data
-    """
-    def __init__(self, address, sleep_status):
-        self.address = address
-        self.sleep_status = sleep_status
-
-    def __str__(self):
-        return "Device: {}, Sleep: {}".format(self.address, self.sleep_status)
-
 def uint8_to_int32(uint8_arr):
     """
     Converts array of 4 uint8 values to an int32
@@ -85,21 +74,10 @@ def extract_point_data(ptr, start_idx):
 
     return point
 
-
-API_PATH = "marvelmind_SW_2019_08_25\\API\\api_windows_64bit\\dashapi.dll"
-
-# Maps robot (or static) to sets of marvel mind beacons
-# Defining first device in list as the one on the left side of the robot
-DEVICE_MAP = {
-    "static": (MarvelMindDevice(1,1), MarvelMindDevice(2,1)),
-    "1": (MarvelMindDevice(5,1), MarvelMindDevice(6,1))
-}
-
-
 class MarvelMindWrapper:
 
-    def __init__(self, root_path):
-        self.lib = ctypes.windll.LoadLibrary(root_path + API_PATH)
+    def __init__(self, cfg):
+        self.lib = ctypes.windll.LoadLibrary(cfg.mm_api_path)
 
     def __enter__(self):
         self._open_serial_port()
@@ -136,7 +114,7 @@ class MarvelMindWrapper:
     def get_all_devices(self):
         """
         Get list of all devices connected to the modem (including sleeping ones).
-        Returns list of MarvelMindDevice objects
+        Returns list of beacon addresses
         """
 
         print("Getting device list")
@@ -159,54 +137,39 @@ class MarvelMindWrapper:
         device_list = []
         for i in range(num_devices):
             addr = dataptr[idx + addr_offset]
-            sleep = dataptr[idx + sleep_offset]
             idx += device_offset
-            device = MarvelMindDevice(addr, sleep)
-            print(device)
-            device_list.append(device)
+            device_list.append(addr)
     
         return device_list
 
-    def wake_device(self, device):
+    def wake_device(self, address):
         """
-        Wake up the device if needed
-        Device should be a MarvelMindDevice object
-        """
-
-        if device.sleep_status:
-            print("Waking device: {}".format(device.address))
-            fn = self.lib.mm_wake_device
-            fn.restype = ctypes.c_bool
-            fn.argtypes = [ctypes.c_uint8]
-
-            status = fn(device.address)
-            if not status:
-                print("Warning: unable to wake device {}".format(device.address))
-            else:
-                device.sleep_status = 0
-        else:
-            print("Not waking device {}, already awake".format(device.address))
-
-
-    def sleep_device(self, device):
-        """
-        Sleep the device if needed
-        Device should be a MarvelMindDevice object
+        Wake up the device with the given address
         """
 
-        if not device.sleep_status:
-            print("Sleeping device: {}".format(device.address))
-            fn = self.lib.mm_send_to_sleep_device
-            fn.restype = ctypes.c_bool
-            fn.argtypes = [ctypes.c_uint8]
+        print("Waking device: {}".format(address))
+        fn = self.lib.mm_wake_device
+        fn.restype = ctypes.c_bool
+        fn.argtypes = [ctypes.c_uint8]
 
-            status = fn(device.address)
-            if not status:
-                print("Warning: unable to sleep device {}".format(device.address))
-            else:
-                device.sleep_status = 1
-        else:
-            print("Not sleeping device {}, already asleep".format(device.address))
+        status = fn(address)
+        if not status:
+            print("Warning: unable to wake device {}".format(address))
+
+
+    def sleep_device(self, address):
+        """
+        Sleep the device with the given address
+        """
+
+        print("Sleeping device: {}".format(address))
+        fn = self.lib.mm_send_to_sleep_device
+        fn.restype = ctypes.c_bool
+        fn.argtypes = [ctypes.c_uint8]
+
+        status = fn(address)
+        if not status:
+            print("Warning: unable to sleep device {}".format(address))
 
 
 
@@ -241,28 +204,27 @@ class MarvelMindWrapper:
 
 class RobotPositionHandler():
 
-    def __init__(self):
+    def __init__(self, cfg):
 
-        # TODO: Actually use config for root path and robot/mm device map
-        ROOT_PATH = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\"
-        self._mm = MarvelMindWrapper(ROOT_PATH)
+        self._mm = MarvelMindWrapper(cfg)
         self._mm._open_serial_port()
+        self.cfg = cfg
 
         # Wake static beacons
-        static_beacons = DEVICE_MAP["static"]
+        static_beacons = self.cfg.device_map["static"]
         for beacon in static_beacons:
             self._mm.wake_device(beacon)
 
         # Initialize position queues
         self.max_device_queue_size = 15
         self.device_position_queues = {}
-        for beacon_pairs in DEVICE_MAP.values():
+        for beacon_pairs in self.cfg.device_map.values():
             for beacon in beacon_pairs:
                 self.device_position_queues[beacon.address] = []
 
         self.max_robot_queue_size = 5
         self.robot_position_queues = {}
-        for robot_name in DEVICE_MAP:
+        for robot_name in self.cfg.device_map:
             if robot_name == 'static':
                 continue
             self.robot_position_queues[robot_name] = []
@@ -270,7 +232,7 @@ class RobotPositionHandler():
 
     def close(self):
         # Sleep static beacons
-        static_beacons = DEVICE_MAP["static"]
+        static_beacons = self.cfg.device_map["static"]
         for beacon in static_beacons:
             self._mm.sleep_device(beacon)
 
@@ -278,13 +240,13 @@ class RobotPositionHandler():
 
     def wake_robot(self, robot_number):
         # Wake up all beacons on the given robot
-        robot_beacons = DEVICE_MAP[str(robot_number)]
+        robot_beacons = self.cfg.device_map[str(robot_number)]
         for beacon in robot_beacons:
             self._mm.wake_device(beacon)
 
     def sleep_robot(self, robot_number):
         # Sleep all beacons on the given robot
-        robot_beacons = DEVICE_MAP[str(robot_number)]
+        robot_beacons = self.cfg.device_map[str(robot_number)]
         for beacon in robot_beacons:
             self._mm.sleep_device(beacon)
 
@@ -319,7 +281,7 @@ class RobotPositionHandler():
 
                 # Marvelmind doesn't send any timing information about the measurments and it will
                 # gladly send repeat data, so this is just a simple way to only update the position
-                # if it has changed. Thankfully, the devices are quite sensitive and even sitting very
+                # if it has changed. Thankfully, the devices are quite sensitive and even sitting very still
                 # will trigger very small fluctuations in the position. So this should continue
                 # to update the queues pretty regularly. If it isn't regular or accurate enough, I may need
                 # to look into other ways to handle this
@@ -335,12 +297,12 @@ class RobotPositionHandler():
     def _update_robot_positions(self):
         # Handle the math of transforming device positions into robot positions and angles
 
-        for robot_name in DEVICE_MAP:
+        for robot_name in self.cfg.device_map:
             if robot_name == 'static':
                 continue
 
             # Get position data from the robot beacons
-            beacons = DEVICE_MAP[robot_name]
+            beacons = self.cfg.device_map[robot_name]
             p0 = self._get_device_position(beacons[0].address)
             p1 = self._get_device_position(beacons[1].address)
 
@@ -377,7 +339,7 @@ class RobotPositionHandler():
                 # Insert the new position, angle, and time into the queue
                 cur_queue.insert(0,(x,y,angle, t)) # Add new element to front of queue
                 if len(cur_queue) > self.max_robot_queue_size:
-                    cur_queue.pop # remove element from end of list
+                    cur_queue.pop() # remove element from end of list
 
 
 if __name__ == '__main__':
