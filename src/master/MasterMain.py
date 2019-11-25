@@ -103,8 +103,8 @@ class Master:
         robot_id = 1
 
         # Setup marvelmind devices and position handler
-        self.pos_handler = RobotPositionHandler(cfg)
-        self.pos_handler.wake_robot(robot_id)
+        # self.pos_handler = RobotPositionHandler(cfg)
+        # self.pos_handler.wake_robot(robot_id)
 
         # Setup robot clients and communication
         self.robot_client = RobotClient(cfg, robot_id)
@@ -115,17 +115,24 @@ class Master:
         self.cfg = cfg
 
         # Wait a little while for setup to finish
-        sleep_time = 30
-        print('Waiting {} seconds for beacons to fully wake up'.format(sleep_time))
-        time.sleep(sleep_time)
+        # sleep_time = 30
+        # print('Waiting {} seconds for beacons to fully wake up'.format(sleep_time))
+        # time.sleep(sleep_time)
 
         print("Starting loop")
 
     def cleanup(self):
 
         print("Cleaning up")
-        self.pos_handler.sleep_robot(1)
-        self.pos_handler.close()
+        # self.pos_handler.sleep_robot(1)
+        # self.pos_handler.close()
+
+    def checkNetworkStatus(self):
+        net_status = self.robot_client.net_status()
+        if net_status:
+            print("Network status of Robot 1 is GOOD")
+        else:
+            print("Network status of Robot 1 is BAD")
 
     def check_input(self):
 
@@ -142,13 +149,15 @@ class Master:
             elif "quit" in data:
                 self.cleanup()
                 sys.exit()
+            elif "net" in data:
+                self.checkNetworkStatus()
 
 
     def loop(self):
 
         while True:
             self.check_input()
-            self.pos_handler.service_queues()
+            #self.pos_handler.service_queues()
             self.rate.sleep()
 
 

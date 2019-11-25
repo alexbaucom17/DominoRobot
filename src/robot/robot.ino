@@ -8,9 +8,6 @@
 #include "RobotServer.h"
 #include "RobotController.h"
 
-unsigned long startTime;
-unsigned long prevTime;
-
 RobotServer server = RobotServer(Serial3, Serial);
 RobotController controller = RobotController(Serial);
 

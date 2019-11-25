@@ -3,6 +3,7 @@
 
 #include "globals.h"
 #include <ArduinoSTL.h>
+#include <HardwareSerial.h>
 
 struct Point
 {
@@ -37,6 +38,17 @@ struct Point
         a_ -= p.a_;
         return *this;
     }
+
+    void print(HardwareSerial& debug)
+    {
+      debug.print("[X: ");
+      debug.print(x_);
+      debug.print(", Y: ");
+      debug.print(y_);
+      debug.print(", A: ");
+      debug.print(a_);
+      debug.print("]");
+    }
 };
 
 
@@ -45,6 +57,17 @@ struct PVTPoint
     Point position_;
     Point velocity_;
     float time_;
+
+    void print(HardwareSerial& debug)
+    {
+      debug.print("[Position: ");
+      position_.print(debug);
+      debug.print(", Velocity: ");
+      velocity_.print(debug);
+      debug.print(", T: ");
+      debug.print(time_);
+      debug.print("]");
+    }
 };
 
 // Parameters for a 1D constant acceleration trajectory
@@ -55,6 +78,21 @@ struct trajParams
     float t0_;    // Start time
     float a_;     // Const acceleration
     float t_end_; // End time
+
+    void print(HardwareSerial& debug)
+    {
+      debug.print("[p0: ");
+      debug.print(p0_);
+      debug.print(", v0: ");
+      debug.print(v0_);
+      debug.print(", t0: ");
+      debug.print(t0_);
+      debug.print(", a: ");
+      debug.print(a_);
+      debug.print(", tend: ");
+      debug.print(t_end_);
+      debug.print("]");
+    }
 };
 
 
@@ -63,7 +101,7 @@ class TrajectoryGenerator
 
     public:
 
-        TrajectoryGenerator();
+        TrajectoryGenerator(HardwareSerial& debug);
         void generate(const Point& initialPoint, const Point& targetPoint);
         PVTPoint lookup(float time);
 
@@ -76,6 +114,28 @@ class TrajectoryGenerator
             std::vector<trajParams> xtraj_;
             std::vector<trajParams> ytraj_;
             std::vector<trajParams> atraj_;
+
+            void print(HardwareSerial& debug)
+            {
+              debug.println("XTRAJ:");
+              for(int i = 0; i < xtraj_.size(); i++)
+              {
+                xtraj_[i].print(debug);
+                debug.println("");
+              }
+              debug.println("YTRAJ:");
+              for(int i = 0; i < ytraj_.size(); i++)
+              {
+                ytraj_[i].print(debug);
+                debug.println("");
+              }
+              debug.println("ATRAJ:");
+              for(int i = 0; i < atraj_.size(); i++)
+              {
+                atraj_[i].print(debug);
+                debug.println("");
+              }
+            }
         };
         
         // Helper functions
@@ -88,6 +148,7 @@ class TrajectoryGenerator
         const float posForConstVelTrans_;
         const float timeForConstVelRot_;
         const float posForConstVelRot_;
+        HardwareSerial& debug_;
 
 
 };

@@ -7,7 +7,7 @@ import json
 import time
 
 PORT = 1234
-NET_TIMEOUT = 10 # seconds
+NET_TIMEOUT = 5 # seconds
 START_CHAR = "<"
 END_CHAR = ">"
 
@@ -108,7 +108,20 @@ class RobotClient:
                 raise ValueError('Error: Expecting return type ack')
             elif resp['data'] != msg['type']:
                 raise ValueError('Error: Incorrect ack type')
+        
+        return resp
             
+    def net_status(self):
+        """ Check if the network connection is ok"""
+        msg = {'type': 'check'}
+        status = True
+        try:
+            self.send_msg_and_wait_for_ack(msg)
+        except:
+            status = False
+        finally:
+            return status
+        
 
     def move(self, x, y, a):
         """ Tell robot to move to specific location """

@@ -28,7 +28,8 @@ class RobotServer
        DROPOFF,
        PICKUP,
        POSITION,
-       STATUS
+       STATUS,
+       CHECK
     };
 
     struct PositionData

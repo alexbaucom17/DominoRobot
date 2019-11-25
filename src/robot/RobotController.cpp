@@ -34,7 +34,7 @@ RobotController::RobotController(HardwareSerial& debug)
   prevMotorLoopTime_(millis()),
   debug_(debug),
   enabled_(false),
-  trajGen_(),
+  trajGen_(debug),
   cartPos_(0),
   cartVel_(0),
   trajRunning_(false),
@@ -68,7 +68,11 @@ void RobotController::update()
     {
         float dt = static_cast<float>((millis() - trajTime_) / 1000.0); // Convert to seconds
         trajTime_ = millis();
+        debug_.print("dt: ");
+        debug_.println(dt);
         PVTPoint cmd = trajGen_.lookup(dt);
+        debug_.print("PVT: ");
+        cmd.print(debug_);
         computeControl(cmd);
         updateMotors();
 

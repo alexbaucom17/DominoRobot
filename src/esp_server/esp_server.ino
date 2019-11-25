@@ -7,8 +7,8 @@
 
 #include "ESP8266WiFi.h"
  
-const char* ssid = "DominoNet";
-const char* password =  "DominoBot";
+const char* ssid = "DominoNet1";
+const char* password =  "DominoBot1234";
 const int port = 1234;
  
 WiFiServer wifiServer(port);

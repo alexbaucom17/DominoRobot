@@ -60,7 +60,7 @@ RobotServer::COMMAND RobotServer::oneLoop()
         if(printDebug)
         {
             debug_.print("[RobotServer] ");
-            debug_.print("RCV: ");
+            debug_.print("RX: ");
             debug_.println(newMsg);
         }
 
@@ -118,8 +118,8 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
     StaticJsonDocument<256> doc;
     DeserializationError err = deserializeJson(doc, message);
 
-    debug_.print("[RobotServer] GetCommand(): ");
-    debug_.println(message);
+    //debug_.print("[RobotServer] GetCommand(): ");
+    //debug_.println(message);
 
     if(err)
     {
@@ -185,6 +185,12 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
             cmd = COMMAND::STATUS;
             sendStatus();
         }
+        else if (type == "check")
+        {
+            debug_.println("[RobotServer] Got CHECK command");
+            cmd = COMMAND::CHECK;
+            sendAck(type);
+        }
         else if(type == "")
         {
             debug_.println("[RobotServer] ERROR: Type field empty or not specified ");
@@ -216,7 +222,7 @@ void RobotServer::sendMsg(String msg)
     serial_.print(START_CHAR);
     serial_.print(msg);
     serial_.print(END_CHAR);
-    debug_.print("[RobotServer] Send: ");
+    debug_.print("[RobotServer] TX: ");
     debug_.println(msg);
 }
 

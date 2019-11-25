@@ -8,18 +8,27 @@ template <typename T> int sgn(T val) {
 }
 
 
-TrajectoryGenerator::TrajectoryGenerator()
+TrajectoryGenerator::TrajectoryGenerator(HardwareSerial& debug)
   : currentTraj_(),
     timeForConstVelTrans_(MAX_TRANS_SPEED / MAX_TRANS_ACC),
     posForConstVelTrans_(0.5 * MAX_TRANS_ACC * timeForConstVelTrans_ * timeForConstVelTrans_),
     timeForConstVelRot_(MAX_ROT_SPEED / MAX_ROT_ACC),
-    posForConstVelRot_(0.5 * MAX_ROT_ACC * timeForConstVelRot_ * timeForConstVelRot_)
+    posForConstVelRot_(0.5 * MAX_ROT_ACC * timeForConstVelRot_ * timeForConstVelRot_),
+    debug_(debug)
 {
 }
 
 void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targetPoint)
 {
     Point deltaPoint = targetPoint - initialPoint;
+
+    debug_.println("Generating trajectory");
+    debug_.println("Starting point:");
+    initialPoint.print(debug_);
+    debug_.println("");
+    debug_.println("Target point: ");
+    targetPoint.print(debug_);
+    debug_.println("");
 
     // Compute X trajectory
     if(abs(deltaPoint.x_) < posForConstVelTrans_)
@@ -50,6 +59,8 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     {
         currentTraj_.atraj_ = generate_trapazoid_1D(initialPoint.a_, targetPoint.a_, MAX_ROT_SPEED, MAX_ROT_ACC);
     }
+
+    currentTraj_.print(debug_);
     
 }
 
