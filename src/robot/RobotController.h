@@ -53,7 +53,7 @@ class RobotController
     Point cartPos_;                        // Current cartesian position
     Point cartVel_;                        // Current cartesian velocity
     bool trajRunning_;                     // If a trajectory is currently active
-    unsigned long trajTime_;               // Holds milliseconds when last trajectory loop was computed
+    unsigned long trajStartTime_;          // Holds milliseconds when trajecotry was started
     float errSumX_;                        // Sum of error in X dimension for integral control
     float errSumY_;                        // Sum of error in Y dimension for integral control
     float errSumA_;                        // Sum of error in A dimension for integral control

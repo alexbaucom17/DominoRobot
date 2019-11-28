@@ -38,7 +38,7 @@ RobotController::RobotController(HardwareSerial& debug)
   cartPos_(0),
   cartVel_(0),
   trajRunning_(false),
-  trajTime_(0),
+  trajStartTime_(0),
   errSumX_(0),
   errSumY_(0),
   errSumA_(0),
@@ -51,7 +51,7 @@ void RobotController::moveToPosition(float x, float y, float a)
 {
     trajGen_.generate(cartPos_, Point(x,y,a));
     trajRunning_ = true;
-    trajTime_ = millis();
+    trajStartTime_ = millis();
     prevControlLoopTime_ = 0;
     enableAllMotors();
     debug_.println("Starting move");
@@ -66,8 +66,7 @@ void RobotController::update()
 {
     if(trajRunning_)
     {
-        float dt = static_cast<float>((millis() - trajTime_) / 1000.0); // Convert to seconds
-        trajTime_ = millis();
+        float dt = static_cast<float>((millis() - trajStartTime_) / 1000.0); // Convert to seconds
         debug_.print("dt: ");
         debug_.println(dt);
         PVTPoint cmd = trajGen_.lookup(dt);
