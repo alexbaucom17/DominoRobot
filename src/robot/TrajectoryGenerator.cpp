@@ -31,7 +31,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     debug_.println("");
 
     // Compute X trajectory
-    if(abs(deltaPoint.x_) < posForConstVelTrans_)
+    if(fabs(deltaPoint.x_) < posForConstVelTrans_)
     {
         currentTraj_.xtraj_ = generate_triangle_1D(initialPoint.x_, targetPoint.x_, MAX_TRANS_SPEED, MAX_TRANS_ACC);
     }
@@ -41,7 +41,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     }
 
     // Compute y trajectory
-    if(abs(deltaPoint.y_) < posForConstVelTrans_)
+    if(fabs(deltaPoint.y_) < posForConstVelTrans_)
     {
         currentTraj_.ytraj_ = generate_triangle_1D(initialPoint.y_, targetPoint.y_, MAX_TRANS_SPEED, MAX_TRANS_ACC);
     }
@@ -51,7 +51,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     }
 
     // Compute angle trajectory
-    if(abs(deltaPoint.a_) < posForConstVelRot_)
+    if(fabs(deltaPoint.a_) < posForConstVelRot_)
     {
         currentTraj_.atraj_ = generate_triangle_1D(initialPoint.a_, targetPoint.a_, MAX_ROT_SPEED, MAX_ROT_ACC);
     }
@@ -71,7 +71,7 @@ std::vector<trajParams> TrajectoryGenerator::generate_triangle_1D(float startPos
 
     float deltaPosition = endPos - startPos;
     int dir = sgn(deltaPosition);
-    float halfwayTime = sqrt(2 * abs(deltaPosition) / maxAcc);
+    float halfwayTime = sqrt(2 * fabs(deltaPosition) / maxAcc);
 
     // First phase - acceleration
     trajParams phase1;
@@ -103,8 +103,8 @@ std::vector<trajParams> TrajectoryGenerator::generate_trapazoid_1D(float startPo
     
     float timeToReachConstVel = maxVel / maxAcc;
     float posToReachConstVel = 0.5 * maxAcc * timeToReachConstVel * timeToReachConstVel;
-    float deltaPositionConstVel = abs(deltaPosition) - 2 * posToReachConstVel;
-    float deltaTimeConstVel = abs(deltaPosition) / maxVel;
+    float deltaPositionConstVel = fabs(deltaPosition) - 2 * posToReachConstVel;
+    float deltaTimeConstVel = fabs(deltaPositionConstVel) / maxVel;
 
     // First phase - acceleration to max vel
     trajParams phase1;

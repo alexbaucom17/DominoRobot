@@ -11,11 +11,12 @@
 #include <PID_v1.h>
 #include <Filters.h>
 
-const unsigned int COUNTS_PER_MOTOR_REV = 44; 
+/*const unsigned int COUNTS_PER_MOTOR_REV = 44; 
 const unsigned int MOTOR_GEAR_RATIO = 40;
 const double FUDGE_FACTOR = 1.5;
-const double COUNTS_PER_SHAFT_REV = COUNTS_PER_MOTOR_REV * MOTOR_GEAR_RATIO * FUDGE_FACTOR;
-#define VEL_FILTER_FREQ 10 // HZ
+const double COUNTS_PER_SHAFT_REV = COUNTS_PER_MOTOR_REV * MOTOR_GEAR_RATIO * FUDGE_FACTOR;*/
+#define VEL_FILTER_FREQ 7 // HZ
+const double COUNTS_PER_SHAFT_REV = 2758; //Manually measured
 
 class Motor
 {
@@ -56,9 +57,10 @@ class Motor
 
     // Values for computation
     double inputVel_;              // Desired velocity in revs/sec
-    double currentVelRaw_;            // Raw current velocity in revs/sec
-    double currentVelFiltered_;
-    double outputCmd_;             // Output command in [-255, 255]
+    double currentVelRaw_;         // Raw current velocity in revs/sec
+    double currentVelFiltered_;    // Filtered velocity in revs/sec
+    double pidOut_;                // Output from PID controller
+    int outputCmd_;             // Output command in [-255, 255]
     long prevCount_;               // Encoder count from previous loop
 
     // Timer

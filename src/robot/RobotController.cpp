@@ -6,8 +6,8 @@
 #define targetDeltaMillis 15
 
 // Motor control gains
-const double Kp = 200;
-const double Ki = 2000;
+const double Kp = 70;
+const double Ki = 1;
 const double Kd = 0;
 
 // Cartesian control gains
@@ -67,11 +67,10 @@ void RobotController::update()
     if(trajRunning_)
     {
         float dt = static_cast<float>((millis() - trajStartTime_) / 1000.0); // Convert to seconds
-        debug_.print("dt: ");
-        debug_.println(dt);
         PVTPoint cmd = trajGen_.lookup(dt);
         debug_.print("PVT: ");
         cmd.print(debug_);
+        debug_.println("");
         computeControl(cmd);
         updateMotors();
 
@@ -204,17 +203,25 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
 {
     // TODO - handle total transtlational vel magnitude correctly
     // Clamp input velocities
-    if(abs(vx) > MAX_TRANS_SPEED)
+    debug_.print("CartVelCmd: [vx: ");
+    debug_.print(vx);
+    debug_.print(", vy ");
+    debug_.print(vy);
+    debug_.print(", va: ");
+    debug_.print(va);
+    debug_.println("]");
+    
+    if(fabs(vx) > MAX_TRANS_SPEED)
     {
         debug_.println("Capping vx velocity");
         vx = sgn(vx) * MAX_TRANS_SPEED;
     }
-    if(abs(vy) > MAX_TRANS_SPEED)
+    if(fabs(vy) > MAX_TRANS_SPEED)
     {
         debug_.println("Capping vy velocity");
         vy = sgn(vy) * MAX_TRANS_SPEED;
     }
-    if(abs(va) > MAX_ROT_SPEED)
+    if(fabs(va) > MAX_ROT_SPEED)
     {
         debug_.println("Capping angular velocity");
         va = sgn(va) * MAX_ROT_SPEED;

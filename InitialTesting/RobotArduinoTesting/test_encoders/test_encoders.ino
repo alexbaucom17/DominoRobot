@@ -1,23 +1,23 @@
 // Pins
 #define PIN_ENCA_1 21
 #define PIN_ENCA_2 20
-#define PIN_ENCA_3 19
-#define PIN_ENCA_4 18
+#define PIN_ENCA_3 18
+#define PIN_ENCA_4 19
 
 #define PIN_ENCB_1 25
 #define PIN_ENCB_2 24
-#define PIN_ENCB_3 23
-#define PIN_ENCB_4 22
+#define PIN_ENCB_3 22
+#define PIN_ENCB_4 23
 
 #include <Encoder.h>
 
-Encoder encoder(PIN_ENCA_2, PIN_ENCB_2);
+Encoder encoder(PIN_ENCA_3, PIN_ENCB_3);
 
 long pos = -999;
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println("Encoder Test:");
 }
 
