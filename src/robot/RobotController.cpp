@@ -14,8 +14,8 @@ const double Kd = 0;
 const float cartTransKp = 2;
 const float cartTransKi = 0.1;
 const float cartTransKd = 0;
-const float cartRotKp = 1;
-const float cartRotKi = 0;
+const float cartRotKp = 2;
+const float cartRotKi = 0.1;
 const float cartRotKd = 0;
 
 // Utility for getting sign of values
@@ -95,6 +95,10 @@ void RobotController::update()
       errSumX_ = 0;
       errSumY_ = 0;
       errSumA_ = 0;
+      // Make sure velocity doesn't carry over
+      cartVel_.x_ = 0;
+      cartVel_.y_ = 0;
+      cartVel_.a_ = 0;
     }
 
     // Motor update should always be running
@@ -170,19 +174,16 @@ void RobotController::inputPosition(float x, float y, float a)
 
 void RobotController::updateMotors()
 {
-    if(enabled_)
+    unsigned long curTime = millis();
+    unsigned long deltaMillis = curTime - prevMotorLoopTime_;
+    if( deltaMillis > targetDeltaMillis)
     {
-        unsigned long curTime = millis();
-        unsigned long deltaMillis = curTime - prevMotorLoopTime_;
-        if( deltaMillis > targetDeltaMillis)
+        for(int i = 0; i < 4; i++)
         {
-            for(int i = 0; i < 4; i++)
-            {
-                motors[i].runLoop();
-            }
-            computeOdometry(deltaMillis);
-            prevMotorLoopTime_ = millis();
+            motors[i].runLoop();
         }
+        computeOdometry(deltaMillis);
+        prevMotorLoopTime_ = millis();
     }
 }
 
@@ -252,8 +253,8 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     float local_cart_vel[3];
     float cA = cos(cartPos_.a_);
     float sA = sin(cartPos_.a_);
-    local_cart_vel[0] = cA * vx - sA * vy;
-    local_cart_vel[1] = sA * vx + cA * vy;
+    local_cart_vel[0] =  cA * vx + sA * vy;
+    local_cart_vel[1] = -sA * vx + cA * vy;
     local_cart_vel[2] = va;
 
     // Convert local velocities to wheel speeds with inverse kinematics
@@ -271,8 +272,5 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
         // Need to convert motor speed into revs/sec from rad/sec
         motorSpeed[i] = motorSpeed[i] / (2.0 * PI * FUDGE_FACTOR);
         motors[i].setCommand(motorSpeed[i]);
-        //debug_.println(motorSpeed[i], 4);
     }
-
-    //debug_.println(motors[2].getCounts());
 }
