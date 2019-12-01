@@ -22,12 +22,16 @@
 #define PIN_PWM_4 4
 
 // Constants
-#define MAX_WHEEL_SPEED 6.0   // rad/s - current motor can only do about 1 rev/s under load
-#define MAX_TRANS_SPEED 0.2  // m/s
+#define MAX_WHEEL_SPEED 1.0   // rad/s - current motor can only do about 1 rev/s under load
+#define MAX_TRANS_SPEED 0.5  // m/s
 #define MAX_ROT_SPEED 0.5      // rad/2
 
 #define MAX_TRANS_ACC 0.5    // m/s^2
-#define MAX_ROT_ACC   1.0      // rad/s^2
+#define MAX_ROT_ACC   0.5      // rad/s^2
+
+#define TRAJ_MAX_FRACTION 0.7  // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate
 
 #define WHEEL_DIAMETER 0.1016 // meters
 #define WHEEL_DIST_FROM_CENTER 0.3548 // meters
+
+#define FUDGE_FACTOR 0.55 // Fudgy scaling factor to use until I find where my actual scaling problem is. Scales how far the robot has actually moved when it thinks it has moved 1 meter

@@ -7,20 +7,27 @@ template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
 
+const float TRAJ_MAX_TRANS_SPEED = TRAJ_MAX_FRACTION * MAX_TRANS_SPEED;
+const float TRAJ_MAX_TRANS_ACC = TRAJ_MAX_FRACTION * MAX_TRANS_ACC;
+const float TRAJ_MAX_ROT_SPEED = TRAJ_MAX_FRACTION * MAX_ROT_SPEED;
+const float TRAJ_MAX_ROT_ACC = TRAJ_MAX_FRACTION * MAX_ROT_ACC;
 
 TrajectoryGenerator::TrajectoryGenerator(HardwareSerial& debug)
   : currentTraj_(),
-    timeForConstVelTrans_(MAX_TRANS_SPEED / MAX_TRANS_ACC),
-    posForConstVelTrans_(0.5 * MAX_TRANS_ACC * timeForConstVelTrans_ * timeForConstVelTrans_),
-    timeForConstVelRot_(MAX_ROT_SPEED / MAX_ROT_ACC),
-    posForConstVelRot_(0.5 * MAX_ROT_ACC * timeForConstVelRot_ * timeForConstVelRot_),
+    timeForConstVelTrans_(TRAJ_MAX_TRANS_SPEED / TRAJ_MAX_TRANS_ACC),
+    posForConstVelTrans_(0.5 * TRAJ_MAX_TRANS_ACC * timeForConstVelTrans_ * timeForConstVelTrans_),
+    timeForConstVelRot_(TRAJ_MAX_ROT_SPEED / TRAJ_MAX_ROT_ACC),
+    posForConstVelRot_(0.5 * TRAJ_MAX_ROT_ACC * timeForConstVelRot_ * timeForConstVelRot_),
     debug_(debug)
 {
 }
 
 void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targetPoint)
 {
-    Point deltaPoint = targetPoint - initialPoint;
+    Point deltaPoint;
+    deltaPoint.x_ = targetPoint.x_ - initialPoint.x_;
+    deltaPoint.y_ = targetPoint.y_ - initialPoint.y_;
+    deltaPoint.a_ = targetPoint.a_ - initialPoint.a_;
 
     debug_.println("Generating trajectory");
     debug_.println("Starting point:");
@@ -33,31 +40,31 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     // Compute X trajectory
     if(fabs(deltaPoint.x_) < posForConstVelTrans_)
     {
-        currentTraj_.xtraj_ = generate_triangle_1D(initialPoint.x_, targetPoint.x_, MAX_TRANS_SPEED, MAX_TRANS_ACC);
+        currentTraj_.xtraj_ = generate_triangle_1D(initialPoint.x_, targetPoint.x_, TRAJ_MAX_TRANS_SPEED, TRAJ_MAX_TRANS_ACC);
     }
     else
     {
-        currentTraj_.xtraj_ = generate_trapazoid_1D(initialPoint.x_, targetPoint.x_, MAX_TRANS_SPEED, MAX_TRANS_ACC);
+        currentTraj_.xtraj_ = generate_trapazoid_1D(initialPoint.x_, targetPoint.x_, TRAJ_MAX_TRANS_SPEED, TRAJ_MAX_TRANS_ACC);
     }
 
     // Compute y trajectory
     if(fabs(deltaPoint.y_) < posForConstVelTrans_)
     {
-        currentTraj_.ytraj_ = generate_triangle_1D(initialPoint.y_, targetPoint.y_, MAX_TRANS_SPEED, MAX_TRANS_ACC);
+        currentTraj_.ytraj_ = generate_triangle_1D(initialPoint.y_, targetPoint.y_, TRAJ_MAX_TRANS_SPEED, TRAJ_MAX_TRANS_ACC);
     }
     else
     {
-        currentTraj_.ytraj_ = generate_trapazoid_1D(initialPoint.y_, targetPoint.y_, MAX_TRANS_SPEED, MAX_TRANS_ACC);
+        currentTraj_.ytraj_ = generate_trapazoid_1D(initialPoint.y_, targetPoint.y_, TRAJ_MAX_TRANS_SPEED, TRAJ_MAX_TRANS_ACC);
     }
 
     // Compute angle trajectory
     if(fabs(deltaPoint.a_) < posForConstVelRot_)
     {
-        currentTraj_.atraj_ = generate_triangle_1D(initialPoint.a_, targetPoint.a_, MAX_ROT_SPEED, MAX_ROT_ACC);
+        currentTraj_.atraj_ = generate_triangle_1D(initialPoint.a_, targetPoint.a_, TRAJ_MAX_ROT_SPEED, TRAJ_MAX_ROT_ACC);
     }
     else
     {
-        currentTraj_.atraj_ = generate_trapazoid_1D(initialPoint.a_, targetPoint.a_, MAX_ROT_SPEED, MAX_ROT_ACC);
+        currentTraj_.atraj_ = generate_trapazoid_1D(initialPoint.a_, targetPoint.a_, TRAJ_MAX_ROT_SPEED, TRAJ_MAX_ROT_ACC);
     }
 
     currentTraj_.print(debug_);
@@ -120,7 +127,7 @@ std::vector<trajParams> TrajectoryGenerator::generate_trapazoid_1D(float startPo
     phase2.t0_ = phase1.t_end_;
     phase2.t_end_ = phase2.t0_ + deltaTimeConstVel;
     phase2.p0_ = phase1.p0_ + dir * posToReachConstVel;
-    phase2.v0_ = maxVel;
+    phase2.v0_ = dir*maxVel;
     phase2.a_ = 0;
     outTraj.push_back(phase2);
 
@@ -129,7 +136,7 @@ std::vector<trajParams> TrajectoryGenerator::generate_trapazoid_1D(float startPo
     phase3.t0_ = phase2.t_end_;
     phase3.t_end_ = phase3.t0_ + timeToReachConstVel; // Same time for deceleration as acceleration
     phase3.p0_ = phase2.p0_ + dir * deltaPositionConstVel; // Same position change for deceleration
-    phase3.v0_ = maxVel;
+    phase3.v0_ = dir*maxVel;
     phase3.a_ = -1 * phase1.a_;
     outTraj.push_back(phase3);
 

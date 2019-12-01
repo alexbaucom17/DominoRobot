@@ -15,38 +15,14 @@ struct Point
         : x_(x), y_(y), a_(a)
     {}
 
-    Point& operator=(const Point& p)
-    {
-        x_ = p.x_;
-        y_ = p.y_;
-        a_ = p.a_;
-        return *this;
-    }
-
-    Point& operator+(const Point& p)
-    {
-        x_ += p.x_;
-        y_ += p.y_;
-        a_ += p.a_;
-        return *this;
-    }
-
-    Point& operator-(const Point& p)
-    {
-        x_ -= p.x_;
-        y_ -= p.y_;
-        a_ -= p.a_;
-        return *this;
-    }
-
     void print(HardwareSerial& debug)
     {
       debug.print("[X: ");
-      debug.print(x_);
+      debug.print(x_, 4);
       debug.print(", Y: ");
-      debug.print(y_);
+      debug.print(y_, 4);
       debug.print(", A: ");
-      debug.print(a_);
+      debug.print(a_, 4);
       debug.print("]");
     }
 };
@@ -65,7 +41,7 @@ struct PVTPoint
       debug.print(", Velocity: ");
       velocity_.print(debug);
       debug.print(", T: ");
-      debug.print(time_);
+      debug.print(time_, 4);
       debug.print("]");
     }
 };
@@ -82,15 +58,15 @@ struct trajParams
     void print(HardwareSerial& debug)
     {
       debug.print("[p0: ");
-      debug.print(p0_);
+      debug.print(p0_, 4);
       debug.print(", v0: ");
-      debug.print(v0_);
+      debug.print(v0_, 4);
       debug.print(", t0: ");
-      debug.print(t0_);
+      debug.print(t0_, 4);
       debug.print(", a: ");
-      debug.print(a_);
+      debug.print(a_, 4);
       debug.print(", tend: ");
-      debug.print(t_end_);
+      debug.print(t_end_, 4);
       debug.print("]");
     }
 };

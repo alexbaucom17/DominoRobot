@@ -49,6 +49,9 @@ class Motor
     */
     float getCurrentVelocity();
 
+    // Get number of counts from encoder - for debugging
+    long getCounts();
+
   private:
 
     // Pins

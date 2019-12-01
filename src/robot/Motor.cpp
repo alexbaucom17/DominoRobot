@@ -31,6 +31,11 @@ float Motor::getCurrentVelocity()
   return static_cast<float>(currentVelFiltered_);
 }
 
+long Motor::getCounts()
+{
+  return enc_.read();
+}
+
 void Motor::runLoop()
 {
 
@@ -67,9 +72,17 @@ void Motor::runLoop()
   outputCmd_ += int(pidOut_);
 
   // Set a deadband region based on input vel to avoid integral windup
-  if(fabs(inputVel_) < 0.005)
+  if(fabs(inputVel_) < 0.001)
   {
     outputCmd_ = 0;
+    // Make sure that the integral term in the pid loop also gets reset
+    //controller_.SetOutputLimits(0.0, 1.0); //Forces minimum up to 0.0
+    //controller_.SetOutputLimits(-1.0, 0.0); //Forces maximum down to 0.0   
+  }
+  else
+  {
+    // Reset output limits back to normal
+   // controller_.SetOutputLimits(-255, 255);
   }
 
   // Make sure we don't exceed max/min power
