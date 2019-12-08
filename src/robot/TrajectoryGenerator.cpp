@@ -38,7 +38,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     debug_.println("");
 
     // Compute X trajectory
-    if(fabs(deltaPoint.x_) < posForConstVelTrans_)
+    if(fabs(deltaPoint.x_) < 2*posForConstVelTrans_)
     {
         currentTraj_.xtraj_ = generate_triangle_1D(initialPoint.x_, targetPoint.x_, TRAJ_MAX_TRANS_SPEED, TRAJ_MAX_TRANS_ACC);
     }
@@ -48,7 +48,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     }
 
     // Compute y trajectory
-    if(fabs(deltaPoint.y_) < posForConstVelTrans_)
+    if(fabs(deltaPoint.y_) < 2*posForConstVelTrans_)
     {
         currentTraj_.ytraj_ = generate_triangle_1D(initialPoint.y_, targetPoint.y_, TRAJ_MAX_TRANS_SPEED, TRAJ_MAX_TRANS_ACC);
     }
@@ -58,7 +58,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     }
 
     // Compute angle trajectory
-    if(fabs(deltaPoint.a_) < posForConstVelRot_)
+    if(fabs(deltaPoint.a_) < 2*posForConstVelRot_)
     {
         currentTraj_.atraj_ = generate_triangle_1D(initialPoint.a_, targetPoint.a_, TRAJ_MAX_ROT_SPEED, TRAJ_MAX_ROT_ACC);
     }
