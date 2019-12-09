@@ -7,6 +7,7 @@
 #define RobotServer_h
 
 #include <HardwareSerial.h>
+#include "StatusUpdater.h"
 
 #define START_CHAR '<'
 #define END_CHAR '>'
@@ -40,7 +41,7 @@ class RobotServer
     };
     
     // Constructor
-    RobotServer(HardwareSerial& serial, HardwareSerial& debug);
+    RobotServer(HardwareSerial& serial, HardwareSerial& debug, const StatusUpdater& statusUpdater);
 
     RobotServer::COMMAND oneLoop();
 
@@ -63,6 +64,8 @@ class RobotServer
     String getAnyIncomingMessage();
     String cleanString(String message);
     COMMAND getCommand(String message);
+
+    const StatusUpdater& statusUpdater_;
     
     void sendMsg(String msg);
     void sendAck(String data);

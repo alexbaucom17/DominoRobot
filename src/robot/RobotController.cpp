@@ -25,7 +25,7 @@ template <typename T> int sgn(T val) {
 }
 
 
-RobotController::RobotController(HardwareSerial& debug)
+RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater)
 : motors{
     Motor(PIN_PWM_1, PIN_DIR_1, PIN_ENCA_1, PIN_ENCB_1, Kp, Ki, Kd),
     Motor(PIN_PWM_2, PIN_DIR_2, PIN_ENCA_2, PIN_ENCB_2, Kp, Ki, Kd),
@@ -42,7 +42,8 @@ RobotController::RobotController(HardwareSerial& debug)
   errSumX_(0),
   errSumY_(0),
   errSumA_(0),
-  prevControlLoopTime_(0)
+  prevControlLoopTime_(0),
+  statusUpdater_(statusUpdater)
 {
     pinMode(PIN_ENABLE,OUTPUT);
 }
@@ -103,6 +104,11 @@ void RobotController::update()
 
     // Motor update should always be running
     updateMotors();
+
+    // Update status 
+    statusUpdater_.updatePosition(cartPos_.x_, cartPos_.y_, cartPos_.a_);
+    statusUpdater_.updateVelocity(cartVel_.x_, cartVel_.y_, cartVel_.a_);
+    statusUpdater_.updateFrequencies(100.0, 100.0); // TODO: Actually compute this
 }
 
 void RobotController::computeControl(PVTPoint cmd)

@@ -3,7 +3,7 @@
 #include "RobotServer.h"
 #include <ArduinoJson.h>
 
-RobotServer::RobotServer(HardwareSerial& serial, HardwareSerial& debug)
+RobotServer::RobotServer(HardwareSerial& serial, HardwareSerial& debug, const StatusUpdater& statusUpdater)
 : serial_(serial),
   debug_(debug),
   clientConnected_(false),
@@ -11,7 +11,8 @@ RobotServer::RobotServer(HardwareSerial& serial, HardwareSerial& debug)
   recvInProgress_(false),
   recvIdx_(0),
   buffer_(""),
-  moveData_()
+  moveData_(),
+  statusUpdater_(statusUpdater)
 {
     serial_.begin(115200);
 }
@@ -248,10 +249,6 @@ void RobotServer::sendErr(String data)
 
 void RobotServer::sendStatus()
 {
-    StaticJsonDocument<256> doc;
-    doc["type"] = "status";
-    doc["data"] = "not implimented";
-    String msg;
-    serializeJson(doc, msg);
+    String msg = statusUpdater_.getStatusJsonString();
     sendMsg(msg);
 }

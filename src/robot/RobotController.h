@@ -4,13 +4,14 @@
 #include "Motor.h"
 #include "TrajectoryGenerator.h"
 #include <HardwareSerial.h>
+#include "StatusUpdater.h"
 
 class RobotController
 {
   public:
 
     // Constructor
-    RobotController(HardwareSerial& debug);
+    RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater);
 
     // Command robot to move a specific position
     void moveToPosition(float x, float y, float a);
@@ -58,6 +59,8 @@ class RobotController
     float errSumY_;                        // Sum of error in Y dimension for integral control
     float errSumA_;                        // Sum of error in A dimension for integral control
     float prevControlLoopTime_;            // Previous time through the cartesian control loop
+
+    StatusUpdater& statusUpdater_;
 
 };
 

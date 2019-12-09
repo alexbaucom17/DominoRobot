@@ -7,9 +7,11 @@
 
 #include "RobotServer.h"
 #include "RobotController.h"
+#include "StatusUpdater.h"
 
-RobotServer server = RobotServer(Serial3, Serial);
-RobotController controller = RobotController(Serial);
+StatusUpdater statusUpdater;
+RobotServer server = RobotServer(Serial3, Serial, statusUpdater);
+RobotController controller = RobotController(Serial, statusUpdater);
 
 void setup()
 {
@@ -23,12 +25,14 @@ void loop()
 {
     // Check for new command
     RobotServer::COMMAND newCmd = server.oneLoop();
+    statusUpdater.update_task("NONE");
 
     // Handle new command
     if(newCmd == RobotServer::COMMAND::MOVE)
     {
         RobotServer::PositionData data = server.getMoveData();
         controller.moveToPosition(data.x, data.y, data.a);
+        statusUpdater.update_task("MOVE");
     }
     else if (newCmd == RobotServer::COMMAND::POSITION)
     {
