@@ -14,6 +14,8 @@ KalmanFilter::KalmanFilter(
 {
 }
 
+KalmanFilter::KalmanFilter() {}
+
 void KalmanFilter::init(double t0, const mat& x0) 
 {
   x_hat = x0;

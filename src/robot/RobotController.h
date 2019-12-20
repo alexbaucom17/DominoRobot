@@ -5,10 +5,13 @@
 #include "TrajectoryGenerator.h"
 #include <HardwareSerial.h>
 #include "StatusUpdater.h"
+#include "KalmanFilter.h"
 
 class RobotController
 {
   public:
+
+    // TODO: Convert a bunch of the math here to use the new LinearAlgebra library
 
     // Constructor
     RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater);
@@ -61,6 +64,9 @@ class RobotController
     float prevControlLoopTime_;            // Previous time through the cartesian control loop
 
     StatusUpdater& statusUpdater_;
+
+    // Kalman filter stuff
+    KalmanFilter kf_;
 
 };
 

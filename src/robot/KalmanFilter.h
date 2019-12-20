@@ -30,6 +30,11 @@ class KalmanFilter
     );
 
     /**
+     * Empty constructor
+     */
+    KalmanFilter();
+
+    /**
      * Initialize the filter with initial states as zero.
      */
     void init();

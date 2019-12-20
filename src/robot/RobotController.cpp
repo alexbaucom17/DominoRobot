@@ -1,9 +1,12 @@
 #include "RobotController.h"
 #include "globals.h"
 #include <math.h>
+#include <LinearAlgebra.h>
 
 // Motor command loop time
 #define targetDeltaMillis 15
+
+// TODO: Clean up globals
 
 // Motor control gains
 const double Kp = 70;
@@ -46,6 +49,22 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
   statusUpdater_(statusUpdater)
 {
     pinMode(PIN_ENABLE,OUTPUT);
+
+    // Setup Kalman filter
+    double dt = 0.1;
+    mat A = mat::identity(6);
+    mat B = mat::zeros(6,3);
+    mat C = mat::identity(6);
+    mat Q = mat::identity(6);
+    mat R = mat::zeros(6,6);
+    mat P = mat::identity(6);
+    A(3,3) = 0;
+    A(4,4) = 0;
+    A(5,5) = 0;
+    B(3,0) = 1;
+    B(4,1) = 1;
+    B(5,2) = 1;
+    kf_ = KalmanFilter(dt, A, B, C, Q, R, P);
 }
 
 void RobotController::moveToPosition(float x, float y, float a)
@@ -65,10 +84,11 @@ void RobotController::moveToPositionFine(float x, float y, float a)
 
 void RobotController::update()
 {
+    PVTPoint cmd;
     if(trajRunning_)
     {
         float dt = static_cast<float>((millis() - trajStartTime_) / 1000.0); // Convert to seconds
-        PVTPoint cmd = trajGen_.lookup(dt);
+        cmd = trajGen_.lookup(dt);
 
         debug_.println("");
         debug_.print("PVT: ");
@@ -81,8 +101,6 @@ void RobotController::update()
         cartPos_.print(debug_);
         debug_.println("");
        
-        computeControl(cmd);
-
         // Stop trajectory
         if (checkForCompletedTrajectory(cmd))
         {
@@ -92,17 +110,27 @@ void RobotController::update()
     }
     else
     {
-      // Make sure integral terms don't wind up
-      errSumX_ = 0;
-      errSumY_ = 0;
-      errSumA_ = 0;
-      // Make sure velocity doesn't carry over
-      cartVel_.x_ = 0;
-      cartVel_.y_ = 0;
-      cartVel_.a_ = 0;
+        // Force cmd to 0
+        cmd.position_.x_ = cartPos_.x_;
+        cmd.position_.y_ = cartPos_.y_;
+        cmd.position_.a_ = cartPos_.a_;;
+        cmd.velocity_.x_ = 0;
+        cmd.velocity_.y_ = 0;
+        cmd.velocity_.a_ = 0;
+        cmd.time_ = prevControlLoopTime_ + 0.01; // TODO fix this
+
+        // Make sure integral terms don't wind up
+        errSumX_ = 0;
+        errSumY_ = 0;
+        errSumA_ = 0;
+        // Make sure velocity doesn't carry over
+        cartVel_.x_ = 0;
+        cartVel_.y_ = 0;
+        cartVel_.a_ = 0;
     }
 
-    // Motor update should always be running
+    // Run controller and motor update
+    computeControl(cmd);
     updateMotors();
 
     // Update status 
@@ -116,6 +144,8 @@ void RobotController::computeControl(PVTPoint cmd)
     float dt = cmd.time_ - prevControlLoopTime_;
     prevControlLoopTime_ = cmd.time_;
     
+    // TODO: Make controller use matrix math
+
     // x control 
     float posErrX = cmd.position_.x_ - cartPos_.x_;
     float velErrX = cmd.velocity_.x_ - cartVel_.x_;
@@ -135,6 +165,20 @@ void RobotController::computeControl(PVTPoint cmd)
     float a_cmd = cmd.velocity_.a_ + cartRotKp * posErrA + cartRotKd * velErrA + cartRotKi * errSumA_;
 
     setCartVelCommand(x_cmd, y_cmd, a_cmd);
+
+    // Kalman filter prediction
+    mat u = mat::zeros(3,1);
+    u(0,0) = x_cmd;
+    u(1,0) = y_cmd;
+    u(2,0) = a_cmd;
+    mat A = mat::identity(6);
+    A(0,3) = dt;
+    A(1,4) = dt;
+    A(2,5) = dt;
+    A(3,3) = 0;
+    A(4,4) = 0;
+    A(5,5) = 0;
+    kf_.predict(dt, A, u);
 }
 
 bool RobotController::checkForCompletedTrajectory(PVTPoint cmd)
@@ -171,11 +215,22 @@ void RobotController::disableAllMotors()
 
 void RobotController::inputPosition(float x, float y, float a)
 {
-    // TODO - fuse with odom
-    // For now, just assume it is ground truth
-    cartPos_.x_ = x;
-    cartPos_.y_ = y;
-    cartPos_.a_ = a;
+    // Updat kalman filter for position observation
+    mat z = mat::zeros(6,1);
+    z(0,0) = x;
+    z(1,0) = y;
+    z(2,0) = a;
+    kf_.update(z);
+
+    // Retrieve new state estimate
+    mat x_hat = kf_.state();
+    cartPos_.x_ = x_hat(0,0);
+    cartPos_.y_ = x_hat(1,0);
+    cartPos_.a_ = x_hat(2,0);
+    cartVel_.x_ = x_hat(3,0);
+    cartVel_.y_ = x_hat(4,0);
+    cartVel_.a_ = x_hat(5,0);
+
 }
 
 void RobotController::updateMotors()
@@ -213,17 +268,34 @@ void RobotController::computeOdometry(unsigned long deltaMillis)
     local_cart_vel[2] =  d0 * motor_vel[0] + d0 * motor_vel[1] + d0 * motor_vel[2] + d0 * motor_vel[3];
 
     // Convert local cartesian velocity to global cartesian velocity using the last estimated angle
+    float global_cart_vel[3];
     float cA = cos(cartPos_.a_);
     float sA = sin(cartPos_.a_);
-    cartVel_.x_ = cA * local_cart_vel[0] - sA * local_cart_vel[1];
-    cartVel_.y_ = sA * local_cart_vel[0] + cA * local_cart_vel[1];
-    cartVel_.a_ = local_cart_vel[2];
+    global_cart_vel[0] = cA * local_cart_vel[0] - sA * local_cart_vel[1];
+    global_cart_vel[1] = sA * local_cart_vel[0] + cA * local_cart_vel[1];
+    global_cart_vel[2] = local_cart_vel[2];
+
+    // Update kalman filter for velocity observation
+    mat z = mat::zeros(6,1);
+    z(3,0) = global_cart_vel[0];
+    z(4,0) = global_cart_vel[1];
+    z(5,0) = global_cart_vel[2];
+    kf_.update(z);
+
+    // Retrieve new state estimate
+    mat x_hat = kf_.state();
+    cartPos_.x_ = x_hat(0,0);
+    cartPos_.y_ = x_hat(1,0);
+    cartPos_.a_ = x_hat(2,0);
+    cartVel_.x_ = x_hat(3,0);
+    cartVel_.y_ = x_hat(4,0);
+    cartVel_.a_ = x_hat(5,0);
  
-    // Use global velocity to compute global position
-    float dt = static_cast<float>(deltaMillis) / 1000.0;
-    cartPos_.x_ += cartVel_.x_ * dt; 
-    cartPos_.y_ += cartVel_.y_ * dt; 
-    cartPos_.a_ += cartVel_.a_ * dt;
+    // // Use global velocity to compute global position
+    // float dt = static_cast<float>(deltaMillis) / 1000.0;
+    // cartPos_.x_ += cartVel_.x_ * dt; 
+    // cartPos_.y_ += cartVel_.y_ * dt; 
+    // cartPos_.a_ += cartVel_.a_ * dt;
 
 }
 
