@@ -1,9 +1,9 @@
 import os
 import pickle
 import time
-import msvcrt
 import copy
 import sys
+import PySimpleGUI as sg
 import config
 import FieldPlanner
 from MarvelMindHandler import RobotPositionHandler
@@ -54,32 +54,6 @@ class Rate:
                 time.sleep(des_sleep_time)
         
         self.prev_time = time.monotonic()
-
-
-class InputHandler:
-
-    def __init__(self):
-        self.in_str = ""
-        self.ready = False
-
-    def service(self):
-        if msvcrt.kbhit():
-            new_key = msvcrt.getche()
-            # print("Got: {}".format(new_key))
-            if new_key == b'\r':
-                self.ready = True                
-            else:
-                self.in_str += new_key.decode('UTF-8')
-
-    def get_data(self):
-        if self.ready:
-            out_str = copy.copy(self.in_str)
-            self.in_str = ""
-            self.ready = False
-        else:
-            out_str = ""
-        return out_str
-
     
 
 class Master:
@@ -107,17 +81,25 @@ class Master:
         # self.pos_handler.wake_robot(robot_id)
 
         # Setup robot clients and communication
-        self.robot_client = RobotClient(cfg, robot_id)
+        #self.robot_client = RobotClient(cfg, robot_id)
 
         # Setup other miscellaneous variables
         self.rate = Rate(20)
-        self.input_handler = InputHandler()
         self.cfg = cfg
 
         # Wait a little while for setup to finish
         # sleep_time = 30
         # print('Waiting {} seconds for beacons to fully wake up'.format(sleep_time))
         # time.sleep(sleep_time)
+
+        # Make GUI
+        sg.change_look_and_feel('BlueMono')
+
+        layout = [[sg.Text('Previous command:'), sg.Text(size=(12,1), key='_OUTPUT_')],
+                [sg.Text('Command:'), sg.Input(key='_IN_')],
+                [sg.Button('Send Command'), sg.Button('Exit')]]
+
+        self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True)
 
         print("Starting loop")
 
@@ -134,31 +116,51 @@ class Master:
         else:
             print("Network status of Robot 1 is BAD")
 
-    def check_input(self):
+    def handle_input(self, data):
 
-        self.input_handler.service()
-        data = self.input_handler.get_data()
-        if data:
-            if "move" in data:
-                start_idx = data.find('[')
-                end_idx = data.find(']')
-                vals = data[start_idx+1:end_idx].split(',')
-                vals = [x.strip() for x in vals]
-                print("Got move command with parameters [{},{},{}]".format(vals[0], vals[1], vals[2]))
-                self.robot_client.move(float(vals[0]), float(vals[1]), float(vals[2]))
-            elif "quit" in data:
-                self.cleanup()
-                sys.exit()
-            elif "net" in data:
-                self.checkNetworkStatus()
+        if "move" in data:
+            start_idx = data.find('[')
+            end_idx = data.find(']')
+            vals = data[start_idx+1:end_idx].split(',')
+            vals = [x.strip() for x in vals]
+            print("Got move command with parameters [{},{},{}]".format(vals[0], vals[1], vals[2]))
+            #self.robot_client.move(float(vals[0]), float(vals[1]), float(vals[2]))
+        elif "net" in data:
+            #self.checkNetworkStatus()
+            pass
+        else:
+            print("Unknown command: {}".format(data))
+
+    def update_gui(self):
+
+        event, values = self.window.read()
+        #print(event, values)
+        if event is None or event == 'Exit':
+            return True
+        if event in ('Send Command', '\r', '\n'): #, '\r', QT_ENTER_KEY1, QT_ENTER_KEY2):
+            command = values['_IN_']
+            self.window['_OUTPUT_'].update(command)
+            self.window['_IN_'].update("")
+            self.handle_input(command)
+
+        return False
 
 
     def loop(self):
 
         while True:
-            self.check_input()
+            
+            #self.check_input()
             #self.pos_handler.service_queues()
+            
+            done = self.update_gui()
+            if done:
+                break
+
             self.rate.sleep()
+
+        self.cleanup()
+        self.window.close()
 
 
 
