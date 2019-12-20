@@ -96,8 +96,9 @@ class Master:
         sg.change_look_and_feel('BlueMono')
 
         layout = [[sg.Text('Previous command:'), sg.Text(size=(12,1), key='_OUTPUT_')],
-                [sg.Text('Command:'), sg.Input(key='_IN_')],
-                [sg.Button('Send Command'), sg.Button('Exit')]]
+                  [sg.Text('Command:'), sg.Input(key='_IN_')],
+                  [sg.Button('Send Command'), sg.Button('Exit')],
+                  [sg.Output(size=(100, 30))]]
 
         self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True)
 
