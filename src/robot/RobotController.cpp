@@ -65,6 +65,7 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
     B(4,1) = 1;
     B(5,2) = 1;
     kf_ = KalmanFilter(dt, A, B, C, Q, R, P);
+    kf_.init();
 }
 
 void RobotController::moveToPosition(float x, float y, float a)

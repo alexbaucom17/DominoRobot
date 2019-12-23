@@ -54,6 +54,42 @@ class Rate:
                 time.sleep(des_sleep_time)
         
         self.prev_time = time.monotonic()
+
+class CmdGui:
+
+    def __init__(self):
+        sg.change_look_and_feel('BlueMono')
+
+        col1 = [[sg.Text("Robot 1 status:")],
+               [sg.Text("Robot 1 status here",size=(20, 10),relief=sg.RELIEF_RAISED,key='_R1STATUS_')]]
+        col2 = [[sg.Text('Command:'), sg.Input(key='_IN_')], [sg.Button('Send'), sg.Button('Exit')]]
+
+        layout = [[sg.Output(size=(100, 30)), 
+                   sg.Graph(canvas_size=(400,400),graph_bottom_left=(0,0), graph_top_right=(400, 400), key="_GRAPH_")  ],
+                   [sg.Column(col1), sg.Column(col2)] ]
+
+        self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True)
+
+    def update(self):
+
+        event, values = self.window.read()
+        command = None
+        if event is None or event == 'Exit':
+            return True, None
+        if event in ('Send Command', '\r', '\n'): # Catch enter as well
+            command = values['_IN_']
+            self.window['_IN_'].update("")
+
+        return False, command
+
+    def update_robot_status(self, status):
+        self.window['_R1STATUS_'].update(status)
+
+    def update_robot_viz_position(self, pos):
+        self.window['_GRAPH_'].DrawCircle(center_location=(100, 100), radius=5)
+
+    def close(self):
+        self.window.close()
     
 
 class Master:
@@ -93,14 +129,7 @@ class Master:
         # time.sleep(sleep_time)
 
         # Make GUI
-        sg.change_look_and_feel('BlueMono')
-
-        layout = [[sg.Text('Previous command:'), sg.Text(size=(12,1), key='_OUTPUT_')],
-                  [sg.Text('Command:'), sg.Input(key='_IN_')],
-                  [sg.Button('Send Command'), sg.Button('Exit')],
-                  [sg.Output(size=(100, 30))]]
-
-        self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True)
+        self.cmd_gui = CmdGui()
 
         print("Starting loop")
 
@@ -125,26 +154,19 @@ class Master:
             vals = data[start_idx+1:end_idx].split(',')
             vals = [x.strip() for x in vals]
             print("Got move command with parameters [{},{},{}]".format(vals[0], vals[1], vals[2]))
-            #self.robot_client.move(float(vals[0]), float(vals[1]), float(vals[2]))
+            self.robot_client.move(float(vals[0]), float(vals[1]), float(vals[2]))
         elif "net" in data:
-            #self.checkNetworkStatus()
-            pass
+            self.checkNetworkStatus()
+        elif "status" in data:
+            print("Got status command")
+            #status = self.robot_client.get_status()
+            status = "Test status\nLine 2"
+            self.cmd_gui.update_robot_status(status)
+        elif "test" in data:
+            print("Got test status")
+            self.cmd_gui.update_robot_viz_position(0)
         else:
             print("Unknown command: {}".format(data))
-
-    def update_gui(self):
-
-        event, values = self.window.read()
-        #print(event, values)
-        if event is None or event == 'Exit':
-            return True
-        if event in ('Send Command', '\r', '\n'): #, '\r', QT_ENTER_KEY1, QT_ENTER_KEY2):
-            command = values['_IN_']
-            self.window['_OUTPUT_'].update(command)
-            self.window['_IN_'].update("")
-            self.handle_input(command)
-
-        return False
 
 
     def loop(self):
@@ -154,14 +176,16 @@ class Master:
             #self.check_input()
             #self.pos_handler.service_queues()
             
-            done = self.update_gui()
+            done, command = self.cmd_gui.update()
             if done:
                 break
+            if command:
+                self.handle_input(command)
 
             self.rate.sleep()
 
         self.cleanup()
-        self.window.close()
+        self.gui.close()
 
 
 
