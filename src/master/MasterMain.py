@@ -3,6 +3,7 @@ import pickle
 import time
 import copy
 import sys
+import math
 import PySimpleGUI as sg
 import config
 import FieldPlanner
@@ -60,15 +61,19 @@ class CmdGui:
     def __init__(self):
         sg.change_look_and_feel('BlueMono')
 
-        col1 = [[sg.Text("Robot 1 status:")],
+        col1 = [[sg.Text('Command:'), sg.Input(key='_IN_')], [sg.Button('Send'), sg.Button('Exit')]]
+        col2 = [[sg.Text("Robot 1 status:")],
                [sg.Text("Robot 1 status here",size=(20, 10),relief=sg.RELIEF_RAISED,key='_R1STATUS_')]]
-        col2 = [[sg.Text('Command:'), sg.Input(key='_IN_')], [sg.Button('Send'), sg.Button('Exit')]]
 
-        layout = [[sg.Output(size=(100, 30)), 
-                   sg.Graph(canvas_size=(400,400),graph_bottom_left=(0,0), graph_top_right=(400, 400), key="_GRAPH_")  ],
+        layout = [[sg.Output(size=(75, 20)), 
+                   sg.Graph(canvas_size=(700,700),graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white")  ],
                    [sg.Column(col1), sg.Column(col2)] ]
 
         self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True)
+        self.window.finalize()
+
+        self.draw_robot(3,3,0)
+
 
     def update(self):
 
@@ -85,8 +90,28 @@ class CmdGui:
     def update_robot_status(self, status):
         self.window['_R1STATUS_'].update(status)
 
-    def update_robot_viz_position(self, pos):
-        self.window['_GRAPH_'].DrawCircle(center_location=(100, 100), radius=5)
+    def update_robot_viz_position(self, x, y, a):
+        if self.r1_figs:
+            for f in self.r1_figs:
+                self.window['_GRAPH_'].DeleteFigure(f)
+        
+        self.draw_robot(x, y, a)
+
+    def draw_robot(self, x, y, a):
+        robot_length = 1
+        robot_width = 1
+        front_point = [x + robot_length/2 * math.cos(a), y + robot_length/2 * math.sin(a)]
+        back_point = [x - robot_length/2 * math.cos(a), y - robot_length/2 * math.sin(a)]
+        ortho_angle = a + math.pi/2
+        back_left_point = [back_point[0] + robot_width/2 * math.cos(ortho_angle), back_point[1] + robot_width/2 * math.sin(ortho_angle)]
+        back_right_point = [back_point[0] - robot_width/2 * math.cos(ortho_angle), back_point[1] - robot_width/2 * math.sin(ortho_angle)]
+
+        self.r1_figs = []
+        self.r1_figs.append(self.window['_GRAPH_'].DrawLine(point_from=front_point, point_to=back_left_point, color='black'))
+        self.r1_figs.append(self.window['_GRAPH_'].DrawLine(point_from=back_left_point, point_to=back_right_point, color='black'))
+        self.r1_figs.append(self.window['_GRAPH_'].DrawLine(point_from=back_right_point, point_to=front_point, color='black'))
+        self.r1_figs.append(self.window['_GRAPH_'].DrawLine(point_from=[x,y], point_to=front_point, color='red'))
+
 
     def close(self):
         self.window.close()
@@ -95,6 +120,9 @@ class CmdGui:
 class Master:
 
     def __init__(self, cfg):
+
+        # Init GUI
+        self.cmd_gui = CmdGui()
 
         print("Initializing Master")
 
@@ -112,32 +140,43 @@ class Master:
         # robot ID - TODO handle multiple
         robot_id = 1
 
-        # Setup marvelmind devices and position handler
-        # self.pos_handler = RobotPositionHandler(cfg)
-        # self.pos_handler.wake_robot(robot_id)
-
-        # Setup robot clients and communication
-        #self.robot_client = RobotClient(cfg, robot_id)
+        # Robot and marvelmind interfaces
+        self.pos_handler = None
+        self.robot_client = None
+        self.online = False
+        self.bring_online()
 
         # Setup other miscellaneous variables
         self.rate = Rate(20)
         self.cfg = cfg
 
-        # Wait a little while for setup to finish
-        # sleep_time = 30
-        # print('Waiting {} seconds for beacons to fully wake up'.format(sleep_time))
-        # time.sleep(sleep_time)
-
-        # Make GUI
-        self.cmd_gui = CmdGui()
-
         print("Starting loop")
+
+    def bring_online(self):
+        try:
+            print("Attempting to bring robot 1 online")
+            # Setup marvelmind devices and position handler
+            self.pos_handler = RobotPositionHandler(cfg)
+            self.pos_handler.wake_robot(robot_id)
+
+            # Setup robot clients and communication
+            self.robot_client = RobotClient(cfg, robot_id)
+
+            # Wait a little while for setup to finish
+            sleep_time = 30
+            print('Waiting {} seconds for beacons to fully wake up'.format(sleep_time))
+            time.sleep(sleep_time)
+            self.online = True
+
+        except Exception:
+            print("Unable to bring robot 1 online")
 
     def cleanup(self):
 
         print("Cleaning up")
-        # self.pos_handler.sleep_robot(1)
-        # self.pos_handler.close()
+        if self.online:
+            self.pos_handler.sleep_robot(1)
+            self.pos_handler.close()
 
     def checkNetworkStatus(self):
         net_status = self.robot_client.net_status()
@@ -154,17 +193,31 @@ class Master:
             vals = data[start_idx+1:end_idx].split(',')
             vals = [x.strip() for x in vals]
             print("Got move command with parameters [{},{},{}]".format(vals[0], vals[1], vals[2]))
-            self.robot_client.move(float(vals[0]), float(vals[1]), float(vals[2]))
+            if self.online:
+                self.robot_client.move(float(vals[0]), float(vals[1]), float(vals[2]))
         elif "net" in data:
             self.checkNetworkStatus()
         elif "status" in data:
             print("Got status command")
-            #status = self.robot_client.get_status()
-            status = "Test status\nLine 2"
+            if self.online:
+                status = self.robot_client.get_status()
+            else:
+                status = "Robot offline"
             self.cmd_gui.update_robot_status(status)
+        elif "pos" in data:
+            start_idx = data.find('[')
+            end_idx = data.find(']')
+            vals = data[start_idx+1:end_idx].split(',')
+            vals = [x.strip() for x in vals]
+            print("Got pos command with parameters [{},{},{}]".format(vals[0], vals[1], vals[2]))
+            self.cmd_gui.update_robot_viz_position(float(vals[0]), float(vals[1]), float(vals[2]))
+            if self.online:
+                status = self.robot_client.send_position(x,y,a)
+        elif "online" in data:
+            print("Got online command")
+            self.bring_online()
         elif "test" in data:
             print("Got test status")
-            self.cmd_gui.update_robot_viz_position(0)
         else:
             print("Unknown command: {}".format(data))
 
@@ -173,7 +226,6 @@ class Master:
 
         while True:
             
-            #self.check_input()
             #self.pos_handler.service_queues()
             
             done, command = self.cmd_gui.update()
@@ -185,7 +237,7 @@ class Master:
             self.rate.sleep()
 
         self.cleanup()
-        self.gui.close()
+        self.cmd_gui.close()
 
 
 
