@@ -3,6 +3,7 @@
 
 #include "Motor.h"
 #include "TrajectoryGenerator.h"
+#include <Filters.h>
 #include <HardwareSerial.h>
 #include "StatusUpdater.h"
 #include "KalmanFilter.h"
@@ -50,7 +51,9 @@ class RobotController
 
     // Member variables
     Motor motors[4];                       // Motor interface objects
-    unsigned long prevMotorLoopTime_;      // Previous loop time for motor controller
+    unsigned long prevMotorLoopTime_;      // Previous loop millis for motor controller
+    unsigned long prevPositionUpdateTime_; // Previous loop millis we were provided a position observation
+    unsigned long prevControlLoopTime_;    // Previous loop millis through the cartesian control loop
     HardwareSerial& debug_;                // Serial port to write debug info to
     bool enabled_;                         // Global motor enabled flag
     TrajectoryGenerator trajGen_;          // Trajectory generator object
@@ -61,9 +64,10 @@ class RobotController
     float errSumX_;                        // Sum of error in X dimension for integral control
     float errSumY_;                        // Sum of error in Y dimension for integral control
     float errSumA_;                        // Sum of error in A dimension for integral control
-    float prevControlLoopTime_;            // Previous time through the cartesian control loop
 
-    StatusUpdater& statusUpdater_;
+    StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
+    RunningStatistics controller_freq_averager_;  // Handles keeping average of the controller frequency
+    RunningStatistics position_freq_averager_;    // Handles keeping average of the cposition update frequency
 
     // Kalman filter stuff
     KalmanFilter kf_;

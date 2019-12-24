@@ -35,6 +35,8 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
     Motor(PIN_PWM_3, PIN_DIR_3, PIN_ENCA_3, PIN_ENCB_3, Kp, Ki, Kd),
     Motor(PIN_PWM_4, PIN_DIR_4, PIN_ENCA_4, PIN_ENCB_4, Kp, Ki, Kd)},
   prevMotorLoopTime_(millis()),
+  prevPositionUpdateTime_(millis()),
+  prevControlLoopTime_(millis()),
   debug_(debug),
   enabled_(false),
   trajGen_(debug),
@@ -45,7 +47,6 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
   errSumX_(0),
   errSumY_(0),
   errSumA_(0),
-  prevControlLoopTime_(0),
   statusUpdater_(statusUpdater)
 {
     pinMode(PIN_ENABLE,OUTPUT);
@@ -118,7 +119,7 @@ void RobotController::update()
         cmd.velocity_.x_ = 0;
         cmd.velocity_.y_ = 0;
         cmd.velocity_.a_ = 0;
-        cmd.time_ = prevControlLoopTime_ + 0.01; // TODO fix this
+        cmd.time_ = 0; // Doesn't matter, not used
 
         // Make sure integral terms don't wind up
         errSumX_ = 0;
@@ -137,14 +138,21 @@ void RobotController::update()
     // Update status 
     statusUpdater_.updatePosition(cartPos_.x_, cartPos_.y_, cartPos_.a_);
     statusUpdater_.updateVelocity(cartVel_.x_, cartVel_.y_, cartVel_.a_);
-    statusUpdater_.updateFrequencies(100.0, 100.0); // TODO: Actually compute this
+    statusUpdater_.updateFrequencies(controller_freq_averager_.mean(), position_freq_averager_.mean());
 }
 
 void RobotController::computeControl(PVTPoint cmd)
 {
-    float dt = cmd.time_ - prevControlLoopTime_;
-    prevControlLoopTime_ = cmd.time_;
     
+    // Update times
+    unsigned long curMillis = millis();
+    float dt = static_cast<float>((curMillis - prevControlLoopTime_) / 1000.0); // Convert to seconds
+    prevControlLoopTime_ = curMillis;
+    float freq_hz = 1000.0/static_cast<float>(dt);
+    controller_freq_averager_.input(freq_hz);
+
+    // TODO: Maybe add a warning note to the status if this takes longer than some threshold?
+
     // TODO: Make controller use matrix math
 
     // x control 
@@ -231,6 +239,15 @@ void RobotController::inputPosition(float x, float y, float a)
     cartVel_.x_ = x_hat(3,0);
     cartVel_.y_ = x_hat(4,0);
     cartVel_.a_ = x_hat(5,0);
+
+    // Compute update rate
+    unsigned long curMillis = millis();
+    unsigned long dt = curMillis - prevPositionUpdateTime_;
+    prevPositionUpdateTime_ = curMillis;
+    float freq_hz = 1000.0/static_cast<float>(dt);
+    position_freq_averager_.input(freq_hz);
+
+    // TODO: Maybe add a warning note to the status if this takes longer than some threshold?
 
 }
 
