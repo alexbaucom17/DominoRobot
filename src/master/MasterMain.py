@@ -59,14 +59,14 @@ class Rate:
 class CmdGui:
 
     def __init__(self):
-        sg.change_look_and_feel('BlueMono')
+        sg.change_look_and_feel('Dark Blue 3')
 
         col1 = [[sg.Text('Command:'), sg.Input(key='_IN_')], [sg.Button('Send'), sg.Button('Exit')]]
         col2 = [[sg.Text("Robot 1 status:")],
-               [sg.Text("Robot 1 status here",size=(20, 10),relief=sg.RELIEF_RAISED,key='_R1STATUS_')]]
+               [sg.Text("Robot 1 offline",size=(20, 10),relief=sg.RELIEF_RAISED,key='_R1STATUS_')]]
 
-        layout = [[sg.Output(size=(75, 20)), 
-                   sg.Graph(canvas_size=(700,700),graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white")  ],
+        layout = [[sg.Output(size=(100, 15)), 
+                   sg.Graph(canvas_size=(750,750),graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white")  ],
                    [sg.Column(col1), sg.Column(col2)] ]
 
         self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True)
@@ -185,7 +185,7 @@ class Master:
         else:
             print("Network status of Robot 1 is BAD")
 
-    def handle_input(self, data):
+    def run_command(self, data):
 
         if "move" in data:
             start_idx = data.find('[')
@@ -226,16 +226,31 @@ class Master:
 
         while True:
             
-            #self.pos_handler.service_queues()
+            if self.online:
+
+                # Service marbelmind queues
+                self.pos_handler.service_queues()
+
+                # Update position in gui
+                pos = self.pos_handler.get_position(1)
+                self.cmd_gui.update_robot_viz_position(pos[0], pos[1], pos[2])
+
+                # Update staus in gui
+                status = self.robot_client.get_status()
+                self.cmd_gui.update_robot_status(status)
             
-            done, command = self.cmd_gui.update()
+            # Handle any input from gui
+            done, command_str = self.cmd_gui.update()
             if done:
                 break
-            if command:
-                self.handle_input(command)
+            if command_str:
+                self.run_command(command_str)
 
+            # Sleep for a little while
             self.rate.sleep()
 
+
+        # Clean up whenever loop exits
         self.cleanup()
         self.cmd_gui.close()
 
