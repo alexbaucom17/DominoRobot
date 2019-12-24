@@ -5,6 +5,7 @@
 #include <Arduino.h> // This has to be before ArduinoJson.h to fix compiler issues
 #include <ArduinoSTL.h>
 #include <ArduinoJson.h>
+#include <map>
 
 
 class StatusUpdater
@@ -22,7 +23,7 @@ class StatusUpdater
 
     void update_task(String cur_task);
 
-    void addNote(String note, unsigned int display_time=5); // Default to 5 seconds
+    void addNote(byte key, String note, unsigned int display_time=5); // Default to 5 seconds
 
   private:
 
@@ -43,7 +44,7 @@ class StatusUpdater
       float position_freq;
 
       String current_task;
-      std::vector<String> notes;
+      std::map<byte, String> notes;
 
       //When adding extra fields, update toJsonString method to serialize and add aditional capacity
 
@@ -85,11 +86,10 @@ class StatusUpdater
 
         // Fill in variable size string data
         JsonArray notes_doc = doc.createNestedArray("notes");
-        for (int i = 0; i < array_size; i++)
+        for (const auto& element : notes) 
         {
-          notes_doc.add(notes[i]);
+          notes_doc.add(element.second);
         }
-        notes.clear(); // Clear out old notes TODO: Make notes last for some amount of time
 
         // Serialze and return string
         String msg;
@@ -99,7 +99,7 @@ class StatusUpdater
     };
 
     Status currentStatus_;
-    std::vector<unsigned long> notes_timers_;
+    std::map<byte, unsigned long> notes_timers_;
     unsigned long prevMillis_;
 
 };

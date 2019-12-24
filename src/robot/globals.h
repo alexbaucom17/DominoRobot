@@ -54,6 +54,11 @@
 #define TRAJ_MAX_FRACTION 0.7  // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate
 #define FUDGE_FACTOR 0.55 // Fudgy scaling factor to use until I find where my actual scaling problem is. Scales how far the robot has actually moved when it thinks it has moved 1 meter
 
+// Notes keys - saves space to use numbers instead of string
+// If need to save more space could consider loading strings into program memory instead of RAM
+// Or even just sending this key number and have the string display on the master end
+#define NOTES_KEY_CONTROLLER_FREQ 1
+#define NOTES_KEY_POSITION_FREQ 2
 
 
 // Utility for getting sign of values - sticking this in globals cuz it is used a few places

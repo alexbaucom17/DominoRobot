@@ -41,10 +41,12 @@ void StatusUpdater::update_task(String cur_task)
     currentStatus_.current_task = cur_task;
 }
 
-void StatusUpdater::addNote(String note, unsigned int display_time)
+void StatusUpdater::addNote(byte key, String note, unsigned int display_time)
 {
-    currentStatus_.notes.push_back(note);
-    notes_timers_.push_back(static_cast<unsigned long>(display_time) * 1000);
+    // Using map ensures the key only gets added once.
+    // If the key is already added the timer will get refreshed
+    currentStatus_.notes[key] = note;
+    notes_timers_[key] = static_cast<unsigned long>(display_time) * 1000;
 }
 
 void StatusUpdater::updateNoteTimers()
@@ -56,21 +58,23 @@ void StatusUpdater::updateNoteTimers()
     prevMillis_ = curMillis;
 
     // Figure out which notes should be removed.
-    for (int i = 0; i < notes_timers_.size();)
+    auto it = notes_timers_.begin();
+    while(it != notes_timers_.end())
     {
         // Remove if more time has passed than is left on the timer
-        if(notes_timers_[i] <= dt)
+        if(it->second <= dt)
         {
-            // This works because we add and remove values from timers and notes at the same time
-            notes_timers_.erase(notes_timers_.begin() + i);
-            currentStatus_.notes.erase(currentStatus_.notes.begin() + i);
+            // Remove note with key
+            currentStatus_.notes.erase(it->first);
+            // Remove timer with iterator and get next iterator
+            notes_timers_.erase(it++);
         }
         // Otherwise just decrement the timer by the past time
         else
         {
-            notes_timers_[i] -= dt;
+            it->second -= dt;
             // Only increment counter when we don't remove a value
-            i++;
+            ++it;
         }   
     }
 }

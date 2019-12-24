@@ -70,7 +70,11 @@ void RobotController::update()
     float freq_hz = 1000.0/static_cast<float>(dt);
     controller_freq_averager_.input(freq_hz);
 
-    // TODO: Maybe add a warning note to the status if this takes longer than some threshold?
+    // Print a note if the last update took too long
+    if(dt > 50)
+    {
+        statusUpdater_.addNote(NOTES_KEY_CONTROLLER_FREQ, "Robot controller update took too long!", 3);
+    }
     
     PVTPoint cmd;
     if(trajRunning_)
@@ -232,7 +236,11 @@ void RobotController::inputPosition(float x, float y, float a)
     float freq_hz = 1000.0/static_cast<float>(dt);
     position_freq_averager_.input(freq_hz);
 
-    // TODO: Maybe add a warning note to the status if this takes longer than some threshold?
+    // Print a note if the last update took too long
+    if(dt > 500)
+    {
+        statusUpdater_.addNote(NOTES_KEY_POSITION_FREQ, "Position update took too long!", 3);
+    }
 
 }
 
