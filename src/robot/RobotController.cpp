@@ -3,40 +3,16 @@
 #include <math.h>
 #include <LinearAlgebra.h>
 
-// Motor command loop time
-#define targetDeltaMillis 15
-
-// TODO: Clean up globals
-
-// Motor control gains
-const double Kp = 70;
-const double Ki = 1;
-const double Kd = 0;
-
-// Cartesian control gains
-const float cartTransKp = 2;
-const float cartTransKi = 0.1;
-const float cartTransKd = 0;
-const float cartRotKp = 2;
-const float cartRotKi = 0.1;
-const float cartRotKd = 0;
-
-// Utility for getting sign of values
-// From: https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
-template <typename T> int sgn(T val) {
-    return (T(0) < val) - (val < T(0));
-}
-
 
 RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater)
 : motors{
-    Motor(PIN_PWM_1, PIN_DIR_1, PIN_ENCA_1, PIN_ENCB_1, Kp, Ki, Kd),
-    Motor(PIN_PWM_2, PIN_DIR_2, PIN_ENCA_2, PIN_ENCB_2, Kp, Ki, Kd),
-    Motor(PIN_PWM_3, PIN_DIR_3, PIN_ENCA_3, PIN_ENCB_3, Kp, Ki, Kd),
-    Motor(PIN_PWM_4, PIN_DIR_4, PIN_ENCA_4, PIN_ENCB_4, Kp, Ki, Kd)},
-  prevMotorLoopTime_(millis()),
+    Motor(PIN_PWM_1, PIN_DIR_1, PIN_ENCA_1, PIN_ENCB_1, MOTOR_KP, MOTOR_KI, MOTOR_KD),
+    Motor(PIN_PWM_2, PIN_DIR_2, PIN_ENCA_2, PIN_ENCB_2, MOTOR_KP, MOTOR_KI, MOTOR_KD),
+    Motor(PIN_PWM_3, PIN_DIR_3, PIN_ENCA_3, PIN_ENCB_3, MOTOR_KP, MOTOR_KI, MOTOR_KD),
+    Motor(PIN_PWM_4, PIN_DIR_4, PIN_ENCA_4, PIN_ENCB_4, MOTOR_KP, MOTOR_KI, MOTOR_KD)},
   prevPositionUpdateTime_(millis()),
   prevControlLoopTime_(millis()),
+  prevUpdateLoopTime_(millis()),
   debug_(debug),
   enabled_(false),
   trajGen_(debug),
@@ -86,10 +62,20 @@ void RobotController::moveToPositionFine(float x, float y, float a)
 
 void RobotController::update()
 {
+    // Compute the amount of time since the last update
+    unsigned long curMillis = millis();
+    float dt = static_cast<float>((curMillis - prevUpdateLoopTime_) / 1000.0); // Convert to seconds
+    prevControlLoopTime_ = curMillis;    
+    if(dt == 0) { dt = 1;} // Avoid div by 0
+    float freq_hz = 1000.0/static_cast<float>(dt);
+    controller_freq_averager_.input(freq_hz);
+
+    // TODO: Maybe add a warning note to the status if this takes longer than some threshold?
+    
     PVTPoint cmd;
     if(trajRunning_)
     {
-        float dt = static_cast<float>((millis() - trajStartTime_) / 1000.0); // Convert to seconds
+        float dt = static_cast<float>((curMillis - trajStartTime_) / 1000.0); // Convert to seconds
         cmd = trajGen_.lookup(dt);
 
         debug_.println("");
@@ -134,6 +120,7 @@ void RobotController::update()
     // Run controller and motor update
     computeControl(cmd);
     updateMotors();
+    computeOdometry();
 
     // Update status 
     statusUpdater_.updatePosition(cartPos_.x_, cartPos_.y_, cartPos_.a_);
@@ -144,14 +131,11 @@ void RobotController::update()
 void RobotController::computeControl(PVTPoint cmd)
 {
     
-    // Update times
+    // Recompute the loop update time to get better accuracy
     unsigned long curMillis = millis();
     float dt = static_cast<float>((curMillis - prevControlLoopTime_) / 1000.0); // Convert to seconds
     prevControlLoopTime_ = curMillis;
-    float freq_hz = 1000.0/static_cast<float>(dt);
-    controller_freq_averager_.input(freq_hz);
 
-    // TODO: Maybe add a warning note to the status if this takes longer than some threshold?
 
     // TODO: Make controller use matrix math
 
@@ -159,19 +143,19 @@ void RobotController::computeControl(PVTPoint cmd)
     float posErrX = cmd.position_.x_ - cartPos_.x_;
     float velErrX = cmd.velocity_.x_ - cartVel_.x_;
     errSumX_ += posErrX * dt;
-    float x_cmd = cmd.velocity_.x_ + cartTransKp * posErrX + cartTransKd * velErrX + cartTransKi * errSumX_;
+    float x_cmd = cmd.velocity_.x_ + CART_TRANS_KP * posErrX + CART_TRANS_KD * velErrX + CART_TRANS_KI * errSumX_;
 
     // y control 
     float posErrY = cmd.position_.y_ - cartPos_.y_;
     float velErrY = cmd.velocity_.y_ - cartVel_.y_;
     errSumY_ += posErrY * dt;
-    float y_cmd = cmd.velocity_.y_ + cartTransKp * posErrY + cartTransKd * velErrY + cartTransKi * errSumY_;
+    float y_cmd = cmd.velocity_.y_ + CART_TRANS_KP * posErrY + CART_TRANS_KD * velErrY + CART_TRANS_KI * errSumY_;
 
     // a control 
     float posErrA = cmd.position_.a_ - cartPos_.a_;
     float velErrA = cmd.velocity_.a_ - cartVel_.a_;
     errSumA_ += posErrA * dt;
-    float a_cmd = cmd.velocity_.a_ + cartRotKp * posErrA + cartRotKd * velErrA + cartRotKi * errSumA_;
+    float a_cmd = cmd.velocity_.a_ + CART_ROT_KP * posErrA + CART_ROT_KD * velErrA + CART_ROT_KI * errSumA_;
 
     setCartVelCommand(x_cmd, y_cmd, a_cmd);
 
@@ -244,6 +228,7 @@ void RobotController::inputPosition(float x, float y, float a)
     unsigned long curMillis = millis();
     unsigned long dt = curMillis - prevPositionUpdateTime_;
     prevPositionUpdateTime_ = curMillis;
+    if(dt == 0) { dt = 1;} // Avoid div by 0
     float freq_hz = 1000.0/static_cast<float>(dt);
     position_freq_averager_.input(freq_hz);
 
@@ -253,20 +238,13 @@ void RobotController::inputPosition(float x, float y, float a)
 
 void RobotController::updateMotors()
 {
-    unsigned long curTime = millis();
-    unsigned long deltaMillis = curTime - prevMotorLoopTime_;
-    if( deltaMillis > targetDeltaMillis)
+    for(int i = 0; i < 4; i++)
     {
-        for(int i = 0; i < 4; i++)
-        {
-            motors[i].runLoop();
-        }
-        computeOdometry(deltaMillis);
-        prevMotorLoopTime_ = millis();
+        motors[i].runLoop();
     }
 }
 
-void RobotController::computeOdometry(unsigned long deltaMillis)
+void RobotController::computeOdometry()
 {
     // Get wheel velocities from each motor
     float motor_vel[4];
@@ -308,18 +286,10 @@ void RobotController::computeOdometry(unsigned long deltaMillis)
     cartVel_.x_ = x_hat(3,0);
     cartVel_.y_ = x_hat(4,0);
     cartVel_.a_ = x_hat(5,0);
- 
-    // // Use global velocity to compute global position
-    // float dt = static_cast<float>(deltaMillis) / 1000.0;
-    // cartPos_.x_ += cartVel_.x_ * dt; 
-    // cartPos_.y_ += cartVel_.y_ * dt; 
-    // cartPos_.a_ += cartVel_.a_ * dt;
-
 }
 
 void RobotController::setCartVelCommand(float vx, float vy, float va)
 {
-    // TODO - handle total transtlational vel magnitude correctly
     // Clamp input velocities
     debug_.print("CartVelCmd: [vx: ");
     debug_.print(vx, 4);
@@ -329,6 +299,8 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     debug_.print(va, 4);
     debug_.println("]");
     
+    // Note that this doesn't handle total translational magnitude correctly, that
+    // is fine for what we are doing now.
     if(fabs(vx) > MAX_TRANS_SPEED)
     {
         debug_.println("Capping vx velocity");

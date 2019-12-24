@@ -1,12 +1,7 @@
 #include "TrajectoryGenerator.h"
 #include <math.h>
 
-// Utility for getting sign of values
-// From: https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
-template <typename T> int sgn(T val) {
-    return (T(0) < val) - (val < T(0));
-}
-
+// Scale max speeds and accelerations for trajectory generation
 const float TRAJ_MAX_TRANS_SPEED = TRAJ_MAX_FRACTION * MAX_TRANS_SPEED;
 const float TRAJ_MAX_TRANS_ACC = TRAJ_MAX_FRACTION * MAX_TRANS_ACC;
 const float TRAJ_MAX_ROT_SPEED = TRAJ_MAX_FRACTION * MAX_ROT_SPEED;
@@ -145,7 +140,8 @@ std::vector<trajParams> TrajectoryGenerator::generate_trapazoid_1D(float startPo
 
 PVTPoint TrajectoryGenerator::lookup(float time)
 {
-    // TODO: Handle different time scales between trajectories
+    // Note- this currently doesn't syncronize timescales of different trajectories
+    // so they don't all finish at the same time. But that is okay for our purposes right now
     std::vector<float> xvals = lookup_1D(time, currentTraj_.xtraj_);
     std::vector<float> yvals = lookup_1D(time, currentTraj_.ytraj_);
     std::vector<float> avals = lookup_1D(time, currentTraj_.atraj_);

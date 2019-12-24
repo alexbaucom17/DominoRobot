@@ -12,7 +12,7 @@ class StatusUpdater
   public:
     StatusUpdater();
 
-    String getStatusJsonString() const;
+    String getStatusJsonString();
 
     void updatePosition(float x, float y, float a);
 
@@ -22,9 +22,11 @@ class StatusUpdater
 
     void update_task(String cur_task);
 
-    void addNote(String note);
+    void addNote(String note, unsigned int display_time=5); // Default to 5 seconds
 
   private:
+
+    void updateNoteTimers();
 
     struct Status
     {
@@ -97,6 +99,8 @@ class StatusUpdater
     };
 
     Status currentStatus_;
+    std::vector<unsigned long> notes_timers_;
+    unsigned long prevMillis_;
 
 };
 

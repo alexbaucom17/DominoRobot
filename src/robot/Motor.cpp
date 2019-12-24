@@ -55,6 +55,7 @@ void Motor::runLoop()
   // Do a check for large time deltas. This likely means the controller hasn't run for a while and we should ignore this value
   if(deltaMillis > 100)
   {
+    // TODO add a note or make this more robust and less likely to cause weird bugs
     return;
   }
 
@@ -75,14 +76,6 @@ void Motor::runLoop()
   if(fabs(inputVel_) < 0.001)
   {
     outputCmd_ = 0;
-    // Make sure that the integral term in the pid loop also gets reset
-    //controller_.SetOutputLimits(0.0, 1.0); //Forces minimum up to 0.0
-    //controller_.SetOutputLimits(-1.0, 0.0); //Forces maximum down to 0.0   
-  }
-  else
-  {
-    // Reset output limits back to normal
-   // controller_.SetOutputLimits(-255, 255);
   }
 
   // Make sure we don't exceed max/min power
@@ -95,7 +88,7 @@ void Motor::runLoop()
     outputCmd_ = -255;
   }
 
-  // Update output values
+  // Update output direction
   if(outputCmd_ < 0)
   {
     digitalWrite(dirPin_,0);
@@ -105,7 +98,10 @@ void Motor::runLoop()
     digitalWrite(dirPin_,1);
   }
   
+  // Actually write out the motor power
   analogWrite(pwmPin_, abs(outputCmd_));
+
+  // Debugging prints
 /*
 //  Serial.print(curCount);
 //  Serial.print(" ");

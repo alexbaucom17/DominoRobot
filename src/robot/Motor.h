@@ -1,9 +1,3 @@
-/* Requires libraries:
- *  Filters: https://github.com/JonHub/Filters
- *  PID: https://playground.arduino.cc/Code/PIDLibrary/
- *  Encoder: https://www.pjrc.com/teensy/td_libs_Encoder.html
- */
-
 #ifndef Motor_h
 #define Motor_h
 

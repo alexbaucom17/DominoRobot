@@ -47,13 +47,13 @@ class RobotController
     // Check if the current trajectory is done
     bool checkForCompletedTrajectory(PVTPoint cmd);
     // Calculate wheel odometry
-    void computeOdometry(unsigned long deltaMillis);
+    void computeOdometry();
 
     // Member variables
     Motor motors[4];                       // Motor interface objects
-    unsigned long prevMotorLoopTime_;      // Previous loop millis for motor controller
     unsigned long prevPositionUpdateTime_; // Previous loop millis we were provided a position observation
     unsigned long prevControlLoopTime_;    // Previous loop millis through the cartesian control loop
+    unsigned long prevUpdateLoopTime_;     // Previous loop millis through the update loop
     HardwareSerial& debug_;                // Serial port to write debug info to
     bool enabled_;                         // Global motor enabled flag
     TrajectoryGenerator trajGen_;          // Trajectory generator object
