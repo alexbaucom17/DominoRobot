@@ -33,7 +33,7 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
     mat B = mat::zeros(6,3);
     mat C = mat::identity(6);
     mat Q = mat::identity(6);
-    mat R = mat::zeros(6,6);
+    mat R = mat::identity(6);
     mat P = mat::identity(6);
     A(3,3) = 0;
     A(4,4) = 0;
@@ -298,14 +298,13 @@ void RobotController::computeOdometry()
 
 void RobotController::setCartVelCommand(float vx, float vy, float va)
 {
-    // Clamp input velocities
-    debug_.print("CartVelCmd: [vx: ");
-    debug_.print(vx, 4);
-    debug_.print(", vy ");
-    debug_.print(vy, 4);
-    debug_.print(", va: ");
-    debug_.print(va, 4);
-    debug_.println("]");
+//    debug_.print("CartVelCmd: [vx: ");
+//    debug_.print(vx, 4);
+//    debug_.print(", vy ");
+//    debug_.print(vy, 4);
+//    debug_.print(", va: ");
+//    debug_.print(va, 4);
+//    debug_.println("]");
     
     // Note that this doesn't handle total translational magnitude correctly, that
     // is fine for what we are doing now.

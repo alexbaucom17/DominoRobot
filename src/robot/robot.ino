@@ -26,7 +26,7 @@ void loop()
 {
     // Check for new command
     RobotServer::COMMAND newCmd = server.oneLoop();
-    statusUpdater.update_task("NONE");
+    statusUpdater.update_task("NONE"); // TODO: fix this so it actually updates correctly
 
     // Handle new command
     if(newCmd == RobotServer::COMMAND::MOVE)

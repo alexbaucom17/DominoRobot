@@ -45,6 +45,7 @@ class StatusUpdater
 
       String current_task;
       std::map<byte, String> notes;
+      uint8_t counter; // Just to show that the status is updating. Okay to roll over
 
       //When adding extra fields, update toJsonString method to serialize and add aditional capacity
 
@@ -58,7 +59,8 @@ class StatusUpdater
       controller_freq(0.0),
       position_freq(0.0),
       current_task("NONE"),
-      notes({})        
+      notes({}),
+      counter(0)  
       {
       }
 
@@ -66,7 +68,7 @@ class StatusUpdater
       {
         // Size the object correctly
         int array_size = notes.size();
-        const size_t capacity = JSON_ARRAY_SIZE(array_size) + JSON_OBJECT_SIZE(12); 
+        const size_t capacity = JSON_ARRAY_SIZE(array_size) + JSON_OBJECT_SIZE(13); // Update when adding new fields
         DynamicJsonDocument root(capacity);
 
         // Format to match messages sent by server
@@ -83,6 +85,7 @@ class StatusUpdater
         doc["controller_freq"] = controller_freq;
         doc["position_freq"] = position_freq;
         doc["current_task"] = current_task;
+        doc["counter"] = counter++;
 
         // Fill in variable size string data
         JsonArray notes_doc = doc.createNestedArray("notes");

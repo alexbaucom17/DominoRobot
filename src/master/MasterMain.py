@@ -38,24 +38,6 @@ def doWaypointGeneration(cfg, draw = False):
 
     return waypoints
 
-class Rate:
-
-    def __init__(self, rate):
-        """
-        Smart sleeping to maintain rate (Hz)
-        """
-        self.sleep_time = 1.0/rate
-        self.prev_time = None
-
-    def sleep(self):
-        if self.prev_time:
-            dt = time.monotonic() - self.prev_time
-            des_sleep_time = self.sleep_time - dt
-            if des_sleep_time > 0:
-                time.sleep(des_sleep_time)
-        
-        self.prev_time = time.monotonic()
-
 class CmdGui:
 
     def __init__(self):
@@ -63,9 +45,9 @@ class CmdGui:
 
         col1 = [[sg.Text('Command:'), sg.Input(key='_IN_')], [sg.Button('Send'), sg.Button('Exit')]]
         col2 = [[sg.Text("Robot 1 status:")],
-               [sg.Text("Robot 1 offline",size=(20, 10),relief=sg.RELIEF_RAISED,key='_R1STATUS_')]]
+               [sg.Text("Robot 1 offline",size=(30, 10),relief=sg.RELIEF_RAISED,key='_R1STATUS_')]]
 
-        layout = [[sg.Output(size=(100, 15)), 
+        layout = [[sg.Output(size=(100, 15)),
                    sg.Graph(canvas_size=(750,750),graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white")  ],
                    [sg.Column(col1), sg.Column(col2)] ]
 
@@ -77,7 +59,7 @@ class CmdGui:
 
     def update(self):
 
-        event, values = self.window.read()
+        event, values = self.window.read(timeout=20)
         command = None
         if event is None or event == 'Exit':
             return True, None
@@ -87,8 +69,21 @@ class CmdGui:
 
         return False, command
 
-    def update_robot_status(self, status):
-        self.window['_R1STATUS_'].update(status)
+    def update_robot_status(self, status_dict):
+        status_str = "Cannot get robot status"
+        if status_dict:
+            status_str = ""
+            status_str += "Position: [{}, {}, {}]\n".format(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
+            status_str += "Velocity: [{}, {}, {}]\n".format(status_dict['vel_x'],status_dict['vel_y'], status_dict['vel_a'])
+            status_str += "Task: {}\n".format(status_dict['current_task'])
+            status_str += "Controller freq: {}\n".format(status_dict['controller_freq'])
+            status_str += "Position freq:   {}\n".format(status_dict['position_freq'])
+            status_str += "Counter:   {}\n".format(status_dict['counter'])
+
+            # Also update the visualization position
+            self.update_robot_viz_position(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
+
+        self.window['_R1STATUS_'].update(status_str)
 
     def update_robot_viz_position(self, x, y, a):
         if self.r1_figs:
@@ -137,9 +132,6 @@ class Master:
                 pickle.dump(self.waypoints, f)
                 print("Saved waypoint data to {}".format(cfg.plan_file))
 
-        # robot ID - TODO handle multiple
-        robot_id = 1
-
         # Robot and marvelmind interfaces
         self.pos_handler = None
         self.robot_client = None
@@ -147,7 +139,6 @@ class Master:
         self.bring_online()
 
         # Setup other miscellaneous variables
-        self.rate = Rate(20)
         self.cfg = cfg
 
         print("Starting loop")
@@ -156,26 +147,29 @@ class Master:
         try:
             print("Attempting to bring robot 1 online")
             # Setup marvelmind devices and position handler
-            self.pos_handler = RobotPositionHandler(cfg)
-            self.pos_handler.wake_robot(robot_id)
+            #self.pos_handler = RobotPositionHandler(cfg)
+            #self.pos_handler.wake_robot(robot_id)
 
             # Setup robot clients and communication
+            # robot ID - TODO handle multiple
+            robot_id = 1
             self.robot_client = RobotClient(cfg, robot_id)
 
             # Wait a little while for setup to finish
-            sleep_time = 30
-            print('Waiting {} seconds for beacons to fully wake up'.format(sleep_time))
-            time.sleep(sleep_time)
+            #sleep_time = 30
+            #print('Waiting {} seconds for beacons to fully wake up'.format(sleep_time))
+            #time.sleep(sleep_time)
             self.online = True
+            print("Robot 1 online")
 
-        except Exception:
-            print("Unable to bring robot 1 online")
+        except Exception as e:
+            print("Unable to bring robot 1 online. Reason: {}".format(repr(e)))
 
     def cleanup(self):
 
         print("Cleaning up")
         if self.online:
-            self.pos_handler.sleep_robot(1)
+            #self.pos_handler.sleep_robot(1)
             self.pos_handler.close()
 
     def checkNetworkStatus(self):
@@ -199,11 +193,10 @@ class Master:
             self.checkNetworkStatus()
         elif "status" in data:
             print("Got status command")
+            status_dict = {}
             if self.online:
-                status = self.robot_client.get_status()
-            else:
-                status = "Robot offline"
-            self.cmd_gui.update_robot_status(status)
+                status_dict = self.robot_client.request_status()
+            self.cmd_gui.update_robot_status(status_dict)
         elif "pos" in data:
             start_idx = data.find('[')
             end_idx = data.find(']')
@@ -223,21 +216,26 @@ class Master:
 
 
     def loop(self):
+        last_status_time = 0
 
         while True:
             
             if self.online:
 
                 # Service marbelmind queues
-                self.pos_handler.service_queues()
+                #self.pos_handler.service_queues()
 
                 # Update position in gui
-                pos = self.pos_handler.get_position(1)
-                self.cmd_gui.update_robot_viz_position(pos[0], pos[1], pos[2])
+                #pos = self.pos_handler.get_position(1)
+                #self.cmd_gui.update_robot_viz_position(pos[0], pos[1], pos[2])
 
                 # Update staus in gui
-                status = self.robot_client.get_status()
-                self.cmd_gui.update_robot_status(status)
+                if time.time() - last_status_time > 1:
+                    status = self.robot_client.request_status()
+                    if status == None:
+                        status = "Robot status not available!"
+                    self.cmd_gui.update_robot_status(status)
+                    last_status_time = time.time()
             
             # Handle any input from gui
             done, command_str = self.cmd_gui.update()
@@ -245,9 +243,6 @@ class Master:
                 break
             if command_str:
                 self.run_command(command_str)
-
-            # Sleep for a little while
-            self.rate.sleep()
 
 
         # Clean up whenever loop exits

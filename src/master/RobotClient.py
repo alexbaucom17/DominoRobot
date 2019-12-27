@@ -18,9 +18,10 @@ class TcpClient:
         if not socket:
             return None
 
-    def send(self, msg):
+    def send(self, msg, print_debug=True):
         totalsent = 0
-        print("TX: " + msg)
+        if print_debug:
+            print("TX: " + msg)
         msg = START_CHAR + msg + END_CHAR
         msg_bytes = msg.encode()
         while totalsent < len(msg):
@@ -29,7 +30,7 @@ class TcpClient:
                 raise RuntimeError("socket connection broken")
             totalsent = totalsent + sent
 
-    def recieve(self, timeout=1):
+    def recieve(self, timeout=1, print_debug=True):
 
         socket_ready, _, _ = select.select([self.socket], [], [])
         if not socket_ready:
@@ -61,7 +62,8 @@ class TcpClient:
                 else:
                     new_msg += new_str
 
-        print("RX: " + new_msg)
+        if print_debug:
+            print("RX: " + new_msg)
         if not new_msg_ready:
             print("Timeout")
             new_msg = ""
@@ -76,7 +78,7 @@ class RobotClient:
         self.client = TcpClient(cfg.ip_map[self.robot_id], PORT, NET_TIMEOUT)
         self.cfg = cfg
 
-    def wait_for_server_response(self, timeout=3):
+    def wait_for_server_response(self, timeout=1, print_debug=True):
         """
         Waits for specified time to get a reply from the server
         Returns a dict with the message if one is recieved
@@ -85,7 +87,7 @@ class RobotClient:
           
         start_time = time.time()
         while time.time() - start_time < timeout:
-            incoming_msg = self.client.recieve()
+            incoming_msg = self.client.recieve(timeout=0.5, print_debug=print_debug)
             if incoming_msg:
                 return json.loads(incoming_msg)
 
@@ -161,9 +163,9 @@ class RobotClient:
     def request_status(self):
         """ Request status from robot """
         msg = {'type' : 'status'}
-        self.client.send(json.dumps(msg))
-        status = self.wait_for_server_response()
-        return status
+        self.client.send(json.dumps(msg), print_debug=False)
+        status_dict = self.wait_for_server_response(print_debug=False)
+        return status_dict
 
 
 
