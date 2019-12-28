@@ -9,12 +9,11 @@
 #include "RobotServer.h"
 #include "RobotController.h"
 #include "StatusUpdater.h"
-#include <MemoryFree.h>
+
 
 StatusUpdater statusUpdater;
 RobotServer server = RobotServer(Serial3, Serial, statusUpdater);
 RobotController controller = RobotController(Serial, statusUpdater);
-int counter = 0;
 
 void setup()
 {
@@ -28,14 +27,12 @@ void loop()
 {
     // Check for new command
     RobotServer::COMMAND newCmd = server.oneLoop();
-    statusUpdater.update_task("NONE"); // TODO: fix this so it actually updates correctly
 
     // Handle new command
     if(newCmd == RobotServer::COMMAND::MOVE)
     {
         RobotServer::PositionData data = server.getMoveData();
         controller.moveToPosition(data.x, data.y, data.a);
-        statusUpdater.update_task("MOVE");
     }
     else if (newCmd == RobotServer::COMMAND::POSITION)
     {
@@ -45,13 +42,6 @@ void loop()
 
     // Service controller
     controller.update();
-
-    if (counter++ == 255)
-    {
-      Serial.print("freeMemory()=");
-      Serial.println(freeMemory());
-      counter = 0;
-    }
     
 }
 

@@ -52,7 +52,7 @@
 
 // Scaling factors
 #define TRAJ_MAX_FRACTION 0.7  // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate
-#define FUDGE_FACTOR 0.55 // Fudgy scaling factor to use until I find where my actual scaling problem is. Scales how far the robot has actually moved when it thinks it has moved 1 meter
+#define FUDGE_FACTOR 0.5 // Fudgy scaling factor to use until I find where my actual scaling problem is. Scales how far the robot has actually moved when it thinks it has moved 1 meter
 
 // Notes keys - saves space to use numbers instead of string
 // If need to save more space could consider loading strings into program memory instead of RAM

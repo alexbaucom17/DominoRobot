@@ -75,10 +75,10 @@ class CmdGui:
                 status_str = ""
                 status_str += "Position: [{}, {}, {}]\n".format(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
                 status_str += "Velocity: [{}, {}, {}]\n".format(status_dict['vel_x'],status_dict['vel_y'], status_dict['vel_a'])
-                status_str += "Task: {}\n".format(status_dict['current_task'])
-                status_str += "Controller freq: {}\n".format(status_dict['controller_freq'])
-                status_str += "Position freq:   {}\n".format(status_dict['position_freq'])
+                status_str += "Controller timing: {}\n".format(status_dict['controller_loop_ms'])
+                status_str += "Position timing:   {}\n".format(status_dict['position_loop_ms'])
                 status_str += "Counter:   {}\n".format(status_dict['counter'])
+                status_str += "Free memory:   {}\n".format(status_dict['free_memory'])
 
                 # Also update the visualization position
                 self.update_robot_viz_position(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
@@ -233,13 +233,13 @@ class Master:
                 #self.cmd_gui.update_robot_viz_position(pos[0], pos[1], pos[2])
 
                 # Update staus in gui
-                # if time.time() - last_status_time > 1:
-                #     status = self.robot_client.request_status()
-                #     if status == None or status == "":
-                #         status = "Robot status not available!"
-                #     self.cmd_gui.update_robot_status(status)
-                #     last_status_time = time.time()
-                pass
+                if time.time() - last_status_time > 1:
+                    status = self.robot_client.request_status()
+                    if status == None or status == "":
+                        status = "Robot status not available!"
+                    self.cmd_gui.update_robot_status(status)
+                    last_status_time = time.time()
+                # pass
             
             # Handle any input from gui
             done, command_str = self.cmd_gui.update()

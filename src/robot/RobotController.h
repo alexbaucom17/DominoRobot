@@ -67,8 +67,8 @@ class RobotController
     float errSumA_;                        // Sum of error in A dimension for integral control
 
     StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
-    RunningStatistics controller_freq_averager_;  // Handles keeping average of the controller frequency
-    RunningStatistics position_freq_averager_;    // Handles keeping average of the cposition update frequency
+    RunningStatistics controller_time_averager_;  // Handles keeping average of the controller loop timing
+    RunningStatistics position_time_averager_;    // Handles keeping average of the position update timing
 
     // Kalman filter stuff
     KalmanFilter kf_;

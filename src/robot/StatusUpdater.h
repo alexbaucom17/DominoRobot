@@ -3,9 +3,8 @@
 #define StatusUpdater_h
 
 #include <Arduino.h> // This has to be before ArduinoJson.h to fix compiler issues
-#include <ArduinoSTL.h>
 #include <ArduinoJson.h>
-#include <map>
+#include <MemoryFree.h>
 
 
 class StatusUpdater
@@ -19,15 +18,9 @@ class StatusUpdater
 
     void updateVelocity(float vx, float vy, float va);
 
-    void updateFrequencies(float controller_freq, float position_freq);
-
-    void update_task(String cur_task);
-
-    void addNote(byte key, String note, unsigned int display_time=5); // Default to 5 seconds
+    void updateLoopTimes(int controller_loop_ms, int position_loop_ms);
 
   private:
-
-    void updateNoteTimers();
 
     struct Status
     {
@@ -40,12 +33,11 @@ class StatusUpdater
       float vel_a;
 
       // Loop times
-      float controller_freq;
-      float position_freq;
+      int controller_loop_ms;
+      int position_loop_ms;
 
-      String current_task;
-      std::map<byte, String> notes;
       uint8_t counter; // Just to show that the status is updating. Okay to roll over
+      int free_memory;
 
       //When adding extra fields, update toJsonString method to serialize and add aditional capacity
 
@@ -56,24 +48,24 @@ class StatusUpdater
       vel_x(0.0),
       vel_y(0.0),
       vel_a(0.0),
-      controller_freq(0.0),
-      position_freq(0.0),
-      current_task("NONE"),
-      notes({}),
-      counter(0)  
+      controller_loop_ms(999),
+      position_loop_ms(999),
+      counter(0),
+      free_memory(999)
       {
       }
 
       String toJsonString()
       {
         // Size the object correctly
-        int array_size = notes.size();
-        const size_t capacity = JSON_ARRAY_SIZE(array_size) + JSON_OBJECT_SIZE(13); // Update when adding new fields
+        const size_t capacity = JSON_OBJECT_SIZE(12); // Update when adding new fields
         DynamicJsonDocument root(capacity);
 
         // Format to match messages sent by server
         root["type"] = "status";
         JsonObject doc = root.createNestedObject("data");
+
+        free_memory = freeMemory();
 
         // Fill in data
         doc["pos_x"] = pos_x;
@@ -82,17 +74,10 @@ class StatusUpdater
         doc["vel_x"] = vel_x;
         doc["vel_y"] = vel_y;
         doc["vel_a"] = vel_a;
-        doc["controller_freq"] = controller_freq;
-        doc["position_freq"] = position_freq;
-        doc["current_task"] = current_task;
+        doc["controller_loop_ms"] = controller_loop_ms;
+        doc["position_loop_ms"] = position_loop_ms;
         doc["counter"] = counter++;
-
-        // Fill in variable size string data
-        JsonArray notes_doc = doc.createNestedArray("notes");
-        for (const auto& element : notes) 
-        {
-          notes_doc.add(element.second);
-        }
+        doc["free_memory"] = free_memory;
 
         // Serialze and return string
         String msg;
@@ -102,8 +87,6 @@ class StatusUpdater
     };
 
     Status currentStatus_;
-    std::map<byte, unsigned long> notes_timers_;
-    unsigned long prevMillis_;
 
 };
 

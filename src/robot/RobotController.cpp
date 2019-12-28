@@ -67,17 +67,10 @@ void RobotController::update()
 {
     // Compute the amount of time since the last update
     unsigned long curMillis = millis();
-    float dt = static_cast<float>((curMillis - prevUpdateLoopTime_) / 1000.0); // Convert to seconds
-    prevControlLoopTime_ = curMillis;    
-    if(dt == 0) { dt = 1;} // Avoid div by 0
-    float freq_hz = 1000.0/static_cast<float>(dt);
-    controller_freq_averager_.input(freq_hz);
-
-    // Print a note if the last update took too long
-    if(dt > 50)
-    {
-        statusUpdater_.addNote(NOTES_KEY_CONTROLLER_FREQ, "Robot controller update took too long!", 3);
-    }
+    unsigned long dt_ms = curMillis - prevUpdateLoopTime_;
+    float dt = static_cast<float>((dt_ms) / 1000.0); // Convert to seconds
+    controller_time_averager_.input(static_cast<float>(curMillis - prevUpdateLoopTime_));
+    prevUpdateLoopTime_ = curMillis;  
     
     PVTPoint cmd;
     if(trajRunning_)
@@ -96,10 +89,11 @@ void RobotController::update()
         cartPos_.print(debug_);
         debug_.println("");
 
-        String s;
-        mat P = kf_.cov();
-        P.print(s);
-        debug_.println(s);
+// Print covariance matrix
+//        String s;
+//        mat P = kf_.cov();
+//        P.print(s);
+//        debug_.println(s);
        
         // Stop trajectory
         if (checkForCompletedTrajectory(cmd))
@@ -140,7 +134,7 @@ void RobotController::update()
     // Update status 
     statusUpdater_.updatePosition(cartPos_.x_, cartPos_.y_, cartPos_.a_);
     statusUpdater_.updateVelocity(cartVel_.x_, cartVel_.y_, cartVel_.a_);
-    statusUpdater_.updateFrequencies(controller_freq_averager_.mean(), position_freq_averager_.mean());
+    statusUpdater_.updateLoopTimes(static_cast<int>(controller_time_averager_.mean()), static_cast<int>(position_time_averager_.mean()));
 }
 
 void RobotController::computeControl(PVTPoint cmd)
@@ -229,15 +223,7 @@ void RobotController::inputPosition(float x, float y, float a)
     unsigned long curMillis = millis();
     unsigned long dt = curMillis - prevPositionUpdateTime_;
     prevPositionUpdateTime_ = curMillis;
-    if(dt == 0) { dt = 1;} // Avoid div by 0
-    float freq_hz = 1000.0/static_cast<float>(dt);
-    position_freq_averager_.input(freq_hz);
-
-    // Print a note if the last update took too long
-    if(dt > 500)
-    {
-        statusUpdater_.addNote(NOTES_KEY_POSITION_FREQ, "Position update took too long!", 3);
-    }
+    position_time_averager_.input(dt);
 
 }
 
