@@ -9,10 +9,12 @@
 #include "RobotServer.h"
 #include "RobotController.h"
 #include "StatusUpdater.h"
+#include <MemoryFree.h>
 
 StatusUpdater statusUpdater;
 RobotServer server = RobotServer(Serial3, Serial, statusUpdater);
 RobotController controller = RobotController(Serial, statusUpdater);
+int counter = 0;
 
 void setup()
 {
@@ -43,6 +45,14 @@ void loop()
 
     // Service controller
     controller.update();
+
+    if (counter++ == 255)
+    {
+      Serial.print("freeMemory()=");
+      Serial.println(freeMemory());
+      counter = 0;
+    }
+    
 }
 
 

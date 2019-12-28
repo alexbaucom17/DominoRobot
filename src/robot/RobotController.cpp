@@ -3,6 +3,8 @@
 #include <math.h>
 #include <LinearAlgebra.h>
 
+#define PROCESS_NOISE_SCALE 0.05;
+#define MEAS_NOISE_SCALE 0.01;
 
 RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater)
 : motors{
@@ -13,6 +15,7 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
   prevPositionUpdateTime_(millis()),
   prevControlLoopTime_(millis()),
   prevUpdateLoopTime_(millis()),
+  prevOdomLoopTime_(millis()),
   debug_(debug),
   enabled_(false),
   trajGen_(debug),
@@ -29,18 +32,18 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
 
     // Setup Kalman filter
     double dt = 0.1;
-    mat A = mat::identity(6);
+    mat A = mat::identity(6); // Doesn't matter right now since we update this at each time step
     mat B = mat::zeros(6,3);
-    mat C = mat::identity(6);
-    mat Q = mat::identity(6);
-    mat R = mat::identity(6);
+    mat C = mat::zeros(6,3);
+    mat Q = mat::identity(6) * PROCESS_NOISE_SCALE;
+    mat R = mat::identity(3) * MEAS_NOISE_SCALE;
     mat P = mat::identity(6);
-    A(3,3) = 0;
-    A(4,4) = 0;
-    A(5,5) = 0;
     B(3,0) = 1;
     B(4,1) = 1;
     B(5,2) = 1;
+    C(0,0) = 1;
+    C(1,1) = 1;
+    C(2,2) = 1;
     kf_ = KalmanFilter(dt, A, B, C, Q, R, P);
     kf_.init();
 }
@@ -83,15 +86,20 @@ void RobotController::update()
         cmd = trajGen_.lookup(dt);
 
         debug_.println("");
-        debug_.print("PVT: ");
+        debug_.print("Target: ");
         cmd.print(debug_);
         debug_.println("");
-        debug_.print("Cur Vel: ");
+        debug_.print("Est Vel: ");
         cartVel_.print(debug_);
         debug_.println("");
-        debug_.print("Cur Pos: ");
+        debug_.print("Est Pos: ");
         cartPos_.print(debug_);
         debug_.println("");
+
+        String s;
+        mat P = kf_.cov();
+        P.print(s);
+        debug_.println(s);
        
         // Stop trajectory
         if (checkForCompletedTrajectory(cmd))
@@ -102,6 +110,13 @@ void RobotController::update()
     }
     else
     {
+        // Reset Kalman Filter and make sure that velocity is forced to 0
+        mat x_hat = kf_.state();
+        x_hat(3,0) = 0;
+        x_hat(4,0) = 0;
+        x_hat(5,0) = 0;
+        kf_.init(0, x_hat);
+        
         // Force cmd to 0
         cmd.position_.x_ = cartPos_.x_;
         cmd.position_.y_ = cartPos_.y_;
@@ -111,14 +126,10 @@ void RobotController::update()
         cmd.velocity_.a_ = 0;
         cmd.time_ = 0; // Doesn't matter, not used
 
-        // Make sure integral terms don't wind up
+        // Make sure integral terms in controller  don't wind up
         errSumX_ = 0;
         errSumY_ = 0;
         errSumA_ = 0;
-        // Make sure velocity doesn't carry over
-        cartVel_.x_ = 0;
-        cartVel_.y_ = 0;
-        cartVel_.a_ = 0;
     }
 
     // Run controller and motor update
@@ -162,20 +173,6 @@ void RobotController::computeControl(PVTPoint cmd)
     float a_cmd = cmd.velocity_.a_ + CART_ROT_KP * posErrA + CART_ROT_KD * velErrA + CART_ROT_KI * errSumA_;
 
     setCartVelCommand(x_cmd, y_cmd, a_cmd);
-
-    // Kalman filter prediction
-    mat u = mat::zeros(3,1);
-    u(0,0) = x_cmd;
-    u(1,0) = y_cmd;
-    u(2,0) = a_cmd;
-    mat A = mat::identity(6);
-    A(0,3) = dt;
-    A(1,4) = dt;
-    A(2,5) = dt;
-    A(3,3) = 0;
-    A(4,4) = 0;
-    A(5,5) = 0;
-    kf_.predict(dt, A, u);
 }
 
 bool RobotController::checkForCompletedTrajectory(PVTPoint cmd)
@@ -279,12 +276,25 @@ void RobotController::computeOdometry()
     global_cart_vel[1] = sA * local_cart_vel[0] + cA * local_cart_vel[1];
     global_cart_vel[2] = local_cart_vel[2];
 
-    // Update kalman filter for velocity observation
-    mat z = mat::zeros(6,1);
-    z(3,0) = global_cart_vel[0];
-    z(4,0) = global_cart_vel[1];
-    z(5,0) = global_cart_vel[2];
-    kf_.update(z);
+    // Compute time since last odom update
+    unsigned long curMillis = millis();
+    float dt = static_cast<float>((curMillis - prevOdomLoopTime_) / 1000.0); // Convert to seconds
+    prevOdomLoopTime_ = curMillis;    
+
+    // Kalman filter prediction using the velocity measurment from the previous step
+    // to predict our current position
+    mat u = mat::zeros(3,1);
+    u(0,0) = global_cart_vel[0];
+    u(1,0) = global_cart_vel[1];
+    u(2,0) = global_cart_vel[2];
+    mat A = mat::identity(6);
+    A(0,3) = dt;
+    A(1,4) = dt;
+    A(2,5) = dt;
+    A(3,3) = 0;
+    A(4,4) = 0;
+    A(5,5) = 0;
+    kf_.predict(dt, A, u);
 
     // Retrieve new state estimate
     mat x_hat = kf_.state();

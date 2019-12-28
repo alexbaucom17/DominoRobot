@@ -54,6 +54,7 @@ class RobotController
     unsigned long prevPositionUpdateTime_; // Previous loop millis we were provided a position observation
     unsigned long prevControlLoopTime_;    // Previous loop millis through the cartesian control loop
     unsigned long prevUpdateLoopTime_;     // Previous loop millis through the update loop
+    unsigned long prevOdomLoopTime_;       // Previous loop millis through the odom loop
     HardwareSerial& debug_;                // Serial port to write debug info to
     bool enabled_;                         // Global motor enabled flag
     TrajectoryGenerator trajGen_;          // Trajectory generator object

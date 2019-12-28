@@ -42,7 +42,7 @@ class KalmanFilter
     /**
      * Initialize the filter with a guess for initial states.
      */
-    void init(double t0, const mat& x0);
+    void init(double t0, mat x0);
 
     /**
      * Predict estimated state based on the time step, dynamics matrix, and control input
@@ -59,6 +59,7 @@ class KalmanFilter
      */
     mat state() { return x_hat; };
     double time() { return t; };
+    mat cov() {return P; };
 
   private:
 

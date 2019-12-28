@@ -220,16 +220,23 @@ RobotServer::PositionData RobotServer::getPositionData()
 
 void RobotServer::sendMsg(String msg)
 {
-    serial_.print(START_CHAR);
-    serial_.print(msg);
-    serial_.print(END_CHAR);
-    debug_.print("[RobotServer] TX: ");
-    debug_.println(msg);
+    if (msg.length() == 0)
+    {
+      debug_.println("[RobotServer] Nothing to send!!!");
+    }
+    else
+    {
+      serial_.print(START_CHAR);
+      serial_.print(msg);
+      serial_.print(END_CHAR);
+      debug_.print("[RobotServer] TX: ");
+      debug_.println(msg);
+    }
 }
 
 void RobotServer::sendAck(String data)
 {
-    StaticJsonDocument<256> doc;
+    StaticJsonDocument<64> doc;
     doc["type"] = "ack";
     doc["data"] = data;
     String msg;
@@ -239,7 +246,7 @@ void RobotServer::sendAck(String data)
 
 void RobotServer::sendErr(String data)
 {
-    StaticJsonDocument<256> doc;
+    StaticJsonDocument<64> doc;
     doc["type"] = "ack";
     doc["data"] = data;
     String msg;

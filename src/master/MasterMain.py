@@ -46,9 +46,8 @@ class CmdGui:
         col1 = [[sg.Text('Command:'), sg.Input(key='_IN_')], [sg.Button('Send'), sg.Button('Exit')]]
         col2 = [[sg.Text("Robot 1 status:")],
                [sg.Text("Robot 1 offline",size=(30, 10),relief=sg.RELIEF_RAISED,key='_R1STATUS_')]]
-
-        layout = [[sg.Output(size=(100, 15)),
-                   sg.Graph(canvas_size=(750,750),graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white")  ],
+#sg.Output(size=(100, 15)),
+        layout = [[sg.Graph(canvas_size=(750,750),graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white")  ],
                    [sg.Column(col1), sg.Column(col2)] ]
 
         self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True)
@@ -72,16 +71,19 @@ class CmdGui:
     def update_robot_status(self, status_dict):
         status_str = "Cannot get robot status"
         if status_dict:
-            status_str = ""
-            status_str += "Position: [{}, {}, {}]\n".format(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
-            status_str += "Velocity: [{}, {}, {}]\n".format(status_dict['vel_x'],status_dict['vel_y'], status_dict['vel_a'])
-            status_str += "Task: {}\n".format(status_dict['current_task'])
-            status_str += "Controller freq: {}\n".format(status_dict['controller_freq'])
-            status_str += "Position freq:   {}\n".format(status_dict['position_freq'])
-            status_str += "Counter:   {}\n".format(status_dict['counter'])
+            try:
+                status_str = ""
+                status_str += "Position: [{}, {}, {}]\n".format(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
+                status_str += "Velocity: [{}, {}, {}]\n".format(status_dict['vel_x'],status_dict['vel_y'], status_dict['vel_a'])
+                status_str += "Task: {}\n".format(status_dict['current_task'])
+                status_str += "Controller freq: {}\n".format(status_dict['controller_freq'])
+                status_str += "Position freq:   {}\n".format(status_dict['position_freq'])
+                status_str += "Counter:   {}\n".format(status_dict['counter'])
 
-            # Also update the visualization position
-            self.update_robot_viz_position(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
+                # Also update the visualization position
+                self.update_robot_viz_position(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
+            except Exception:
+                status_str = "Bad dict: " + str(status_dict)
 
         self.window['_R1STATUS_'].update(status_str)
 
@@ -170,7 +172,8 @@ class Master:
         print("Cleaning up")
         if self.online:
             #self.pos_handler.sleep_robot(1)
-            self.pos_handler.close()
+            #self.pos_handler.close()
+            pass
 
     def checkNetworkStatus(self):
         net_status = self.robot_client.net_status()
@@ -230,12 +233,13 @@ class Master:
                 #self.cmd_gui.update_robot_viz_position(pos[0], pos[1], pos[2])
 
                 # Update staus in gui
-                if time.time() - last_status_time > 1:
-                    status = self.robot_client.request_status()
-                    if status == None:
-                        status = "Robot status not available!"
-                    self.cmd_gui.update_robot_status(status)
-                    last_status_time = time.time()
+                # if time.time() - last_status_time > 1:
+                #     status = self.robot_client.request_status()
+                #     if status == None or status == "":
+                #         status = "Robot status not available!"
+                #     self.cmd_gui.update_robot_status(status)
+                #     last_status_time = time.time()
+                pass
             
             # Handle any input from gui
             done, command_str = self.cmd_gui.update()

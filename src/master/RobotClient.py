@@ -15,6 +15,7 @@ class TcpClient:
 
     def __init__(self, ip, port, timeout):
         self.socket = socket.create_connection((ip, port), timeout)
+        self.socket.setblocking(False)
         if not socket:
             return None
 
@@ -32,9 +33,11 @@ class TcpClient:
 
     def recieve(self, timeout=1, print_debug=True):
 
-        socket_ready, _, _ = select.select([self.socket], [], [])
-        if not socket_ready:
-            return ""
+        # print("Checking socket ready")
+        # socket_ready, _, _ = select.select([self.socket], [], [])
+        # if not socket_ready:
+        #     print("Socket not ready")
+        #     return ""
 
         new_msg = ""
         new_msg_ready = False
@@ -42,7 +45,10 @@ class TcpClient:
         start_time = time.time()
         while not new_msg_ready and time.time() - start_time < timeout:
             # Get new data
-            data = self.socket.recv(2048)
+            try:
+                data = self.socket.recv(2048)
+            except socket.error:
+                continue
             if data == b'':
                 raise RuntimeError("socket connection broken")
 
@@ -65,7 +71,7 @@ class TcpClient:
         if print_debug:
             print("RX: " + new_msg)
         if not new_msg_ready:
-            print("Timeout")
+            print("Socket timeout")
             new_msg = ""
 
         return new_msg
@@ -87,7 +93,10 @@ class RobotClient:
           
         start_time = time.time()
         while time.time() - start_time < timeout:
-            incoming_msg = self.client.recieve(timeout=0.5, print_debug=print_debug)
+            try:
+                incoming_msg = self.client.recieve(timeout=0.5, print_debug=print_debug)
+            except socket.timeout:
+                break
             if incoming_msg:
                 return json.loads(incoming_msg)
 
