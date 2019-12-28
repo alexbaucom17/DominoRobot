@@ -3,7 +3,7 @@
 #include <math.h>
 #include <LinearAlgebra.h>
 
-#define PROCESS_NOISE_SCALE 0.05;
+#define PROCESS_NOISE_SCALE 0.08;
 #define MEAS_NOISE_SCALE 0.01;
 
 RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater)
@@ -32,18 +32,12 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
 
     // Setup Kalman filter
     double dt = 0.1;
-    mat A = mat::identity(6); 
-    mat B = mat::zeros(6,3); // Doesn't matter right now since we update this at each time step
-    mat C = mat::zeros(6,3);
-    mat Q = mat::identity(6) * PROCESS_NOISE_SCALE;
+    mat A = mat::identity(3); 
+    mat B = mat::identity(3); // Doesn't matter right now since we update this at each time step
+    mat C = mat::identity(3);
+    mat Q = mat::identity(3) * PROCESS_NOISE_SCALE;
     mat R = mat::identity(3) * MEAS_NOISE_SCALE;
-    mat P = mat::identity(6);
-    A(3,3) = 0;
-    A(4,4) = 0;
-    A(5,5) = 0;
-    C(0,0) = 1;
-    C(1,1) = 1;
-    C(2,2) = 1;
+    mat P = mat::identity(3);
     kf_ = KalmanFilter(dt, A, B, C, Q, R, P);
     kf_.init();
 }
@@ -103,14 +97,12 @@ void RobotController::update()
         }
     }
     else
-    {
-        // Reset Kalman Filter and make sure that velocity is forced to 0
-        mat x_hat = kf_.state();
-        x_hat(3,0) = 0;
-        x_hat(4,0) = 0;
-        x_hat(5,0) = 0;
-        kf_.init(0, x_hat);
-        
+    {       
+        // Force velocity to 0
+        cartVel_.x_ = 0;
+        cartVel_.y_ = 0;
+        cartVel_.a_ = 0;
+      
         // Force cmd to 0
         cmd.position_.x_ = cartPos_.x_;
         cmd.position_.y_ = cartPos_.y_;
@@ -120,7 +112,7 @@ void RobotController::update()
         cmd.velocity_.a_ = 0;
         cmd.time_ = 0; // Doesn't matter, not used
 
-        // Make sure integral terms in controller  don't wind up
+        // Make sure integral terms in controller don't wind up
         errSumX_ = 0;
         errSumY_ = 0;
         errSumA_ = 0;
@@ -204,7 +196,7 @@ void RobotController::disableAllMotors()
 void RobotController::inputPosition(float x, float y, float a)
 {
     // Updat kalman filter for position observation
-    mat z = mat::zeros(6,1);
+    mat z = mat::zeros(3,1);
     z(0,0) = x;
     z(1,0) = y;
     z(2,0) = a;
@@ -215,9 +207,6 @@ void RobotController::inputPosition(float x, float y, float a)
     cartPos_.x_ = x_hat(0,0);
     cartPos_.y_ = x_hat(1,0);
     cartPos_.a_ = x_hat(2,0);
-    cartVel_.x_ = x_hat(3,0);
-    cartVel_.y_ = x_hat(4,0);
-    cartVel_.a_ = x_hat(5,0);
 
     // Compute update rate
     unsigned long curMillis = millis();
@@ -255,12 +244,11 @@ void RobotController::computeOdometry()
     local_cart_vel[2] =  d0 * motor_vel[0] + d0 * motor_vel[1] + d0 * motor_vel[2] + d0 * motor_vel[3];
 
     // Convert local cartesian velocity to global cartesian velocity using the last estimated angle
-    float global_cart_vel[3];
     float cA = cos(cartPos_.a_);
     float sA = sin(cartPos_.a_);
-    global_cart_vel[0] = cA * local_cart_vel[0] - sA * local_cart_vel[1];
-    global_cart_vel[1] = sA * local_cart_vel[0] + cA * local_cart_vel[1];
-    global_cart_vel[2] = local_cart_vel[2];
+    cartVel_.x_ = cA * local_cart_vel[0] - sA * local_cart_vel[1];
+    cartVel_.y_ = sA * local_cart_vel[0] + cA * local_cart_vel[1];
+    cartVel_.a_ = local_cart_vel[2];
 
     // Compute time since last odom update
     unsigned long curMillis = millis();
@@ -270,16 +258,10 @@ void RobotController::computeOdometry()
     // Kalman filter prediction using the velocity measurment from the previous step
     // to predict our current position
     mat u = mat::zeros(3,1);
-    u(0,0) = global_cart_vel[0];
-    u(1,0) = global_cart_vel[1];
-    u(2,0) = global_cart_vel[2];
-    mat B = mat::zeros(6,3);
-    B(0,0) = dt;
-    B(1,1) = dt;
-    B(2,2) = dt;
-    B(3,0) = 1;
-    B(4,1) = 1;
-    B(5,2) = 1;
+    u(0,0) = cartVel_.x_;
+    u(1,0) = cartVel_.y_;
+    u(2,0) = cartVel_.a_;
+    mat B = mat::identity(3) * dt;
     kf_.predict(dt, B, u);
 
     // Retrieve new state estimate
@@ -287,9 +269,6 @@ void RobotController::computeOdometry()
     cartPos_.x_ = x_hat(0,0);
     cartPos_.y_ = x_hat(1,0);
     cartPos_.a_ = x_hat(2,0);
-    cartVel_.x_ = x_hat(3,0);
-    cartVel_.y_ = x_hat(4,0);
-    cartVel_.a_ = x_hat(5,0);
 }
 
 void RobotController::setCartVelCommand(float vx, float vy, float va)
