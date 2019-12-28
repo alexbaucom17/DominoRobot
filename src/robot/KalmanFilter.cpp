@@ -32,9 +32,9 @@ void KalmanFilter::init()
   t = t0;
 }
 
-void KalmanFilter::predict(double dt, const mat& A, const mat& u)
+void KalmanFilter::predict(double dt, const mat& B, const mat& u)
 {
-  this->A = A;
+  this->B = B;
   this->dt = dt;
   x_hat_new = A * x_hat + B * u;
   P = A*P*A.t() + Q;

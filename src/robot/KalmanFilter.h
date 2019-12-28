@@ -45,9 +45,10 @@ class KalmanFilter
     void init(double t0, mat x0);
 
     /**
-     * Predict estimated state based on the time step, dynamics matrix, and control input
+     * Predict estimated state based on the time step, control matrix, and control input
+     * Note that I am using B and an input because it varies with time for my system
      */
-    void predict(double dt, const mat& A, const mat& u);
+    void predict(double dt, const mat& B, const mat& u);
 
     /**
      * Update the estimated state based on measured values.

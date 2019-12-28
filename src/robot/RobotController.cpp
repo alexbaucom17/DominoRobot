@@ -32,15 +32,15 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
 
     // Setup Kalman filter
     double dt = 0.1;
-    mat A = mat::identity(6); // Doesn't matter right now since we update this at each time step
-    mat B = mat::zeros(6,3);
+    mat A = mat::identity(6); 
+    mat B = mat::zeros(6,3); // Doesn't matter right now since we update this at each time step
     mat C = mat::zeros(6,3);
     mat Q = mat::identity(6) * PROCESS_NOISE_SCALE;
     mat R = mat::identity(3) * MEAS_NOISE_SCALE;
     mat P = mat::identity(6);
-    B(3,0) = 1;
-    B(4,1) = 1;
-    B(5,2) = 1;
+    A(3,3) = 0;
+    A(4,4) = 0;
+    A(5,5) = 0;
     C(0,0) = 1;
     C(1,1) = 1;
     C(2,2) = 1;
@@ -273,14 +273,14 @@ void RobotController::computeOdometry()
     u(0,0) = global_cart_vel[0];
     u(1,0) = global_cart_vel[1];
     u(2,0) = global_cart_vel[2];
-    mat A = mat::identity(6);
-    A(0,3) = dt;
-    A(1,4) = dt;
-    A(2,5) = dt;
-    A(3,3) = 0;
-    A(4,4) = 0;
-    A(5,5) = 0;
-    kf_.predict(dt, A, u);
+    mat B = mat::zeros(6,3);
+    B(0,0) = dt;
+    B(1,1) = dt;
+    B(2,2) = dt;
+    B(3,0) = 1;
+    B(4,1) = 1;
+    B(5,2) = 1;
+    kf_.predict(dt, B, u);
 
     // Retrieve new state estimate
     mat x_hat = kf_.state();
