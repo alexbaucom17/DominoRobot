@@ -87,11 +87,19 @@ String RobotServer::getAnyIncomingMessage()
     while (serial_.available() > 0 && newData == false) 
     {
         char rc = serial_.read();
-        //debug_.print("data: ");
+        //debug_.print(millis());
+        //debug_.print(" data: ");
         //debug_.println(rc);
         if (recvInProgress_ == true) 
         {
-            if (rc != END_CHAR) 
+            if (rc == START_CHAR)
+            {
+              debug_.println("Receive already in progress! Dropping old message");
+              debug_.print("Partial message: ");
+              debug_.println(buffer_);
+              buffer_ = "";
+            }
+            else if (rc != END_CHAR) 
             {
                 buffer_ += rc;
             }
@@ -171,7 +179,7 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
             cmd = COMMAND::PICKUP;
             sendAck(type);
         }
-        else if(type == "position")
+        else if(type == "p")
         {
             debug_.println("[RobotServer] Got POSITION command ");
             cmd = COMMAND::POSITION;

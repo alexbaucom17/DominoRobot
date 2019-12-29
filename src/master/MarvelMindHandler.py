@@ -30,7 +30,7 @@ class MarvelMindPoint:
         else:
             return False
 
-def uint8_to_int32(uint8_arr):
+def uint8_to_int32(uint8_arr): # TODO investigate and see if this causes the negative number issue
     """
     Converts array of 4 uint8 values to an int32
     """
@@ -220,7 +220,7 @@ class RobotPositionHandler():
         self.device_position_queues = {}
         for beacon_pairs in self.cfg.device_map.values():
             for beacon in beacon_pairs:
-                self.device_position_queues[beacon.address] = []
+                self.device_position_queues[beacon] = []
 
         self.max_robot_queue_size = 5
         self.robot_position_queues = {}
@@ -270,7 +270,8 @@ class RobotPositionHandler():
         
         new_data = self._mm.get_latest_location_data()
         self._update_device_positions(new_data)
-        self._update_robot_positions()
+        robots_updated = self._update_robot_positions()
+        return robots_updated
 
     def _update_device_positions(self, new_position_data):
         # Distribute position data to queues and do any post processing as needed
@@ -290,21 +291,22 @@ class RobotPositionHandler():
                     cur_queue.insert(0,point) # Add new element to front of queue
                     if len(cur_queue) > self.max_device_queue_size:
                         cur_queue.pop() # remove element from end of list
-        else:
-            print("No new data")
+        #else:
+        #    print("No new data")
 
 
     def _update_robot_positions(self):
         # Handle the math of transforming device positions into robot positions and angles
 
+        robots_updated = []
         for robot_name in self.cfg.device_map:
             if robot_name == 'static':
                 continue
 
             # Get position data from the robot beacons
             beacons = self.cfg.device_map[robot_name]
-            p0 = self._get_device_position(beacons[0].address)
-            p1 = self._get_device_position(beacons[1].address)
+            p0 = self._get_device_position(beacons[0])
+            p1 = self._get_device_position(beacons[1])
 
             # Make sure that array are not empty
             if not p0 or not p1:
@@ -334,12 +336,15 @@ class RobotPositionHandler():
             if cur_queue:
                 prev_point = cur_queue[0]
             if not prev_point or x != prev_point[0] or y != prev_point[1] or angle != prev_point[2]:
-                print("Robot {}: {},{},{}, {}".format(robot_name, x, y, angle, t))
+                #print("Robot {}: {},{},{}, {}".format(robot_name, x, y, angle, t))
+                robots_updated.append(int(robot_name))
 
                 # Insert the new position, angle, and time into the queue
                 cur_queue.insert(0,(x,y,angle, t)) # Add new element to front of queue
                 if len(cur_queue) > self.max_robot_queue_size:
                     cur_queue.pop() # remove element from end of list
+
+        return robots_updated
 
 
 if __name__ == '__main__':

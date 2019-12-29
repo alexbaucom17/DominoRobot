@@ -73,7 +73,7 @@ std::vector<trajParams> TrajectoryGenerator::generate_triangle_1D(float startPos
 
     float deltaPosition = endPos - startPos;
     int dir = sgn(deltaPosition);
-    float halfwayTime = sqrt(2 * fabs(deltaPosition) / maxAcc);
+    float halfwayTime = 0.5 * sqrt(2 * fabs(deltaPosition) / maxAcc);
 
     // First phase - acceleration
     trajParams phase1;

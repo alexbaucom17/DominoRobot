@@ -68,7 +68,7 @@ class TcpClient:
                 else:
                     new_msg += new_str
 
-        if print_debug:
+        if print_debug and new_msg:
             print("RX: " + new_msg)
         if not new_msg_ready:
             print("Socket timeout")
@@ -110,15 +110,15 @@ class RobotClient:
         Raises an error if ack is not recieved pr incorrect ack is recieved
         """
 
-        self.client.send(json.dumps(msg))
+        self.client.send(json.dumps(msg,separators=(',',':'))) # Make sure json dump is compact for transmission
         resp = self.wait_for_server_response()
         if not resp:
-            raise ValueError('Did not recieve reply')
+            print('WARNING: Did not recieve ack')
         else:
             if resp['type'] != 'ack':
-                raise ValueError('Error: Expecting return type ack')
+                print('ERROR: Expecting return type ack')
             elif resp['data'] != msg['type']:
-                raise ValueError('Error: Incorrect ack type')
+                print('ERROR: Incorrect ack type')
         
         return resp
             
@@ -164,16 +164,16 @@ class RobotClient:
         msg = {'type': 'pickup'}
         self.send_msg_and_wait_for_ack(msg)
 
-    def position(self, x, y, a, t):
+    def send_position(self, x, y, a):
         """ Send robot coordinates from marvelmind sensors """
-        msg = {'type': 'move', 'data': {'x': x, 'y': y, 'a': a, 't': t}}
+        msg = {'type': 'p', 'data': {'x': round(x, 5), 'y': round(y, 5), 'a': round(a,4)}} # Try to reduce message size 
         self.send_msg_and_wait_for_ack(msg)
 
     def request_status(self):
         """ Request status from robot """
         msg = {'type' : 'status'}
-        self.client.send(json.dumps(msg), print_debug=False)
-        status_dict = self.wait_for_server_response(print_debug=False)
+        self.client.send(json.dumps(msg), print_debug=True)
+        status_dict = self.wait_for_server_response(print_debug=True)
         return status_dict
 
 

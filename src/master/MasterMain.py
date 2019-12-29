@@ -121,6 +121,9 @@ class Master:
         # Init GUI
         self.cmd_gui = CmdGui()
 
+        # Setup other miscellaneous variables
+        self.cfg = cfg
+
         print("Initializing Master")
 
         # Handle initial generation or loading of waypoints
@@ -138,41 +141,36 @@ class Master:
         self.pos_handler = None
         self.robot_client = None
         self.online = False
-        self.bring_online()
-
-        # Setup other miscellaneous variables
-        self.cfg = cfg
+        self.bring_online(1) # robot_id = 1 - handle multiple in the future
 
         print("Starting loop")
 
-    def bring_online(self):
+    def bring_online(self, robot_id):
         try:
-            print("Attempting to bring robot 1 online")
+            print("Attempting to bring robot {} online".format(robot_id))
             # Setup marvelmind devices and position handler
-            #self.pos_handler = RobotPositionHandler(cfg)
-            #self.pos_handler.wake_robot(robot_id)
+            self.pos_handler = RobotPositionHandler(self.cfg)
+            self.pos_handler.wake_robot(robot_id)
 
             # Setup robot clients and communication
-            # robot ID - TODO handle multiple
-            robot_id = 1
-            self.robot_client = RobotClient(cfg, robot_id)
+            self.robot_client = RobotClient(self.cfg, robot_id) # TODO Add a ping check here maybe to verify it is reachable, possible add retry logic too
 
             # Wait a little while for setup to finish
-            #sleep_time = 30
-            #print('Waiting {} seconds for beacons to fully wake up'.format(sleep_time))
-            #time.sleep(sleep_time)
+            sleep_time = 30
+            print('Waiting {} seconds for beacons to fully wake up'.format(sleep_time))
+            time.sleep(sleep_time)
             self.online = True
-            print("Robot 1 online")
+            print("Robot {} online".format(robot_id))
 
         except Exception as e:
-            print("Unable to bring robot 1 online. Reason: {}".format(repr(e)))
+            print("Unable to bring robot {} online. Reason: {}".format(robot_id, repr(e)))
 
     def cleanup(self):
 
         print("Cleaning up")
         if self.online:
-            #self.pos_handler.sleep_robot(1)
-            #self.pos_handler.close()
+            self.pos_handler.sleep_robot(1)
+            self.pos_handler.close()
             pass
 
     def checkNetworkStatus(self):
@@ -211,7 +209,7 @@ class Master:
                 status = self.robot_client.send_position(x,y,a)
         elif "online" in data:
             print("Got online command")
-            self.bring_online()
+            self.bring_online(1)  # robot_id = 1
         elif "test" in data:
             print("Got test status")
         else:
@@ -225,12 +223,11 @@ class Master:
             
             if self.online:
 
-                # Service marbelmind queues
-                #self.pos_handler.service_queues()
-
-                # Update position in gui
-                #pos = self.pos_handler.get_position(1)
-                #self.cmd_gui.update_robot_viz_position(pos[0], pos[1], pos[2])
+                # Service marvelmind queues
+                robots_updated = self.pos_handler.service_queues()
+                for robot in robots_updated:
+                    pos = self.pos_handler.get_position(robot)
+                    self.robot_client.send_position(pos[0], pos[1], pos[2]) # TODO: update for multiple robots
 
                 # Update staus in gui
                 if time.time() - last_status_time > 1:
@@ -239,7 +236,6 @@ class Master:
                         status = "Robot status not available!"
                     self.cmd_gui.update_robot_status(status)
                     last_status_time = time.time()
-                # pass
             
             # Handle any input from gui
             done, command_str = self.cmd_gui.update()
