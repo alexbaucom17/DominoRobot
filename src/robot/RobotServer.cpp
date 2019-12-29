@@ -149,6 +149,15 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
             moveData_.a = doc["data"]["a"];
             sendAck(type);
         }
+        else if(type == "move_rel")
+        {
+            debug_.println("[RobotServer] Got MOVE_REL command ");
+            cmd = COMMAND::MOVE_REL;
+            moveData_.x = doc["data"]["x"];
+            moveData_.y = doc["data"]["y"];
+            moveData_.a = doc["data"]["a"];
+            sendAck(type);
+        }
         else if(type == "place")
         {
             debug_.println("[RobotServer] Got PLACE command ");

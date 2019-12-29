@@ -38,6 +38,19 @@ def doWaypointGeneration(cfg, draw = False):
 
     return waypoints
 
+
+class NonBlockingTimer:
+
+    def __init__(self, trigger_time):
+        self.start_time = time.time()
+        self.trigger_time = trigger_time
+
+    def check(self):
+        if time.time() - self.start_time > self.trigger_time:
+            return True 
+        else:
+            return False
+
 class CmdGui:
 
     def __init__(self):
@@ -112,6 +125,47 @@ class CmdGui:
 
     def close(self):
         self.window.close()
+
+
+class CmdGenerator:
+    """ Generate commands for testing"""
+    def __init__(self, steps=None):
+        self.cur_step = 0
+        self.step_timer = NonBlockingTimer(1)
+        # Number is wait for that long, string is command, -1 is done, -2 is repeat
+        if steps:
+            self.steps = steps
+        else:
+            self.steps = [5, "rel[0.5,0.5,0]", 15, "rel[-0.5, -0.5, 0]", 10, -2]
+        self.done = False
+
+    def next_step(self):
+        cmd = None
+        if self.done:
+            return cmd
+
+        if self.step_timer.check():
+            new_cmd = self.steps[self.cur_step]
+            self.cur_step += 1
+            if isinstance(new_cmd, str):
+                cmd = new_cmd
+                print("Command generator executing command: {}".format(new_cmd))
+                self.step_timer = NonBlockingTimer(5)
+            elif isinstance(new_cmd, int):
+                if new_cmd == -1:
+                    print("Command generator done")
+                    self.done = True
+                elif new_cmd == -2:
+                    print("Repeating command generator")
+                    self.step_timer = NonBlockingTimer(1)
+                    self.cur_step = 0
+                else:
+                    print("Command generator waiting for {} seconds".format(new_cmd))
+                    self.step_timer = NonBlockingTimer(new_cmd)
+
+        return cmd
+
+
     
 
 class Master:
@@ -141,29 +195,34 @@ class Master:
         self.pos_handler = None
         self.robot_client = None
         self.online = False
+        self.initialized = False
+        self.init_timer = None
         self.bring_online(1) # robot_id = 1 - handle multiple in the future
+        self.cmd_generator = None
 
         print("Starting loop")
 
     def bring_online(self, robot_id):
         try:
-            print("Attempting to bring robot {} online".format(robot_id))
+            # Setup robot clients and communication
+            print("Attempting to connect to robot {} over wifi".format(robot_id))
+            self.robot_client = RobotClient(self.cfg, robot_id) # TODO Add a ping check here maybe to verify it is reachable, possible add retry logic too
+        except Exception as e:
+            print("Couldn't connect to robot {} online. Reason: {}".format(robot_id, repr(e)))
+            return
+
+        try:
             # Setup marvelmind devices and position handler
+            print("Attempting to enable marvelmind beacons on robot {} ".format(robot_id))
             self.pos_handler = RobotPositionHandler(self.cfg)
             self.pos_handler.wake_robot(robot_id)
-
-            # Setup robot clients and communication
-            self.robot_client = RobotClient(self.cfg, robot_id) # TODO Add a ping check here maybe to verify it is reachable, possible add retry logic too
-
-            # Wait a little while for setup to finish
-            sleep_time = 30
-            print('Waiting {} seconds for beacons to fully wake up'.format(sleep_time))
-            time.sleep(sleep_time)
             self.online = True
-            print("Robot {} online".format(robot_id))
-
+            self.initialized = False
+            self.init_timer = NonBlockingTimer(30)
+            print("Beacons enabled, will wait for 30 seconds to let them fully wake up")
         except Exception as e:
-            print("Unable to bring robot {} online. Reason: {}".format(robot_id, repr(e)))
+            print("Couldn't enable beacons on robot {}. Reason: {}".format(robot_id, repr(e)))
+
 
     def cleanup(self):
 
@@ -190,6 +249,14 @@ class Master:
             print("Got move command with parameters [{},{},{}]".format(vals[0], vals[1], vals[2]))
             if self.online:
                 self.robot_client.move(float(vals[0]), float(vals[1]), float(vals[2]))
+        elif "rel" in data:
+            start_idx = data.find('[')
+            end_idx = data.find(']')
+            vals = data[start_idx+1:end_idx].split(',')
+            vals = [x.strip() for x in vals]
+            print("Got move_rel command with parameters [{},{},{}]".format(vals[0], vals[1], vals[2]))
+            if self.online:
+                self.robot_client.move_rel(float(vals[0]), float(vals[1]), float(vals[2]))
         elif "net" in data:
             self.checkNetworkStatus()
         elif "status" in data:
@@ -212,6 +279,8 @@ class Master:
             self.bring_online(1)  # robot_id = 1
         elif "test" in data:
             print("Got test status")
+        elif "auto" in data:
+            self.cmd_generator = CmdGenerator()
         else:
             print("Unknown command: {}".format(data))
 
@@ -223,12 +292,6 @@ class Master:
             
             if self.online:
 
-                # Service marvelmind queues
-                robots_updated = self.pos_handler.service_queues()
-                for robot in robots_updated:
-                    pos = self.pos_handler.get_position(robot)
-                    self.robot_client.send_position(pos[0], pos[1], pos[2]) # TODO: update for multiple robots
-
                 # Update staus in gui
                 if time.time() - last_status_time > 1:
                     status = self.robot_client.request_status()
@@ -236,9 +299,26 @@ class Master:
                         status = "Robot status not available!"
                     self.cmd_gui.update_robot_status(status)
                     last_status_time = time.time()
+
+                if self.initialized:
+
+                    # Service marvelmind queues
+                    robots_updated = self.pos_handler.service_queues()
+                    for robot in robots_updated:
+                        pos = self.pos_handler.get_position(robot)
+                        self.robot_client.send_position(pos[0], pos[1], pos[2]) # TODO: update for multiple robots
+
+                elif self.init_timer.check():
+                    print("Beacons awake. Beginning position transmission")
+                    self.initialized = True
             
             # Handle any input from gui
             done, command_str = self.cmd_gui.update()
+
+            # Handle any input from cmd generator
+            if self.cmd_generator:
+                command_str = self.cmd_generator.next_step()
+
             if done:
                 break
             if command_str:

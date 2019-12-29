@@ -23,6 +23,7 @@ class RobotServer
        ERROR_UNKOWN_TYPE,
        ERROR_BAD_JSON,
        MOVE,
+       MOVE_REL,
        PLACE,
        DOCK,
        UNDOCK,

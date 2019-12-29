@@ -25,6 +25,7 @@ class Config:
     ip_map = {1: '192.168.1.3'}
 
     mm_forward_offset = 0.2969 # Meters from center of robot to center point of MM beacons
+    mm_beacon_sep = 0.5715 # Meters between beacons on the robot
 
 
     # ====== PLAN GENERATION ========

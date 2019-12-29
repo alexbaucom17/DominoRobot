@@ -34,6 +34,11 @@ void loop()
         RobotServer::PositionData data = server.getMoveData();
         controller.moveToPosition(data.x, data.y, data.a);
     }
+    else if(newCmd == RobotServer::COMMAND::MOVE_REL)
+    {
+        RobotServer::PositionData data = server.getMoveData();
+        controller.moveToPositionRelative(data.x, data.y, data.a);
+    }
     else if (newCmd == RobotServer::COMMAND::POSITION)
     {
         RobotServer::PositionData data = server.getPositionData();

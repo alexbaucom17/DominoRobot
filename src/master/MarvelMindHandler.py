@@ -312,6 +312,15 @@ class RobotPositionHandler():
             if not p0 or not p1:
                 continue
 
+            # Check for distance between both beacons since this should be a fixed amount - can throw out potentially bogus values here
+            # Calculation here is in mm
+            beacon_dist_mm = math.sqrt((p0.x - p1.x)**2 + (p0.y-p1.y)**2)
+            expected_beacon_dist_mm = 1000*self.cfg.mm_beacon_sep
+            if abs(beacon_dist_mm - expected_beacon_dist_mm) > 20:
+                print("Thowing out beacon values due to failing distance check")
+                print("Becon dist: {}, expected: {}, delta: {}".format(beacon_dist_mm, expected_beacon_dist_mm, abs(beacon_dist_mm - expected_beacon_dist_mm)))
+                continue
+
             # Compute position as the average
             x = (p0.x + p1.x)/2.0 / 1000.0
             y = (p0.y + p1.y)/2.0 / 1000.0

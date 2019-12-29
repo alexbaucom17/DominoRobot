@@ -5,7 +5,7 @@
 
 #define PROCESS_NOISE_SCALE 0.08
 #define MEAS_NOISE_SCALE 0.01
-#define MEAS_NOISE_VEL_SCALE_FACTOR 10
+#define MEAS_NOISE_VEL_SCALE_FACTOR 10000
 
 RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater)
 : motors{
@@ -46,6 +46,17 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
 void RobotController::moveToPosition(float x, float y, float a)
 {
     trajGen_.generate(cartPos_, Point(x,y,a));
+    trajRunning_ = true;
+    trajStartTime_ = millis();
+    prevControlLoopTime_ = 0;
+    enableAllMotors();
+    debug_.println("Starting move");
+}
+
+void RobotController::moveToPositionRelative(float x, float y, float a)
+{
+    Point target_point = Point(cartPos_.x_ + x, cartPos_.y_ + y, cartPos_.a_ + a);
+    trajGen_.generate(cartPos_, target_point);
     trajRunning_ = true;
     trajStartTime_ = millis();
     prevControlLoopTime_ = 0;
@@ -164,6 +175,7 @@ void RobotController::computeControl(PVTPoint cmd)
 
 bool RobotController::checkForCompletedTrajectory(PVTPoint cmd)
 {
+    // TODO: Add a position check here too
     float eps = 0.01;
     if(cmd.velocity_.x_ == 0 && cmd.velocity_.y_ == 0 && cmd.velocity_.a_ == 0 &&
        fabs(cartVel_.x_) < eps && fabs(cartVel_.y_) < eps && fabs(cartVel_.a_) < eps)

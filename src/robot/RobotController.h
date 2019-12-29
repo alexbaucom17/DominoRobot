@@ -19,6 +19,9 @@ class RobotController
 
     // Command robot to move a specific position
     void moveToPosition(float x, float y, float a);
+
+    // Command robot to move a specific position relative to current position
+    void moveToPositionRelative(float x, float y, float a);
     
     // Command robot to move to a specific position with high accuracy
     void moveToPositionFine(float x, float y, float a);

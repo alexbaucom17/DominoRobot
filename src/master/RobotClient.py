@@ -110,7 +110,7 @@ class RobotClient:
         Raises an error if ack is not recieved pr incorrect ack is recieved
         """
 
-        self.client.send(json.dumps(msg,separators=(',',':'))) # Make sure json dump is compact for transmission
+        self.client.send(json.dumps(msg,separators=(',',':')), print_debug=print_debug) # Make sure json dump is compact for transmission
         resp = self.wait_for_server_response(print_debug=print_debug)
         if not resp:
             print('WARNING: Did not recieve ack')
@@ -137,6 +137,11 @@ class RobotClient:
     def move(self, x, y, a):
         """ Tell robot to move to specific location """
         msg = {'type': 'move', 'data': {'x': x, 'y': y, 'a': a}}
+        self.send_msg_and_wait_for_ack(msg)
+
+    def move_rel(self, x, y, a):
+        """ Tell robot to move to a relative location """
+        msg = {'type': 'move_rel', 'data': {'x': x, 'y': y, 'a': a}}
         self.send_msg_and_wait_for_ack(msg)
 
     def place(self):
