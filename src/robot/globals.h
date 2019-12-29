@@ -26,12 +26,12 @@
 
 // Velocities
 #define MAX_WHEEL_SPEED 1.0   // rad/s - current motor can only do about 1 rev/s under load
-#define MAX_TRANS_SPEED 0.5  // m/s
-#define MAX_ROT_SPEED 1.0      // rad/2
+#define MAX_TRANS_SPEED 0.1  // m/s
+#define MAX_ROT_SPEED 0.5      // rad/2
 
 // Accelerations
-#define MAX_TRANS_ACC 0.5    // m/s^2
-#define MAX_ROT_ACC   1.0      // rad/s^2
+#define MAX_TRANS_ACC 0.1    // m/s^2
+#define MAX_ROT_ACC   0.5      // rad/s^2
 
 // Motor control gains
 #define MOTOR_KP 70

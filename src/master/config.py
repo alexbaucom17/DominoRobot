@@ -24,6 +24,8 @@ class Config:
     # Specifies which IP address each robot has
     ip_map = {1: '192.168.1.3'}
 
+    mm_forward_offset = 0.2969 # Meters from center of robot to center point of MM beacons
+
 
     # ====== PLAN GENERATION ========
 

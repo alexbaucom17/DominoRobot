@@ -3,8 +3,9 @@
 #include <math.h>
 #include <LinearAlgebra.h>
 
-#define PROCESS_NOISE_SCALE 0.08;
-#define MEAS_NOISE_SCALE 0.01;
+#define PROCESS_NOISE_SCALE 0.08
+#define MEAS_NOISE_SCALE 0.01
+#define MEAS_NOISE_VEL_SCALE_FACTOR 10
 
 RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater)
 : motors{
@@ -200,7 +201,12 @@ void RobotController::inputPosition(float x, float y, float a)
     z(0,0) = x;
     z(1,0) = y;
     z(2,0) = a;
-    kf_.update(z);
+    // Scale covariance estimate based on velocity due to measurment lag
+    mat R = mat::zeros(3,3);
+    R(0,0) = MEAS_NOISE_SCALE + MEAS_NOISE_VEL_SCALE_FACTOR * fabs(cartVel_.x_);
+    R(1,1) = MEAS_NOISE_SCALE + MEAS_NOISE_VEL_SCALE_FACTOR * fabs(cartVel_.y_);
+    R(2,2) = MEAS_NOISE_SCALE + MEAS_NOISE_VEL_SCALE_FACTOR * fabs(cartVel_.a_);
+    kf_.update(z, R, debug_);
 
     // Retrieve new state estimate
     mat x_hat = kf_.state();

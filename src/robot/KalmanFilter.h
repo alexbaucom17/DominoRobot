@@ -4,6 +4,7 @@
 #define KalmanFilter_h
 
 #include <LinearAlgebra.h>
+#include <HardwareSerial.h>
 
 class KalmanFilter 
 {
@@ -52,8 +53,9 @@ class KalmanFilter
 
     /**
      * Update the estimated state based on measured values.
+     * Can pass in R to scale how much measurement error there will be based on situation (in my case, velocity)
      */
-    void update(const mat& y);
+    void update(const mat& y, const mat& R, HardwareSerial& debug);
 
     /**
      * Return the current state and time.

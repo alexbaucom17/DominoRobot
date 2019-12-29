@@ -42,10 +42,46 @@ void KalmanFilter::predict(double dt, const mat& B, const mat& u)
   x_hat = x_hat_new;
 }
 
-void KalmanFilter::update(const mat& y) 
+void KalmanFilter::update(const mat& y, const mat& R, HardwareSerial& debug) 
 {
+
+  // Note print for a single column matrix doesn't work for some reason
+  debug.println("State estimate before update");
+  debug.print("[X: ");
+  debug.print(x_hat(0,0), 4);
+  debug.print(", Y: ");
+  debug.print(x_hat(1,0), 4);
+  debug.print(", A: ");
+  debug.print(x_hat(2,0), 4);
+  debug.println("]");
+
+  this->R = R;
   K = P*C.t()*(C*P*C.t() + R).inv();
   x_hat_new += K * (y - C*x_hat);
   P = (I - K*C)*P;
   x_hat = x_hat_new;
+
+  debug.println("State estimate after update");
+  debug.print("[X: ");
+  debug.print(x_hat(0,0), 4);
+  debug.print(", Y: ");
+  debug.print(x_hat(1,0), 4);
+  debug.print(", A: ");
+  debug.print(x_hat(2,0), 4);
+  debug.println("]");
+
+  String s1;
+  debug.println("R matrix");
+  R.print(s1);
+  debug.println(s1);
+
+  String s2;
+  debug.println("P matrix");
+  P.print(s2);
+  debug.println(s2);
+
+  String s3;
+  debug.println("K matrix");
+  K.print(s3);
+  debug.println(s3);
 }

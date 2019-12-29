@@ -322,6 +322,10 @@ class RobotPositionHandler():
             ydiff = p1.y - p0.y
             angle = math.atan2(ydiff, xdiff) + math.pi/2.0
 
+            # Adjust position to align with center of the robot based on offset
+            x = x - self.cfg.mm_forward_offset * math.cos(angle)
+            y = y - self.cfg.mm_forward_offset * math.sin(angle)
+
             # Timing is a bit tricky. This assumes that the devices are both getting updated
             # regularly enough to consider them updated simulatneously relative to motion
             # TODO: Figure out how much error this introduces and if it is a problem
