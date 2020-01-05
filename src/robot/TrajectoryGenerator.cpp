@@ -1,28 +1,32 @@
 #include "TrajectoryGenerator.h"
 #include <math.h>
 
-// Scale max speeds and accelerations for trajectory generation
-const float TRAJ_MAX_TRANS_SPEED = TRAJ_MAX_FRACTION * MAX_TRANS_SPEED;
-const float TRAJ_MAX_TRANS_ACC = TRAJ_MAX_FRACTION * MAX_TRANS_ACC;
-const float TRAJ_MAX_ROT_SPEED = TRAJ_MAX_FRACTION * MAX_ROT_SPEED;
-const float TRAJ_MAX_ROT_ACC = TRAJ_MAX_FRACTION * MAX_ROT_ACC;
+
 
 TrajectoryGenerator::TrajectoryGenerator(HardwareSerial& debug)
   : currentTraj_(),
-    timeForConstVelTrans_(TRAJ_MAX_TRANS_SPEED / TRAJ_MAX_TRANS_ACC),
-    posForConstVelTrans_(0.5 * TRAJ_MAX_TRANS_ACC * timeForConstVelTrans_ * timeForConstVelTrans_),
-    timeForConstVelRot_(TRAJ_MAX_ROT_SPEED / TRAJ_MAX_ROT_ACC),
-    posForConstVelRot_(0.5 * TRAJ_MAX_ROT_ACC * timeForConstVelRot_ * timeForConstVelRot_),
     debug_(debug)
 {
 }
 
-void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targetPoint)
+void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targetPoint, const DynamicLimits& limits)
 {
     Point deltaPoint;
     deltaPoint.x_ = targetPoint.x_ - initialPoint.x_;
     deltaPoint.y_ = targetPoint.y_ - initialPoint.y_;
     deltaPoint.a_ = targetPoint.a_ - initialPoint.a_;
+
+    // Scale max speeds and accelerations for trajectory generation
+    float TRAJ_MAX_TRANS_SPEED = TRAJ_MAX_FRACTION * limits.max_trans_vel_;
+    float TRAJ_MAX_TRANS_ACC = TRAJ_MAX_FRACTION * limits.max_trans_acc_;
+    float TRAJ_MAX_ROT_SPEED = TRAJ_MAX_FRACTION * limits.max_rot_vel_;
+    float TRAJ_MAX_ROT_ACC = TRAJ_MAX_FRACTION * limits.max_rot_acc_;
+
+    // Pre-compute some useful values
+    float timeForConstVelTrans = TRAJ_MAX_TRANS_SPEED / TRAJ_MAX_TRANS_ACC;
+    float posForConstVelTrans = 0.5 * TRAJ_MAX_TRANS_ACC * timeForConstVelTrans * timeForConstVelTrans;
+    float timeForConstVelRot = TRAJ_MAX_ROT_SPEED / TRAJ_MAX_ROT_ACC;
+    float posForConstVelRot = 0.5 * TRAJ_MAX_ROT_ACC * timeForConstVelRot * timeForConstVelRot;
 
     debug_.println("Generating trajectory");
     debug_.println("Starting point:");
@@ -33,7 +37,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     debug_.println("");
 
     // Compute X trajectory
-    if(fabs(deltaPoint.x_) < 2*posForConstVelTrans_)
+    if(fabs(deltaPoint.x_) < 2*posForConstVelTrans)
     {
         currentTraj_.xtraj_ = generate_triangle_1D(initialPoint.x_, targetPoint.x_, TRAJ_MAX_TRANS_SPEED, TRAJ_MAX_TRANS_ACC);
     }
@@ -43,7 +47,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     }
 
     // Compute y trajectory
-    if(fabs(deltaPoint.y_) < 2*posForConstVelTrans_)
+    if(fabs(deltaPoint.y_) < 2*posForConstVelTrans)
     {
         currentTraj_.ytraj_ = generate_triangle_1D(initialPoint.y_, targetPoint.y_, TRAJ_MAX_TRANS_SPEED, TRAJ_MAX_TRANS_ACC);
     }
@@ -53,7 +57,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     }
 
     // Compute angle trajectory
-    if(fabs(deltaPoint.a_) < 2*posForConstVelRot_)
+    if(fabs(deltaPoint.a_) < 2*posForConstVelRot)
     {
         currentTraj_.atraj_ = generate_triangle_1D(initialPoint.a_, targetPoint.a_, TRAJ_MAX_ROT_SPEED, TRAJ_MAX_ROT_ACC);
     }

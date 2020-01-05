@@ -3,9 +3,19 @@
 #include <math.h>
 #include <LinearAlgebra.h>
 
+// Kalman filter scales
 #define PROCESS_NOISE_SCALE 0.08
 #define MEAS_NOISE_SCALE 0.01
 #define MEAS_NOISE_VEL_SCALE_FACTOR 10000
+
+// Possition accuracy targets
+#define TRANS_POS_ERR_COARSE 0.10 // m
+#define ANG_POS_ERR_COARSE   0.08 // rad
+#define TRANS_POS_ERR_FINE   0.01 // m
+#define ANG_POS_ERR_FINE     0.02 // rad
+
+const DynamicLimits FINE_LIMS = {MAX_TRANS_SPEED_FINE, MAX_TRANS_ACC_FINE, MAX_ROT_SPEED_FINE, MAX_ROT_ACC_FINE};
+const DynamicLimits COARSE_LIMS = {MAX_TRANS_SPEED_COARSE, MAX_TRANS_ACC_COARSE, MAX_ROT_SPEED_COARSE, MAX_ROT_ACC_COARSE};
 
 RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater)
 : motors{
@@ -27,6 +37,7 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
   errSumX_(0),
   errSumY_(0),
   errSumA_(0),
+  fineMode_(true),
   statusUpdater_(statusUpdater)
 {
     pinMode(PIN_ENABLE,OUTPUT);
@@ -45,10 +56,11 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
 
 void RobotController::moveToPosition(float x, float y, float a)
 {
-    trajGen_.generate(cartPos_, Point(x,y,a));
+    trajGen_.generate(cartPos_, Point(x,y,a), COARSE_LIMS);
     trajRunning_ = true;
     trajStartTime_ = millis();
     prevControlLoopTime_ = 0;
+    fineMode_ = false;
     enableAllMotors();
     debug_.println("Starting move");
 }
@@ -56,17 +68,24 @@ void RobotController::moveToPosition(float x, float y, float a)
 void RobotController::moveToPositionRelative(float x, float y, float a)
 {
     Point target_point = Point(cartPos_.x_ + x, cartPos_.y_ + y, cartPos_.a_ + a);
-    trajGen_.generate(cartPos_, target_point);
+    trajGen_.generate(cartPos_, target_point, COARSE_LIMS);
     trajRunning_ = true;
     trajStartTime_ = millis();
     prevControlLoopTime_ = 0;
+    fineMode_ = false;
     enableAllMotors();
     debug_.println("Starting move");
 }
 
 void RobotController::moveToPositionFine(float x, float y, float a)
 {
-    // TODO
+    trajGen_.generate(cartPos_, Point(x,y,a), FINE_LIMS);
+    trajRunning_ = true;
+    trajStartTime_ = millis();
+    prevControlLoopTime_ = 0;
+    fineMode_ = false;
+    enableAllMotors();
+    debug_.println("Starting move");
 }
 
 void RobotController::update()
@@ -106,6 +125,8 @@ void RobotController::update()
         {
             disableAllMotors();
             trajRunning_ = false;
+            // Re-enable fine mode at the end of a trajectory
+            fineMode_ = true;
         }
     }
     else
@@ -175,10 +196,20 @@ void RobotController::computeControl(PVTPoint cmd)
 
 bool RobotController::checkForCompletedTrajectory(PVTPoint cmd)
 {
-    // TODO: Add a position check here too
     float eps = 0.01;
+
+    float trans_pos_err = TRANS_POS_ERR_COARSE;
+    float ang_pos_err = ANG_POS_ERR_COARSE;
+    if(fineMode_)
+    {
+      trans_pos_err = TRANS_POS_ERR_FINE;
+      ang_pos_err = ANG_POS_ERR_FINE;
+    }
     if(cmd.velocity_.x_ == 0 && cmd.velocity_.y_ == 0 && cmd.velocity_.a_ == 0 &&
-       fabs(cartVel_.x_) < eps && fabs(cartVel_.y_) < eps && fabs(cartVel_.a_) < eps)
+       fabs(cartVel_.x_) < eps && fabs(cartVel_.y_) < eps && fabs(cartVel_.a_) < eps &&
+       fabs(cmd.position_.x_ - cartPos_.x_) < trans_pos_err &&
+       fabs(cmd.position_.y_ - cartPos_.y_) < trans_pos_err &&
+       fabs(cmd.position_.a_ - cartPos_.a_) < ang_pos_err )
     {
         return true;
     } 
@@ -208,30 +239,32 @@ void RobotController::disableAllMotors()
 
 void RobotController::inputPosition(float x, float y, float a)
 {
-    // Updat kalman filter for position observation
-    mat z = mat::zeros(3,1);
-    z(0,0) = x;
-    z(1,0) = y;
-    z(2,0) = a;
-    // Scale covariance estimate based on velocity due to measurment lag
-    mat R = mat::zeros(3,3);
-    R(0,0) = MEAS_NOISE_SCALE + MEAS_NOISE_VEL_SCALE_FACTOR * fabs(cartVel_.x_);
-    R(1,1) = MEAS_NOISE_SCALE + MEAS_NOISE_VEL_SCALE_FACTOR * fabs(cartVel_.y_);
-    R(2,2) = MEAS_NOISE_SCALE + MEAS_NOISE_VEL_SCALE_FACTOR * fabs(cartVel_.a_);
-    kf_.update(z, R, debug_);
-
-    // Retrieve new state estimate
-    mat x_hat = kf_.state();
-    cartPos_.x_ = x_hat(0,0);
-    cartPos_.y_ = x_hat(1,0);
-    cartPos_.a_ = x_hat(2,0);
-
-    // Compute update rate
-    unsigned long curMillis = millis();
-    unsigned long dt = curMillis - prevPositionUpdateTime_;
-    prevPositionUpdateTime_ = curMillis;
-    position_time_averager_.input(dt);
-
+    if(fineMode_)
+    {
+      // Updat kalman filter for position observation
+      mat z = mat::zeros(3,1);
+      z(0,0) = x;
+      z(1,0) = y;
+      z(2,0) = a;
+      // Scale covariance estimate based on velocity due to measurment lag
+      mat R = mat::zeros(3,3);
+      R(0,0) = MEAS_NOISE_SCALE + MEAS_NOISE_VEL_SCALE_FACTOR * fabs(cartVel_.x_);
+      R(1,1) = MEAS_NOISE_SCALE + MEAS_NOISE_VEL_SCALE_FACTOR * fabs(cartVel_.y_);
+      R(2,2) = MEAS_NOISE_SCALE + MEAS_NOISE_VEL_SCALE_FACTOR * fabs(cartVel_.a_);
+      kf_.update(z, R, debug_);
+  
+      // Retrieve new state estimate
+      mat x_hat = kf_.state();
+      cartPos_.x_ = x_hat(0,0);
+      cartPos_.y_ = x_hat(1,0);
+      cartPos_.a_ = x_hat(2,0);
+  
+      // Compute update rate
+      unsigned long curMillis = millis();
+      unsigned long dt = curMillis - prevPositionUpdateTime_;
+      prevPositionUpdateTime_ = curMillis;
+      position_time_averager_.input(dt);
+    }
 }
 
 void RobotController::updateMotors()
@@ -298,23 +331,31 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
 //    debug_.print(", va: ");
 //    debug_.print(va, 4);
 //    debug_.println("]");
+
+    float max_trans_speed = COARSE_LIMS.max_trans_vel_;
+    float max_rot_speed = COARSE_LIMS.max_rot_vel_;
+    if(fineMode_)
+    {
+      max_trans_speed = FINE_LIMS.max_trans_vel_;
+      max_rot_speed = FINE_LIMS.max_rot_vel_;
+    }
     
     // Note that this doesn't handle total translational magnitude correctly, that
     // is fine for what we are doing now.
-    if(fabs(vx) > MAX_TRANS_SPEED)
+    if(fabs(vx) > max_trans_speed)
     {
         debug_.println("Capping vx velocity");
-        vx = sgn(vx) * MAX_TRANS_SPEED;
+        vx = sgn(vx) * max_trans_speed;
     }
-    if(fabs(vy) > MAX_TRANS_SPEED)
+    if(fabs(vy) > max_trans_speed)
     {
         debug_.println("Capping vy velocity");
-        vy = sgn(vy) * MAX_TRANS_SPEED;
+        vy = sgn(vy) * max_trans_speed;
     }
-    if(fabs(va) > MAX_ROT_SPEED)
+    if(fabs(va) > max_rot_speed)
     {
         debug_.println("Capping angular velocity");
-        va = sgn(va) * MAX_ROT_SPEED;
+        va = sgn(va) * max_rot_speed;
     }
 
     // Convert input global velocities to local velocities

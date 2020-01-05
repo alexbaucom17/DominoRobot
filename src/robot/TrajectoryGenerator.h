@@ -46,6 +46,14 @@ struct PVTPoint
     }
 };
 
+struct DynamicLimits
+{
+  float max_trans_vel_;
+  float max_trans_acc_;
+  float max_rot_vel_;
+  float max_rot_acc_;
+};
+
 // Parameters for a 1D constant acceleration trajectory
 struct trajParams
 {
@@ -78,7 +86,7 @@ class TrajectoryGenerator
     public:
 
         TrajectoryGenerator(HardwareSerial& debug);
-        void generate(const Point& initialPoint, const Point& targetPoint);
+        void generate(const Point& initialPoint, const Point& targetPoint, const DynamicLimits& limits);
         PVTPoint lookup(float time);
 
     private:
@@ -120,10 +128,6 @@ class TrajectoryGenerator
         std::vector<float> lookup_1D(float time, std::vector<trajParams> traj) const;
 
         MultiTrajectory currentTraj_;
-        const float timeForConstVelTrans_;
-        const float posForConstVelTrans_;
-        const float timeForConstVelRot_;
-        const float posForConstVelRot_;
         HardwareSerial& debug_;
 
 

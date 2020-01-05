@@ -25,13 +25,17 @@
 #define PIN_PWM_4 4
 
 // Velocities
-#define MAX_WHEEL_SPEED 1.0   // rad/s - current motor can only do about 1 rev/s under load
-#define MAX_TRANS_SPEED 0.08  // m/s
-#define MAX_ROT_SPEED 0.5      // rad/2
+#define MAX_WHEEL_SPEED 1.0          // rad/s - current motor can only do about 1 rev/s under load
+#define MAX_TRANS_SPEED_FINE   0.08  // m/s
+#define MAX_ROT_SPEED_FINE     0.5   // rad/2
+#define MAX_TRANS_SPEED_COARSE 0.5  // m/s
+#define MAX_ROT_SPEED_COARSE   1.0   // rad/2
 
 // Accelerations
-#define MAX_TRANS_ACC 0.1    // m/s^2
-#define MAX_ROT_ACC   0.5      // rad/s^2
+#define MAX_TRANS_ACC_FINE   0.1    // m/s^2
+#define MAX_ROT_ACC_FINE     0.5    // rad/s^2
+#define MAX_TRANS_ACC_COARSE 0.5    // m/s^2
+#define MAX_ROT_ACC_COARSE   1.0    // rad/s^2
 
 // Motor control gains
 #define MOTOR_KP 70

@@ -24,11 +24,8 @@ class RobotServer
        ERROR_BAD_JSON,
        MOVE,
        MOVE_REL,
+       MOVE_FINE,
        PLACE,
-       DOCK,
-       UNDOCK,
-       DROPOFF,
-       PICKUP,
        POSITION,
        STATUS,
        CHECK

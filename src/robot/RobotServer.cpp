@@ -158,34 +158,19 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
             moveData_.a = doc["data"]["a"];
             sendAck(type);
         }
+        else if(type == "move_fine")
+        {
+            debug_.println("[RobotServer] Got MOVE_FINE command ");
+            cmd = COMMAND::MOVE_FINE;
+            moveData_.x = doc["data"]["x"];
+            moveData_.y = doc["data"]["y"];
+            moveData_.a = doc["data"]["a"];
+            sendAck(type);
+        }
         else if(type == "place")
         {
             debug_.println("[RobotServer] Got PLACE command ");
             cmd = COMMAND::PLACE;
-            sendAck(type);
-        }
-        else if(type == "dock")
-        {
-            debug_.println("[RobotServer] Got DOCK command ");
-            cmd = COMMAND::DOCK;
-            sendAck(type);
-        }
-        else if(type == "undock")
-        {
-            debug_.println("[RobotServer] Got UNDOCK command ");
-            cmd = COMMAND::UNDOCK;
-            sendAck(type);
-        }
-        else if(type == "dropoff")
-        {
-            debug_.println("[RobotServer] Got DROPOFF command ");
-            cmd = COMMAND::DROPOFF;
-            sendAck(type);
-        }
-        else if(type == "pickup")
-        {
-            debug_.println("[RobotServer] Got PICKUP command ");
-            cmd = COMMAND::PICKUP;
             sendAck(type);
         }
         else if(type == "p")

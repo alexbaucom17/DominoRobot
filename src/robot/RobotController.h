@@ -17,10 +17,10 @@ class RobotController
     // Constructor
     RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater);
 
-    // Command robot to move a specific position
+    // Command robot to move a specific position with low accuracy
     void moveToPosition(float x, float y, float a);
 
-    // Command robot to move a specific position relative to current position
+    // Command robot to move a specific position relative to current position with low accuracy
     void moveToPositionRelative(float x, float y, float a);
     
     // Command robot to move to a specific position with high accuracy
@@ -68,6 +68,7 @@ class RobotController
     float errSumX_;                        // Sum of error in X dimension for integral control
     float errSumY_;                        // Sum of error in Y dimension for integral control
     float errSumA_;                        // Sum of error in A dimension for integral control
+    bool fineMode_;                        // If fine positioning mode is enabled or not.
 
     StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
     RunningStatistics controller_time_averager_;  // Handles keeping average of the controller loop timing
