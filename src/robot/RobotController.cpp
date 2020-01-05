@@ -113,12 +113,6 @@ void RobotController::update()
         debug_.print("Est Pos: ");
         cartPos_.print(debug_);
         debug_.println("");
-
-// Print covariance matrix
-//        String s;
-//        mat P = kf_.cov();
-//        P.print(s);
-//        debug_.println(s);
        
         // Stop trajectory
         if (checkForCompletedTrajectory(cmd))
@@ -160,6 +154,8 @@ void RobotController::update()
     statusUpdater_.updatePosition(cartPos_.x_, cartPos_.y_, cartPos_.a_);
     statusUpdater_.updateVelocity(cartVel_.x_, cartVel_.y_, cartVel_.a_);
     statusUpdater_.updateLoopTimes(static_cast<int>(controller_time_averager_.mean()), static_cast<int>(position_time_averager_.mean()));
+    mat P = kf_.cov();
+    statusUpdater_.updatePositionConfidence(P(0,0), P(1,1), P(2,2));
 }
 
 void RobotController::computeControl(PVTPoint cmd)

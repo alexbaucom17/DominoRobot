@@ -18,6 +18,8 @@ class StatusUpdater
 
     void updateVelocity(float vx, float vy, float va);
 
+    void updatePositionConfidence(float cx, float cy, float ca);
+
     void updateLoopTimes(int controller_loop_ms, int position_loop_ms);
 
   private:
@@ -31,6 +33,9 @@ class StatusUpdater
       float vel_x;
       float vel_y;
       float vel_a;
+      uint8_t confidence_x;
+      uint8_t confidence_y;
+      uint8_t confidence_a;
 
       // Loop times
       int controller_loop_ms;
@@ -48,6 +53,9 @@ class StatusUpdater
       vel_x(0.0),
       vel_y(0.0),
       vel_a(0.0),
+      confidence_x(0),
+      confidence_y(0),
+      confidence_a(0),
       controller_loop_ms(999),
       position_loop_ms(999),
       counter(0),
@@ -58,7 +66,7 @@ class StatusUpdater
       String toJsonString()
       {
         // Size the object correctly
-        const size_t capacity = JSON_OBJECT_SIZE(12); // Update when adding new fields
+        const size_t capacity = JSON_OBJECT_SIZE(15); // Update when adding new fields
         DynamicJsonDocument root(capacity);
 
         // Format to match messages sent by server
@@ -74,6 +82,9 @@ class StatusUpdater
         doc["vel_x"] = vel_x;
         doc["vel_y"] = vel_y;
         doc["vel_a"] = vel_a;
+        doc["confidence_x"] = confidence_x;
+        doc["confidence_y"] = confidence_y;
+        doc["confidence_a"] = confidence_a;
         doc["controller_loop_ms"] = controller_loop_ms;
         doc["position_loop_ms"] = position_loop_ms;
         doc["counter"] = counter++;

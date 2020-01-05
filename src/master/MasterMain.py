@@ -86,12 +86,13 @@ class CmdGui:
         if status_dict:
             try:
                 status_str = ""
-                status_str += "Position: [{}, {}, {}]\n".format(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
-                status_str += "Velocity: [{}, {}, {}]\n".format(status_dict['vel_x'],status_dict['vel_y'], status_dict['vel_a'])
-                status_str += "Controller timing: {}\n".format(status_dict['controller_loop_ms'])
-                status_str += "Position timing:   {}\n".format(status_dict['position_loop_ms'])
+                status_str += "Position: [{.3f} m, {.3f} m, {.3f} m]\n".format(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
+                status_str += "Velocity: [{.3f} m/s, {.3f} m/s, {.3f} m/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], status_dict['vel_a'])
+                status_str += "Confidence: [{.2f} %, {.2f} %, {.2f} %]\n".format(status_dict['confidence_x']/2.55,status_dict['confidence_y']/2.55, status_dict['confidence_a']/2.55)
+                status_str += "Controller timing: {} ms\n".format(status_dict['controller_loop_ms'])
+                status_str += "Position timing:   {} ms\n".format(status_dict['position_loop_ms'])
                 status_str += "Counter:   {}\n".format(status_dict['counter'])
-                status_str += "Free memory:   {}\n".format(status_dict['free_memory'])
+                status_str += "Free memory:   {} bytes\n".format(status_dict['free_memory'])
 
                 # Also update the visualization position
                 self.update_robot_viz_position(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
