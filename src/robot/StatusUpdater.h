@@ -22,6 +22,8 @@ class StatusUpdater
 
     void updateLoopTimes(int controller_loop_ms, int position_loop_ms);
 
+    void updateInProgress(bool in_progress);
+
   private:
 
     struct Status
@@ -41,6 +43,7 @@ class StatusUpdater
       int controller_loop_ms;
       int position_loop_ms;
 
+      bool in_progress;
       uint8_t counter; // Just to show that the status is updating. Okay to roll over
       int free_memory;
 
@@ -58,6 +61,7 @@ class StatusUpdater
       confidence_a(0),
       controller_loop_ms(999),
       position_loop_ms(999),
+      in_progress(false),
       counter(0),
       free_memory(999)
       {
@@ -66,7 +70,7 @@ class StatusUpdater
       String toJsonString()
       {
         // Size the object correctly
-        const size_t capacity = JSON_OBJECT_SIZE(15); // Update when adding new fields
+        const size_t capacity = JSON_OBJECT_SIZE(16); // Update when adding new fields
         DynamicJsonDocument root(capacity);
 
         // Format to match messages sent by server
@@ -87,6 +91,7 @@ class StatusUpdater
         doc["confidence_a"] = confidence_a;
         doc["controller_loop_ms"] = controller_loop_ms;
         doc["position_loop_ms"] = position_loop_ms;
+        doc["in_progress"] = in_progress;
         doc["counter"] = counter++;
         doc["free_memory"] = free_memory;
 

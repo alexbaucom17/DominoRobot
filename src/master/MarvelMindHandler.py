@@ -202,6 +202,59 @@ class MarvelMindWrapper:
 
         return points
 
+
+class MsgMetrics:
+
+    type_ok = 0
+    type_drop_time = 1
+    type_drop_dist = 2
+
+    def __init__(self, max_msgs):
+        self.msgs = []
+        self.max_msgs = max_msgs
+        self.last_sent = 0
+
+    def _add_msg(self, t):
+        self.msgs.insert(0, t)
+        self.last_sent = time.time()
+        #print(self.msgs)
+        if len(self.msgs) > self.max_msgs:
+            self.msgs.pop()
+
+    def add_msg_ok(self):
+        self._add_msg(self.type_ok)
+
+    def drop_msg_time(self):
+        self._add_msg(self.type_drop_time)
+
+    def drop_msg_dist(self):
+        self._add_msg(self.type_drop_dist)
+
+    def get_stats(self):
+        num = len(self.msgs)
+        num_dropped_time = self.msgs.count(self.type_drop_time)
+        num_dropped_dist = self.msgs.count(self.type_drop_dist)
+        num_dropped_total = num_dropped_time + num_dropped_dist
+        
+        frac_dropped_time = 0
+        frac_dropped_dist = 0
+        if num_dropped_total > 0:
+            frac_dropped_time = num_dropped_time / num_dropped_total
+            frac_dropped_dist = num_dropped_dist / num_dropped_total
+        
+        frac_dropped_total = 0
+        if num > 0:
+            frac_dropped_total = num_dropped_total / num
+
+        time_since_last_sent = time.time() - self.last_sent
+        
+        return {'frac_dropped_total':frac_dropped_total, 
+                'frac_dropped_dist':frac_dropped_dist, 
+                'frac_dropped_time': frac_dropped_time,
+                'time_since_last_sent': time_since_last_sent}
+            
+
+
 class RobotPositionHandler():
 
     def __init__(self, cfg):
@@ -209,6 +262,9 @@ class RobotPositionHandler():
         self._mm = MarvelMindWrapper(cfg)
         self._mm._open_serial_port()
         self.cfg = cfg
+
+        # Metrics
+        self.metrics = MsgMetrics(20)
 
         # Wake static beacons
         static_beacons = self.cfg.device_map["static"]
@@ -256,6 +312,9 @@ class RobotPositionHandler():
             return self.robot_position_queues[str(robot_number)][0]
         except IndexError:
             return []
+
+    def get_metrics(self):
+        return self.metrics.get_stats()
 
     def _get_device_position(self, device_addr):
         # Returns device position
@@ -316,9 +375,10 @@ class RobotPositionHandler():
             # Calculation here is in mm
             beacon_dist_mm = math.sqrt((p0.x - p1.x)**2 + (p0.y-p1.y)**2)
             expected_beacon_dist_mm = 1000*self.cfg.mm_beacon_sep
-            if abs(beacon_dist_mm - expected_beacon_dist_mm) > 20:
+            if abs(beacon_dist_mm - expected_beacon_dist_mm) > 40:
                 print("Thowing out beacon values due to failing distance check")
                 print("Becon dist: {}, expected: {}, delta: {}".format(beacon_dist_mm, expected_beacon_dist_mm, abs(beacon_dist_mm - expected_beacon_dist_mm)))
+                self.metrics.drop_msg_dist()
                 continue
 
             # Compute position as the average
@@ -339,8 +399,10 @@ class RobotPositionHandler():
             # regularly enough to consider them updated simulatneously relative to motion
             # TODO: Figure out how much error this introduces and if it is a problem
             max_time_delta = 0.3 #seconds
-            # if abs(p0.t - p1.t) > max_time_delta:
-            #     print("WARNING: Max time delta exceeded between {} and {}".format(str(p0), str(p1))) 
+            #if abs(p0.t - p1.t) > max_time_delta:
+                #self.metrics.drop_msg_time()
+                # print("WARNING: Max time delta exceeded between {} and {}".format(str(p0), str(p1))) 
+
             t = (p0.t + p1.t)/2.0 # Just take average time
 
             # Similar note to above - only updating robot position if it has changed
@@ -351,6 +413,7 @@ class RobotPositionHandler():
             if not prev_point or x != prev_point[0] or y != prev_point[1] or angle != prev_point[2]:
                 #print("Robot {}: {},{},{}, {}".format(robot_name, x, y, angle, t))
                 robots_updated.append(int(robot_name))
+                self.metrics.add_msg_ok()
 
                 # Insert the new position, angle, and time into the queue
                 cur_queue.insert(0,(x,y,angle, t)) # Add new element to front of queue

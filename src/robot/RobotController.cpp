@@ -38,6 +38,7 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
   errSumY_(0),
   errSumA_(0),
   fineMode_(true),
+  predict_once(false),
   statusUpdater_(statusUpdater)
 {
     pinMode(PIN_ENABLE,OUTPUT);
@@ -156,7 +157,9 @@ void RobotController::update()
     statusUpdater_.updateLoopTimes(static_cast<int>(controller_time_averager_.mean()), static_cast<int>(position_time_averager_.mean()));
     mat P = kf_.cov();
     statusUpdater_.updatePositionConfidence(P(0,0), P(1,1), P(2,2));
+    statusUpdater_.updateInProgress(trajRunning_);
 }
+
 
 void RobotController::computeControl(PVTPoint cmd)
 {
@@ -303,13 +306,17 @@ void RobotController::computeOdometry()
     prevOdomLoopTime_ = curMillis;    
 
     // Kalman filter prediction using the velocity measurment from the previous step
-    // to predict our current position
-    mat u = mat::zeros(3,1);
-    u(0,0) = cartVel_.x_;
-    u(1,0) = cartVel_.y_;
-    u(2,0) = cartVel_.a_;
-    mat B = mat::identity(3) * dt;
-    kf_.predict(dt, B, u);
+    // to predict our current position, but only if we are moving
+    if( !(cartVel_.x_ == 0 && cartVel_.y_ == 0 && cartVel_.a_ == 0) || !predict_once)
+    {
+      mat u = mat::zeros(3,1);
+      u(0,0) = cartVel_.x_;
+      u(1,0) = cartVel_.y_;
+      u(2,0) = cartVel_.a_;
+      mat B = mat::identity(3) * dt;
+      kf_.predict(dt, B, u);
+      predict_once = true;
+    }
 
     // Retrieve new state estimate
     mat x_hat = kf_.state();

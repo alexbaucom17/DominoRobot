@@ -144,29 +144,14 @@ class RobotClient:
         msg = {'type': 'move_rel', 'data': {'x': x, 'y': y, 'a': a}}
         self.send_msg_and_wait_for_ack(msg)
 
+    def move_fine(self, x, y, a):
+        """ Tell robot to move to a specific location with fine precision """
+        msg = {'type': 'move_fine', 'data': {'x': x, 'y': y, 'a': a}}
+        self.send_msg_and_wait_for_ack(msg)
+
     def place(self):
         """ Tell robot to place pallet """
         msg = {'type': 'place'}
-        self.send_msg_and_wait_for_ack(msg)
-
-    def dock(self):
-        """ Tell robot to dock for charging """
-        msg = {'type': 'dock'}
-        self.send_msg_and_wait_for_ack(msg)
-
-    def undock(self):
-        """ Tell robot to undock from charging """
-        msg = {'type': 'undock'}
-        self.send_msg_and_wait_for_ack(msg)
-
-    def dropoff(self):
-        """ Tell robot to dropoff empty pallet """
-        msg = {'type': 'dropoff'}
-        self.send_msg_and_wait_for_ack(msg)
-
-    def pickup(self):
-        """ Tell robot to pickup full pallet """
-        msg = {'type': 'pickup'}
         self.send_msg_and_wait_for_ack(msg)
 
     def send_position(self, x, y, a):

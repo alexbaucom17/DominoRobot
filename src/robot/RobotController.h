@@ -69,6 +69,7 @@ class RobotController
     float errSumY_;                        // Sum of error in Y dimension for integral control
     float errSumA_;                        // Sum of error in A dimension for integral control
     bool fineMode_;                        // If fine positioning mode is enabled or not.
+    bool predict_once;
 
     StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
     RunningStatistics controller_time_averager_;  // Handles keeping average of the controller loop timing

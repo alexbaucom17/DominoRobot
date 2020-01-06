@@ -58,9 +58,9 @@ class CmdGui:
 
         col1 = [[sg.Text('Command:'), sg.Input(key='_IN_')], [sg.Button('Send'), sg.Button('Exit')]]
         col2 = [[sg.Text("Robot 1 status:")],
-               [sg.Text("Robot 1 offline",size=(30, 10),relief=sg.RELIEF_RAISED,key='_R1STATUS_')]]
+               [sg.Text("Robot 1 offline",size=(40, 15),relief=sg.RELIEF_RAISED,key='_R1STATUS_')]]
 #sg.Output(size=(100, 15)),
-        layout = [[sg.Graph(canvas_size=(750,750),graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white")  ],
+        layout = [[sg.Graph(canvas_size=(600,600),graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white")  ],
                    [sg.Column(col1), sg.Column(col2)] ]
 
         self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True)
@@ -81,23 +81,28 @@ class CmdGui:
 
         return False, command
 
-    def update_robot_status(self, status_dict):
+    def update_robot_status(self, status_dict, msg_metrics):
         status_str = "Cannot get robot status"
         if status_dict:
             try:
                 status_str = ""
-                status_str += "Position: [{.3f} m, {.3f} m, {.3f} m]\n".format(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
-                status_str += "Velocity: [{.3f} m/s, {.3f} m/s, {.3f} m/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], status_dict['vel_a'])
-                status_str += "Confidence: [{.2f} %, {.2f} %, {.2f} %]\n".format(status_dict['confidence_x']/2.55,status_dict['confidence_y']/2.55, status_dict['confidence_a']/2.55)
+                status_str += "Position: [{0:.3f} m, {1:.3f} m, {2:.3f} rad]\n".format(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
+                status_str += "Velocity: [{0:.3f} m/s, {1:.3f} m/s, {2:.3f} rad/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], status_dict['vel_a'])
+                status_str += "Confidence: [{0:.2f} %, {1:.2f} %, {2:.2f} %]\n".format(status_dict['confidence_x']/2.55,status_dict['confidence_y']/2.55, status_dict['confidence_a']/2.55)
                 status_str += "Controller timing: {} ms\n".format(status_dict['controller_loop_ms'])
                 status_str += "Position timing:   {} ms\n".format(status_dict['position_loop_ms'])
+                status_str += "Motion in progress: {}\n".format(status_dict["in_progress"])
                 status_str += "Counter:   {}\n".format(status_dict['counter'])
                 status_str += "Free memory:   {} bytes\n".format(status_dict['free_memory'])
+                status_str += "Marvelmind message stats:\n  Dropped: {0:.1f}%\n  Dropped dist: {1:.1f}%\n  Dropped time {2:.1f}%\n  Last sent: {3:.2f}s".format(
+                    msg_metrics['frac_dropped_total']*100, msg_metrics['frac_dropped_dist']*100,
+                    msg_metrics['frac_dropped_time']*100, msg_metrics['time_since_last_sent'])
 
                 # Also update the visualization position
                 self.update_robot_viz_position(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
-            except Exception:
-                status_str = "Bad dict: " + str(status_dict)
+            except Exception as e:
+                status_str = "Bad dicts: " + str(status_dict) + str(msg_metrics)
+                print("Message exception: " + repr(e))
 
         self.window['_R1STATUS_'].update(status_str)
 
@@ -137,21 +142,21 @@ class CmdGenerator:
         if steps:
             self.steps = steps
         else:
-            self.steps = [5, "rel[0.5,0.5,0]", 15, "rel[-0.5, -0.5, 0]", 10, -2]
+            self.steps = [1, "move[2.75,2.75,0]", 3, "fine[3,3,0]", 2, "fine[3,3,0]", 2, "fine[2.75,2.75,0]", 1, "move[1,2,0]", -2]
         self.done = False
 
-    def next_step(self):
+    def next_step(self, in_progress):
         cmd = None
         if self.done:
             return cmd
 
-        if self.step_timer.check():
+        if self.step_timer.check() and in_progress is False:
             new_cmd = self.steps[self.cur_step]
             self.cur_step += 1
             if isinstance(new_cmd, str):
                 cmd = new_cmd
                 print("Command generator executing command: {}".format(new_cmd))
-                self.step_timer = NonBlockingTimer(5)
+                self.step_timer = NonBlockingTimer(2)
             elif isinstance(new_cmd, int):
                 if new_cmd == -1:
                     print("Command generator done")
@@ -200,6 +205,7 @@ class Master:
         self.init_timer = None
         self.bring_online(1) # robot_id = 1 - handle multiple in the future
         self.cmd_generator = None
+        self.in_progress = False
 
         print("Starting loop")
 
@@ -258,6 +264,14 @@ class Master:
             print("Got move_rel command with parameters [{},{},{}]".format(vals[0], vals[1], vals[2]))
             if self.online:
                 self.robot_client.move_rel(float(vals[0]), float(vals[1]), float(vals[2]))
+        elif "fine" in data:
+            start_idx = data.find('[')
+            end_idx = data.find(']')
+            vals = data[start_idx+1:end_idx].split(',')
+            vals = [x.strip() for x in vals]
+            print("Got move_fine command with parameters [{},{},{}]".format(vals[0], vals[1], vals[2]))
+            if self.online:
+                self.robot_client.move_fine(float(vals[0]), float(vals[1]), float(vals[2]))
         elif "net" in data:
             self.checkNetworkStatus()
         elif "status" in data:
@@ -293,13 +307,7 @@ class Master:
             
             if self.online:
 
-                # Update staus in gui
-                if time.time() - last_status_time > 1:
-                    status = self.robot_client.request_status()
-                    if status == None or status == "":
-                        status = "Robot status not available!"
-                    self.cmd_gui.update_robot_status(status)
-                    last_status_time = time.time()
+                metrics = {'frac_dropped_total':0, 'frac_dropped_dist':0, 'frac_dropped_time': 0, 'time_since_last_sent': 999}
 
                 if self.initialized:
 
@@ -309,16 +317,32 @@ class Master:
                         pos = self.pos_handler.get_position(robot)
                         self.robot_client.send_position(pos[0], pos[1], pos[2]) # TODO: update for multiple robots
 
+                    # get metrics
+                    metrics = self.pos_handler.get_metrics()
+
                 elif self.init_timer.check():
                     print("Beacons awake. Beginning position transmission")
                     self.initialized = True
+
+                # Update staus in gui
+                if time.time() - last_status_time > 0.5:
+                    status = self.robot_client.request_status()
+                    if status == None or status == "":
+                        status = "Robot status not available!"
+                    else:
+                        try:
+                            self.in_progress = status["in_progress"]
+                        except Exception:
+                            print("Status miissing expected in_progress field")
+                    self.cmd_gui.update_robot_status(status, metrics)
+                    last_status_time = time.time()
             
             # Handle any input from gui
             done, command_str = self.cmd_gui.update()
 
             # Handle any input from cmd generator
             if self.cmd_generator:
-                command_str = self.cmd_generator.next_step()
+                command_str = self.cmd_generator.next_step(self.in_progress)
 
             if done:
                 break

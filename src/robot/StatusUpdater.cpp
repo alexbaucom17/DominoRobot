@@ -29,6 +29,11 @@ void StatusUpdater::updateVelocity(float vx, float vy, float va)
     currentStatus_.vel_a = va;
 }
 
+void StatusUpdater::updateInProgress(bool in_progress)
+{
+  currentStatus_.in_progress = in_progress;
+}
+
 void StatusUpdater::updateLoopTimes(int controller_loop_ms, int position_loop_ms)
 {
     currentStatus_.controller_loop_ms = controller_loop_ms;
