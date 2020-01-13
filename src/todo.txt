@@ -1,0 +1,6 @@
+- Fix angle wrapping in robot and mm code
+- Try to get plots generating from arduino serial plotter
+    - May need to diagnose the timing issues with serial printing (I think it may be related to the checkTrajectoryDone methods)
+    - Want to investigate jerkiness in controllers during fine motion
+    - Want to investigate angle drift in controllers during fine motion
+- Goal is to only need to call fine pos once and get to the target

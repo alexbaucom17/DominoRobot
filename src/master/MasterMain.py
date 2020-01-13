@@ -56,7 +56,7 @@ class CmdGui:
     def __init__(self):
         sg.change_look_and_feel('Dark Blue 3')
 
-        col1 = [[sg.Text('Command:'), sg.Input(key='_IN_')], [sg.Button('Send'), sg.Button('Exit')]]
+        col1 = [[sg.Text('Command:'), sg.Input(key='_IN_')], [sg.Button('Send'), sg.Button('Exit')], [sg.Button('Exit keep MM')]]
         col2 = [[sg.Text("Robot 1 status:")],
                [sg.Text("Robot 1 offline",size=(40, 15),relief=sg.RELIEF_RAISED,key='_R1STATUS_')]]
 #sg.Output(size=(100, 15)),
@@ -75,6 +75,8 @@ class CmdGui:
         command = None
         if event is None or event == 'Exit':
             return True, None
+        if event == "Exit keep MM":
+            return True, 'exit_dbg'
         if event in ('Send Command', '\r', '\n'): # Catch enter as well
             command = values['_IN_']
             self.window['_IN_'].update("")
@@ -172,6 +174,20 @@ class CmdGenerator:
         return cmd
 
 
+def write_file(filename, text):
+    with open(filename, 'w+') as f:
+        f.write(text)
+
+def get_file_bool(filename):
+    try:
+        with open(filename, 'r+') as f:
+            txt = f.readline()
+            if txt == 'True':
+                return True
+            else:
+                return False
+    except FileNotFoundError:
+        return False
     
 
 class Master:
@@ -225,19 +241,24 @@ class Master:
             self.pos_handler.wake_robot(robot_id)
             self.online = True
             self.initialized = False
-            self.init_timer = NonBlockingTimer(30)
-            print("Beacons enabled, will wait for 30 seconds to let them fully wake up")
+            if get_file_bool(self.cfg.mm_beacon_state_file):
+                self.init_timer = NonBlockingTimer(2)
+                print("Beacons already awake, begninning position transmission immediately")
+            else:
+                self.init_timer = NonBlockingTimer(30)
+                print("Beacons enabled, will wait for 30 seconds to let them fully wake up")
         except Exception as e:
             print("Couldn't enable beacons on robot {}. Reason: {}".format(robot_id, repr(e)))
 
 
-    def cleanup(self):
+    def cleanup(self, keep_mm_awake):
 
         print("Cleaning up")
         if self.online:
-            self.pos_handler.sleep_robot(1)
+            if not keep_mm_awake:
+                self.pos_handler.sleep_robot(1)
+                write_file(self.cfg.mm_beacon_state_file, 'False')
             self.pos_handler.close()
-            pass
 
     def checkNetworkStatus(self):
         net_status = self.robot_client.net_status()
@@ -296,6 +317,10 @@ class Master:
             print("Got test status")
         elif "auto" in data:
             self.cmd_generator = CmdGenerator()
+        elif "stop" in data:
+            self.cmd_generator = None
+        elif "exit_dbg" in data:
+            pass
         else:
             print("Unknown command: {}".format(data))
 
@@ -322,6 +347,7 @@ class Master:
 
                 elif self.init_timer.check():
                     print("Beacons awake. Beginning position transmission")
+                    write_file(self.cfg.mm_beacon_state_file, 'True')
                     self.initialized = True
 
                 # Update staus in gui
@@ -351,7 +377,10 @@ class Master:
 
 
         # Clean up whenever loop exits
-        self.cleanup()
+        keep_mm_awake = False
+        if command_str == "exit_dbg":
+            keep_mm_awake = True;
+        self.cleanup(keep_mm_awake)
         self.cmd_gui.close()
 
 
