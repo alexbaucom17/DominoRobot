@@ -33,6 +33,7 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
   trajGen_(debug),
   cartPos_(0),
   cartVel_(0),
+  goalPos_(0),
   trajRunning_(false),
   trajStartTime_(0),
   errSumX_(0),
@@ -58,36 +59,44 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
 
 void RobotController::moveToPosition(float x, float y, float a)
 {
-    trajGen_.generate(cartPos_, Point(x,y,a), COARSE_LIMS);
+    goalPos_ = Point(x,y,a);
+    trajGen_.generate(cartPos_, goalPos_, COARSE_LIMS);
     trajRunning_ = true;
     trajStartTime_ = millis();
     prevControlLoopTime_ = 0;
     fineMode_ = false;
     enableAllMotors();
+    #ifdef PRINT_DEBUG
     debug_.println("Starting move");
+    #endif
 }
 
 void RobotController::moveToPositionRelative(float x, float y, float a)
 {
-    Point target_point = Point(cartPos_.x_ + x, cartPos_.y_ + y, cartPos_.a_ + a);
-    trajGen_.generate(cartPos_, target_point, COARSE_LIMS);
+    goalPos_ = Point(cartPos_.x_ + x, cartPos_.y_ + y, cartPos_.a_ + a);
+    trajGen_.generate(cartPos_, goalPos_, COARSE_LIMS);
     trajRunning_ = true;
     trajStartTime_ = millis();
     prevControlLoopTime_ = 0;
     fineMode_ = false;
     enableAllMotors();
+    #ifdef PRINT_DEBUG
     debug_.println("Starting move");
+    #endif
 }
 
 void RobotController::moveToPositionFine(float x, float y, float a)
 {
-    trajGen_.generate(cartPos_, Point(x,y,a), FINE_LIMS);
+    goalPos_ = Point(x,y,a);
+    trajGen_.generate(cartPos_, goalPos_, FINE_LIMS);
     trajRunning_ = true;
     trajStartTime_ = millis();
     prevControlLoopTime_ = 0;
     fineMode_ = false;
     enableAllMotors();
+    #ifdef PRINT_DEBUG
     debug_.println("Starting move");
+    #endif
 }
 
 void RobotController::update()
@@ -105,6 +114,7 @@ void RobotController::update()
         float dt = static_cast<float>((curMillis - trajStartTime_) / 1000.0); // Convert to seconds
         cmd = trajGen_.lookup(dt);
 
+        #ifdef PRINT_DEBUG
         debug_.println("");
         debug_.print("Target: ");
         cmd.print(debug_);
@@ -115,6 +125,7 @@ void RobotController::update()
         debug_.print("Est Pos: ");
         cartPos_.print(debug_);
         debug_.println("");
+        #endif
        
         // Stop trajectory
         if (checkForCompletedTrajectory(cmd))
@@ -196,6 +207,7 @@ void RobotController::computeControl(PVTPoint cmd)
 
 bool RobotController::checkForCompletedTrajectory(PVTPoint cmd)
 {
+    // TODO split out vel error checks into trans/angle too, and update cmd vel to use this
     float eps = 0.01;
 
     float trans_pos_err = TRANS_POS_ERR_COARSE;
@@ -207,10 +219,13 @@ bool RobotController::checkForCompletedTrajectory(PVTPoint cmd)
     }
     if(cmd.velocity_.x_ == 0 && cmd.velocity_.y_ == 0 && cmd.velocity_.a_ == 0 &&
        fabs(cartVel_.x_) < eps && fabs(cartVel_.y_) < eps && fabs(cartVel_.a_) < eps &&
-       fabs(cmd.position_.x_ - cartPos_.x_) < trans_pos_err &&
-       fabs(cmd.position_.y_ - cartPos_.y_) < trans_pos_err &&
-       fabs(angle_diff(cmd.position_.a_, cartPos_.a_)) < ang_pos_err )
+       fabs(goalPos_.x_ - cartPos_.x_) < trans_pos_err &&
+       fabs(goalPos_.y_ - cartPos_.y_) < trans_pos_err &&
+       fabs(angle_diff(goalPos_.a_, cartPos_.a_)) < ang_pos_err )
     {
+        #ifdef PRINT_DEBUG
+        debug_.println("Reached goal");
+        #endif
         return true;
     } 
     else
@@ -223,7 +238,9 @@ void RobotController::enableAllMotors()
 {
     digitalWrite(PIN_ENABLE, 1);
     enabled_ = true;
+    #ifdef PRINT_DEBUG
     debug_.println("Enabling motors");
+    #endif
 }
 
 void RobotController::disableAllMotors()
@@ -234,7 +251,9 @@ void RobotController::disableAllMotors()
     }
     digitalWrite(PIN_ENABLE, 0);
     enabled_ = false;
+    #ifdef PRINT_DEBUG
     debug_.println("Disabling motors");
+    #endif
 }
 
 void RobotController::inputPosition(float x, float y, float a)

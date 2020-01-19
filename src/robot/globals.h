@@ -64,5 +64,8 @@
 #define NOTES_KEY_CONTROLLER_FREQ 1
 #define NOTES_KEY_POSITION_FREQ 2
 
+// Set debug printing, comment out to skip debug printing
+//#define PRINT_DEBUG true
+
 
 #endif

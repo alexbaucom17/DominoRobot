@@ -1,6 +1,5 @@
 - Diagnose delay in position update from robot
 - Try to get plots generating from arduino serial plotter
-    - May need to diagnose the timing issues with serial printing (I think it may be related to the checkTrajectoryDone methods)
     - Want to investigate jerkiness in controllers during fine motion
     - Want to investigate angle drift in controllers during fine motion
 - Make controller robust so I only need to call fine pos once and get to the target
@@ -8,6 +7,7 @@
 - Investigate possibility of stepper motor control
 - Investigate alternative DC motors
 - Modify beacon locations/mounts to clear wires on robot
+- Investigate cases where trajectory endpoint doesn't line up with target point somehow. Make sure robot can still reach target
 
 Purchase:
 - 2 more mini-rx beacons

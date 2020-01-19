@@ -28,6 +28,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     float timeForConstVelRot = TRAJ_MAX_ROT_SPEED / TRAJ_MAX_ROT_ACC;
     float posForConstVelRot = 0.5 * TRAJ_MAX_ROT_ACC * timeForConstVelRot * timeForConstVelRot;
 
+    #ifdef PRINT_DEBUG
     debug_.println("Generating trajectory");
     debug_.println("Starting point:");
     initialPoint.print(debug_);
@@ -35,6 +36,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     debug_.println("Target point: ");
     targetPoint.print(debug_);
     debug_.println("");
+    #endif
 
     // Compute X trajectory
     if(fabs(deltaPoint.x_) < 2*posForConstVelTrans)
@@ -66,7 +68,9 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
         currentTraj_.atraj_ = generate_trapazoid_1D(initialPoint.a_, targetPoint.a_, TRAJ_MAX_ROT_SPEED, TRAJ_MAX_ROT_ACC);
     }
 
+    #ifdef PRINT_DEBUG
     currentTraj_.print(debug_);
+    #endif
     
 }
 

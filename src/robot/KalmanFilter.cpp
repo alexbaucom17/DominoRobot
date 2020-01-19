@@ -50,6 +50,7 @@ void KalmanFilter::predict(double dt, const mat& B, const mat& u)
 void KalmanFilter::update(const mat& y, const mat& R, HardwareSerial& debug) 
 {
 
+#ifdef PRINT_DEBUG
   debug.print("xhat rows: ");
   debug.print(x_hat.get_rows());
   debug.print(" cols: ");
@@ -65,6 +66,8 @@ void KalmanFilter::update(const mat& y, const mat& R, HardwareSerial& debug)
   debug.print(", A: ");
   debug.print(x_hat(2,0), 4);
   debug.println("]");
+  #error "NO"
+#endif
 
   this->R = R;
   K = P*C.t()*(C*P*C.t() + R).inv();
@@ -72,6 +75,7 @@ void KalmanFilter::update(const mat& y, const mat& R, HardwareSerial& debug)
   P = (I - K*C)*P;
   x_hat = x_hat_new;
 
+#ifdef PRINT_DEBUG
   String s1;
   debug.println("R matrix");
   R.print(s1);
@@ -101,4 +105,5 @@ void KalmanFilter::update(const mat& y, const mat& R, HardwareSerial& debug)
   debug.print(", A: ");
   debug.print(x_hat(2,0), 4);
   debug.println("]");
+#endif
 }

@@ -63,6 +63,7 @@ class RobotController
     TrajectoryGenerator trajGen_;          // Trajectory generator object
     Point cartPos_;                        // Current cartesian position
     Point cartVel_;                        // Current cartesian velocity
+    Point goalPos_;                        // Desired goal position
     bool trajRunning_;                     // If a trajectory is currently active
     unsigned long trajStartTime_;          // Holds milliseconds when trajecotry was started
     float errSumX_;                        // Sum of error in X dimension for integral control

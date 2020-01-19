@@ -21,7 +21,9 @@ void setup()
 {
     // Communication with the host computer
     Serial.begin(115200); 
+    #ifdef PRINT_DEBUG
     Serial.println("Robot starting");
+    #endif
 }
 
 
