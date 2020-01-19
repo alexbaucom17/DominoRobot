@@ -65,10 +65,4 @@
 #define NOTES_KEY_POSITION_FREQ 2
 
 
-// Utility for getting sign of values - sticking this in globals cuz it is used a few places
-// From: https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
-template <typename T> int sgn(T val) {
-    return (T(0) < val) - (val < T(0));
-}
-
 #endif

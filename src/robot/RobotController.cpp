@@ -1,5 +1,6 @@
 #include "RobotController.h"
 #include "globals.h"
+#include "utils.h"
 #include <math.h>
 #include <LinearAlgebra.h>
 
@@ -184,8 +185,8 @@ void RobotController::computeControl(PVTPoint cmd)
     errSumY_ += posErrY * dt;
     float y_cmd = cmd.velocity_.y_ + CART_TRANS_KP * posErrY + CART_TRANS_KD * velErrY + CART_TRANS_KI * errSumY_;
 
-    // a control 
-    float posErrA = cmd.position_.a_ - cartPos_.a_;
+    // a control - need to be careful of angle error
+    float posErrA = angle_diff(cmd.position_.a_, cartPos_.a_);
     float velErrA = cmd.velocity_.a_ - cartVel_.a_;
     errSumA_ += posErrA * dt;
     float a_cmd = cmd.velocity_.a_ + CART_ROT_KP * posErrA + CART_ROT_KD * velErrA + CART_ROT_KI * errSumA_;

@@ -108,3 +108,4 @@ venv.bak/
 .vscode/
 
 .VSCodeCounter/
+beacon_state.txt

@@ -391,6 +391,14 @@ class RobotPositionHandler():
             ydiff = p1.y - p0.y
             angle = math.atan2(ydiff, xdiff) + math.pi/2.0
 
+            # Keep angle between +/- pi. Since we are doing a 90 degree manual rotation, the wrap around point
+            # from atan2 happens at -pi/2
+            if angle > math.pi:
+                angle -= 2*math.pi
+            elif angle < -math.pi:
+                angle += 2*math.pi
+
+
             # Adjust position to align with center of the robot based on offset
             x = x - self.cfg.mm_forward_offset * math.cos(angle)
             y = y - self.cfg.mm_forward_offset * math.sin(angle)

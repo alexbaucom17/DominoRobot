@@ -1,4 +1,5 @@
 #include "KalmanFilter.h"
+#include "utils.h"
 
 KalmanFilter::KalmanFilter(
     double dt,
@@ -39,6 +40,10 @@ void KalmanFilter::predict(double dt, const mat& B, const mat& u)
   x_hat_new = A * x_hat + B * u;
   P = A*P*A.t() + Q;
   t += dt;
+
+  // Customize kalman filter to handle 3rd element as an angle and wrap between +/- pi
+  x_hat_new(2,0) = wrap_angle(x_hat_new(2,0));
+  
   x_hat = x_hat_new;
 }
 

@@ -1,4 +1,6 @@
 - Fix angle wrapping in robot and mm code
+    - Figure out if I can just send larger angles from python to make path planner happy
+- Diagnose delay in position update from robot
 - Try to get plots generating from arduino serial plotter
     - May need to diagnose the timing issues with serial printing (I think it may be related to the checkTrajectoryDone methods)
     - Want to investigate jerkiness in controllers during fine motion
