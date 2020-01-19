@@ -1,12 +1,14 @@
-- Fix angle wrapping in robot and mm code
-    - Figure out if I can just send larger angles from python to make path planner happy
 - Diagnose delay in position update from robot
 - Try to get plots generating from arduino serial plotter
     - May need to diagnose the timing issues with serial printing (I think it may be related to the checkTrajectoryDone methods)
     - Want to investigate jerkiness in controllers during fine motion
     - Want to investigate angle drift in controllers during fine motion
-- Goal is to only need to call fine pos once and get to the target
+- Make controller robust so I only need to call fine pos once and get to the target
 - Consider updating to raspi for better beacon interface, processing power, and wifi
 - Investigate possibility of stepper motor control
 - Investigate alternative DC motors
 - Modify beacon locations/mounts to clear wires on robot
+
+Purchase:
+- 2 more mini-rx beacons
+- long and short usb A cables for arduino (to replace mine)

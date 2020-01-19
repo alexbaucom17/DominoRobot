@@ -4,6 +4,8 @@
 *  Encoder: https://www.pjrc.com/teensy/td_libs_Encoder.html
 *  ArduinoJson: https://arduinojson.org
 *  LinAlgebra: https://github.com/dams666/LinAlgebra
+*  ArduinoSTL:
+*  MemoryFree: 
 */
 
 #include "RobotServer.h"

@@ -209,7 +209,7 @@ bool RobotController::checkForCompletedTrajectory(PVTPoint cmd)
        fabs(cartVel_.x_) < eps && fabs(cartVel_.y_) < eps && fabs(cartVel_.a_) < eps &&
        fabs(cmd.position_.x_ - cartPos_.x_) < trans_pos_err &&
        fabs(cmd.position_.y_ - cartPos_.y_) < trans_pos_err &&
-       fabs(cmd.position_.a_ - cartPos_.a_) < ang_pos_err )
+       fabs(angle_diff(cmd.position_.a_, cartPos_.a_)) < ang_pos_err )
     {
         return true;
     } 
