@@ -1,6 +1,6 @@
 #include "TrajectoryGenerator.h"
 #include <math.h>
-
+#include "utils.h"
 
 
 TrajectoryGenerator::TrajectoryGenerator(HardwareSerial& debug)
