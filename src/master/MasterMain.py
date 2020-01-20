@@ -144,7 +144,7 @@ class CmdGenerator:
         if steps:
             self.steps = steps
         else:
-            self.steps = [1, "move[2.75,2.75,0]", 3, "fine[3,3,0]", 2, "fine[2.75,2.75,0]", 1, "move[1,2,0]", -2]
+            self.steps = [1, "move[2.75,2.75,-1.57]", 3, "fine[3,3,-1.57]", 2, "fine[2.75,2.75,-1.57]", 1, "move[1,2,-1.57]", -2]
         self.done = False
 
     def next_step(self, in_progress):
