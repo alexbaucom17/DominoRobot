@@ -4,11 +4,8 @@
     - Want to investigate angle drift in controllers during fine motion
 - Make controller robust so I only need to call fine pos once and get to the target
 - Consider updating to raspi for better beacon interface, processing power, and wifi
-- Investigate possibility of stepper motor control
-- Investigate alternative DC motors
-- Modify beacon locations/mounts to clear wires on robot
 - Investigate cases where trajectory endpoint doesn't line up with target point somehow. Make sure robot can still reach target
+- Test out new stepper code with full robot
+- Hook up enable pins to motors
 
 Purchase:
-- 2 more mini-rx beacons
-- long and short usb A cables for arduino (to replace mine)

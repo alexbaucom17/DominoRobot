@@ -1,11 +1,13 @@
 /* Requires libraries:
 *  Filters: https://github.com/JonHub/Filters
 *  PID: https://playground.arduino.cc/Code/PIDLibrary/
-*  Encoder: https://www.pjrc.com/teensy/td_libs_Encoder.html
 *  ArduinoJson: https://arduinojson.org
 *  LinAlgebra: https://github.com/dams666/LinAlgebra
-*  ArduinoSTL:
-*  MemoryFree: 
+*   (modified to reduce matrix size to 3)
+*  ArduinoSTL: https://www.arduinolibraries.info/libraries/arduino-stl
+*  MemoryFree: https://playground.arduino.cc/Code/AvailableMemory/
+*  StepperDriver: https://github.com/DIMRobotics/ArduinoStepperDriver
+*   (modified to increase stepper count to 4)
 */
 
 #include "RobotServer.h"

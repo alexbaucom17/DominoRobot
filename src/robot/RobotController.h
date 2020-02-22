@@ -1,12 +1,12 @@
 #ifndef RobotController_h
 #define RobotController_h
 
-#include "Motor.h"
 #include "TrajectoryGenerator.h"
 #include <Filters.h>
 #include <HardwareSerial.h>
 #include "StatusUpdater.h"
 #include "KalmanFilter.h"
+#include <StepperDriver.h>
 
 class RobotController
 {
@@ -53,7 +53,7 @@ class RobotController
     void computeOdometry();
 
     // Member variables
-    Motor motors[4];                       // Motor interface objects
+    axis_t motors[4];                      // Motor interface objects
     unsigned long prevPositionUpdateTime_; // Previous loop millis we were provided a position observation
     unsigned long prevControlLoopTime_;    // Previous loop millis through the cartesian control loop
     unsigned long prevUpdateLoopTime_;     // Previous loop millis through the update loop
@@ -70,7 +70,8 @@ class RobotController
     float errSumY_;                        // Sum of error in Y dimension for integral control
     float errSumA_;                        // Sum of error in A dimension for integral control
     bool fineMode_;                        // If fine positioning mode is enabled or not.
-    bool predict_once;
+    bool predict_once;                     // Bool to make sure kalman filter gets initialized properly
+    float motor_velocities[4];             // Track motor velocities in rad/s
 
     StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
     RunningStatistics controller_time_averager_;  // Handles keeping average of the controller loop timing

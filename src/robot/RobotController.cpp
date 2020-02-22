@@ -4,27 +4,11 @@
 #include <math.h>
 #include <LinearAlgebra.h>
 
-// Kalman filter scales
-#define PROCESS_NOISE_SCALE 0.08
-#define MEAS_NOISE_SCALE 0.01
-#define MEAS_NOISE_VEL_SCALE_FACTOR 10000
-
-// Possition accuracy targets
-#define TRANS_POS_ERR_COARSE 0.10 // m
-#define ANG_POS_ERR_COARSE   0.08 // rad
-#define TRANS_POS_ERR_FINE   0.01 // m
-#define ANG_POS_ERR_FINE     0.02 // rad
-
 const DynamicLimits FINE_LIMS = {MAX_TRANS_SPEED_FINE, MAX_TRANS_ACC_FINE, MAX_ROT_SPEED_FINE, MAX_ROT_ACC_FINE};
 const DynamicLimits COARSE_LIMS = {MAX_TRANS_SPEED_COARSE, MAX_TRANS_ACC_COARSE, MAX_ROT_SPEED_COARSE, MAX_ROT_ACC_COARSE};
 
 RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater)
-: motors{
-    Motor(PIN_PWM_1, PIN_DIR_1, PIN_ENCA_1, PIN_ENCB_1, MOTOR_KP, MOTOR_KI, MOTOR_KD),
-    Motor(PIN_PWM_2, PIN_DIR_2, PIN_ENCA_2, PIN_ENCB_2, MOTOR_KP, MOTOR_KI, MOTOR_KD),
-    Motor(PIN_PWM_3, PIN_DIR_3, PIN_ENCA_3, PIN_ENCB_3, MOTOR_KP, MOTOR_KI, MOTOR_KD),
-    Motor(PIN_PWM_4, PIN_DIR_4, PIN_ENCA_4, PIN_ENCB_4, MOTOR_KP, MOTOR_KI, MOTOR_KD)},
-  prevPositionUpdateTime_(millis()),
+: prevPositionUpdateTime_(millis()),
   prevControlLoopTime_(millis()),
   prevUpdateLoopTime_(millis()),
   prevOdomLoopTime_(millis()),
@@ -41,9 +25,15 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
   errSumA_(0),
   fineMode_(true),
   predict_once(false),
-  statusUpdater_(statusUpdater)
+  statusUpdater_(statusUpdater),
+  motor_velocities({0,0,0,0})
 {
-    pinMode(PIN_ENABLE,OUTPUT);
+    // Setup motors
+    StepperDriver.init();
+    motors[0] = StepperDriver.newAxis(PIN_PULSE_0, PIN_DIR_0, PIN_ENABLE_0, STEPPER_PULSE_PER_REV);
+    motors[1] = StepperDriver.newAxis(PIN_PULSE_1, PIN_DIR_1, PIN_ENABLE_1, STEPPER_PULSE_PER_REV);
+    motors[2] = StepperDriver.newAxis(PIN_PULSE_2, PIN_DIR_2, PIN_ENABLE_2, STEPPER_PULSE_PER_REV);
+    motors[3] = StepperDriver.newAxis(PIN_PULSE_3, PIN_DIR_3, PIN_ENABLE_3, STEPPER_PULSE_PER_REV);
 
     // Setup Kalman filter
     double dt = 0.1;
@@ -158,9 +148,8 @@ void RobotController::update()
         errSumA_ = 0;
     }
 
-    // Run controller and motor update
+    // Run controller and odometry update
     computeControl(cmd);
-    updateMotors();
     computeOdometry();
 
     // Update status 
@@ -236,7 +225,10 @@ bool RobotController::checkForCompletedTrajectory(PVTPoint cmd)
 
 void RobotController::enableAllMotors()
 {
-    digitalWrite(PIN_ENABLE, 1);
+    for(int i = 0; i < 4; i++)
+    {
+        StepperDriver.enable(motors[i]);
+    }
     enabled_ = true;
     #ifdef PRINT_DEBUG
     debug_.println("Enabling motors");
@@ -247,9 +239,8 @@ void RobotController::disableAllMotors()
 {
     for(int i = 0; i < 4; i++)
     {
-        motors[i].setCommand(0);
+        StepperDriver.disable(motors[i]);
     }
-    digitalWrite(PIN_ENABLE, 0);
     enabled_ = false;
     #ifdef PRINT_DEBUG
     debug_.println("Disabling motors");
@@ -286,32 +277,16 @@ void RobotController::inputPosition(float x, float y, float a)
     }
 }
 
-void RobotController::updateMotors()
-{
-    for(int i = 0; i < 4; i++)
-    {
-        motors[i].runLoop();
-    }
-}
-
 void RobotController::computeOdometry()
 {
-    // Get wheel velocities from each motor
-    float motor_vel[4];
-    for(int i = 0; i < 4; i++)
-    {
-        // Need to convert from revs/sec to rad/sec
-        motor_vel[i] = FUDGE_FACTOR * 2.0 * PI * motors[i].getCurrentVelocity();
-    }
-
     // Do forward kinematics to compute local cartesian velocity
     float local_cart_vel[3];
     float s0 = 0.5 * WHEEL_DIAMETER * sin(PI/4.0);
     float c0 = 0.5 * WHEEL_DIAMETER * cos(PI/4.0);
     float d0 = WHEEL_DIAMETER / (4.0 * WHEEL_DIST_FROM_CENTER);
-    local_cart_vel[0] = -c0 * motor_vel[0] + s0 * motor_vel[1] + c0 * motor_vel[2] - s0 * motor_vel[3];
-    local_cart_vel[1] =  s0 * motor_vel[0] + c0 * motor_vel[1] - s0 * motor_vel[2] - c0 * motor_vel[3];
-    local_cart_vel[2] =  d0 * motor_vel[0] + d0 * motor_vel[1] + d0 * motor_vel[2] + d0 * motor_vel[3];
+    local_cart_vel[0] = -c0 * motor_velocities[0] + s0 * motor_velocities[1] + c0 * motor_velocities[2] - s0 * motor_velocities[3];
+    local_cart_vel[1] =  s0 * motor_velocities[0] + c0 * motor_velocities[1] - s0 * motor_velocities[2] - c0 * motor_velocities[3];
+    local_cart_vel[2] =  d0 * motor_velocities[0] + d0 * motor_velocities[1] + d0 * motor_velocities[2] + d0 * motor_velocities[3];
 
     // Convert local cartesian velocity to global cartesian velocity using the last estimated angle
     float cA = cos(cartPos_.a_);
@@ -367,17 +342,17 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     // is fine for what we are doing now.
     if(fabs(vx) > max_trans_speed)
     {
-        debug_.println("Capping vx velocity");
+//        debug_.println("Capping vx velocity");
         vx = sgn(vx) * max_trans_speed;
     }
     if(fabs(vy) > max_trans_speed)
     {
-        debug_.println("Capping vy velocity");
+//        debug_.println("Capping vy velocity");
         vy = sgn(vy) * max_trans_speed;
     }
     if(fabs(va) > max_rot_speed)
     {
-        debug_.println("Capping angular velocity");
+//        debug_.println("Capping angular velocity");
         va = sgn(va) * max_rot_speed;
     }
 
@@ -390,19 +365,16 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     local_cart_vel[2] = va;
 
     // Convert local velocities to wheel speeds with inverse kinematics
-    float motorSpeed[4];
     float s0 = sin(PI/4);
     float c0 = cos(PI/4);
-    motorSpeed[0] = 1/WHEEL_DIAMETER * (-c0*local_cart_vel[0] + s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motorSpeed[1] = 1/WHEEL_DIAMETER * ( s0*local_cart_vel[0] + c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motorSpeed[2] = 1/WHEEL_DIAMETER * ( c0*local_cart_vel[0] - s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motorSpeed[3] = 1/WHEEL_DIAMETER * (-s0*local_cart_vel[0] - c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[0] = 1/WHEEL_DIAMETER * (-c0*local_cart_vel[0] + s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[1] = 1/WHEEL_DIAMETER * ( s0*local_cart_vel[0] + c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[2] = 1/WHEEL_DIAMETER * ( c0*local_cart_vel[0] - s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[3] = 1/WHEEL_DIAMETER * (-s0*local_cart_vel[0] - c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
 
     // Set the commanded values for each motor
     for (int i = 0; i < 4; i++)
     {
-        // Need to convert motor speed into revs/sec from rad/sec
-        motorSpeed[i] = motorSpeed[i] / (2.0 * PI * FUDGE_FACTOR);
-        motors[i].setCommand(motorSpeed[i]);
+        StepperDriver.write(motors[i], motor_velocities[i]);
     }
 }
