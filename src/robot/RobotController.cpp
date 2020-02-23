@@ -7,6 +7,8 @@
 const DynamicLimits FINE_LIMS = {MAX_TRANS_SPEED_FINE, MAX_TRANS_ACC_FINE, MAX_ROT_SPEED_FINE, MAX_ROT_ACC_FINE};
 const DynamicLimits COARSE_LIMS = {MAX_TRANS_SPEED_COARSE, MAX_TRANS_ACC_COARSE, MAX_ROT_SPEED_COARSE, MAX_ROT_ACC_COARSE};
 
+const float RAD_PER_SEC_TO_STEPS_PER_SEC = STEPPER_PULSE_PER_REV/  (2.0 * PI);
+
 RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater)
 : prevPositionUpdateTime_(millis()),
   prevControlLoopTime_(millis()),
@@ -30,10 +32,14 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
 {
     // Setup motors
     StepperDriver.init();
-    motors[0] = StepperDriver.newAxis(PIN_PULSE_0, PIN_DIR_0, PIN_ENABLE_0, STEPPER_PULSE_PER_REV);
-    motors[1] = StepperDriver.newAxis(PIN_PULSE_1, PIN_DIR_1, PIN_ENABLE_1, STEPPER_PULSE_PER_REV);
-    motors[2] = StepperDriver.newAxis(PIN_PULSE_2, PIN_DIR_2, PIN_ENABLE_2, STEPPER_PULSE_PER_REV);
-    motors[3] = StepperDriver.newAxis(PIN_PULSE_3, PIN_DIR_3, PIN_ENABLE_3, STEPPER_PULSE_PER_REV);
+    motors[0] = StepperDriver.newAxis(PIN_PULSE_0, PIN_DIR_0, 255, STEPPER_PULSE_PER_REV);
+    motors[1] = StepperDriver.newAxis(PIN_PULSE_1, PIN_DIR_1, 255, STEPPER_PULSE_PER_REV);
+    motors[2] = StepperDriver.newAxis(PIN_PULSE_2, PIN_DIR_2, 255, STEPPER_PULSE_PER_REV);
+    motors[3] = StepperDriver.newAxis(PIN_PULSE_3, PIN_DIR_3, 255, STEPPER_PULSE_PER_REV);
+
+    // Setup enable pin
+    digitalWrite(PIN_ENABLE_ALL, HIGH);
+    pinMode(PIN_ENABLE_ALL, OUTPUT);
 
     // Setup Kalman filter
     double dt = 0.1;
@@ -225,6 +231,7 @@ bool RobotController::checkForCompletedTrajectory(PVTPoint cmd)
 
 void RobotController::enableAllMotors()
 {
+    digitalWrite(PIN_ENABLE_ALL, LOW);
     for(int i = 0; i < 4; i++)
     {
         StepperDriver.enable(motors[i]);
@@ -237,6 +244,7 @@ void RobotController::enableAllMotors()
 
 void RobotController::disableAllMotors()
 {
+    digitalWrite(PIN_ENABLE_ALL, HIGH);
     for(int i = 0; i < 4; i++)
     {
         StepperDriver.disable(motors[i]);
@@ -278,7 +286,7 @@ void RobotController::inputPosition(float x, float y, float a)
 }
 
 void RobotController::computeOdometry()
-{
+{  
     // Do forward kinematics to compute local cartesian velocity
     float local_cart_vel[3];
     float s0 = 0.5 * WHEEL_DIAMETER * sin(PI/4.0);
@@ -375,6 +383,6 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     // Set the commanded values for each motor
     for (int i = 0; i < 4; i++)
     {
-        StepperDriver.write(motors[i], motor_velocities[i]);
+        StepperDriver.write(motors[i], motor_velocities[i] * RAD_PER_SEC_TO_STEPS_PER_SEC);
     }
 }

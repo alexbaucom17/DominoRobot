@@ -12,10 +12,7 @@
 #define PIN_DIR_2 46
 #define PIN_DIR_3 44
 
-#define PIN_ENABLE_0 10
-#define PIN_ENABLE_1 11
-#define PIN_ENABLE_2 12
-#define PIN_ENABLE_3 13
+#define PIN_ENABLE_ALL 40
 
 // Velocitiy limits
 #define MAX_TRANS_SPEED_FINE   0.08  // m/s
@@ -39,8 +36,8 @@
 
 // Physical dimensions
 #define WHEEL_DIAMETER 0.1016 // meters
-#define WHEEL_DIST_FROM_CENTER 0.3548 // meters
-#define STEPPER_PULSE_PER_REV 1600
+#define WHEEL_DIST_FROM_CENTER 0.4572 // meters
+#define STEPPER_PULSE_PER_REV 1600 // steps per revolution
 
 // Scaling factors
 #define TRAJ_MAX_FRACTION 0.7  // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate
@@ -57,7 +54,7 @@
 #define ANG_POS_ERR_FINE     0.02 // rad
 
 // Set debug printing, comment out to skip debug printing
-//#define PRINT_DEBUG true
+#define PRINT_DEBUG true
 
 
 #endif
