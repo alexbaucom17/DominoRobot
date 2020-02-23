@@ -8,6 +8,7 @@ const DynamicLimits FINE_LIMS = {MAX_TRANS_SPEED_FINE, MAX_TRANS_ACC_FINE, MAX_R
 const DynamicLimits COARSE_LIMS = {MAX_TRANS_SPEED_COARSE, MAX_TRANS_ACC_COARSE, MAX_ROT_SPEED_COARSE, MAX_ROT_ACC_COARSE};
 
 const float RAD_PER_SEC_TO_STEPS_PER_SEC = STEPPER_PULSE_PER_REV/  (2.0 * PI);
+const float SECONDS_TO_MICROSECONDS = 1000000;
 
 RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater)
 : prevPositionUpdateTime_(millis()),
@@ -383,6 +384,27 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     // Set the commanded values for each motor
     for (int i = 0; i < 4; i++)
     {
-        StepperDriver.write(motors[i], motor_velocities[i] * RAD_PER_SEC_TO_STEPS_PER_SEC);
+        float vel = motor_velocities[i];
+        uint16_t delay_us = 0; // This works for if vel is 0
+
+        // Compute motor direction
+        if(vel > 0)
+        {
+            StepperDriver.setDir(motors[i], FORWARD);
+        }
+        else
+        {
+            vel = -vel;
+            StepperDriver.setDir(motors[i], BACKWARD); 
+        }
+
+        // Compute delay between steps to achieve desired velocity
+        if(vel != 0)
+        {
+            delay_us = static_cast<uint16_t>(SECONDS_TO_MICROSECONDS /(vel * RAD_PER_SEC_TO_STEPS_PER_SEC));
+        }
+
+        // Update motor
+        StepperDriver.setDelay(motors[i], delay_us);
     }
 }
