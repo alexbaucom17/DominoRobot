@@ -41,6 +41,8 @@ class RobotServer
     // Constructor
     RobotServer(HardwareSerial& serial, HardwareSerial& debug, const StatusUpdater& statusUpdater);
 
+    void begin();
+
     RobotServer::COMMAND oneLoop();
 
     RobotServer::PositionData getMoveData();

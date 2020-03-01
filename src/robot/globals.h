@@ -2,15 +2,15 @@
 #define Globals_h
 
 // Pins
-#define PIN_PULSE_0 49
-#define PIN_PULSE_1 51
-#define PIN_PULSE_2 47
-#define PIN_PULSE_3 45
+#define PIN_PULSE_2 49
+#define PIN_PULSE_3 51
+#define PIN_PULSE_1 47
+#define PIN_PULSE_0 45
 
-#define PIN_DIR_0 48
-#define PIN_DIR_1 50
-#define PIN_DIR_2 46
-#define PIN_DIR_3 44
+#define PIN_DIR_2 48
+#define PIN_DIR_3 50
+#define PIN_DIR_1 46
+#define PIN_DIR_0 44
 
 #define PIN_ENABLE_ALL 40
 
@@ -37,7 +37,7 @@
 // Physical dimensions
 #define WHEEL_DIAMETER 0.1016 // meters
 #define WHEEL_DIST_FROM_CENTER 0.4572 // meters
-#define STEPPER_PULSE_PER_REV 1600 // steps per revolution
+#define STEPPER_PULSE_PER_REV 3200 // steps per revolution
 
 // Scaling factors
 #define TRAJ_MAX_FRACTION 0.7  // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate

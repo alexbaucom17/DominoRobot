@@ -6,6 +6,10 @@
 - Consider updating to raspi for better beacon interface, processing power, and wifi
 - Investigate cases where trajectory endpoint doesn't line up with target point somehow. Make sure robot can still reach target
 - Test out new stepper code with full robot
-- Hook up enable pins to motors
+
+- Fix interrupt issues
+    Got motors working by moving init of stepper library into begin method once HW is initialize, however, that seems
+    to be conflicting with the server and wifi comms now, don't fully understand how, but disabling stepper init makes 
+    the networking work again.
 
 Purchase:

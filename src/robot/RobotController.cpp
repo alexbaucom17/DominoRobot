@@ -7,11 +7,12 @@
 const DynamicLimits FINE_LIMS = {MAX_TRANS_SPEED_FINE, MAX_TRANS_ACC_FINE, MAX_ROT_SPEED_FINE, MAX_ROT_ACC_FINE};
 const DynamicLimits COARSE_LIMS = {MAX_TRANS_SPEED_COARSE, MAX_TRANS_ACC_COARSE, MAX_ROT_SPEED_COARSE, MAX_ROT_ACC_COARSE};
 
-const float RAD_PER_SEC_TO_STEPS_PER_SEC = STEPPER_PULSE_PER_REV/  (2.0 * PI);
 const float SECONDS_TO_MICROSECONDS = 1000000;
+const float STEPPER_CONVERSION = SECONDS_TO_MICROSECONDS * 2 * PI / STEPPER_PULSE_PER_REV;
 
 RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater)
-: prevPositionUpdateTime_(millis()),
+: motors({0,0,0,0}),
+  prevPositionUpdateTime_(millis()),
   prevControlLoopTime_(millis()),
   prevUpdateLoopTime_(millis()),
   prevOdomLoopTime_(millis()),
@@ -28,11 +29,16 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
   errSumA_(0),
   fineMode_(true),
   predict_once(false),
-  statusUpdater_(statusUpdater),
-  motor_velocities({0,0,0,0})
+  motor_velocities({0,0,0,0}),
+  statusUpdater_(statusUpdater)
+{
+
+}
+
+void RobotController::begin()
 {
     // Setup motors
-    StepperDriver.init();
+    //StepperDriver.init();
     motors[0] = StepperDriver.newAxis(PIN_PULSE_0, PIN_DIR_0, 255, STEPPER_PULSE_PER_REV);
     motors[1] = StepperDriver.newAxis(PIN_PULSE_1, PIN_DIR_1, 255, STEPPER_PULSE_PER_REV);
     motors[2] = StepperDriver.newAxis(PIN_PULSE_2, PIN_DIR_2, 255, STEPPER_PULSE_PER_REV);
@@ -233,10 +239,10 @@ bool RobotController::checkForCompletedTrajectory(PVTPoint cmd)
 void RobotController::enableAllMotors()
 {
     digitalWrite(PIN_ENABLE_ALL, LOW);
-    for(int i = 0; i < 4; i++)
-    {
-        StepperDriver.enable(motors[i]);
-    }
+//    for(int i = 0; i < 4; i++)
+//    {
+//        StepperDriver.enable(motors[i]);
+//    }
     enabled_ = true;
     #ifdef PRINT_DEBUG
     debug_.println("Enabling motors");
@@ -246,10 +252,10 @@ void RobotController::enableAllMotors()
 void RobotController::disableAllMotors()
 {
     digitalWrite(PIN_ENABLE_ALL, HIGH);
-    for(int i = 0; i < 4; i++)
-    {
-        StepperDriver.disable(motors[i]);
-    }
+//    for(int i = 0; i < 4; i++)
+//    {
+//        StepperDriver.disable(motors[i]);
+//    }
     enabled_ = false;
     #ifdef PRINT_DEBUG
     debug_.println("Disabling motors");
@@ -401,10 +407,11 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
         // Compute delay between steps to achieve desired velocity
         if(vel != 0)
         {
-            delay_us = static_cast<uint16_t>(SECONDS_TO_MICROSECONDS /(vel * RAD_PER_SEC_TO_STEPS_PER_SEC));
+            delay_us = static_cast<uint16_t>(STEPPER_CONVERSION / vel);
         }
-
+        
         // Update motor
         StepperDriver.setDelay(motors[i], delay_us);
     }
+
 }

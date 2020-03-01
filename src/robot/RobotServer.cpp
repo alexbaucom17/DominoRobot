@@ -2,6 +2,7 @@
 #include <Arduino.h> // This has to be before ArduinoJson.h to fix compiler issues
 #include "RobotServer.h"
 #include <ArduinoJson.h>
+#include "globals.h"  // FOR PRINT_DEBUG
 
 RobotServer::RobotServer(HardwareSerial& serial, HardwareSerial& debug, const StatusUpdater& statusUpdater)
 : serial_(serial),
@@ -14,7 +15,12 @@ RobotServer::RobotServer(HardwareSerial& serial, HardwareSerial& debug, const St
   moveData_(),
   statusUpdater_(statusUpdater)
 {
-    serial_.begin(115200);
+  
+}
+
+void RobotServer::begin()
+{
+  serial_.begin(115200);
 }
 
 RobotServer::COMMAND RobotServer::oneLoop()
@@ -131,8 +137,8 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
     StaticJsonDocument<256> doc;
     DeserializationError err = deserializeJson(doc, message);
 
-    //debug_.print("[RobotServer] GetCommand(): ");
-    //debug_.println(message);
+    debug_.print("[RobotServer] GetCommand(): ");
+    debug_.println(message);
 
     if(err)
     {

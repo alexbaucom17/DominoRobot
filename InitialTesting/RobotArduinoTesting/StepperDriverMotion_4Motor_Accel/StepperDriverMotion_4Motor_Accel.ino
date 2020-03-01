@@ -8,11 +8,11 @@
 */
 axis_t bl, br, fl, fr;
 
-int MaxSpeed = 50;
-int acc_factor = 1;
-int pause_time = 1000;
-#define PulseRev 1600
-#define wheelSize = 100 //in mm
+float MaxSpeed = 3.14; // rad/s
+#define PulseRev 3200
+
+const float SECONDS_TO_MICROSECONDS = 1000000;
+const float STEPPER_CONVERSION = SECONDS_TO_MICROSECONDS * 2 * PI / PulseRev;
 
 #define bl_pulse 49
 #define bl_dir 48
@@ -22,12 +22,18 @@ int pause_time = 1000;
 #define fl_dir 46
 #define fr_pulse 45
 #define fr_dir 44
+#define PIN_ENABLE_ALL 40
 
 void setup()
 {
 
   Serial.begin(115200);
   StepperDriver.init();
+  delay(100);
+//  Serial.print("rad conversion: ");
+//  Serial.println(RAD_PER_SEC_TO_STEPS_PER_SEC);
+//  Serial.print("sec conversion: ");
+//  Serial.println(SECONDS_TO_MICROSECONDS);
 
   bl = StepperDriver.newAxis(bl_pulse, bl_dir, 255, PulseRev);
   br = StepperDriver.newAxis(br_pulse, br_dir, 255, PulseRev);
@@ -39,21 +45,62 @@ void setup()
   StepperDriver.enable(br);
   StepperDriver.enable(fl);
   StepperDriver.enable(fr);
+  digitalWrite(PIN_ENABLE_ALL, LOW);
+
+  Serial.println("TCCR2A: ");
+  Serial.println(TCCR2A, BIN);
+  Serial.println("TCCR2B: ");
+  Serial.println(TCCR2B, BIN);
+  Serial.println("TIMSK2: ");
+  Serial.println(TIMSK2, BIN);
+  
 }
 
-void writeAll(int speed)
+void writeAll(float vel)
 {
-  StepperDriver.write(fl, speed);
-  StepperDriver.write(fr, speed);
-  StepperDriver.write(br, speed);
-  StepperDriver.write(bl, speed);
+  Serial.print("Speed: ");
+  Serial.println(vel, 4);
+  Serial.print("Delays: [ ");
+  writeSpeed(fl, vel);
+  writeSpeed(fr, vel);
+  writeSpeed(br, vel);
+  writeSpeed(bl, vel);
+  Serial.println("]");
+}
+
+void writeSpeed(axis_t motor, float vel)
+{
+  uint16_t delay_us = 0; // This works for if vel is 0
+  
+  // Compute motor direction
+  if(vel > 0)
+  {
+      StepperDriver.setDir(motor, FORWARD);
+  }
+  else
+  {
+      vel = -vel;
+      StepperDriver.setDir(motor, BACKWARD); 
+  }
+  
+  // Compute delay between steps to achieve desired velocity
+  if(vel != 0)
+  {
+      delay_us = static_cast<uint16_t>(STEPPER_CONVERSION / vel);
+  }
+
+  Serial.print(delay_us);
+  Serial.print(", ");
+  
+  // Update motor
+  StepperDriver.setDelay(motor, delay_us);
 }
 
 void loop()
 {
    
    writeAll(MaxSpeed);  
-   delay(1000);
+   delay(2000);
 
    writeAll(0);
 
@@ -61,115 +108,10 @@ void loop()
 
    writeAll(-1*MaxSpeed);
 
-   delay(1000);
+   delay(2000);
 
    writeAll(0);
 
    delay(500);
 
-//  for (int x = 1; x < 5; x++) {
-//    int cur_acc = acc_factor * x;
-//    Serial.print("Acc: ");
-//    Serial.println(cur_acc);
-//    Serial.println("Accelerating forwards");
-//    accelLinear(1, MaxSpeed, cur_acc);
-//    delay(pause_time);
-//    Serial.println("Decelerating forwards");
-//    decelLinear(1, MaxSpeed, cur_acc);
-//    delay(pause_time);
-//    Serial.println("Accelerating backwards");
-//    accelLinear(0, MaxSpeed, cur_acc);
-//    delay(pause_time);
-//    Serial.println("Decelerating backwards");
-//    decelLinear(0, MaxSpeed, cur_acc);
-//  }
-//
-//  delay(2000);
-//
-//  rotateAngle(300);
-//  delay(2000);
-//  rotateAngle(-300);
-//  delay(2000);
-
 }
-
-//
-//void accelLinear(int dir, int topspeed, int accel) {
-//  int mspeed = 0;
-//  if (dir == 0) {
-//    StepperDriver.setDir(br, FORWARD);
-//    StepperDriver.setDir(bl, BACKWARD);
-//    StepperDriver.setDir(fr, FORWARD);
-//    StepperDriver.setDir(fl, BACKWARD);
-//  }
-//  else {
-//    StepperDriver.setDir(br, BACKWARD);
-//    StepperDriver.setDir(bl, FORWARD);
-//    StepperDriver.setDir(fr, BACKWARD);
-//    StepperDriver.setDir(fl, FORWARD);
-//  }
-//  while (mspeed < topspeed) {
-//    mspeed += accel;
-//    Serial.print("Speed: ");
-//    Serial.println(mspeed);
-//    StepperDriver.setSpeed(fl, mspeed);
-//    StepperDriver.setSpeed(fr, mspeed);
-//    StepperDriver.setSpeed(bl, mspeed);
-//    StepperDriver.setSpeed(br, mspeed);
-//    //delayMicroseconds(accel);
-//  }
-//
-//}
-//
-//void decelLinear(int dir, int currspeed, int decel) {
-//  int mspeed = currspeed;
-//  if (dir == 0) {
-//    StepperDriver.setDir(br, FORWARD);
-//    StepperDriver.setDir(bl, BACKWARD);
-//    StepperDriver.setDir(fr, FORWARD);
-//    StepperDriver.setDir(fl, BACKWARD);
-//  }
-//  else {
-//    StepperDriver.setDir(br, BACKWARD);
-//    StepperDriver.setDir(bl, FORWARD);
-//    StepperDriver.setDir(fr, BACKWARD);
-//    StepperDriver.setDir(fl, FORWARD);
-//  }
-//  while (mspeed > 0) {
-//    mspeed -= decel;
-//    if (mspeed < 0) {
-//      mspeed = 0;
-//      StepperDriver.stop(fl);
-//      StepperDriver.stop(fr);
-//      StepperDriver.stop(bl);
-//      StepperDriver.stop(br);
-//    }
-//    Serial.print("Speed: ");
-//    Serial.println(mspeed);
-//    StepperDriver.setSpeed(fl, mspeed);
-//    StepperDriver.setSpeed(fr, mspeed);
-//    StepperDriver.setSpeed(bl, mspeed);
-//    StepperDriver.setSpeed(br, mspeed);
-//    //delayMicroseconds(accel);
-//  }
-//}
-//
-//void rotateAngle(int angle) {
-//  int stepspeed = 240;
-//  if(angle<0){
-//    stepspeed *= -1;
-//    angle *= -1;
-//  }
-//  Serial.println(angle);
-//  float divangle = float(angle)/360;
-//  
-//  Serial.println(divangle);
-//  int adjust = int(divangle * 100);
-//  Serial.println(adjust);
-//  int steps = (adjust * PulseRev)/100;
-//  Serial.println(steps);
-//  StepperDriver.write(fl,stepspeed, steps);
-//  StepperDriver.write(fr, stepspeed, steps);
-//  StepperDriver.write(bl, stepspeed, steps);
-//  StepperDriver.write(br, stepspeed, steps);
-//}
