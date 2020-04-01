@@ -1,42 +1,12 @@
-import os
-import pickle
 import time
 import copy
 import sys
 import math
 import PySimpleGUI as sg
 import config
-import FieldPlanner
+from FieldPlanner import PlanManager
 from MarvelMindHandler import RobotPositionHandler
 from RobotClient import RobotClient
-
-
-def doWaypointGeneration(cfg, draw = False):
-    print('Generating domino field from image...',end='',flush=True)
-    field = FieldPlanner.generateField(cfg)
-    print('done.')
-
-    print('Generating tiles from field...',end='',flush=True)
-    tiles = field.generateTiles()
-    print('done.')
-
-    print('Generating robot paths...',end='',flush=True)
-    waypoints = FieldPlanner.generateWaypoints(tiles, cfg)
-    print('done.')
-
-    print('Generating tile build instructions...',end='',flush=True)
-    #build_instructions = tiles.generateBuildInstructions()
-    print('done.')
-
-    if draw:
-        print('Generating output diagrams:')
-        #field.printStats()
-        #field.show()
-        #tiles.draw()
-        #tiles.show_ordering()
-        waypoints.drawWaypoints(40)
-
-    return waypoints
 
 
 class NonBlockingTimer:
@@ -201,17 +171,7 @@ class Master:
         self.cfg = cfg
 
         print("Initializing Master")
-
-        # Handle initial generation or loading of waypoints
-        if os.path.exists(cfg.plan_file):
-            with open(cfg.plan_file, 'rb') as f:
-                self.waypoints = pickle.load(f)
-                print("Loaded waypoint data from {}".format(cfg.plan_file))
-        else:
-            self.waypoints = doWaypointGeneration(cfg)
-            with open(cfg.plan_file, 'wb') as f:
-                pickle.dump(self.waypoints, f)
-                print("Saved waypoint data to {}".format(cfg.plan_file))
+        self.plan_manager = PlanManager(self.cfg)
 
         # Robot and marvelmind interfaces
         self.pos_handler = None
