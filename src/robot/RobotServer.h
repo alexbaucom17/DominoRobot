@@ -26,6 +26,8 @@ class RobotServer
        LOAD_TRAY,
        INITIALIZE_TRAY,
        POSITION,
+       ESTOP,
+       LOAD_COMPLETE,
     };
 
     struct PositionData

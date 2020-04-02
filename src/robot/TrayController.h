@@ -2,6 +2,7 @@
 #define TrayController_h
 
 #include <HardwareSerial.h>
+#include <Servo.h>
 
 class TrayController
 {
@@ -15,12 +16,33 @@ class TrayController
 
     void load();
 
-    bool isActionRunning() { return actionRunning_; };
+    bool isActionRunning();
+
+    void update();
+
+    void estop();
+
+    void setLoadComplete() {loadComplete_ = true;};
 
   private:
 
+    enum ACTION
+    {
+        NONE,
+        INITIALIZE,
+        PLACE,
+        LOAD,
+    };
+
     HardwareSerial& debug_;
-    bool actionRunning_;
+    Servo latchServo_;
+    ACTION curAction_;
+    uint8_t actionStep_;
+    bool loadComplete_;
+
+    void updateInitialize();
+    void updateLoad();
+    void updatePlace();
 
 };
 

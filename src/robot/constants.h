@@ -14,6 +14,13 @@
 
 #define PIN_ENABLE_ALL 40
 
+#define PIN_LATCH_SERVO_PIN 10
+#define PIN_TRAY_STEPPER_LEFT_PULSE 11
+#define PIN_TRAY_STEPPER_LEFT_DIR 12
+#define PIN_TRAY_STEPPER_RIGHT_PULSE 13
+#define PIN_TRAY_STEPPER_RIGHT_DIR 14
+#define PIN_TRAY_HOME_SWITCH 15
+
 // Velocitiy limits
 #define MAX_TRANS_SPEED_FINE   0.08  // m/s
 #define MAX_ROT_SPEED_FINE     0.5   // rad/2
@@ -55,6 +62,13 @@
 
 // Set debug printing, comment out to skip debug printing
 #define PRINT_DEBUG true
+
+// Tray control values
+#define TRAY_MAX_STEPS 1000
+#define TRAY_LOAD_POS 100
+#define TRAY_PLACE_POS 500
+#define LATCH_CLOSE_POS 10
+#define LATCH_OPEN_POS 100
 
 
 #endif

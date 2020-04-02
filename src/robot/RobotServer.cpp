@@ -185,7 +185,7 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
             cmd = COMMAND::LOAD_TRAY;
             sendAck(type);
         }
-        else if(type == 'initialize')
+        else if(type == 'init')
         {
             cmd = COMMAND::INITIALIZE_TRAY;
             sendAck(type);
@@ -196,6 +196,16 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
             positionData_.x = doc["data"]["x"];
             positionData_.y = doc["data"]["y"];
             positionData_.a = doc["data"]["a"];
+            sendAck(type);
+        }
+        else if(type == "estop")
+        {
+            cmd = COMMAND::ESTOP;
+            sendAck(type);
+        }
+        else if(type == "lc")
+        {
+            cmd = COMMAND::LOAD_COMPLETE;
             sendAck(type);
         }
         else if(type == "status")

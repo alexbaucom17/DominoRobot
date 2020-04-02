@@ -50,6 +50,13 @@ bool tryStartNewCmd(RobotServer::COMMAND cmd)
         controller.inputPosition(data.x, data.y, data.a);
         return false;
     }
+    // Same with ESTOP
+    if (cmd == RobotServer::COMMAND::ESTOP)
+    {
+        controller.estop();
+        tray_controller.estop();
+        return false;
+    }
     
     // For all other commands, we need to make sure we aren't doing anything else at the moment
     if(statusUpdater.getInProgress())
@@ -144,8 +151,9 @@ void loop()
         statusUpdater.updateInProgress(true);
     }
 
-    // Service controller
+    // Service controllers
     controller.update();
+    tray_controller.update();
 
     // Check if the current command has finished
     bool done = checkForCmdComplete(curCmd);

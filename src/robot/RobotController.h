@@ -43,6 +43,8 @@ class RobotController
     // Indicates if a trajectory is currently active
     bool isTrajectoryRunning() { return trajRunning_; };
 
+    void estop();
+
   private:
 
     //Internal methods

@@ -102,6 +102,14 @@ void RobotController::moveToPositionFine(float x, float y, float a)
     #endif
 }
 
+void RobotController::estop()
+{
+    // TODO: Impliment estop for controller
+    #ifdef PRINT_DEBUG
+    debug_.println("Impliment me!!!!");
+    #endif 
+}
+
 void RobotController::update()
 {
     // Compute the amount of time since the last update
