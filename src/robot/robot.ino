@@ -6,17 +6,17 @@
 *   (modified to reduce matrix size to 3)
 *  ArduinoSTL: https://www.arduinolibraries.info/libraries/arduino-stl
 *  MemoryFree: https://playground.arduino.cc/Code/AvailableMemory/
-*  StepperDriver: https://github.com/DIMRobotics/ArduinoStepperDriver
-*   (modified to increase stepper count to 4)
 */
 
 #include "RobotServer.h"
 #include "RobotController.h"
 #include "StatusUpdater.h"
+#include "TrayController.h"
 
 StatusUpdater statusUpdater;
 RobotServer server = RobotServer(Serial3, Serial, statusUpdater);
 RobotController controller = RobotController(Serial, statusUpdater);
+TrayController tray_controller = TrayController(Serial);
 
 
 void setup()
@@ -31,7 +31,6 @@ void setup()
     delay(100);
 
     // Start server and controller
-    
     controller.begin();
     delay(100);
     server.begin();
@@ -77,6 +76,25 @@ bool tryStartNewCmd(RobotServer::COMMAND cmd)
         RobotServer::PositionData data = server.getMoveData();
         controller.moveToPositionFine(data.x, data.y, data.a);
     }
+    else if(cmd == RobotServer::COMMAND::PLACE_TRAY)
+    {
+        tray_controller.place();
+    }
+    else if(cmd == RobotServer::COMMAND::LOAD_TRAY)
+    {
+        tray_controller.load();
+    }
+    else if(cmd == RobotServer::COMMAND::INITIALIZE_TRAY)
+    {
+        tray_controller.initialize();
+    }
+    else
+    {
+        #ifdef PRINT_DEBUG
+        Serial.println("Unknown command!");
+        #endif
+        return false;
+    }
 
     return true;
 }
@@ -92,6 +110,12 @@ bool checkForCmdComplete(RobotServer::COMMAND cmd)
             cmd == RobotServer::COMMAND::MOVE_FINE)
     {
         return controller.isTrajectoryRunning();
+    }
+    else if(cmd == RobotServer::COMMAND::PLACE_TRAY ||
+            cmd == RobotServer::COMMAND::LOAD_TRAY ||
+            cmd == RobotServer::COMMAND::INITIALIZE_TRAY)
+    {
+        return tray_controller.isActionRunning();
     }
     else
     {

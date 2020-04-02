@@ -146,7 +146,6 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
         debug_.print("[RobotServer] Error parsing JSON: ");
         debug_.println(err.c_str());   
         #endif
-        cmd = COMMAND::ERROR_BAD_JSON;
         sendErr("bad_json");
     }
     else
@@ -178,12 +177,17 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
         }
         else if(type == "place")
         {
-            cmd = COMMAND::PLACE;
+            cmd = COMMAND::PLACE_TRAY;
             sendAck(type);
         }
         else if(type == "load")
         {
-            cmd = COMMAND::LOAD;
+            cmd = COMMAND::LOAD_TRAY;
+            sendAck(type);
+        }
+        else if(type == 'initialize')
+        {
+            cmd = COMMAND::INITIALIZE_TRAY;
             sendAck(type);
         }
         else if(type == "p")
@@ -196,12 +200,10 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
         }
         else if(type == "status")
         {
-            cmd = COMMAND::STATUS;
             sendStatus();
         }
         else if (type == "check")
         {
-            cmd = COMMAND::CHECK;
             sendAck(type);
         }
         else if(type == "")
@@ -209,7 +211,6 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
             #ifdef PRINT_DEBUG
             debug_.println("[RobotServer] ERROR: Type field empty or not specified ");
             #endif
-            cmd = COMMAND::ERROR_NO_TYPE;
             sendErr("no_type");
         }
         else
@@ -217,7 +218,6 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
             #ifdef PRINT_DEBUG
             debug_.println("[RobotServer] ERROR: Unkown type field ");
             #endif
-            cmd = COMMAND::ERROR_UNKOWN_TYPE;
             sendErr("unkown_type");
         }
     }
