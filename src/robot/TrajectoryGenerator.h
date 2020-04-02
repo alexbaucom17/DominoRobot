@@ -1,7 +1,7 @@
 #ifndef TrajectoryGenerator_h
 #define TrajectoryGenerator_h
 
-#include "globals.h"
+#include "constants.h"
 #include <ArduinoSTL.h>
 #include <HardwareSerial.h>
 

@@ -2,7 +2,7 @@
 #include <Arduino.h> // This has to be before ArduinoJson.h to fix compiler issues
 #include "RobotServer.h"
 #include <ArduinoJson.h>
-#include "globals.h"  // FOR PRINT_DEBUG
+#include "constants.h"  // FOR PRINT_DEBUG
 
 RobotServer::RobotServer(HardwareSerial& serial, HardwareSerial& debug, const StatusUpdater& statusUpdater)
 : serial_(serial),

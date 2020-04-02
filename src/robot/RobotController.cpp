@@ -1,5 +1,5 @@
 #include "RobotController.h"
-#include "globals.h"
+#include "constants.h"
 #include "utils.h"
 #include <math.h>
 #include <LinearAlgebra.h>
