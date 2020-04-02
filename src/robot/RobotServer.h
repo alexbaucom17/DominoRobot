@@ -26,6 +26,7 @@ class RobotServer
        MOVE_REL,
        MOVE_FINE,
        PLACE,
+       LOAD,
        POSITION,
        STATUS,
        CHECK

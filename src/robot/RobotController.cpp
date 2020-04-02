@@ -171,7 +171,6 @@ void RobotController::update()
     statusUpdater_.updateLoopTimes(static_cast<int>(controller_time_averager_.mean()), static_cast<int>(position_time_averager_.mean()));
     mat P = kf_.cov();
     statusUpdater_.updatePositionConfidence(P(0,0), P(1,1), P(2,2));
-    statusUpdater_.updateInProgress(trajRunning_);
 }
 
 

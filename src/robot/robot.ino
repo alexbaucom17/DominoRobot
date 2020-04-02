@@ -41,34 +41,94 @@ void setup()
 }
 
 
-void loop() 
+bool tryStartNewCmd(RobotServer::COMMAND cmd)
 {
-    // Check for new command
-    RobotServer::COMMAND newCmd = server.oneLoop();
-
-    // Handle new command
-    if(newCmd == RobotServer::COMMAND::MOVE)
+    // Position info doesn't cound as a real 'command' since it doesn't interrupt anything
+    // Always service it, but don't consider it starting a new command
+    if (cmd == RobotServer::COMMAND::POSITION)
+    {
+        RobotServer::PositionData data = server.getPositionData();
+        controller.inputPosition(data.x, data.y, data.a);
+        return false;
+    }
+    
+    // For all other commands, we need to make sure we aren't doing anything else at the moment
+    if(statusUpdater.getInProgress())
+    {
+        #ifdef PRINT_DEBUG
+        Serial.println("Command already running, rejecting new command");
+        #endif
+        return false;
+    }
+    
+    // Start new command
+    if(cmd == RobotServer::COMMAND::MOVE)
     {
         RobotServer::PositionData data = server.getMoveData();
         controller.moveToPosition(data.x, data.y, data.a);
     }
-    else if(newCmd == RobotServer::COMMAND::MOVE_REL)
+    else if(cmd == RobotServer::COMMAND::MOVE_REL)
     {
         RobotServer::PositionData data = server.getMoveData();
         controller.moveToPositionRelative(data.x, data.y, data.a);
     }
-    else if(newCmd == RobotServer::COMMAND::MOVE_FINE)
+    else if(cmd == RobotServer::COMMAND::MOVE_FINE)
     {
         RobotServer::PositionData data = server.getMoveData();
         controller.moveToPositionFine(data.x, data.y, data.a);
     }
-    else if (newCmd == RobotServer::COMMAND::POSITION)
+
+    return true;
+}
+
+bool checkForCmdComplete(RobotServer::COMMAND cmd)
+{
+    if (cmd == RobotServer::COMMAND::NONE)
     {
-        RobotServer::PositionData data = server.getPositionData();
-        controller.inputPosition(data.x, data.y, data.a);
+        return true;
+    }
+    else if(cmd == RobotServer::COMMAND::MOVE || 
+            cmd == RobotServer::COMMAND::MOVE_REL ||
+            cmd == RobotServer::COMMAND::MOVE_FINE)
+    {
+        return controller.isTrajectoryRunning();
+    }
+    else
+    {
+        #ifdef PRINT_DEBUG
+        Serial.print("Completion check not implimented for command: ");
+        Serial.println(cmd);
+        #endif
+        return true;
+    }
+    
+}
+
+RobotServer::COMMAND newCmd = RobotServer::COMMAND::NONE;
+RobotServer::COMMAND curCmd = RobotServer::COMMAND::NONE;
+
+void loop() 
+{
+    // Check for new command and try to start it
+    newCmd = server.oneLoop();
+    bool status = tryStartNewCmd(newCmd);
+
+    // Update our current command if we successfully started a new command
+    if(status)
+    {
+        curCmd = newCmd;
+        statusUpdater.updateInProgress(true);
     }
 
     // Service controller
     controller.update();
+
+    // Check if the current command has finished
+    bool done = checkForCmdComplete(curCmd);
+    if(done)
+    {
+        curCmd = RobotServer::COMMAND::NONE;
+        statusUpdater.updateInProgress(false);
+    }
     
 }

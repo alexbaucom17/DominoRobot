@@ -181,6 +181,11 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
             cmd = COMMAND::PLACE;
             sendAck(type);
         }
+        else if(type == "load")
+        {
+            cmd = COMMAND::LOAD;
+            sendAck(type);
+        }
         else if(type == "p")
         {
             cmd = COMMAND::POSITION;

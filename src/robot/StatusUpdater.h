@@ -24,6 +24,8 @@ class StatusUpdater
 
     void updateInProgress(bool in_progress);
 
+    bool getInProgress() { return currentStatus_.in_progress; };
+
   private:
 
     struct Status
