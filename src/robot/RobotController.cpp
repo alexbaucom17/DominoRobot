@@ -104,10 +104,12 @@ void RobotController::moveToPositionFine(float x, float y, float a)
 
 void RobotController::estop()
 {
-    // TODO: Impliment estop for controller
     #ifdef PRINT_DEBUG
-    debug_.println("Impliment me!!!!");
+    debug_.println("Estopping robot control");
     #endif 
+    trajRunning_ = false;
+    fineMode_ = true;
+    disableAllMotors();
 }
 
 void RobotController::update()
@@ -190,9 +192,6 @@ void RobotController::computeControl(PVTPoint cmd)
     float dt = static_cast<float>((curMillis - prevControlLoopTime_) / 1000.0); // Convert to seconds
     prevControlLoopTime_ = curMillis;
 
-
-    // TODO: Make controller use matrix math
-
     // x control 
     float posErrX = cmd.position_.x_ - cartPos_.x_;
     float velErrX = cmd.velocity_.x_ - cartVel_.x_;
@@ -246,10 +245,6 @@ bool RobotController::checkForCompletedTrajectory(PVTPoint cmd)
 void RobotController::enableAllMotors()
 {
     digitalWrite(PIN_ENABLE_ALL, LOW);
-//    for(int i = 0; i < 4; i++)
-//    {
-//        StepperDriver.enable(motors[i]);
-//    }
     enabled_ = true;
     #ifdef PRINT_DEBUG
     debug_.println("Enabling motors");
@@ -259,10 +254,6 @@ void RobotController::enableAllMotors()
 void RobotController::disableAllMotors()
 {
     digitalWrite(PIN_ENABLE_ALL, HIGH);
-//    for(int i = 0; i < 4; i++)
-//    {
-//        StepperDriver.disable(motors[i]);
-//    }
     enabled_ = false;
     #ifdef PRINT_DEBUG
     debug_.println("Disabling motors");

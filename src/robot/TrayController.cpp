@@ -46,10 +46,10 @@ void TrayController::load()
 
 void TrayController::estop()
 {
-    // TODO: Impliment estop for tray controller
     #ifdef PRINT_DEBUG
-    debug_.println("Impliment me!!!!");
+    debug_.println("Estopping tray control");
     #endif 
+    curAction_ = ACTION::NONE;
 }
 
 void TrayController::update()

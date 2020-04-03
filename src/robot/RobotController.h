@@ -12,8 +12,6 @@ class RobotController
 {
   public:
 
-    // TODO: Convert a bunch of the math here to use the new LinearAlgebra library
-
     // Constructor
     RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater);
 
