@@ -4,17 +4,13 @@ Embedded (maybe not needed anymore):
     - Try to get plots generating from arduino serial plotter
     - Want to investigate jerkiness in controllers during fine motion
     - Want to investigate angle drift in controllers during fine motion
-
-Embedded (definitely needed):
-- Separate stepper control from control loop
-- Handle high level behaviors
-- Handle pausing behaviors
 - Interface with lifter steppers
     - Investigate arduino timers to handle steps naitviely
     - May need to try turning off comms for this (?)
     - May be able to test out with simple sketch on uno I have at home
-- Interface with latch servo
-- Interface with lifter bump switch
+
+Embedded (definitely needed):
+- Separate stepper control from control loop
 
 Master:
 - Actually use plan in runtime
@@ -26,4 +22,3 @@ Base station:
 - Put together skeleton code for base station
 
 Purchase:
-- Bump switches
