@@ -72,6 +72,12 @@ bool tryStartNewCmd(RobotServer::COMMAND cmd)
         tray_controller.estop();
         return false;
     }
+    // Same with LOAD_COMPLETE
+    if (cmd == RobotServer::COMMAND::LOAD_COMPLETE)
+    {
+        tray_controller.setLoadComplete();
+        return false;
+    }
     
     // For all other commands, we need to make sure we aren't doing anything else at the moment
     if(statusUpdater.getInProgress())
