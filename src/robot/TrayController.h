@@ -3,6 +3,7 @@
 
 #include <HardwareSerial.h>
 #include <Servo.h>
+#include "AccelStepper.h"
 
 class TrayController
 {
@@ -36,9 +37,12 @@ class TrayController
 
     HardwareSerial& debug_;
     Servo latchServo_;
+    AccelStepper lifterLeft_;
+    AccelStepper lifterRight_;
     ACTION curAction_;
     uint8_t actionStep_;
     bool loadComplete_;
+    unsigned long startMillisForTimer_;
 
     void updateInitialize();
     void updateLoad();

@@ -2,7 +2,6 @@
 #define RobotController_h
 
 #include "TrajectoryGenerator.h"
-#include <Filters.h>
 #include <HardwareSerial.h>
 #include "StatusUpdater.h"
 #include "KalmanFilter.h"
@@ -79,8 +78,6 @@ class RobotController
     float motor_velocities[4];             // Track motor velocities in rad/s
 
     StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
-    RunningStatistics controller_time_averager_;  // Handles keeping average of the controller loop timing
-    RunningStatistics position_time_averager_;    // Handles keeping average of the position update timing
 
     // Kalman filter stuff
     KalmanFilter kf_;

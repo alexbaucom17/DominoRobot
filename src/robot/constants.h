@@ -64,11 +64,15 @@
 #define PRINT_DEBUG true
 
 // Tray control values
-#define TRAY_MAX_STEPS 1000
-#define TRAY_LOAD_POS 100
-#define TRAY_PLACE_POS 500
-#define LATCH_CLOSE_POS 10
-#define LATCH_OPEN_POS 100
+#define TRAY_HOME_POS 1000     // Steps to move for homing, should be slightly larger than the max number of steps possible
+#define TRAY_DEFAULT_POS 300   // Default position for driving in steps
+#define TRAY_LOAD_POS 100      // Loading position in steps
+#define TRAY_PLACE_POS 500     // Placing position in steps
+#define TRAY_MAX_SPEED 100     // Max tray speed in steps/sec
+#define TRAY_MAX_ACCEL 10      // Max tray acceleration in steps/sec/sec
+#define LATCH_CLOSE_POS 10     // Latch servo position for close in degrees
+#define LATCH_OPEN_POS 100     // Latch servo position for open in degrees
+#define TRAY_PLACEMENT_PAUSE_TIME 3000 // How many ms to wait after opening the latch for placement
 
 
 #endif

@@ -117,8 +117,6 @@ void RobotController::update()
     // Compute the amount of time since the last update
     unsigned long curMillis = millis();
     unsigned long dt_ms = curMillis - prevUpdateLoopTime_;
-    float dt = static_cast<float>((dt_ms) / 1000.0); // Convert to seconds
-    controller_time_averager_.input(static_cast<float>(curMillis - prevUpdateLoopTime_));
     prevUpdateLoopTime_ = curMillis;  
     
     PVTPoint cmd;
@@ -178,7 +176,6 @@ void RobotController::update()
     // Update status 
     statusUpdater_.updatePosition(cartPos_.x_, cartPos_.y_, cartPos_.a_);
     statusUpdater_.updateVelocity(cartVel_.x_, cartVel_.y_, cartVel_.a_);
-    statusUpdater_.updateLoopTimes(static_cast<int>(controller_time_averager_.mean()), static_cast<int>(position_time_averager_.mean()));
     mat P = kf_.cov();
     statusUpdater_.updatePositionConfidence(P(0,0), P(1,1), P(2,2));
 }
@@ -281,12 +278,6 @@ void RobotController::inputPosition(float x, float y, float a)
       cartPos_.x_ = x_hat(0,0);
       cartPos_.y_ = x_hat(1,0);
       cartPos_.a_ = x_hat(2,0);
-  
-      // Compute update rate
-      unsigned long curMillis = millis();
-      unsigned long dt = curMillis - prevPositionUpdateTime_;
-      prevPositionUpdateTime_ = curMillis;
-      position_time_averager_.input(dt);
     }
 }
 

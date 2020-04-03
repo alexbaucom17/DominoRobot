@@ -6,17 +6,28 @@
 *   (modified to reduce matrix size to 3)
 *  ArduinoSTL: https://www.arduinolibraries.info/libraries/arduino-stl
 *  MemoryFree: https://playground.arduino.cc/Code/AvailableMemory/
+*  AccelStepper: https://www.airspayce.com/mikem/arduino/AccelStepper/
 */
 
 #include "RobotServer.h"
 #include "RobotController.h"
 #include "StatusUpdater.h"
 #include "TrayController.h"
+#include <Filters.h>
 
+// Top level objects 
 StatusUpdater statusUpdater;
 RobotServer server = RobotServer(Serial3, Serial, statusUpdater);
 RobotController controller = RobotController(Serial, statusUpdater);
 TrayController tray_controller = TrayController(Serial);
+RunningStatistics loop_time_averager;        // Handles keeping average of the loop timing
+RunningStatistics position_time_averager;    // Handles keeping average of the position update timing
+
+// Variables used for loop
+RobotServer::COMMAND newCmd = RobotServer::COMMAND::NONE;
+RobotServer::COMMAND curCmd = RobotServer::COMMAND::NONE;
+unsigned long prevLoopMillis = millis();
+unsigned long prevPositionMillis = millis();
 
 
 void setup()
@@ -39,7 +50,6 @@ void setup()
     Serial.println("Done with setup");
 }
 
-
 bool tryStartNewCmd(RobotServer::COMMAND cmd)
 {
     // Position info doesn't cound as a real 'command' since it doesn't interrupt anything
@@ -48,6 +58,11 @@ bool tryStartNewCmd(RobotServer::COMMAND cmd)
     {
         RobotServer::PositionData data = server.getPositionData();
         controller.inputPosition(data.x, data.y, data.a);
+
+        // Update the position rate
+        position_time_averager.input(millis() - prevPositionMillis);
+        prevPositionMillis = millis();
+
         return false;
     }
     // Same with ESTOP
@@ -135,9 +150,6 @@ bool checkForCmdComplete(RobotServer::COMMAND cmd)
     
 }
 
-RobotServer::COMMAND newCmd = RobotServer::COMMAND::NONE;
-RobotServer::COMMAND curCmd = RobotServer::COMMAND::NONE;
-
 void loop() 
 {
     // Check for new command and try to start it
@@ -162,5 +174,10 @@ void loop()
         curCmd = RobotServer::COMMAND::NONE;
         statusUpdater.updateInProgress(false);
     }
+
+    // Update loop time and status updater
+    loop_time_averager.input(static_cast<float>(millis() - prevLoopMillis));
+    prevLoopMillis = millis();
+    statusUpdater.updateLoopTimes(static_cast<int>(loop_time_averager.mean()), static_cast<int>(position_time_averager.mean()));
     
 }
