@@ -373,7 +373,7 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
 
 }
 
-void writeVelocities()
+void RobotController::writeVelocities()
 {
     // TODO - Some sort of analog encoding and setting for the velocities
 }
