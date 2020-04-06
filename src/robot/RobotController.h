@@ -5,7 +5,6 @@
 #include <HardwareSerial.h>
 #include "StatusUpdater.h"
 #include "KalmanFilter.h"
-#include <StepperDriver.h>
 
 class RobotController
 {
@@ -40,6 +39,7 @@ class RobotController
     // Indicates if a trajectory is currently active
     bool isTrajectoryRunning() { return trajRunning_; };
 
+    // Stops the currently running motion
     void estop();
 
   private:
@@ -55,9 +55,10 @@ class RobotController
     bool checkForCompletedTrajectory(PVTPoint cmd);
     // Calculate wheel odometry
     void computeOdometry();
+    //Write velocities out to controller
+    void writeVelocities();
 
     // Member variables
-    axis_t motors[4];                      // Motor interface objects
     unsigned long prevPositionUpdateTime_; // Previous loop millis we were provided a position observation
     unsigned long prevControlLoopTime_;    // Previous loop millis through the cartesian control loop
     unsigned long prevUpdateLoopTime_;     // Previous loop millis through the update loop

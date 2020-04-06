@@ -7,12 +7,8 @@
 const DynamicLimits FINE_LIMS = {MAX_TRANS_SPEED_FINE, MAX_TRANS_ACC_FINE, MAX_ROT_SPEED_FINE, MAX_ROT_ACC_FINE};
 const DynamicLimits COARSE_LIMS = {MAX_TRANS_SPEED_COARSE, MAX_TRANS_ACC_COARSE, MAX_ROT_SPEED_COARSE, MAX_ROT_ACC_COARSE};
 
-const float SECONDS_TO_MICROSECONDS = 1000000;
-const float STEPPER_CONVERSION = SECONDS_TO_MICROSECONDS * 2 * PI / STEPPER_PULSE_PER_REV;
-
 RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater)
-: motors({0,0,0,0}),
-  prevPositionUpdateTime_(millis()),
+: prevPositionUpdateTime_(millis()),
   prevControlLoopTime_(millis()),
   prevUpdateLoopTime_(millis()),
   prevOdomLoopTime_(millis()),
@@ -37,13 +33,6 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
 
 void RobotController::begin()
 {
-    // Setup motors
-    //StepperDriver.init();
-    motors[0] = StepperDriver.newAxis(PIN_PULSE_0, PIN_DIR_0, 255, STEPPER_PULSE_PER_REV);
-    motors[1] = StepperDriver.newAxis(PIN_PULSE_1, PIN_DIR_1, 255, STEPPER_PULSE_PER_REV);
-    motors[2] = StepperDriver.newAxis(PIN_PULSE_2, PIN_DIR_2, 255, STEPPER_PULSE_PER_REV);
-    motors[3] = StepperDriver.newAxis(PIN_PULSE_3, PIN_DIR_3, 255, STEPPER_PULSE_PER_REV);
-
     // Setup enable pin
     digitalWrite(PIN_ENABLE_ALL, HIGH);
     pinMode(PIN_ENABLE_ALL, OUTPUT);
@@ -212,18 +201,21 @@ void RobotController::computeControl(PVTPoint cmd)
 
 bool RobotController::checkForCompletedTrajectory(PVTPoint cmd)
 {
-    // TODO split out vel error checks into trans/angle too, and update cmd vel to use this
-    float eps = 0.01;
-
     float trans_pos_err = TRANS_POS_ERR_COARSE;
     float ang_pos_err = ANG_POS_ERR_COARSE;
+    float trans_vel_err = TRANS_VEL_ERR_COARSE;
+    float ang_vel_err = ANG_VEL_ERR_COARSE;
     if(fineMode_)
     {
       trans_pos_err = TRANS_POS_ERR_FINE;
       ang_pos_err = ANG_POS_ERR_FINE;
+      trans_vel_err = TRANS_VEL_ERR_FINE;
+      ang_vel_err = ANG_VEL_ERR_FINE;
     }
     if(cmd.velocity_.x_ == 0 && cmd.velocity_.y_ == 0 && cmd.velocity_.a_ == 0 &&
-       fabs(cartVel_.x_) < eps && fabs(cartVel_.y_) < eps && fabs(cartVel_.a_) < eps &&
+       fabs(cartVel_.x_) < trans_vel_err && 
+       fabs(cartVel_.y_) < trans_vel_err && 
+       fabs(cartVel_.a_) < ang_vel_err &&
        fabs(goalPos_.x_ - cartPos_.x_) < trans_pos_err &&
        fabs(goalPos_.y_ - cartPos_.y_) < trans_pos_err &&
        fabs(angle_diff(goalPos_.a_, cartPos_.a_)) < ang_pos_err )
@@ -377,30 +369,11 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     motor_velocities[3] = 1/WHEEL_DIAMETER * (-s0*local_cart_vel[0] - c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
 
     // Set the commanded values for each motor
-    for (int i = 0; i < 4; i++)
-    {
-        float vel = motor_velocities[i];
-        uint16_t delay_us = 0; // This works for if vel is 0
+    writeVelocities();
 
-        // Compute motor direction
-        if(vel > 0)
-        {
-            StepperDriver.setDir(motors[i], FORWARD);
-        }
-        else
-        {
-            vel = -vel;
-            StepperDriver.setDir(motors[i], BACKWARD); 
-        }
+}
 
-        // Compute delay between steps to achieve desired velocity
-        if(vel != 0)
-        {
-            delay_us = static_cast<uint16_t>(STEPPER_CONVERSION / vel);
-        }
-        
-        // Update motor
-        StepperDriver.setDelay(motors[i], delay_us);
-    }
-
+void writeVelocities()
+{
+    // TODO - Some sort of analog encoding and setting for the velocities
 }

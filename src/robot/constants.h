@@ -57,8 +57,12 @@
 // Possition accuracy targets
 #define TRANS_POS_ERR_COARSE 0.10 // m
 #define ANG_POS_ERR_COARSE   0.08 // rad
+#define TRANS_VEL_ERR_COARSE 0.05 // m/s
+#define ANG_VEL_ERR_COARSE   0.05 // rad/s
 #define TRANS_POS_ERR_FINE   0.01 // m
 #define ANG_POS_ERR_FINE     0.02 // rad
+#define TRANS_VEL_ERR_FINE   0.01 // m/s
+#define ANG_VEL_ERR_FINE     0.01 // rad/s
 
 // Set debug printing, comment out to skip debug printing
 #define PRINT_DEBUG true
