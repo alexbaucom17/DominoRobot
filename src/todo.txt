@@ -1,16 +1,8 @@
-Embedded (maybe not needed anymore):
-- Diagnose delay in position update from robot
-- Controller tuning:
-    - Try to get plots generating from arduino serial plotter
-    - Want to investigate jerkiness in controllers during fine motion
-    - Want to investigate angle drift in controllers during fine motion
-- Interface with lifter steppers
-    - Investigate arduino timers to handle steps naitviely
-    - May need to try turning off comms for this (?)
-    - May be able to test out with simple sketch on uno I have at home
+Robot:
+- Write and test analog voltage sending to controller
 
-Embedded (definitely needed):
-- Separate stepper control from control loop
+Stepper controller
+ - Make this
 
 Master:
 - Actually use plan in runtime
@@ -22,3 +14,14 @@ Base station:
 - Put together skeleton code for base station
 
 Purchase:
+
+Embedded (maybe not needed anymore):
+- Diagnose delay in position update from robot
+- Controller tuning:
+    - Try to get plots generating from arduino serial plotter
+    - Want to investigate jerkiness in controllers during fine motion
+    - Want to investigate angle drift in controllers during fine motion
+- Interface with lifter steppers
+    - Investigate arduino timers to handle steps naitviely
+    - May need to try turning off comms for this (?)
+    - May be able to test out with simple sketch on uno I have at home

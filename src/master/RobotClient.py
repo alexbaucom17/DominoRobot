@@ -76,6 +76,9 @@ class TcpClient:
 
         return new_msg
 
+class BaseClient:
+    # TODO
+    pass
 
 class RobotClient:
 
@@ -166,6 +169,10 @@ class RobotClient:
         status_dict = self.wait_for_server_response(print_debug=False)
         return status_dict
 
+
+class BaseStationClient:
+    # TODO
+    pass
 
 
 

@@ -84,3 +84,6 @@ class Config:
     field_width = tile_size_x_meters * desired_width/tile_width
     field_height = tile_size_y_meters * desired_height/tile_height
     domino_field_boundaries = np.array([domino_field_origin,domino_field_origin + np.array([field_width,field_height])])
+
+    # ====== RUNTIME CONFIGURATION ========
+    robot_status_wait_time = 0.5    # How many seconds to wait between status requests for each robot

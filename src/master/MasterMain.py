@@ -9,17 +9,7 @@ from MarvelMindHandler import RobotPositionHandler
 from RobotClient import RobotClient
 
 
-class NonBlockingTimer:
 
-    def __init__(self, trigger_time):
-        self.start_time = time.time()
-        self.trigger_time = trigger_time
-
-    def check(self):
-        if time.time() - self.start_time > self.trigger_time:
-            return True 
-        else:
-            return False
 
 class CmdGui:
 
@@ -174,8 +164,7 @@ class Master:
         self.plan_manager = PlanManager(self.cfg)
 
         # Robot and marvelmind interfaces
-        self.pos_handler = None
-        self.robot_client = None
+
         self.online = False
         self.initialized = False
         self.init_timer = None
@@ -184,31 +173,6 @@ class Master:
         self.in_progress = False
 
         print("Starting loop")
-
-    def bring_online(self, robot_id):
-        try:
-            # Setup robot clients and communication
-            print("Attempting to connect to robot {} over wifi".format(robot_id))
-            self.robot_client = RobotClient(self.cfg, robot_id) # TODO Add a ping check here maybe to verify it is reachable, possible add retry logic too
-        except Exception as e:
-            print("Couldn't connect to robot {} online. Reason: {}".format(robot_id, repr(e)))
-            return
-
-        try:
-            # Setup marvelmind devices and position handler
-            print("Attempting to enable marvelmind beacons on robot {} ".format(robot_id))
-            self.pos_handler = RobotPositionHandler(self.cfg)
-            self.pos_handler.wake_robot(robot_id)
-            self.online = True
-            self.initialized = False
-            if get_file_bool(self.cfg.mm_beacon_state_file):
-                self.init_timer = NonBlockingTimer(2)
-                print("Beacons already awake, begninning position transmission immediately")
-            else:
-                self.init_timer = NonBlockingTimer(30)
-                print("Beacons enabled, will wait for 30 seconds to let them fully wake up")
-        except Exception as e:
-            print("Couldn't enable beacons on robot {}. Reason: {}".format(robot_id, repr(e)))
 
 
     def cleanup(self, keep_mm_awake):
@@ -220,69 +184,25 @@ class Master:
                 write_file(self.cfg.mm_beacon_state_file, 'False')
             self.pos_handler.close()
 
-    def checkNetworkStatus(self):
-        net_status = self.robot_client.net_status()
-        if net_status:
-            print("Network status of Robot 1 is GOOD")
-        else:
-            print("Network status of Robot 1 is BAD")
+    def parse_command(self, command_str):
 
-    def run_command(self, data):
+        command = None
+        data = None
+        data_start_idx = command_str.find('[')
 
-        if "move" in data:
-            start_idx = data.find('[')
-            end_idx = data.find(']')
-            vals = data[start_idx+1:end_idx].split(',')
-            vals = [x.strip() for x in vals]
-            print("Got move command with parameters [{},{},{}]".format(vals[0], vals[1], vals[2]))
-            if self.online:
-                self.robot_client.move(float(vals[0]), float(vals[1]), float(vals[2]))
-        elif "rel" in data:
-            start_idx = data.find('[')
-            end_idx = data.find(']')
-            vals = data[start_idx+1:end_idx].split(',')
-            vals = [x.strip() for x in vals]
-            print("Got move_rel command with parameters [{},{},{}]".format(vals[0], vals[1], vals[2]))
-            if self.online:
-                self.robot_client.move_rel(float(vals[0]), float(vals[1]), float(vals[2]))
-        elif "fine" in data:
-            start_idx = data.find('[')
-            end_idx = data.find(']')
-            vals = data[start_idx+1:end_idx].split(',')
-            vals = [x.strip() for x in vals]
-            print("Got move_fine command with parameters [{},{},{}]".format(vals[0], vals[1], vals[2]))
-            if self.online:
-                self.robot_client.move_fine(float(vals[0]), float(vals[1]), float(vals[2]))
-        elif "net" in data:
-            self.checkNetworkStatus()
-        elif "status" in data:
-            print("Got status command")
-            status_dict = {}
-            if self.online:
-                status_dict = self.robot_client.request_status()
-            self.cmd_gui.update_robot_status(status_dict)
-        elif "pos" in data:
-            start_idx = data.find('[')
-            end_idx = data.find(']')
-            vals = data[start_idx+1:end_idx].split(',')
-            vals = [x.strip() for x in vals]
-            print("Got pos command with parameters [{},{},{}]".format(vals[0], vals[1], vals[2]))
-            self.cmd_gui.update_robot_viz_position(float(vals[0]), float(vals[1]), float(vals[2]))
-            if self.online:
-                status = self.robot_client.send_position(x,y,a)
-        elif "online" in data:
-            print("Got online command")
-            self.bring_online(1)  # robot_id = 1
-        elif "test" in data:
-            print("Got test status")
-        elif "auto" in data:
-            self.cmd_generator = CmdGenerator()
-        elif "stop" in data:
-            self.cmd_generator = None
-        elif "exit_dbg" in data:
-            pass
+        # No data - just the command
+        if data_start_idx == -1
+            command = command_str.strip().lower()
+        
+        # Extract data as well as command
         else:
-            print("Unknown command: {}".format(data))
+            command = command_str[:data_start_idx].strip().lower()
+            data_end_idx = command_str.find(']')
+            data = command_str[data_start_idx+1:data_end_idx].split(',')
+            data = [x.strip() for x in data]
+        
+        print("Got command: {}, data: {}".format(command, data))
+        return command,data
 
 
     def loop(self):
@@ -325,6 +245,8 @@ class Master:
             
             # Handle any input from gui
             done, command_str = self.cmd_gui.update()
+
+            command, data = self.parse_command(command_str)
 
             # Handle any input from cmd generator
             if self.cmd_generator:

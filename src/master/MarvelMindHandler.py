@@ -263,13 +263,19 @@ class RobotPositionHandler():
         self._mm._open_serial_port()
         self.cfg = cfg
 
+        # Check if the marvelmind should be already setup from the last reboot
+        self.previously_running = False
+        if get_file_bool(self.cfg.mm_beacon_state_file):
+            self.previously_running = True
+
         # Metrics
         self.metrics = MsgMetrics(20)
 
         # Wake static beacons
-        static_beacons = self.cfg.device_map["static"]
-        for beacon in static_beacons:
-            self._mm.wake_device(beacon)
+        if not self.previously_running:
+            static_beacons = self.cfg.device_map["static"]
+            for beacon in static_beacons:
+                self._mm.wake_device(beacon)
 
         # Initialize position queues
         self.max_device_queue_size = 15
@@ -296,9 +302,10 @@ class RobotPositionHandler():
 
     def wake_robot(self, robot_number):
         # Wake up all beacons on the given robot
-        robot_beacons = self.cfg.device_map[str(robot_number)]
-        for beacon in robot_beacons:
-            self._mm.wake_device(beacon)
+        if not self.previously_running:
+            robot_beacons = self.cfg.device_map[str(robot_number)]
+            for beacon in robot_beacons:
+                self._mm.wake_device(beacon)
 
     def sleep_robot(self, robot_number):
         # Sleep all beacons on the given robot
