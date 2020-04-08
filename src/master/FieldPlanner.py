@@ -475,9 +475,15 @@ class Plan:
         print('done.')
 
     def _generate_all_cycles(self):
-        robot_id = 1
+        start_num = 1
+        robot_num = start_num
+        n_robots = len(self.cfg.ip_map)
+
         for tile in self.field.tiles:
-            self.cycles.append(Cycle(tile.order, cfg, robot_id, tile))
+            self.cycles.append(Cycle(tile.order, cfg, robot_num, tile))
+            robot_num += 1
+            if robot_num > n_robots:
+                robot_num = start_num
 
     def draw_cycle(self, cycle_num):
         ax = draw_env(self.cfg)
@@ -490,6 +496,9 @@ class PlanManager:
     def __init__(self, cfg):
         self.plan = None
         self.cfg = cfg
+        self.cycle_num = 0
+        # TODO: Fix up the runtime piece of this - maybe move out of this class? This is a bit of a mess
+        self.progress_tracker = {n: {'action': None, 'cycle': None, 'step': 0} for n in self.cfg.ip_map.keys()}
 
     def get_plan(self):
 
@@ -506,6 +515,43 @@ class PlanManager:
                     print("Saved plan to {}".format(self.cfg.plan_file))
 
         return self.plan
+
+    def update_progress(self, progress_metrics):
+        for key, val in progress_metrics:
+            if key == 'pos' or key == 'base':
+                continue
+            if not val['in_progress'] and self.progress_tracker[key][action] is not None:
+                # TODO: Make sure this doesn't create a race condition with starting the next action
+                self.progress_tracker[key][action] = None
+
+    def check_for_next_cycle(self):
+
+        # Check if a robot is ready for the next cycle
+        next_cycle = self.plan.cycles[self.cycle_num]
+        next_robot = next_cycle.robot_id
+        if self.progress_tracker[next_robot]['action'] == None and
+           self.progress_tracker[next_robot]['cycle'] == None:
+
+            self.progress_tracker[next_robot]['cycle'] = next_cycle
+            self.cycle_num += 1
+
+    def get_command(self):
+        # Loop over all robots
+        for robot, data in self.progress_tracker.items():
+            # Check for a robot that isn't running an action
+            if data['cycle'] and data['action'] == None:
+                data['step'] += 1
+                # Check if there is a new action to run, if not, end the cycle
+                if data['step'] > len(data['cycle'].action_sequence):
+                    data['cycle'] = None
+                    data['step'] = 0
+                else:
+                    # If there is a new action to run, start it
+                    next_action = data['cycle'].action_sequence[data['step']]
+                    data['action'] = next_action
+                    return next_action
+
+        return None
 
 
 if __name__ == '__main__':

@@ -1,26 +1,20 @@
 import time
-import copy
-import sys
 import math
 import PySimpleGUI as sg
 import config
 from FieldPlanner import PlanManager
-from Runtime import RuntimeManager
+from Runtime import RuntimeManager, CommandTypes, Command
 
-
-
-
-class CmdGui:
+class CmdGui
 
     def __init__(self):
         sg.change_look_and_feel('Dark Blue 3')
 
         col1 = [[sg.Text('Command:'), sg.Input(key='_IN_')], [sg.Button('Send'), sg.Button('Exit')], [sg.Button('Exit keep MM')]]
         col2 = [[sg.Text("Robot 1 status:")],
-               [sg.Text("Robot 1 offline",size=(40, 15),relief=sg.RELIEF_RAISED,key='_R1STATUS_')]]
-#sg.Output(size=(100, 15)),
+                [sg.Text("Robot 1 offline",size=(40, 15),relief=sg.RELIEF_RAISED,key='_R1STATUS_')]]        #sg.Output(size=(100, 15)),
         layout = [[sg.Graph(canvas_size=(600,600),graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white")  ],
-                   [sg.Column(col1), sg.Column(col2)] ]
+                  [sg.Column(col1), sg.Column(col2)] ]
 
         self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True)
         self.window.finalize()
@@ -42,6 +36,7 @@ class CmdGui:
 
         return False, command
 
+    # TODO: modify to handle new status format and multiple robots
     def update_robot_status(self, status_dict, msg_metrics):
         status_str = "Cannot get robot status"
         if status_dict:
@@ -88,7 +83,6 @@ class CmdGui:
         self.r1_figs.append(self.window['_GRAPH_'].DrawLine(point_from=back_left_point, point_to=back_right_point, color='black'))
         self.r1_figs.append(self.window['_GRAPH_'].DrawLine(point_from=back_right_point, point_to=front_point, color='black'))
         self.r1_figs.append(self.window['_GRAPH_'].DrawLine(point_from=[x,y], point_to=front_point, color='red'))
-
 
     def close(self):
         self.window.close()
@@ -137,6 +131,7 @@ def parse_command(command_str):
 
     command = None
     data = None
+    target = 1
     data_start_idx = command_str.find('[')
 
     # No data - just the command
@@ -151,7 +146,9 @@ def parse_command(command_str):
         data = [x.strip() for x in data]
     
     print("Got command: {}, data: {}".format(command, data))
-    return command,data
+    cmd_type = CommandTypes[command]
+    # TODO: correctly handle target
+    return Command(target, cmd_type, data)
     
 
 class Master:
@@ -206,6 +203,7 @@ class Master:
 
 
         # Clean up whenever loop exits
+        self.runtime_manager.shutdown()
         self.cmd_gui.close()
 
 

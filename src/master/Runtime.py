@@ -1,4 +1,5 @@
 import time
+import enum
 from MarvelMindHandler import RobotPositionHandler
 from RobotClient import RobotClient, BaseStationClient
 
@@ -13,6 +14,20 @@ class NonBlockingTimer:
             return True 
         else:
             return False
+
+class CommandTypes(enum.Enum):
+    MOVE = 'move',
+    MOVE_FINE = 'fine',
+    MOVE_REL = 'rel',
+    NET = 'net',
+    LOAD = 'load',
+    PLACE = 'place'
+
+class Command:
+    def __init__(self, target, cmd_type, data):
+        self.target = target
+        self.type = cmd_type
+        self.data = data
 
 def get_file_bool(filename):
     try:
@@ -115,22 +130,25 @@ class RobotInterface:
             if time.time() - self.last_status_time > self.config.robot_status_wait_time:
                 self._get_status_from_robot()
 
-    def run_command(self, command, data=None):
+    def run_command(self, command):
         
         if not self.comms_online:
             return
 
-        if command == "move":
-            self.robot_client.move(float(data[0]), float(data[1]), float(data[2]))
-        elif command == "rel":
-            self.robot_client.move_rel(float(data[0]), float(data[1]), float(data[2]))
-        elif command == "fine":
-            self.robot_client.move_fine(float(data[0]), float(data[1]), float(data[2]))
-        elif command == "net":
+        if command.target != self.robot_number:
+            raise ValueError("Invalid target: {}. Expecting {}}".format(command.target, self.robot_number))
+
+        if command.type == CommandTypes.MOVE:
+            self.robot_client.move(float(command.data[0]), float(command.data[1]), float(command.data[2]))
+        elif command.type == CommandTypes.MOVE_REL:
+            self.robot_client.move_rel(float(command.data[0]), float(command.data[1]), float(command.data[2]))
+        elif command.type == CommandTypes.MOVE_FINE:
+            self.robot_client.move_fine(float(command.data[0]), float(command.data[1]), float(command.data[2]))
+        elif command.type == CommandTypes.NET":
             status = self.robot_client.net_status()
             print("Robot {} network status is: {}".format(self.robot_number, status))
         else:
-            print("Unknown command: {}, data: {}".format(command, data))
+            print("Unknown command: {}, data: {}".format(command.type, command.data))
 
 
 
@@ -170,6 +188,14 @@ class BaseStationInterface:
             except Exception:
                 print("Status miissing expected in_progress field")
         self.last_status_time = time.time()
+
+    def run_command(self, command):
+
+        if not self.comms_online:
+            return
+
+        if command.target != 'base':
+            raise ValueError("Invalid target: {}. Expecting base".format(command.target))
 
 
 class RuntimeManager:
@@ -238,3 +264,11 @@ class RuntimeManager:
         self.base_station.update()
         for robot in self.robots:
             robot.update()
+
+    def run_command(self, command):
+        if command.target = 'base':
+            self.base_station.run_command(command)
+        elif type(command.target) is int:
+            self.robots[command.target].run_command(command)
+        else:
+            print("Unknown target: {}".format(command.target))
