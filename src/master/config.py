@@ -87,3 +87,4 @@ class Config:
 
     # ====== RUNTIME CONFIGURATION ========
     robot_status_wait_time = 0.5    # How many seconds to wait between status requests for each robot
+    base_station_status_wait_time = 1 # How many seconds to wait between status requests for the base station

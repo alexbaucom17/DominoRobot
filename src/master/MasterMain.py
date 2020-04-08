@@ -5,8 +5,7 @@ import math
 import PySimpleGUI as sg
 import config
 from FieldPlanner import PlanManager
-from MarvelMindHandler import RobotPositionHandler
-from RobotClient import RobotClient
+from Runtime import RuntimeManager
 
 
 
@@ -134,20 +133,25 @@ class CmdGenerator:
         return cmd
 
 
-def write_file(filename, text):
-    with open(filename, 'w+') as f:
-        f.write(text)
+def parse_command(command_str):
 
-def get_file_bool(filename):
-    try:
-        with open(filename, 'r+') as f:
-            txt = f.readline()
-            if txt == 'True':
-                return True
-            else:
-                return False
-    except FileNotFoundError:
-        return False
+    command = None
+    data = None
+    data_start_idx = command_str.find('[')
+
+    # No data - just the command
+    if data_start_idx == -1
+        command = command_str.strip().lower()
+    
+    # Extract data as well as command
+    else:
+        command = command_str[:data_start_idx].strip().lower()
+        data_end_idx = command_str.find(']')
+        data = command_str[data_start_idx+1:data_end_idx].split(',')
+        data = [x.strip() for x in data]
+    
+    print("Got command: {}, data: {}".format(command, data))
+    return command,data
     
 
 class Master:
@@ -162,107 +166,46 @@ class Master:
 
         print("Initializing Master")
         self.plan_manager = PlanManager(self.cfg)
+        self.runtime_manager = RuntimeManager(self.cfg)
 
-        # Robot and marvelmind interfaces
+        self.runtime_manager.initialize()
+        # TODO: Maybe make this non-blocking and handle waiting in background to make gui work
+        while self.runtime_manager.get_initialization_status != RuntimeManager.STATUS_FULLY_INITIALIZED:
+            print("Waiting for init to finish")
+            time.sleep(1)
 
-        self.online = False
-        self.initialized = False
-        self.init_timer = None
-        self.bring_online(1) # robot_id = 1 - handle multiple in the future
-        self.cmd_generator = None
-        self.in_progress = False
-
-        print("Starting loop")
-
-
-    def cleanup(self, keep_mm_awake):
-
-        print("Cleaning up")
-        if self.online:
-            if not keep_mm_awake:
-                self.pos_handler.sleep_robot(1)
-                write_file(self.cfg.mm_beacon_state_file, 'False')
-            self.pos_handler.close()
-
-    def parse_command(self, command_str):
-
-        command = None
-        data = None
-        data_start_idx = command_str.find('[')
-
-        # No data - just the command
-        if data_start_idx == -1
-            command = command_str.strip().lower()
-        
-        # Extract data as well as command
-        else:
-            command = command_str[:data_start_idx].strip().lower()
-            data_end_idx = command_str.find(']')
-            data = command_str[data_start_idx+1:data_end_idx].split(',')
-            data = [x.strip() for x in data]
-        
-        print("Got command: {}, data: {}".format(command, data))
-        return command,data
+        print("Init completed, starting main loop")
 
 
     def loop(self):
-        last_status_time = 0
 
         while True:
             
-            if self.online:
-
-                metrics = {'frac_dropped_total':0, 'frac_dropped_dist':0, 'frac_dropped_time': 0, 'time_since_last_sent': 999}
-
-                if self.initialized:
-
-                    # Service marvelmind queues
-                    robots_updated = self.pos_handler.service_queues()
-                    for robot in robots_updated:
-                        pos = self.pos_handler.get_position(robot)
-                        self.robot_client.send_position(pos[0], pos[1], pos[2]) # TODO: update for multiple robots
-
-                    # get metrics
-                    metrics = self.pos_handler.get_metrics()
-
-                elif self.init_timer.check():
-                    print("Beacons awake. Beginning position transmission")
-                    write_file(self.cfg.mm_beacon_state_file, 'True')
-                    self.initialized = True
-
-                # Update staus in gui
-                if time.time() - last_status_time > 0.5:
-                    status = self.robot_client.request_status()
-                    if status == None or status == "":
-                        status = "Robot status not available!"
-                    else:
-                        try:
-                            self.in_progress = status["in_progress"]
-                        except Exception:
-                            print("Status miissing expected in_progress field")
-                    self.cmd_gui.update_robot_status(status, metrics)
-                    last_status_time = time.time()
-            
             # Handle any input from gui
             done, command_str = self.cmd_gui.update()
-
-            command, data = self.parse_command(command_str)
-
-            # Handle any input from cmd generator
-            if self.cmd_generator:
-                command_str = self.cmd_generator.next_step(self.in_progress)
-
             if done:
                 break
+            
+            # Run updates from the runtime manager
+            self.runtime_manager.update()
+
+            # Get metrics and update the gui
+            metrics = self.runtime_manager.get_all_metrics()
+            self.cmd_gui.update_metrics(metrics)
+            
+            # Get any new commands from the plan manager
+            self.plan_manager.update_progress(metrics)
+            auto_command = self.plan_manager.get_command()
+
+            # Manual command trups auto command
             if command_str:
-                self.run_command(command_str)
+                manual_command = parse_command(command_str)
+                self.runtime_manager.run_command(manual_command)
+            elif auto_command:
+                self.runtime_manager.run_command(auto_command)
 
 
         # Clean up whenever loop exits
-        keep_mm_awake = False
-        if command_str == "exit_dbg":
-            keep_mm_awake = True;
-        self.cleanup(keep_mm_awake)
         self.cmd_gui.close()
 
 

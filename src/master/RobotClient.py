@@ -77,15 +77,9 @@ class TcpClient:
         return new_msg
 
 class BaseClient:
-    # TODO
-    pass
 
-class RobotClient:
-
-    def __init__(self, cfg, robot_id):
-        self.robot_id = robot_id
-        self.client = TcpClient(cfg.ip_map[self.robot_id], PORT, NET_TIMEOUT)
-        self.cfg = cfg
+    def __init__(self, ip): 
+        self.client = TcpClient(ip, PORT, NET_TIMEOUT)
 
     def wait_for_server_response(self, timeout=1, print_debug=True):
         """
@@ -105,7 +99,6 @@ class RobotClient:
 
         # Will get here if timeout is reached
         return None
-                
 
     def send_msg_and_wait_for_ack(self, msg, print_debug=True):
         """ 
@@ -124,7 +117,7 @@ class RobotClient:
                 print('ERROR: Incorrect ack type')
         
         return resp
-            
+
     def net_status(self):
         """ Check if the network connection is ok"""
         msg = {'type': 'check'}
@@ -135,7 +128,22 @@ class RobotClient:
             status = False
         finally:
             return status
-        
+
+    def request_status(self):
+        """ Request status from server """
+        msg = {'type' : 'status'}
+        self.client.send(json.dumps(msg), print_debug=False)
+        status_dict = self.wait_for_server_response(print_debug=False)
+        return status_dict
+
+
+class RobotClient(BaseClient):
+
+    def __init__(self, cfg, robot_id):
+        super().__init__(cfg.ip_map[robot_id])
+
+        self.robot_id = robot_id
+        self.cfg = cfg
 
     def move(self, x, y, a):
         """ Tell robot to move to specific location """
@@ -162,18 +170,18 @@ class RobotClient:
         msg = {'type': 'p', 'data': {'x': round(x, 5), 'y': round(y, 5), 'a': round(a,4)}} # Try to reduce message size 
         self.send_msg_and_wait_for_ack(msg, print_debug=False)
 
-    def request_status(self):
-        """ Request status from robot """
-        msg = {'type' : 'status'}
-        self.client.send(json.dumps(msg), print_debug=False)
-        status_dict = self.wait_for_server_response(print_debug=False)
-        return status_dict
 
 
-class BaseStationClient:
-    # TODO
-    pass
+class BaseStationClient(BaseClient):
+    
+    def __init__(self, cfg):
+        super().__init__(cfg.base_station_ip)
+        self.cfg = cfg
 
+    def load(self):
+        """ Tells the station to load the next set of dominos into the robot"""
+        msg = {'type': 'load'}
+        self.send_msg_and_wait_for_ack(msg)
 
 
 if __name__== '__main__':

@@ -1,6 +1,6 @@
 import time
 from MarvelMindHandler import RobotPositionHandler
-from RobotClient import RobotClient
+from RobotClient import RobotClient, BaseStationClient
 
 class NonBlockingTimer:
 
@@ -24,6 +24,10 @@ def get_file_bool(filename):
                 return False
     except FileNotFoundError:
         return False
+
+def write_file(filename, text):
+    with open(filename, 'w+') as f:
+        f.write(text)
 
 class RobotInterface:
     def __init__(self, config, robot_number):
@@ -107,7 +111,7 @@ class RobotInterface:
                 pos = self.pos_handler.get_position(self.robot_number)
                 self.robot_client.send_position(pos[0], pos[1], pos[2])
 
-            # Request a position update if needed
+            # Request a status update if needed
             if time.time() - self.last_status_time > self.config.robot_status_wait_time:
                 self._get_status_from_robot()
 
@@ -131,9 +135,41 @@ class RobotInterface:
 
 
 class BaseStationInterface:
-    #TODO
-    pass
 
+    def __init__(self, config):
+        self.config = config
+        self.client = None
+        self.comms_online = False
+        self.last_status = None
+        self.last_status_time = 0
+
+    def bring_online(self):
+        print("Bringing BaseStation comms online")
+        self.client = BaseStationClient(self.config)
+        if self.client.net_status()
+            self.comms_online = True
+
+    def get_last_status(self):
+        return self.last_status
+
+    def check_online(self):
+        return self.comms_online
+
+    def update(self):
+        # Request a status update if needed
+        if time.time() - self.last_status_time > self.config.base_station_status_wait_time:
+            self._get_status_from_base_station()
+
+    def _get_status_from_base_station(self):
+        self.last_status = self.client.request_status()
+        if self.last_status == None or self.last_status == "":
+            self.last_status = "Base station status not available!"
+        else:
+            try:
+                self.command_in_progress = self.last_status["in_progress"]
+            except Exception:
+                print("Status miissing expected in_progress field")
+        self.last_status_time = time.time()
 
 
 class RuntimeManager:
@@ -148,7 +184,7 @@ class RuntimeManager:
         self.robots = [RobotInterface(config, n) for n in config.ip_map.keys()]
         self.base_station = BaseStationInterface(config)
         self.pos_handler = RobotPositionHandler(config)
-        self.status = STATUS_NOT_INITIALIZED
+        self.initialization_status = STATUS_NOT_INITIALIZED
 
     def initialize(self):
 
@@ -160,7 +196,20 @@ class RuntimeManager:
         
         self.check_status()
 
-    def check_status(self):
+    def shutdown(self, keep_mm_awake):
+
+        print("Shutting down")
+        if self.initialization_status != STATUS_NOT_INITIALIZED:
+            if not keep_mm_awake:
+                for robot in self.robots:
+                    self.pos_handler.sleep_robot(robot.robot_number)
+                write_file(self.cfg.mm_beacon_state_file, 'False')
+            self.pos_handler.close()
+
+    def get_initialization_status(self):
+        return self.initialization_status
+
+    def check_initialization_status(self):
         ready = []
         ready.append(self.base_station.check_online())
         for robot in self.robots:
@@ -168,11 +217,23 @@ class RuntimeManager:
         
         if all(ready):
             self.status = STATUS_FULLY_INITIALIZED
+            write_file(self.config.mm_beacon_state_file, 'True')
         elif any(ready)
             self.status = STATUS_PARTIALLY_INITIALIZED
 
+    def get_all_metrics(self):
+        metrics = {}
+        metrics['pos'] = self.pos_handler.get_metrics()
+        metrics['base'] = self.base_station.get_last_status()
+        for robot in self.robots:
+            metrics[robot.robot_number] = robot.get_last_status()
+
+        return metrics
+
     def update(self):
-        self.check_status()
+        self.check_initialization_status()
+
+        self.pos_handler.service_queues()
 
         self.base_station.update()
         for robot in self.robots:

@@ -262,6 +262,7 @@ class RobotPositionHandler():
         self._mm = MarvelMindWrapper(cfg)
         self._mm._open_serial_port()
         self.cfg = cfg
+        self._robots_with_data_ready = set()
 
         # Check if the marvelmind should be already setup from the last reboot
         self.previously_running = False
@@ -316,9 +317,14 @@ class RobotPositionHandler():
     def get_position(self, robot_number):
         # Get current position of a specific robot
         try:
-            return self.robot_position_queues[str(robot_number)][0]
+            data = self.robot_position_queues[str(robot_number)][0]
+            self._robots_with_data_ready.remove(str(robot_number))
         except IndexError:
             return []
+
+    def new_data_ready(self, robot_number):
+        # Checks if there is data ready for a specific robot
+        return str(robot_number) in self._robots_with_data_ready
 
     def get_metrics(self):
         return self.metrics.get_stats()
@@ -336,8 +342,7 @@ class RobotPositionHandler():
         
         new_data = self._mm.get_latest_location_data()
         self._update_device_positions(new_data)
-        robots_updated = self._update_robot_positions()
-        return robots_updated
+        self._update_robot_positions()
 
     def _update_device_positions(self, new_position_data):
         # Distribute position data to queues and do any post processing as needed
@@ -364,7 +369,6 @@ class RobotPositionHandler():
     def _update_robot_positions(self):
         # Handle the math of transforming device positions into robot positions and angles
 
-        robots_updated = []
         for robot_name in self.cfg.device_map:
             if robot_name == 'static':
                 continue
@@ -427,15 +431,14 @@ class RobotPositionHandler():
                 prev_point = cur_queue[0]
             if not prev_point or x != prev_point[0] or y != prev_point[1] or angle != prev_point[2]:
                 #print("Robot {}: {},{},{}, {}".format(robot_name, x, y, angle, t))
-                robots_updated.append(int(robot_name))
+                self._robots_with_data_ready.add(robot_name)
+                # TODO: Add metrics for each robot ?
                 self.metrics.add_msg_ok()
 
                 # Insert the new position, angle, and time into the queue
                 cur_queue.insert(0,(x,y,angle, t)) # Add new element to front of queue
                 if len(cur_queue) > self.max_robot_queue_size:
                     cur_queue.pop() # remove element from end of list
-
-        return robots_updated
 
 
 if __name__ == '__main__':
