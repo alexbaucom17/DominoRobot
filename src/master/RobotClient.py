@@ -184,6 +184,55 @@ class BaseStationClient(BaseClient):
         self.send_msg_and_wait_for_ack(msg)
 
 
+
+
+# Hacky Mocks to use for testings
+class MockRobotClient:
+    def __init__(self, cfg, robot_id):
+        super().__init__()
+        self.robot_id = robot_id
+        self.cfg = cfg
+
+    def move(self, x, y, a):
+        pass
+
+    def move_rel(self, x, y, a):
+        pass
+
+    def move_fine(self, x, y, a):
+        pass
+
+    def place(self):
+        pass
+
+    def send_position(self, x, y, a):
+        pass
+
+    def net_status(self):
+        return True
+
+    def request_status(self):
+        return {}
+
+class MockBaseStationClient:
+    
+    def __init__(self, cfg):
+        super().__init__()
+        self.cfg = cfg
+
+    def load(self):
+        pass
+
+    def net_status(self):
+        return True
+
+    def request_status(self):
+        return {}
+    
+
+
+
+
 if __name__== '__main__':
     r = RobotClient(1)
     time.sleep(2)

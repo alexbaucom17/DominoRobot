@@ -329,13 +329,6 @@ class RobotPositionHandler():
     def get_metrics(self):
         return self.metrics.get_stats()
 
-    def _get_device_position(self, device_addr):
-        # Returns device position
-        try:
-            return self.device_position_queues[device_addr][0]
-        except IndexError:
-            return []
-
     def service_queues(self):
         # Gets data from the marvelmind system and makes sense of it. Needs to be called
         # regularly to make sure all data is collected
@@ -343,6 +336,13 @@ class RobotPositionHandler():
         new_data = self._mm.get_latest_location_data()
         self._update_device_positions(new_data)
         self._update_robot_positions()
+
+    def _get_device_position(self, device_addr):
+        # Returns device position
+        try:
+            return self.device_position_queues[device_addr][0]
+        except IndexError:
+            return []
 
     def _update_device_positions(self, new_position_data):
         # Distribute position data to queues and do any post processing as needed
@@ -439,6 +439,35 @@ class RobotPositionHandler():
                 cur_queue.insert(0,(x,y,angle, t)) # Add new element to front of queue
                 if len(cur_queue) > self.max_robot_queue_size:
                     cur_queue.pop() # remove element from end of list
+
+
+
+# Hacky mock for testing
+class MockRobotPositionHandler:
+
+    def __init__(self, cfg):
+        pass
+
+    def close(self):
+        pass
+
+    def wake_robot(self, robot_number):
+        pass
+
+    def sleep_robot(self, robot_number):
+        pass
+
+    def get_position(self, robot_number):
+        return [1,1,1]
+
+    def new_data_ready(self, robot_number):
+        return True
+
+    def get_metrics(self):
+        return {}
+
+    def service_queues(self):
+        pass
 
 
 if __name__ == '__main__':

@@ -1,8 +1,10 @@
 import time
 
-from MarvelMindHandler import RobotPositionHandler
-from RobotClient import RobotClient, BaseStationClient
+from MarvelMindHandler import RobotPositionHandler, MockRobotPositionHandler
+from RobotClient import RobotClient, BaseStationClient, MockRobotClient, MockBaseStationClient
 from FieldPlanner import ActionTypes, Action
+
+OFFLINE_TESTING = False
 
 class NonBlockingTimer:
 
@@ -194,10 +196,16 @@ class RuntimeManager:
     def __init__(self, config):
 
         self.config = config
-        self.robots = {n: RobotInterface(config, int(n)) for n in self.config.ip_map.keys()}
-        self.base_station = BaseStationInterface(config)
-        self.pos_handler = RobotPositionHandler(config)
         self.initialization_status = STATUS_NOT_INITIALIZED
+
+        if OFFLINE_TESTING:
+            self.robots = {n: MockRobotInterface(config, int(n)) for n in self.config.ip_map.keys()}
+            self.base_station = MockBaseStationInterface(config)
+            self.pos_handler = MockRobotPositionHandler(config)
+        else:
+            self.robots = {n: RobotInterface(config, int(n)) for n in self.config.ip_map.keys()}
+            self.base_station = BaseStationInterface(config)
+            self.pos_handler = RobotPositionHandler(config)
 
         self.last_metrics = {}
         self.cycle_tracker = {n: {'action': None, 'cycle': None, 'step': 0} for n in self.robots.keys()}

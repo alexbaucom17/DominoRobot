@@ -30,7 +30,7 @@ class CmdGui:
 
         data_element = [ [sg.Text('Data:')], [sg.Input(key='_ACTION_DATA_')] ]
 
-        button_element = [sg.Button('Send')]
+        button_element = [sg.Button('Send'), sg.Button('Run Plan')]
 
         col2 = [[sg.Graph(canvas_size=(600,600), graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white") ],
                 [target_element, action_element, data_element, button_element]]
@@ -43,7 +43,6 @@ class CmdGui:
         self.window.finalize()
 
         self.draw_robot(3,3,0)
-        self.keep_mm_running = False
         self.viz_figs = {}
 
     
@@ -53,19 +52,26 @@ class CmdGui:
     def update(self):
 
         event, values = self.window.read(timeout=20)
-        manual_action = None
+
+        # At exit, check if we should keep marvelmind on
         if event is None or event == 'Exit':
             clicked_value = sg.popup_yes_no('Do you want to keep the Marvelmind running')
             if clicked_value == "Yes" 
-                self.keep_mm_running = True
-
-            return True, None
+                return "ExitMM", None
+            else:
+                return 'Exit', None
         
-        if event in ('Send', '\r', '\n'): # Catch enter as well
+        # Sending a manual action (via button or pressing enter)
+        if event in ('Send', '\r', '\n'):
             manual_action = self._parse_manual_action(values)
             self.window['_ACTION_DATA_'].update("")
+            return 'Action', manual_action
 
-        return False, manual_action
+        # Pressing the run plan button
+        if event in ("Run Plan"):
+            return "Run", None
+
+        return None, None
 
     def _parse_manual_action(self, values):
         target = values[_TARGET_]
@@ -231,10 +237,10 @@ class Master:
         self.plan = None
         self.load_plan()
         self.cmd_gui = CmdGui()
+        self.plan_running = False
 
         print("Initializing Master")
         self.runtime_manager = RuntimeManager(self.cfg)
-
         self.runtime_manager.initialize()
         # TODO: Maybe make this non-blocking and handle waiting in background to make gui work
         while self.runtime_manager.get_initialization_status != RuntimeManager.STATUS_FULLY_INITIALIZED:
@@ -260,10 +266,11 @@ class Master:
 
     def loop(self):
 
+        keep_mm_running = False
         while True:
             
             # If we have an idle robot, send it the next cycle to execute
-            if self.runtime_manager.any_idle_bots():
+            if self.plan_running and self.runtime_manager.any_idle_bots():
                 print("Sending cycle {} for execution".format(self.plan_cycle_number))
                 next_cycle = self.plan.get_cycle(self.plan_cycle_number)
                 self.plan_cycle_number += 1
@@ -277,17 +284,20 @@ class Master:
             self.cmd_gui.update_status_panels(metrics)
 
             # Handle any input from gui
-            done, manual_action = self.cmd_gui.update()
-            if done:
+            event, manual_action = self.cmd_gui.update()
+            if event == "Exit":
                 break
-
-            # Manual command
-            if manual_action is not None:
+            if event == "ExitMM":
+                keep_mm_running = True
+                break
+            if event == "Run":
+                self.plan_running = True
+            if event == "Action":
                 self.runtime_manager.run_manual_action(manual_action)
 
 
         # Clean up whenever loop exits
-        self.runtime_manager.shutdown(self.cmd_gui.keep_mm_running)
+        self.runtime_manager.shutdown(keep_mm_running)
         self.cmd_gui.close()
 
 
