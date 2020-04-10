@@ -1,25 +1,31 @@
 import time
 import math
 import copy
-import PySimpleGUI as sg
 import config
+import os
+import pickle
+import PySimpleGUI as sg
+
 from FieldPlanner import Plan, ActionTypes, Action, MoveAction
 from Runtime import RuntimeManager
 
 
 def status_panel(name):
-    return [[sg.Text("{} status".format(name))], 
-            [sg.Text("{} offline".format(name), size=(40, 15), relief=sg.RELIEF_RAISED, key='_{}_STATUS_'.format(name.upper())) ]]
+    return [[sg.Text("{} status".format(name))], [sg.Text("{} offline".format(name), size=(40, 15), relief=sg.RELIEF_RAISED, key='_{}_STATUS_'.format(name.upper())) ]]
 
 class CmdGui:
 
-    def __init__(self):
+    def __init__(self, config):
+
+        self.config = config
         
         sg.change_look_and_feel('Dark Blue 3')
 
-        names = ["robot{}".format(n) for n in self.config.ip_map]
+        names = ["{}".format(n) for n in self.config.ip_map]
         names += ['base', 'plan', 'pos']
-        col1 = [status_panel(name) for name in names]
+        col1 = []
+        for name in names:
+            col1 += status_panel(name)
 
         targets = copy.deepcopy(names)
         targets.remove('plan')
@@ -30,19 +36,19 @@ class CmdGui:
 
         data_element = [ [sg.Text('Data:')], [sg.Input(key='_ACTION_DATA_')] ]
 
-        button_element = [sg.Button('Send'), sg.Button('Run Plan')]
+        button_element = [[sg.Button('Send')], [sg.Button('Run Plan')]]
 
         col2 = [[sg.Graph(canvas_size=(600,600), graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white") ],
-                [target_element, action_element, data_element, button_element]]
+                [sg.Column(target_element), sg.Column(action_element), sg.Column(data_element), sg.Column(button_element)]]
 
-        col3 = [sg.Output(size=(100, 15))]
+        #col3 = [[sg.Output(size=(100, 15))]]
+        col3 = [[sg.Text("Temp place for output")]]
         
         layout = [[ sg.Column(col1), sg.Column(col2), sg.Column(col3)]]
 
         self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True)
         self.window.finalize()
 
-        self.draw_robot(3,3,0)
         self.viz_figs = {}
 
     
@@ -56,7 +62,7 @@ class CmdGui:
         # At exit, check if we should keep marvelmind on
         if event is None or event == 'Exit':
             clicked_value = sg.popup_yes_no('Do you want to keep the Marvelmind running')
-            if clicked_value == "Yes" 
+            if clicked_value == "Yes":
                 return "ExitMM", None
             else:
                 return 'Exit', None
@@ -74,9 +80,9 @@ class CmdGui:
         return None, None
 
     def _parse_manual_action(self, values):
-        target = values[_TARGET_]
-        action_type = ActionTypes(values[_ACTION_])
-        data_str = values[_ACTION_DATA_]
+        target = values['_TARGET_']
+        action_type = ActionTypes(values['_ACTION_'])
+        data_str = values['_ACTION_DATA_']
         name = 'ManualAction'
 
         action = None
@@ -141,34 +147,35 @@ class CmdGui:
 
         self.window['_BASE_STATUS_'].update(status_str)
 
-    def _update_robot_panel(self, robot_number, status_dict):
-        status_str = "Cannot get robot {} status".format(robot_number)
+    def _update_robot_panel(self, robot_id, status_dict):
+        status_str = "Cannot get {} status".format(robot_id)
         if status_dict:
             try:
                 status_str = ""
+                status_str = "Tmp - fix me!\n"
                 status_str += "Position: [{0:.3f} m, {1:.3f} m, {2:.3f} rad]\n".format(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
-                status_str += "Velocity: [{0:.3f} m/s, {1:.3f} m/s, {2:.3f} rad/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], status_dict['vel_a'])
-                status_str += "Confidence: [{0:.2f} %, {1:.2f} %, {2:.2f} %]\n".format(status_dict['confidence_x']/2.55,status_dict['confidence_y']/2.55, status_dict['confidence_a']/2.55)
-                status_str += "Controller timing: {} ms\n".format(status_dict['controller_loop_ms'])
-                status_str += "Position timing:   {} ms\n".format(status_dict['position_loop_ms'])
-                status_str += "Motion in progress: {}\n".format(status_dict["in_progress"])
-                status_str += "Counter:   {}\n".format(status_dict['counter'])
-                status_str += "Free memory:   {} bytes\n".format(status_dict['free_memory'])
+                # status_str += "Velocity: [{0:.3f} m/s, {1:.3f} m/s, {2:.3f} rad/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], status_dict['vel_a'])
+                # status_str += "Confidence: [{0:.2f} %, {1:.2f} %, {2:.2f} %]\n".format(status_dict['confidence_x']/2.55,status_dict['confidence_y']/2.55, status_dict['confidence_a']/2.55)
+                # status_str += "Controller timing: {} ms\n".format(status_dict['controller_loop_ms'])
+                # status_str += "Position timing:   {} ms\n".format(status_dict['position_loop_ms'])
+                # status_str += "Motion in progress: {}\n".format(status_dict["in_progress"])
+                # status_str += "Counter:   {}\n".format(status_dict['counter'])
+                # status_str += "Free memory:   {} bytes\n".format(status_dict['free_memory'])
 
                 # Also update the visualization position
-                self._update_robot_viz_position(robot_number, status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
+                self._update_robot_viz_position(robot_id, status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
                 print("Message exception: " + repr(e))
 
-        self.window['_ROBOT{}_STATUS_'.format(robot_number)].update(status_str)
+        self.window['_{}_STATUS_'.format(robot_id.upper())].update(status_str)
 
-    def _update_robot_viz_position(self, n, x, y, a):
-        if n in self.viz_figs
-            for f in self.viz_figs[n]:
+    def _update_robot_viz_position(self, robot_id, x, y, a):
+        if robot_id in self.viz_figs:
+            for f in self.viz_figs[robot_id]:
                 self.window['_GRAPH_'].DeleteFigure(f)
         
-        self.viz_figs[n] = self._draw_robot(x, y, a)
+        self.viz_figs[robot_id] = self._draw_robot(x, y, a)
 
     def _draw_robot(self, x, y, a):
         robot_length = 1
@@ -236,14 +243,14 @@ class Master:
         self.plan_cycle_number = 0
         self.plan = None
         self.load_plan()
-        self.cmd_gui = CmdGui()
+        self.cmd_gui = CmdGui(self.cfg)
         self.plan_running = False
 
         print("Initializing Master")
         self.runtime_manager = RuntimeManager(self.cfg)
         self.runtime_manager.initialize()
         # TODO: Maybe make this non-blocking and handle waiting in background to make gui work
-        while self.runtime_manager.get_initialization_status != RuntimeManager.STATUS_FULLY_INITIALIZED:
+        while self.runtime_manager.get_initialization_status() != RuntimeManager.STATUS_FULLY_INITIALIZED:
             print("Waiting for init to finish")
             time.sleep(1)
 
@@ -273,8 +280,15 @@ class Master:
             if self.plan_running and self.runtime_manager.any_idle_bots():
                 print("Sending cycle {} for execution".format(self.plan_cycle_number))
                 next_cycle = self.plan.get_cycle(self.plan_cycle_number)
-                self.plan_cycle_number += 1
-                self.runtime_manager.assign_new_cycle(next_cycle)
+                
+                # If we get none, that means we are done with the plan
+                if next_cycle is None:
+                    self.plan_running = False
+                    self.plan_cycle_number = 0
+                    print("Completed plan!")
+                else:
+                    self.plan_cycle_number += 1
+                    self.runtime_manager.assign_new_cycle(next_cycle)
 
             # Run updates for the runtime manager
             self.runtime_manager.update()

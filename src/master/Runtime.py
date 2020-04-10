@@ -4,7 +4,7 @@ from MarvelMindHandler import RobotPositionHandler, MockRobotPositionHandler
 from RobotClient import RobotClient, BaseStationClient, MockRobotClient, MockBaseStationClient
 from FieldPlanner import ActionTypes, Action
 
-OFFLINE_TESTING = False
+OFFLINE_TESTING = True
 
 class NonBlockingTimer:
 
@@ -19,33 +19,23 @@ class NonBlockingTimer:
             return False
 
 
-def get_file_bool(filename):
-    try:
-        with open(filename, 'r+') as f:
-            txt = f.readline()
-            if txt == 'True':
-                return True
-            else:
-                return False
-    except FileNotFoundError:
-        return False
+
 
 def write_file(filename, text):
     with open(filename, 'w+') as f:
         f.write(text)
 
 class RobotInterface:
-    def __init__(self, config, robot_number):
+    def __init__(self, config, robot_id):
         self.pos_handler = None
         self.comms_online = False
         self.position_online = False
         self.robot_client = None
         self.config = config
-        self.robot_number = robot_number
+        self.robot_id = robot_id
         self.position_init_timer = None
         self.last_status_time = 0
         self.last_status = None
-        self.command_in_progress = False
 
     def attach_pos_handler(self, pos_handler):
         self.pos_handler = pos_handler
@@ -53,7 +43,7 @@ class RobotInterface:
         self.position_online = self.pos_handler.still_running
 
     def bring_online(self):
-        self._bring_online()
+        self._bring_comms_online()
         self._bring_position_online()
 
     def check_online(self):
@@ -62,45 +52,43 @@ class RobotInterface:
     def get_last_status(self):
         return self.last_status
 
-    def get_in_progress(self):
-        return self.command_in_progress
-
     def _bring_comms_online(self):
         try:
-            print("Attempting to connect to robot {} over wifi".format(self.robot_number))
-            self.robot_client = RobotClient(self.config, self.robot_number) 
-            if self.robot_client.net_status()
+            print("Attempting to connect to {} over wifi".format(self.robot_id))
+
+            if OFFLINE_TESTING:
+                self.robot_client = MockRobotClient(self.config, self.robot_id)
+            else:
+                self.robot_client = RobotClient(self.config, self.robot_id)
+
+            if self.robot_client.net_status():
                 self.comms_online = True
+                print("Connected to {} oover wifi".format(self.robot_id))
         except Exception as e:
-            print("Couldn't connect to robot {} online. Reason: {}".format(, repr(e)))
+            print("Couldn't connect to {} over wifi. Reason: {}".format(self.robot_id , repr(e)))
             return 
 
     def _bring_position_online(self, quick=False):
         if not self.pos_handler:
-            print("No position handler attached for robot {}".format(self.robot_number))
+            print("No position handler attached for {}".format(self.robot_id))
             return
     
         if self.position_online:
-            print("Pos handler still running, skipping beacon wake up on robot {}".format(self.robot_number))
+            print("Pos handler still running, skipping beacon wake up on {}".format(self.robot_id))
             return
 
         try:
             # Setup marvelmind devices and position handler
-            print("Attempting to enable marvelmind beacons on robot {} ".format(self.robot_number))
-            self.pos_handler.wake_robot(self.robot_number)
+            print("Attempting to enable marvelmind beacons on {} ".format(self.robot_id))
+            self.pos_handler.wake_robot(self.robot_id)
             self.position_init_timer = NonBlockingTimer(30)
         except Exception as e:
-            print("Couldn't enable beacons on robot {}. Reason: {}".format(self.robot_number, repr(e)))
+            print("Couldn't enable beacons on robot {}. Reason: {}".format(self.robot_id, repr(e)))
 
     def _get_status_from_robot(self):
         self.last_status = self.robot_client.request_status()
         if self.last_status == None or self.last_status == "":
             self.last_status = "Robot status not available!"
-        else:
-            try:
-                self.command_in_progress = self.last_status["in_progress"]
-            except Exception:
-                print("Status miissing expected in_progress field")
         self.last_status_time = time.time()
 
     def update(self):
@@ -112,33 +100,32 @@ class RobotInterface:
         if self.comms_online:
 
             # Send robot position if available
-            if self.position_online and self.pos_handler.new_data_ready(self.robot_number):
-                pos = self.pos_handler.get_position(self.robot_number)
+            if self.position_online and self.pos_handler.new_data_ready(self.robot_id):
+                pos = self.pos_handler.get_position(self.robot_id)
                 self.robot_client.send_position(pos[0], pos[1], pos[2])
 
             # Request a status update if needed
             if time.time() - self.last_status_time > self.config.robot_status_wait_time:
                 self._get_status_from_robot()
 
-    def run_action(self, target, action):
+    def run_action(self, action):
         
         if not self.comms_online:
             return
 
-        if target != self.robot_number:
-            raise ValueError("Invalid target: {}. Expecting {}}".format(target, self.robot_number))
+        print("Running {} on {}".format(action.action_type, self.robot_id))
 
-        if action.type == ActionTypes.MOVE_COARSE:
+        if action.action_type == ActionTypes.MOVE_COARSE:
             self.robot_client.move(action.x, action.y, action.a)
-        elif action.type == ActionTypes.MOVE_REL:
+        elif action.action_type == ActionTypes.MOVE_REL:
             self.robot_client.move_rel(action.x, action.y, action.a)
-        elif action.type == ActionTypes.MOVE_FINE:
+        elif action.action_type == ActionTypes.MOVE_FINE:
             self.robot_client.move_fine(action.x, action.y, action.a)
-        elif action.type == ActionTypes.NET:
+        elif action.action_type == ActionTypes.NET:
             status = self.robot_client.net_status()
-            print("Robot {} network status is: {}".format(self.robot_number, status))
+            print("Robot {} network status is: {}".format(self.robot_id, status))
         else:
-            print("Unknown command: {}".format(command.type))
+            print("Unknown action: {}".format(action.action_type))
 
 
 
@@ -153,8 +140,12 @@ class BaseStationInterface:
 
     def bring_online(self):
         print("Bringing BaseStation comms online")
-        self.client = BaseStationClient(self.config)
-        if self.client.net_status()
+        if OFFLINE_TESTING:
+            self.client = MockBaseStationClient(self.config)
+        else:
+            self.client = BaseStationClient(self.config)
+
+        if self.client.net_status():
             self.comms_online = True
 
     def get_last_status(self):
@@ -172,11 +163,6 @@ class BaseStationInterface:
         self.last_status = self.client.request_status()
         if self.last_status == None or self.last_status == "":
             self.last_status = "Base station status not available!"
-        else:
-            try:
-                self.command_in_progress = self.last_status["in_progress"]
-            except Exception:
-                print("Status miissing expected in_progress field")
         self.last_status_time = time.time()
 
     def run_action(self, action):
@@ -196,20 +182,19 @@ class RuntimeManager:
     def __init__(self, config):
 
         self.config = config
-        self.initialization_status = STATUS_NOT_INITIALIZED
+        self.initialization_status = RuntimeManager.STATUS_NOT_INITIALIZED
+
+        self.robots = {n: RobotInterface(config, n) for n in self.config.ip_map.keys()}
+        self.base_station = BaseStationInterface(config)
 
         if OFFLINE_TESTING:
-            self.robots = {n: MockRobotInterface(config, int(n)) for n in self.config.ip_map.keys()}
-            self.base_station = MockBaseStationInterface(config)
             self.pos_handler = MockRobotPositionHandler(config)
         else:
-            self.robots = {n: RobotInterface(config, int(n)) for n in self.config.ip_map.keys()}
-            self.base_station = BaseStationInterface(config)
             self.pos_handler = RobotPositionHandler(config)
 
         self.last_metrics = {}
         self.cycle_tracker = {n: {'action': None, 'cycle': None, 'step': 0} for n in self.robots.keys()}
-        self.idle_bots = set([n for n in self.robots.keys])
+        self.idle_bots = set([n for n in self.robots.keys()])
 
     def initialize(self):
 
@@ -219,19 +204,21 @@ class RuntimeManager:
             robot.attach_pos_handler(self.pos_handler)
             robot.bring_online()
         
-        self.check_status()
+        self._check_initialization_status()
 
     def shutdown(self, keep_mm_awake):
 
         print("Shutting down")
-        if self.initialization_status != STATUS_NOT_INITIALIZED:
+        if self.initialization_status != RuntimeManager.STATUS_NOT_INITIALIZED:
             if not keep_mm_awake:
                 for robot in self.robots.values():
-                    self.pos_handler.sleep_robot(robot.robot_number)
-                write_file(self.cfg.mm_beacon_state_file, 'False')
+                    self.pos_handler.sleep_robot(robot.robot_id)
+                write_file(self.config.mm_beacon_state_file, 'False')
             self.pos_handler.close()
 
     def get_initialization_status(self):
+        self._check_initialization_status()
+        print("Initialization status: {}".format(self.initialization_status))
         return self.initialization_status
 
     def get_all_metrics(self):
@@ -243,7 +230,7 @@ class RuntimeManager:
         self.pos_handler.service_queues()
 
         self.base_station.update()
-        for robot in self.robots:
+        for robot in self.robots.values():
             robot.update()
 
         self._update_all_metrics()
@@ -260,18 +247,21 @@ class RuntimeManager:
     def assign_new_cycle(self, new_cycle):
         expected_robot = new_cycle.robot_id
         if expected_robot not in self.idle_bots:
-            raise ValueError("Expected cycle {} to be run with robot {} but only available robots are {}".format(new_cycle.id, expected_robot, self.idle_bots))
+            raise ValueError("Expected cycle {} to be run with {} but only available robots are {}".format(new_cycle.id, expected_robot, self.idle_bots))
         else:
+            print("Assigning cycle {} to {}".format(new_cycle.id, expected_robot))
             self.cycle_tracker[expected_robot]['cycle'] = new_cycle
-            self.cycle_tracker[expected_robot]['steps'] = 0
+            self.cycle_tracker[expected_robot]['step'] = 0
             self.cycle_tracker[expected_robot]['action'] = None
 
 
     def _run_action(self, target, action):
-        if target = 'base':
+        if target == 'base':
             self.base_station.run_action(action)
-        elif type(target) is str or type(target) is str
-            self.robots[str(target)].run_action(action)
+        elif 'robot' in target:
+            self.robots[target].run_action(action)
+            if target in self.idle_bots:
+                self.idle_bots.remove(target)
         else:
             print("Unknown target: {}".format(target))
 
@@ -282,44 +272,57 @@ class RuntimeManager:
             ready.append(robot.check_online())
         
         if all(ready):
-            self.status = STATUS_FULLY_INITIALIZED
+            self.initialization_status = RuntimeManager.STATUS_FULLY_INITIALIZED
             write_file(self.config.mm_beacon_state_file, 'True')
-        elif any(ready)
-            self.status = STATUS_PARTIALLY_INITIALIZED
+        elif any(ready):
+            self.initialization_status = RuntimeManager.STATUS_PARTIALLY_INITIALIZED
 
     def _update_all_metrics(self):
-        # TODO: Add entry for plan execution
         self.last_metrics = {}
         self.last_metrics['pos'] = self.pos_handler.get_metrics()
         self.last_metrics['base'] = self.base_station.get_last_status()
+        self.last_metrics['plan'] = {} # TODO: Fill in data for plan exectution
         for robot in self.robots.values():
-            self.last_metrics[str(robot.robot_number)] = robot.get_last_status()
+            self.last_metrics[str(robot.robot_id)] = robot.get_last_status()
 
     def _update_cycle_actions(self):
 
         # Use metrics to update in progress actions
-        for key, val in self.last_metrics:
-            # No updates needed for pos tracker or base station
-            if key == 'pos' or key == 'base':
+        for robot_id, metric in self.last_metrics.items():
+            # No updates needed for pos tracker, bbse station, or plan
+            if robot_id in ['pos', 'plan', 'base']:
                 continue
 
-            # If the robot was doing an action and is now finished, try to start the next one
-            tracker_data = self.cycle_tracker[key]
-            if tracker_data['action'] is not None and not val['in_progress']:
-                tracker_data['step'] += 1
+            # Figure out if we need to do any updates on the running actions
+            tracker_data = self.cycle_tracker[robot_id]
+            if tracker_data['cycle'] is not None:
+                start_next_action = False
+                
+                # If we got a new cycle but haven't started an action yet, start the first action
+                if tracker_data['action'] is None:
+                    start_next_action = True
 
-                # Check if there is a new action to run for this cycle, if not, end the cycle
-                if tracker_data['step'] > len(tracker_data['cycle'].action_sequence):
-                    tracker_data['cycle'] = None
-                    tracker_data['step'] = 0
+                # If the robot was doing an action and is now finished, start the next one
+                if tracker_data['action'] is not None and not metric['in_progress']:
+                    tracker_data['step'] += 1
+                    start_next_action = True
 
-                else:
-                    # If there is a new action to run, start it
-                    next_action = tracker_data['cycle'].action_sequence[tracker_data['step']]
-                    tracker_data['action'] = next_action
-                    self._run_action(next_action)
+                if start_next_action:
+                    # Check if there is a new action to run for this cycle, if not, end the cycle
+                    if tracker_data['step'] >= len(tracker_data['cycle'].action_sequence):
+                        print("{} finished cycle {}".format(robot_id, tracker_data['cycle'].id))
+                        tracker_data['cycle'] = None
+                        tracker_data['step'] = 0
+                        tracker_data['action'] = None
+
+                    else:
+                        # If there is a new action to run, start it
+                        next_action = tracker_data['cycle'].action_sequence[tracker_data['step']]
+                        tracker_data['action'] = next_action
+                        print("Starting action {} on {}".format(next_action.name, robot_id))
+                        self._run_action(robot_id, next_action)
 
         # Update if any robots are idle
-        for robot, data in self.cycle_tracker:
+        for robot, data in self.cycle_tracker.items():
             if data['action'] == None and data['cycle'] == None:
                 self.idle_bots.add(robot)

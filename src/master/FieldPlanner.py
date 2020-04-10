@@ -4,8 +4,6 @@ import skimage.transform as sktf
 import numpy as np
 import matplotlib.patches as patches
 import math
-import os
-import pickle
 import enum
 
 
@@ -281,12 +279,12 @@ class Tile:
 
 
 class ActionTypes(enum.Enum):
-    MOVE_COARSE,
-    MOVE_FINE,
-    MOVE_REL,
-    NET,
-    LOAD,
-    PLACE, 
+    MOVE_COARSE = 0,
+    MOVE_FINE = 1,
+    MOVE_REL = 2,
+    NET = 3,
+    LOAD = 4,
+    PLACE = 5, 
 
 class Action:
 
@@ -363,7 +361,7 @@ def generate_action_sequence(cfg, tile):
     - Drop off
     - Move to coarse drop off
     - Move to field exit
-    - Move to near load
+    - Move to near loa
     """
 
     # Setup positions
@@ -376,38 +374,38 @@ def generate_action_sequence(cfg, tile):
     actions = []
 
     name = "Move to load - fine"
-    actions.append(MoveAction(ActionType.MOVE_FINE, name, cfg.base_station_target_pose[0], cfg.base_station_target_pose[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, cfg.base_station_target_pose[0], cfg.base_station_target_pose[1], cfg.domino_field_angle))
 
     name = "Load tile"
-    actions.append(Action(ActionType.LOAD, name))
+    actions.append(Action(ActionTypes.LOAD, name))
 
     name = "Move away from load - fine"
-    actions.append(MoveAction(ActionType.MOVE_FINE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], cfg.domino_field_angle))
 
     name = "Move to prep - coarse"
     prep_x = robot_placement_coarse_pose[0]
     prep_y = cfg.domino_field_origin[1] - cfg.prep_position_distance
-    actions.append(MoveAction(ActionType.MOVE_COARSE, name, prep_x, prep_y, cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, prep_x, prep_y, cfg.domino_field_angle))
 
     name = "Move to near place - coarse"
-    actions.append(MoveAction(ActionType.MOVE_COARSE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], cfg.domino_field_angle))
 
     name = "Move to place - fine"
-    actions.append(MoveAction(ActionType.MOVE_FINE, name, robot_placement_fine_pose[0], robot_placement_fine_pose[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pose[0], robot_placement_fine_pose[1], cfg.domino_field_angle))
 
     name = "Place tile"
-    actions.append(Action(ActionType.PLACE, name))
+    actions.append(Action(ActionTypes.PLACE, name))
 
     name = "Move away from place - fine"
-    actions.append(MoveAction(ActionType.MOVE_FINE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], cfg.domino_field_angle))
 
     name = "Move to exit - coarse"
     exit_x = cfg.domino_field_origin[0] - cfg.exit_position_distance
     exit_y = robot_placement_coarse_pose[1]
-    actions.append(MoveAction(ActionType.MOVE_COARSE, name, exit_x, exit_y, cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, exit_x, exit_y, cfg.domino_field_angle))
 
     name = "Move to near load - coarse"
-    actions.append(MoveAction(ActionType.MOVE_COARSE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], cfg.domino_field_angle))
 
     return actions
 
@@ -483,7 +481,7 @@ class Plan:
         n_robots = len(self.cfg.ip_map)
 
         for tile in self.field.tiles:
-            self.cycles.append(Cycle(tile.order, cfg, robot_num, tile))
+            self.cycles.append(Cycle(tile.order, self.cfg, "robot{}".format(robot_num), tile))
             robot_num += 1
             if robot_num > n_robots:
                 robot_num = start_num
@@ -494,7 +492,10 @@ class Plan:
         plt.show()
 
     def get_cycle(self, cycle_num):
-        return self.cycles[cycle_num]
+        try:
+            return self.cycles[cycle_num]
+        except IndexError:
+            return None
 
 
 

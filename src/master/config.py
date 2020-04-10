@@ -19,11 +19,12 @@ class Config:
     # Defining first device in list as the one on the left side of the robot
     device_map = {
     "static": (1, 2),
-    "1": (6, 5)
+    "robot1": (6, 5)
     }
 
     # Specifies which IP address each robot has
-    ip_map = {1: '192.168.1.4'}
+    ip_map = {'robot1': '192.168.1.4'}
+    base_station_ip = '192.168.1.100'
 
     mm_forward_offset = 0.2969 # Meters from center of robot to center point of MM beacons
     mm_beacon_sep = 0.5715 # Meters between beacons on the robot

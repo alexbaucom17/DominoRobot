@@ -5,7 +5,11 @@ Stepper controller
  - Make this
 
 Master:
-- Improve robustness, cleanlieness, and interface
+- Add actions for base station
+- Figure out how to sequence loading between base and robot
+- Finish up status panels for gui
+- Make gui look a little bit better
+- Figure out if there is a way to use the output pane better - maybe also log to file or dump to console?
 
 Base station:
 - Put together skeleton code for base station

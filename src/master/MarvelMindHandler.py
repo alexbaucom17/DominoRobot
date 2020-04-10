@@ -6,6 +6,17 @@ import ctypes
 import math
 import time
 
+def get_file_bool(filename):
+    try:
+        with open(filename, 'r+') as f:
+            txt = f.readline()
+            if txt == 'True':
+                return True
+            else:
+                return False
+    except FileNotFoundError:
+        return False
+
 class MarvelMindPoint:
     """
     Simple class to hold a point structure
@@ -446,6 +457,7 @@ class RobotPositionHandler():
 class MockRobotPositionHandler:
 
     def __init__(self, cfg):
+        self.still_running = True
         pass
 
     def close(self):
