@@ -9,7 +9,7 @@ from Runtime import RuntimeManager
 
 def status_panel(name):
     return [[sg.Text("{} status".format(name))], 
-            [sg.Text("{} offline".format(name), size=(40, 15), relief=sg.RELIEF_RAISED, key='_{}STATUS_'.format(name.upper())) ]]
+            [sg.Text("{} offline".format(name), size=(40, 15), relief=sg.RELIEF_RAISED, key='_{}_STATUS_'.format(name.upper())) ]]
 
 class CmdGui:
 
@@ -18,7 +18,7 @@ class CmdGui:
         sg.change_look_and_feel('Dark Blue 3')
 
         names = ["robot{}".format(n) for n in self.config.ip_map]
-        names += ['base', 'plan']
+        names += ['base', 'plan', 'pos']
         col1 = [status_panel(name) for name in names]
 
         targets = copy.deepcopy(names)
@@ -44,7 +44,11 @@ class CmdGui:
 
         self.draw_robot(3,3,0)
         self.keep_mm_running = False
+        self.viz_figs = {}
 
+    
+    def close(self):
+        self.window.close()
 
     def update(self):
 
@@ -58,12 +62,12 @@ class CmdGui:
             return True, None
         
         if event in ('Send', '\r', '\n'): # Catch enter as well
-            manual_action = self.parse_manual_action(values)
+            manual_action = self._parse_manual_action(values)
             self.window['_ACTION_DATA_'].update("")
 
         return False, manual_action
 
-    def parse_manual_action(self, values):
+    def _parse_manual_action(self, values):
         target = values[_TARGET_]
         action_type = ActionTypes(values[_ACTION_])
         data_str = values[_ACTION_DATA_]
@@ -79,10 +83,60 @@ class CmdGui:
 
         return (target, action)
 
+    def update_status_panels(self, metrics):
+        for key, metric in metrics.items():
+            if key == 'pos':
+                self._update_pos_panel(metric)
+            elif key == 'plan':
+                self._update_plan_panel(metric)
+            elif key == 'base':
+                self._update_base_panel(metric)
+            else:
+                self._update_robot_panel(key, metric) 
 
-    # TODO: modify to handle new status format and multiple robots
-    def update_robot_status(self, status_dict, msg_metrics):
-        status_str = "Cannot get robot status"
+
+    def _update_pos_panel(self, status_dict):
+        status_str = "Cannot get marvelmind status"
+        if status_dict:
+            try:
+                status_str = ""
+                status_str += "Marvelmind message stats:\n  Dropped: {0:.1f}%\n  Dropped dist: {1:.1f}%\n  Dropped time {2:.1f}%\n  Last sent: {3:.2f}s".format(
+                    status_dict['frac_dropped_total']*100, status_dict['frac_dropped_dist']*100,
+                    status_dict['frac_dropped_time']*100, status_dict['time_since_last_sent'])
+            except Exception as e:
+                status_str = "Bad dict: " + str(status_dict)
+                print("Message exception: " + repr(e))
+
+        self.window['_POS_STATUS_'].update(status_str)
+
+    def _update_plan_panel(self, status_dict):
+        status_str = "Cannot get plan status"
+        if status_dict:
+            try:
+                # TODO: update when plan is ready
+                status_str = ""
+                status_str += "Got plan dict\n"
+            except Exception as e:
+                status_str = "Bad dict: " + str(status_dict)
+                print("Message exception: " + repr(e))
+
+        self.window['_PLAN_STATUS_'].update(status_str)
+
+    def _update_base_panel(self, status_dict):
+        status_str = "Cannot get base status"
+        if status_dict:
+            try:
+                # TODO: update when base is ready
+                status_str = ""
+                status_str += "Got base dict\n"
+            except Exception as e:
+                status_str = "Bad dict: " + str(status_dict)
+                print("Message exception: " + repr(e))
+
+        self.window['_BASE_STATUS_'].update(status_str)
+
+    def _update_robot_panel(self, robot_number, status_dict):
+        status_str = "Cannot get robot {} status".format(robot_number)
         if status_dict:
             try:
                 status_str = ""
@@ -94,26 +148,23 @@ class CmdGui:
                 status_str += "Motion in progress: {}\n".format(status_dict["in_progress"])
                 status_str += "Counter:   {}\n".format(status_dict['counter'])
                 status_str += "Free memory:   {} bytes\n".format(status_dict['free_memory'])
-                status_str += "Marvelmind message stats:\n  Dropped: {0:.1f}%\n  Dropped dist: {1:.1f}%\n  Dropped time {2:.1f}%\n  Last sent: {3:.2f}s".format(
-                    msg_metrics['frac_dropped_total']*100, msg_metrics['frac_dropped_dist']*100,
-                    msg_metrics['frac_dropped_time']*100, msg_metrics['time_since_last_sent'])
 
                 # Also update the visualization position
-                self.update_robot_viz_position(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
+                self._update_robot_viz_position(robot_number, status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
             except Exception as e:
-                status_str = "Bad dicts: " + str(status_dict) + str(msg_metrics)
+                status_str = "Bad dict: " + str(status_dict)
                 print("Message exception: " + repr(e))
 
-        self.window['_R1STATUS_'].update(status_str)
+        self.window['_ROBOT{}_STATUS_'.format(robot_number)].update(status_str)
 
-    def update_robot_viz_position(self, x, y, a):
-        if self.r1_figs:
-            for f in self.r1_figs:
+    def _update_robot_viz_position(self, n, x, y, a):
+        if n in self.viz_figs
+            for f in self.viz_figs[n]:
                 self.window['_GRAPH_'].DeleteFigure(f)
         
-        self.draw_robot(x, y, a)
+        self.viz_figs[n] = self._draw_robot(x, y, a)
 
-    def draw_robot(self, x, y, a):
+    def _draw_robot(self, x, y, a):
         robot_length = 1
         robot_width = 1
         front_point = [x + robot_length/2 * math.cos(a), y + robot_length/2 * math.sin(a)]
@@ -122,14 +173,13 @@ class CmdGui:
         back_left_point = [back_point[0] + robot_width/2 * math.cos(ortho_angle), back_point[1] + robot_width/2 * math.sin(ortho_angle)]
         back_right_point = [back_point[0] - robot_width/2 * math.cos(ortho_angle), back_point[1] - robot_width/2 * math.sin(ortho_angle)]
 
-        self.r1_figs = []
-        self.r1_figs.append(self.window['_GRAPH_'].DrawLine(point_from=front_point, point_to=back_left_point, color='black'))
-        self.r1_figs.append(self.window['_GRAPH_'].DrawLine(point_from=back_left_point, point_to=back_right_point, color='black'))
-        self.r1_figs.append(self.window['_GRAPH_'].DrawLine(point_from=back_right_point, point_to=front_point, color='black'))
-        self.r1_figs.append(self.window['_GRAPH_'].DrawLine(point_from=[x,y], point_to=front_point, color='red'))
+        figs = []
+        figs.append(self.window['_GRAPH_'].DrawLine(point_from=front_point, point_to=back_left_point, color='black'))
+        figs.append(self.window['_GRAPH_'].DrawLine(point_from=back_left_point, point_to=back_right_point, color='black'))
+        figs.append(self.window['_GRAPH_'].DrawLine(point_from=back_right_point, point_to=front_point, color='black'))
+        figs.append(self.window['_GRAPH_'].DrawLine(point_from=[x,y], point_to=front_point, color='red'))
+        return figs
 
-    def close(self):
-        self.window.close()
 
 
 class CmdGenerator:
@@ -224,7 +274,7 @@ class Master:
 
             # Get metrics and update the gui
             metrics = self.runtime_manager.get_all_metrics()
-            self.cmd_gui.update_metrics(metrics)
+            self.cmd_gui.update_status_panels(metrics)
 
             # Handle any input from gui
             done, manual_action = self.cmd_gui.update()
