@@ -6,6 +6,7 @@ import matplotlib.patches as patches
 import math
 import os
 import pickle
+import enum
 
 
 class DominoField:
@@ -279,13 +280,15 @@ class Tile:
                 array[domino_start_x:domino_end_x, domino_start_y:domino_end_y, 2] = domino_color[2]
 
 
+class ActionTypes(enum.Enum):
+    MOVE_COARSE,
+    MOVE_FINE,
+    MOVE_REL,
+    NET,
+    LOAD,
+    PLACE, 
 
 class Action:
-
-    TYPE_MOVE_COARSE = 1
-    TYPE_MOVE_FINE = 2
-    TYPE_PICKUP = 3
-    TYPE_PLACE = 4
 
     def __init__(self, action_type, name):
         self.action_type = action_type
@@ -300,7 +303,7 @@ class MoveAction(Action):
     def __init__(self, action_type, name, x, y, a):
         # action_type (enum)
         # string name
-        # X position [m]py
+        # X position [m]
         # Y position [m]
         # Angle [deg]
 
@@ -351,16 +354,16 @@ class MoveAction(Action):
 def generate_action_sequence(cfg, tile):
     """
     Standard sequence:
-    - Move to pickup
-    - Do pickup
-    - Move out of pickup
+    - Move to load
+    - Do load
+    - Move out of load
     - Move to field entry
     - Move to coarse drop off
     - Move to fine drop off
     - Drop off
     - Move to coarse drop off
     - Move to field exit
-    - Move to near pickup
+    - Move to near load
     """
 
     # Setup positions
@@ -372,39 +375,39 @@ def generate_action_sequence(cfg, tile):
 
     actions = []
 
-    name = "Move to pickup - fine"
-    actions.append(MoveAction(Action.TYPE_MOVE_FINE, name, cfg.base_station_target_pose[0], cfg.base_station_target_pose[1], cfg.domino_field_angle))
+    name = "Move to load - fine"
+    actions.append(MoveAction(ActionType.MOVE_FINE, name, cfg.base_station_target_pose[0], cfg.base_station_target_pose[1], cfg.domino_field_angle))
 
-    name = "Pickup tile"
-    actions.append(Action(Action.TYPE_PICKUP, name))
+    name = "Load tile"
+    actions.append(Action(ActionType.LOAD, name))
 
-    name = "Move away from pickup - fine"
-    actions.append(MoveAction(Action.TYPE_MOVE_FINE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], cfg.domino_field_angle))
+    name = "Move away from load - fine"
+    actions.append(MoveAction(ActionType.MOVE_FINE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], cfg.domino_field_angle))
 
     name = "Move to prep - coarse"
     prep_x = robot_placement_coarse_pose[0]
     prep_y = cfg.domino_field_origin[1] - cfg.prep_position_distance
-    actions.append(MoveAction(Action.TYPE_MOVE_COARSE, name, prep_x, prep_y, cfg.domino_field_angle))
+    actions.append(MoveAction(ActionType.MOVE_COARSE, name, prep_x, prep_y, cfg.domino_field_angle))
 
     name = "Move to near place - coarse"
-    actions.append(MoveAction(Action.TYPE_MOVE_COARSE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionType.MOVE_COARSE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], cfg.domino_field_angle))
 
     name = "Move to place - fine"
-    actions.append(MoveAction(Action.TYPE_MOVE_FINE, name, robot_placement_fine_pose[0], robot_placement_fine_pose[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionType.MOVE_FINE, name, robot_placement_fine_pose[0], robot_placement_fine_pose[1], cfg.domino_field_angle))
 
     name = "Place tile"
-    actions.append(Action(Action.TYPE_PLACE, name))
+    actions.append(Action(ActionType.PLACE, name))
 
     name = "Move away from place - fine"
-    actions.append(MoveAction(Action.TYPE_MOVE_FINE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionType.MOVE_FINE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], cfg.domino_field_angle))
 
     name = "Move to exit - coarse"
     exit_x = cfg.domino_field_origin[0] - cfg.exit_position_distance
     exit_y = robot_placement_coarse_pose[1]
-    actions.append(MoveAction(Action.TYPE_MOVE_COARSE, name, exit_x, exit_y, cfg.domino_field_angle))
+    actions.append(MoveAction(ActionType.MOVE_COARSE, name, exit_x, exit_y, cfg.domino_field_angle))
 
-    name = "Move to near pickup - coarse"
-    actions.append(MoveAction(Action.TYPE_MOVE_COARSE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], cfg.domino_field_angle))
+    name = "Move to near load - coarse"
+    actions.append(MoveAction(ActionType.MOVE_COARSE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], cfg.domino_field_angle))
 
     return actions
 
@@ -490,68 +493,9 @@ class Plan:
         self.cycles[cycle_num].draw_cycle(ax)
         plt.show()
 
+    def get_cycle(self, cycle_num):
+        return self.cycles[cycle_num]
 
-class PlanManager:
-
-    def __init__(self, cfg):
-        self.plan = None
-        self.cfg = cfg
-        self.cycle_num = 0
-        # TODO: Fix up the runtime piece of this - maybe move out of this class? This is a bit of a mess
-        self.progress_tracker = {n: {'action': None, 'cycle': None, 'step': 0} for n in self.cfg.ip_map.keys()}
-
-    def get_plan(self):
-
-        # If we don't already have a plan, load it or generate it
-        if not self.plan:
-            if os.path.exists(self.cfg.plan_file):
-                with open(self.cfg.plan_file, 'rb') as f:
-                    self.plan = pickle.load(f)
-                    print("Loaded plan from {}".format(self.cfg.plan_file))
-            else:
-                self.plan = Plan(self.cfg)
-                with open(self.cfg.plan_file, 'wb') as f:
-                    pickle.dump(self.plan, f)
-                    print("Saved plan to {}".format(self.cfg.plan_file))
-
-        return self.plan
-
-    def update_progress(self, progress_metrics):
-        for key, val in progress_metrics:
-            if key == 'pos' or key == 'base':
-                continue
-            if not val['in_progress'] and self.progress_tracker[key][action] is not None:
-                # TODO: Make sure this doesn't create a race condition with starting the next action
-                self.progress_tracker[key][action] = None
-
-    def check_for_next_cycle(self):
-
-        # Check if a robot is ready for the next cycle
-        next_cycle = self.plan.cycles[self.cycle_num]
-        next_robot = next_cycle.robot_id
-        if self.progress_tracker[next_robot]['action'] == None and
-           self.progress_tracker[next_robot]['cycle'] == None:
-
-            self.progress_tracker[next_robot]['cycle'] = next_cycle
-            self.cycle_num += 1
-
-    def get_command(self):
-        # Loop over all robots
-        for robot, data in self.progress_tracker.items():
-            # Check for a robot that isn't running an action
-            if data['cycle'] and data['action'] == None:
-                data['step'] += 1
-                # Check if there is a new action to run, if not, end the cycle
-                if data['step'] > len(data['cycle'].action_sequence):
-                    data['cycle'] = None
-                    data['step'] = 0
-                else:
-                    # If there is a new action to run, start it
-                    next_action = data['cycle'].action_sequence[data['step']]
-                    data['action'] = next_action
-                    return next_action
-
-        return None
 
 
 if __name__ == '__main__':

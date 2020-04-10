@@ -1,7 +1,8 @@
 import time
-import enum
+
 from MarvelMindHandler import RobotPositionHandler
 from RobotClient import RobotClient, BaseStationClient
+from FieldPlanner import ActionTypes, Action
 
 class NonBlockingTimer:
 
@@ -15,19 +16,6 @@ class NonBlockingTimer:
         else:
             return False
 
-class CommandTypes(enum.Enum):
-    MOVE = 'move',
-    MOVE_FINE = 'fine',
-    MOVE_REL = 'rel',
-    NET = 'net',
-    LOAD = 'load',
-    PLACE = 'place'
-
-class Command:
-    def __init__(self, target, cmd_type, data):
-        self.target = target
-        self.type = cmd_type
-        self.data = data
 
 def get_file_bool(filename):
     try:
@@ -130,25 +118,25 @@ class RobotInterface:
             if time.time() - self.last_status_time > self.config.robot_status_wait_time:
                 self._get_status_from_robot()
 
-    def run_command(self, command):
+    def run_action(self, target, action):
         
         if not self.comms_online:
             return
 
-        if command.target != self.robot_number:
-            raise ValueError("Invalid target: {}. Expecting {}}".format(command.target, self.robot_number))
+        if target != self.robot_number:
+            raise ValueError("Invalid target: {}. Expecting {}}".format(target, self.robot_number))
 
-        if command.type == CommandTypes.MOVE:
-            self.robot_client.move(float(command.data[0]), float(command.data[1]), float(command.data[2]))
-        elif command.type == CommandTypes.MOVE_REL:
-            self.robot_client.move_rel(float(command.data[0]), float(command.data[1]), float(command.data[2]))
-        elif command.type == CommandTypes.MOVE_FINE:
-            self.robot_client.move_fine(float(command.data[0]), float(command.data[1]), float(command.data[2]))
-        elif command.type == CommandTypes.NET":
+        if action.type == ActionTypes.MOVE_COARSE:
+            self.robot_client.move(action.x, action.y, action.a)
+        elif action.type == ActionTypes.MOVE_REL:
+            self.robot_client.move_rel(action.x, action.y, action.a)
+        elif action.type == ActionTypes.MOVE_FINE:
+            self.robot_client.move_fine(action.x, action.y, action.a)
+        elif action.type == ActionTypes.NET:
             status = self.robot_client.net_status()
             print("Robot {} network status is: {}".format(self.robot_number, status))
         else:
-            print("Unknown command: {}, data: {}".format(command.type, command.data))
+            print("Unknown command: {}".format(command.type))
 
 
 
@@ -189,13 +177,12 @@ class BaseStationInterface:
                 print("Status miissing expected in_progress field")
         self.last_status_time = time.time()
 
-    def run_command(self, command):
+    def run_action(self, action):
 
         if not self.comms_online:
             return
-
-        if command.target != 'base':
-            raise ValueError("Invalid target: {}. Expecting base".format(command.target))
+        
+        # TODO: impliment commands
 
 
 class RuntimeManager:
@@ -207,16 +194,20 @@ class RuntimeManager:
     def __init__(self, config):
 
         self.config = config
-        self.robots = [RobotInterface(config, n) for n in config.ip_map.keys()]
+        self.robots = {n: RobotInterface(config, int(n)) for n in self.config.ip_map.keys()}
         self.base_station = BaseStationInterface(config)
         self.pos_handler = RobotPositionHandler(config)
         self.initialization_status = STATUS_NOT_INITIALIZED
+
+        self.last_metrics = {}
+        self.cycle_tracker = {n: {'action': None, 'cycle': None, 'step': 0} for n in self.robots.keys()}
+        self.idle_bots = set([n for n in self.robots.keys])
 
     def initialize(self):
 
         # Bring everything online
         self.base_station.bring_online()
-        for robot in self.robots:
+        for robot in self.robots.values():
             robot.attach_pos_handler(self.pos_handler)
             robot.bring_online()
         
@@ -227,7 +218,7 @@ class RuntimeManager:
         print("Shutting down")
         if self.initialization_status != STATUS_NOT_INITIALIZED:
             if not keep_mm_awake:
-                for robot in self.robots:
+                for robot in self.robots.values():
                     self.pos_handler.sleep_robot(robot.robot_number)
                 write_file(self.cfg.mm_beacon_state_file, 'False')
             self.pos_handler.close()
@@ -235,10 +226,51 @@ class RuntimeManager:
     def get_initialization_status(self):
         return self.initialization_status
 
-    def check_initialization_status(self):
+    def get_all_metrics(self):
+        return self.last_metrics
+
+    def update(self):
+        self._check_initialization_status()
+
+        self.pos_handler.service_queues()
+
+        self.base_station.update()
+        for robot in self.robots:
+            robot.update()
+
+        self._update_all_metrics()
+        self._update_cycle_actions()
+
+    def run_manual_action(self, manual_action):
+        target = manual_action[0]
+        action = manual_action[1]
+        self._run_action(target, action)
+
+    def any_idle_bots(self):
+        return len(self.idle_bots) > 0
+
+    def assign_new_cycle(self, new_cycle):
+        expected_robot = new_cycle.robot_id
+        if expected_robot not in self.idle_bots:
+            raise ValueError("Expected cycle {} to be run with robot {} but only available robots are {}".format(new_cycle.id, expected_robot, self.idle_bots))
+        else:
+            self.cycle_tracker[expected_robot]['cycle'] = new_cycle
+            self.cycle_tracker[expected_robot]['steps'] = 0
+            self.cycle_tracker[expected_robot]['action'] = None
+
+
+    def _run_action(self, target, action):
+        if target = 'base':
+            self.base_station.run_action(action)
+        elif type(target) is str or type(target) is str
+            self.robots[str(target)].run_action(action)
+        else:
+            print("Unknown target: {}".format(target))
+
+    def _check_initialization_status(self):
         ready = []
         ready.append(self.base_station.check_online())
-        for robot in self.robots:
+        for robot in self.robots.values():
             ready.append(robot.check_online())
         
         if all(ready):
@@ -247,28 +279,39 @@ class RuntimeManager:
         elif any(ready)
             self.status = STATUS_PARTIALLY_INITIALIZED
 
-    def get_all_metrics(self):
-        metrics = {}
-        metrics['pos'] = self.pos_handler.get_metrics()
-        metrics['base'] = self.base_station.get_last_status()
-        for robot in self.robots:
-            metrics[robot.robot_number] = robot.get_last_status()
+    def _update_all_metrics(self):
+        # TODO: Add entry for plan execution
+        self.last_metrics = {}
+        self.last_metrics['pos'] = self.pos_handler.get_metrics()
+        self.last_metrics['base'] = self.base_station.get_last_status()
+        for robot in self.robots.values():
+            self.last_metrics[str(robot.robot_number)] = robot.get_last_status()
 
-        return metrics
+    def _update_cycle_actions(self):
 
-    def update(self):
-        self.check_initialization_status()
+        # Use metrics to update in progress actions
+        for key, val in self.last_metrics:
+            # No updates needed for pos tracker or base station
+            if key == 'pos' or key == 'base':
+                continue
 
-        self.pos_handler.service_queues()
+            # If the robot was doing an action and is now finished, try to start the next one
+            tracker_data = self.cycle_tracker[key]
+            if tracker_data['action'] is not None and not val['in_progress']:
+                tracker_data['step'] += 1
 
-        self.base_station.update()
-        for robot in self.robots:
-            robot.update()
+                # Check if there is a new action to run for this cycle, if not, end the cycle
+                if tracker_data['step'] > len(tracker_data['cycle'].action_sequence):
+                    tracker_data['cycle'] = None
+                    tracker_data['step'] = 0
 
-    def run_command(self, command):
-        if command.target = 'base':
-            self.base_station.run_command(command)
-        elif type(command.target) is int:
-            self.robots[command.target].run_command(command)
-        else:
-            print("Unknown target: {}".format(command.target))
+                else:
+                    # If there is a new action to run, start it
+                    next_action = tracker_data['cycle'].action_sequence[tracker_data['step']]
+                    tracker_data['action'] = next_action
+                    self._run_action(next_action)
+
+        # Update if any robots are idle
+        for robot, data in self.cycle_tracker:
+            if data['action'] == None and data['cycle'] == None:
+                self.idle_bots.add(robot)

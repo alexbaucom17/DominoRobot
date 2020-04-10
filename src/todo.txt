@@ -5,10 +5,7 @@ Stepper controller
  - Make this
 
 Master:
-- Actually use plan in runtime
-- Add high level behavior steps (including pause)
 - Improve robustness, cleanlieness, and interface
-- Interface with base station
 
 Base station:
 - Put together skeleton code for base station
