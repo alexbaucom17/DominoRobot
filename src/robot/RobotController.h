@@ -55,8 +55,8 @@ class RobotController
     bool checkForCompletedTrajectory(PVTPoint cmd);
     // Calculate wheel odometry
     void computeOdometry();
-    //Write velocities out to controller
-    void writeVelocities();
+    //Write velocity out to controller
+    void writeVelocity(float speed, int speed_pin, int dir_pin);
 
     // Member variables
     unsigned long prevPositionUpdateTime_; // Previous loop millis we were provided a position observation

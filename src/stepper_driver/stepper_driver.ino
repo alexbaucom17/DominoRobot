@@ -15,7 +15,7 @@ const float voltage_to_speed = static_cast<float>(max_vel) / static_cast<float>(
 axis_t motor;
 int voltage;
 int32_t vel;
-//unsigned long prevMillis;
+unsigned long prevMillis;
 
 void setup() 
 {

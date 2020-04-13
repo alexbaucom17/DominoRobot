@@ -1,8 +1,11 @@
 Robot:
-- Write and test analog voltage sending to controller
+- Test analog voltage sending to controller
+- Test lifter stepper control
+- Test lifter servo control
+- Test lifter homing/switch control
 
 Stepper controller
- - Make this
+- Test drive stepper control
 
 Master:
 - Add actions for base station
@@ -15,8 +18,12 @@ Base station:
 - Put together skeleton code for base station
 
 Purchase:
+- Possibly a usb A -> usb MINI cable for the arduino nanos
 
-Embedded (maybe not needed anymore):
+
+
+
+Embedded (old, maybe not needed anymore):
 - Diagnose delay in position update from robot
 - Controller tuning:
     - Try to get plots generating from arduino serial plotter

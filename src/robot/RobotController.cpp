@@ -6,6 +6,7 @@
 
 const DynamicLimits FINE_LIMS = {MAX_TRANS_SPEED_FINE, MAX_TRANS_ACC_FINE, MAX_ROT_SPEED_FINE, MAX_ROT_ACC_FINE};
 const DynamicLimits COARSE_LIMS = {MAX_TRANS_SPEED_COARSE, MAX_TRANS_ACC_COARSE, MAX_ROT_SPEED_COARSE, MAX_ROT_ACC_COARSE};
+const float VEL_TO_PWM = PWM_RESOLUTION / STEPPER_MAX_VEL;
 
 RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater)
 : prevPositionUpdateTime_(millis()),
@@ -33,9 +34,23 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
 
 void RobotController::begin()
 {
-    // Setup enable pin
+    // Setup pins
     digitalWrite(PIN_ENABLE_ALL, HIGH);
     pinMode(PIN_ENABLE_ALL, OUTPUT);
+
+    analogWrite(PIN_SPEED_0, 0);
+    analogWrite(PIN_SPEED_1, 0);
+    analogWrite(PIN_SPEED_2, 0);
+    analogWrite(PIN_SPEED_3, 0);
+    pinMode(PIN_SPEED_0, OUTPUT);
+    pinMode(PIN_SPEED_1, OUTPUT);
+    pinMode(PIN_SPEED_2, OUTPUT);
+    pinMode(PIN_SPEED_3, OUTPUT);
+
+    pinMode(PIN_DIR_0, OUTPUT);
+    pinMode(PIN_DIR_1, OUTPUT);
+    pinMode(PIN_DIR_2, OUTPUT);
+    pinMode(PIN_DIR_3, OUTPUT);
 
     // Setup Kalman filter
     double dt = 0.1;
@@ -368,12 +383,26 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     motor_velocities[2] = 1/WHEEL_DIAMETER * ( c0*local_cart_vel[0] - s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
     motor_velocities[3] = 1/WHEEL_DIAMETER * (-s0*local_cart_vel[0] - c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
 
-    // Set the commanded values for each motor
-    writeVelocities();
+    // Send the commanded velocity for each motor
+    writeVelocity(motor_velocities[0], PIN_SPEED_0, PIN_DIR_0);
+    writeVelocity(motor_velocities[1], PIN_SPEED_1, PIN_DIR_1);
+    writeVelocity(motor_velocities[2], PIN_SPEED_2, PIN_DIR_2);
+    writeVelocity(motor_velocities[3], PIN_SPEED_3, PIN_DIR_3);
 
 }
 
-void RobotController::writeVelocities()
+void RobotController::writeVelocity(float speed, int speed_pin, int dir_pin)
 {
-    // TODO - Some sort of analog encoding and setting for the velocities
+    if(speed > 0)
+    {
+        digitalWrite(dir_pin, HIGH);
+    }
+    else
+    {
+        digitalWrite(dir_pin, LOW);
+        speed = -1*speed;
+    }
+    
+    uint8_t val = static_cast<uint8_t>(speed * VEL_TO_PWM);
+    analogWrite(speed_pin, val);
 }

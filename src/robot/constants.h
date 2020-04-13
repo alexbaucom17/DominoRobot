@@ -1,24 +1,28 @@
-#ifndef Globals_h
-#define Globals_h
+#ifndef Constants_h
+#define Contsants_h
 
 // Pins
-#define PIN_PULSE_2 49
-#define PIN_PULSE_3 51
-#define PIN_PULSE_1 47
-#define PIN_PULSE_0 45
+// Note - according to https://www.arduino.cc/reference/en/language/functions/analog-io/analogwrite/, pin 4 on the Mega has a different PWM frequency, need to make sure that doesn't affect things
+#define PIN_SPEED_0 4   
+#define PIN_SPEED_1 5
+#define PIN_SPEED_2 6
+#define PIN_SPEED_3 7
 
-#define PIN_DIR_2 48
-#define PIN_DIR_3 50
-#define PIN_DIR_1 46
-#define PIN_DIR_0 44
+#define PIN_DIR_0 22
+#define PIN_DIR_1 24
+#define PIN_DIR_2 26
+#define PIN_DIR_3 28
 
-#define PIN_ENABLE_ALL 40
+#define PIN_ENABLE_ALL 23
+// #define PIN_ENABLE_1 25
+// #define PIN_ENABLE_2 27
+// #define PIN_ENABLE_3 29
 
 #define PIN_LATCH_SERVO_PIN 10
-#define PIN_TRAY_STEPPER_LEFT_PULSE 11
-#define PIN_TRAY_STEPPER_LEFT_DIR 12
-#define PIN_TRAY_STEPPER_RIGHT_PULSE 13
-#define PIN_TRAY_STEPPER_RIGHT_DIR 14
+#define PIN_TRAY_STEPPER_LEFT_PULSE 44
+#define PIN_TRAY_STEPPER_LEFT_DIR 43
+#define PIN_TRAY_STEPPER_RIGHT_PULSE 46
+#define PIN_TRAY_STEPPER_RIGHT_DIR 47
 #define PIN_TRAY_HOME_SWITCH 15
 
 // Velocitiy limits
@@ -48,6 +52,10 @@
 
 // Scaling factors
 #define TRAJ_MAX_FRACTION 0.7  // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate
+
+// Scaling for stepper drive motors
+#define STEPPER_MAX_VEL 1024   // steps/second. This must match the value defined in stepper_driver.ino
+#define PWM_RESOLUTION 255   // Analog resolution of arduino pwm output.
 
 // Kalman filter scales
 #define PROCESS_NOISE_SCALE 0.08
