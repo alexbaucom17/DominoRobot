@@ -3,7 +3,6 @@
 
 #define STEP_PIN 2
 #define DIR_PIN 1   // Note that the DIR pin is actually controlled by the mster arduino so this won't be connected to anything
-#define STEPS_PER_REV 1024 // How many steps the motor takes per revolution
 #define VEL_PIN A0
 
 #define MILLIS_BETWEEN_POLLING 10
@@ -11,7 +10,7 @@
 
 
 // This is assuming a mapping of 0V -> 5V = 0 steps/sec -> max_vel steps/sec
-const int max_vel = 100; //steps/second
+const int max_vel = 1600; //steps/second
 const int analog_resolution = 1024; // how many discrete steps available in analogRead
 const float voltage_to_speed = static_cast<float>(max_vel) / static_cast<float>(analog_resolution);
 
