@@ -6,7 +6,8 @@
 
 const DynamicLimits FINE_LIMS = {MAX_TRANS_SPEED_FINE, MAX_TRANS_ACC_FINE, MAX_ROT_SPEED_FINE, MAX_ROT_ACC_FINE};
 const DynamicLimits COARSE_LIMS = {MAX_TRANS_SPEED_COARSE, MAX_TRANS_ACC_COARSE, MAX_ROT_SPEED_COARSE, MAX_ROT_ACC_COARSE};
-const float VEL_TO_PWM = PWM_RESOLUTION / STEPPER_MAX_VEL;
+const float STEPS_PER_SECOND_TO_PWM = static_cast<float>(PWM_RESOLUTION) / static_cast<float>(STEPPER_MAX_VEL);
+const float RADS_PER_SECOND_TO_STEPS_PER_SECOND = STEPPER_PULSE_PER_REV / (2 * PI);
 
 RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater)
 : prevPositionUpdateTime_(millis()),
@@ -402,7 +403,21 @@ void RobotController::writeVelocity(float speed, int speed_pin, int dir_pin)
         digitalWrite(dir_pin, LOW);
         speed = -1*speed;
     }
-    
-    uint8_t val = static_cast<uint8_t>(speed * VEL_TO_PWM);
+
+    // Speed is in rad/s so we have to translate to steps/sec and then to a pwm output
+    float speed_steps_per_sec = speed * RADS_PER_SECOND_TO_STEPS_PER_SECOND;
+    uint8_t val = static_cast<uint8_t>(speed_steps_per_sec * STEPS_PER_SECOND_TO_PWM);
     analogWrite(speed_pin, val);
+
+//    debug_.print(speed_pin);
+//    debug_.print(", ");
+//    debug_.print(speed);
+//    debug_.print(", ");
+//    debug_.print(RADS_PER_SECOND_TO_STEPS_PER_SECOND);
+//    debug_.print(", ");
+//    debug_.print(speed_steps_per_sec);
+//    debug_.print(", ");
+//    debug_.print(STEPS_PER_SECOND_TO_PWM);
+//    debug_.print(", ");
+//    debug_.println(val);
 }

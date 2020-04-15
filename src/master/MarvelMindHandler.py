@@ -473,7 +473,7 @@ class MockRobotPositionHandler:
         return [1,1,1]
 
     def new_data_ready(self, robot_number):
-        return True
+        return False
 
     def get_metrics(self):
         return {}

@@ -4,7 +4,10 @@ from MarvelMindHandler import RobotPositionHandler, MockRobotPositionHandler
 from RobotClient import RobotClient, BaseStationClient, MockRobotClient, MockBaseStationClient
 from FieldPlanner import ActionTypes, Action
 
+# Debugging flags
 OFFLINE_TESTING = False
+SKIP_BASE_STATION = True
+SKIP_MARVELMIND = True
 
 class NonBlockingTimer:
 
@@ -42,8 +45,8 @@ class RobotInterface:
         # If we haven't shut down from the previous time, we are ready to stream now
         self.position_online = self.pos_handler.still_running
 
-    def bring_online(self):
-        self._bring_comms_online()
+    def bring_online(self, use_mock=False):
+        self._bring_comms_online(use_mock)
         self._bring_position_online()
 
     def check_online(self):
@@ -52,11 +55,11 @@ class RobotInterface:
     def get_last_status(self):
         return self.last_status
 
-    def _bring_comms_online(self):
+    def _bring_comms_online(self, use_mock=False):
         try:
             print("Attempting to connect to {} over wifi".format(self.robot_id))
 
-            if OFFLINE_TESTING:
+            if use_mock:
                 self.robot_client = MockRobotClient(self.config, self.robot_id)
             else:
                 self.robot_client = RobotClient(self.config, self.robot_id)
@@ -138,9 +141,9 @@ class BaseStationInterface:
         self.last_status = None
         self.last_status_time = 0
 
-    def bring_online(self):
+    def bring_online(self, use_mock=False):
         print("Bringing BaseStation comms online")
-        if OFFLINE_TESTING:
+        if use_mock:
             self.client = MockBaseStationClient(self.config)
         else:
             self.client = BaseStationClient(self.config)
@@ -187,7 +190,7 @@ class RuntimeManager:
         self.robots = {n: RobotInterface(config, n) for n in self.config.ip_map.keys()}
         self.base_station = BaseStationInterface(config)
 
-        if OFFLINE_TESTING:
+        if OFFLINE_TESTING or SKIP_MARVELMIND:
             self.pos_handler = MockRobotPositionHandler(config)
         else:
             self.pos_handler = RobotPositionHandler(config)
@@ -198,11 +201,20 @@ class RuntimeManager:
 
     def initialize(self):
 
+        # Handle testing/mock case
+        use_base_station_mock = False
+        use_robot_mock = False
+        if OFFLINE_TESTING:
+            use_base_station_mock = True
+            use_robot_mock = True
+        if SKIP_BASE_STATION:
+            use_base_station_mock = True
+        
         # Bring everything online
-        self.base_station.bring_online()
+        self.base_station.bring_online(use_base_station_mock)
         for robot in self.robots.values():
             robot.attach_pos_handler(self.pos_handler)
-            robot.bring_online()
+            robot.bring_online(use_robot_mock)
         
         self._check_initialization_status()
 

@@ -48,13 +48,14 @@
 // Physical dimensions
 #define WHEEL_DIAMETER 0.1016 // meters
 #define WHEEL_DIST_FROM_CENTER 0.4572 // meters
-#define STEPPER_PULSE_PER_REV 3200 // steps per revolution
+
 
 // Scaling factors
 #define TRAJ_MAX_FRACTION 0.7  // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate
 
 // Scaling for stepper drive motors
-#define STEPPER_MAX_VEL 1024   // steps/second. This must match the value defined in stepper_driver.ino
+#define STEPPER_PULSE_PER_REV 3200 // steps per revolution
+#define STEPPER_MAX_VEL 1600   // steps/second. This must match the value defined in stepper_driver.ino
 #define PWM_RESOLUTION 255   // Analog resolution of arduino pwm output.
 
 // Kalman filter scales

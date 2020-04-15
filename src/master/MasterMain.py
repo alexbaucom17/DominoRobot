@@ -11,7 +11,9 @@ from Runtime import RuntimeManager
 
 
 def status_panel(name):
-    return [[sg.Text("{} status".format(name))], [sg.Text("{} offline".format(name), size=(30, 10), relief=sg.RELIEF_RAISED, key='_{}_STATUS_'.format(name.upper())) ]]
+    width = 40
+    height = 10
+    return [[sg.Text("{} status".format(name))], [sg.Text("{} offline".format(name), size=(width, height), relief=sg.RELIEF_RAISED, key='_{}_STATUS_'.format(name.upper())) ]]
 
 class CmdGui:
 
@@ -41,8 +43,8 @@ class CmdGui:
         col2 = [[sg.Graph(canvas_size=(600,600), graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white") ],
                 [sg.Column(target_element), sg.Column(action_element), sg.Column(data_element), sg.Column(button_element)]]
 
-        #col3 = [[sg.Output(size=(100, 15))]]
-        col3 = [[sg.Text("Temp place for output")]]
+        col3 = [[sg.Output(size=(50, 50))]]
+        #col3 = [[sg.Text("Temp place for output")]]
         
         layout = [[ sg.Column(col1), sg.Column(col2), sg.Column(col3)]]
 
@@ -152,15 +154,15 @@ class CmdGui:
         if status_dict:
             try:
                 status_str = ""
-                status_str = "Tmp - fix me!\n"
+                #status_str = "Tmp - fix me!\n"
                 status_str += "Position: [{0:.3f} m, {1:.3f} m, {2:.3f} rad]\n".format(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
-                # status_str += "Velocity: [{0:.3f} m/s, {1:.3f} m/s, {2:.3f} rad/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], status_dict['vel_a'])
-                # status_str += "Confidence: [{0:.2f} %, {1:.2f} %, {2:.2f} %]\n".format(status_dict['confidence_x']/2.55,status_dict['confidence_y']/2.55, status_dict['confidence_a']/2.55)
-                # status_str += "Controller timing: {} ms\n".format(status_dict['controller_loop_ms'])
-                # status_str += "Position timing:   {} ms\n".format(status_dict['position_loop_ms'])
-                # status_str += "Motion in progress: {}\n".format(status_dict["in_progress"])
-                # status_str += "Counter:   {}\n".format(status_dict['counter'])
-                # status_str += "Free memory:   {} bytes\n".format(status_dict['free_memory'])
+                status_str += "Velocity: [{0:.3f} m/s, {1:.3f} m/s, {2:.3f} rad/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], status_dict['vel_a'])
+                status_str += "Confidence: [{0:.2f} %, {1:.2f} %, {2:.2f} %]\n".format(status_dict['confidence_x']/2.55,status_dict['confidence_y']/2.55, status_dict['confidence_a']/2.55)
+                status_str += "Controller timing: {} ms\n".format(status_dict['controller_loop_ms'])
+                status_str += "Position timing:   {} ms\n".format(status_dict['position_loop_ms'])
+                status_str += "Motion in progress: {}\n".format(status_dict["in_progress"])
+                status_str += "Counter:   {}\n".format(status_dict['counter'])
+                status_str += "Free memory:   {} bytes\n".format(status_dict['free_memory'])
 
                 # Also update the visualization position
                 self._update_robot_viz_position(robot_id, status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])

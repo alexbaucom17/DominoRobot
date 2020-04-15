@@ -185,7 +185,7 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
             cmd = COMMAND::LOAD_TRAY;
             sendAck(type);
         }
-        else if(type == 'init')
+        else if(type == "init")
         {
             cmd = COMMAND::INITIALIZE_TRAY;
             sendAck(type);

@@ -116,6 +116,10 @@ bool tryStartNewCmd(RobotServer::COMMAND cmd)
     {
         tray_controller.initialize();
     }
+    else if (cmd == RobotServer::COMMAND::NONE)
+    {
+      // do nothing...
+    }
     else
     {
         #ifdef PRINT_DEBUG
