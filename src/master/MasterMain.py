@@ -11,7 +11,7 @@ from Runtime import RuntimeManager
 
 
 def status_panel(name):
-    return [[sg.Text("{} status".format(name))], [sg.Text("{} offline".format(name), size=(40, 15), relief=sg.RELIEF_RAISED, key='_{}_STATUS_'.format(name.upper())) ]]
+    return [[sg.Text("{} status".format(name))], [sg.Text("{} offline".format(name), size=(30, 10), relief=sg.RELIEF_RAISED, key='_{}_STATUS_'.format(name.upper())) ]]
 
 class CmdGui:
 

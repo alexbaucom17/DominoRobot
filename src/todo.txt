@@ -5,7 +5,6 @@ Robot:
 - Test lifter homing/switch control
 
 Stepper controller
-- Test drive stepper control
 
 Master:
 - Add actions for base station

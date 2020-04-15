@@ -4,7 +4,7 @@ from MarvelMindHandler import RobotPositionHandler, MockRobotPositionHandler
 from RobotClient import RobotClient, BaseStationClient, MockRobotClient, MockBaseStationClient
 from FieldPlanner import ActionTypes, Action
 
-OFFLINE_TESTING = True
+OFFLINE_TESTING = False
 
 class NonBlockingTimer:
 
