@@ -6,16 +6,22 @@
 #define VEL_PIN A0
 
 #define MILLIS_BETWEEN_POLLING 10
-#define MILLIS_BETWEEN_PRINTING 500
-
+#define MILLIS_BETWEEN_PRINTING 200
+#define VOLTAGE_DEADBAND 5
 
 // This is assuming a mapping of 0V -> 5V = 0 steps/sec -> max_vel steps/sec
 const int max_vel = 1600; //steps/second
 const int analog_resolution = 1024; // how many discrete steps available in analogRead
 const float voltage_to_speed = static_cast<float>(max_vel) / static_cast<float>(analog_resolution);
+// Calibrated using spreadsheet in docs folder - just fit a line to voltages
+// Used only one motor with the same setup for all of it  hopefully this is representative enough of other
+// motors and setups....
+const float calibration_slope = 0.9510;
+const float calibration_offset = 1.952;
 
 AccelStepper motor;
 int voltage;
+float calibrated_voltage;
 float vel;
 unsigned long count = 0;
 unsigned long prevMillisRead;
@@ -38,7 +44,12 @@ void loop()
     if(millis() - prevMillisRead > MILLIS_BETWEEN_POLLING)
     {
       voltage = analogRead(VEL_PIN);
-      vel = voltage_to_speed * voltage;
+      calibrated_voltage = calibration_slope * static_cast<float>(voltage) + calibration_offset;
+      vel =  voltage_to_speed * calibrated_voltage;
+      if(voltage < VOLTAGE_DEADBAND)
+      {
+        vel = 0;
+      }
       motor.setSpeed(vel);
       prevMillisRead = millis();
 
@@ -48,6 +59,8 @@ void loop()
        Serial.print(count);
        Serial.print(", ");
        Serial.print(voltage);
+       Serial.print(", ");
+       Serial.print(calibrated_voltage);
        Serial.print(", ");
        Serial.println(vel); 
        prevMillisPrint = millis();
