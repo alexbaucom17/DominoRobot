@@ -71,7 +71,7 @@ class TcpClient:
         if print_debug and new_msg:
             print("RX: " + new_msg)
         if not new_msg_ready:
-            print("Socket timeout")
+            #print("Socket timeout")
             new_msg = ""
 
         return new_msg

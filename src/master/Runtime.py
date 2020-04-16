@@ -90,8 +90,6 @@ class RobotInterface:
 
     def _get_status_from_robot(self):
         self.last_status = self.robot_client.request_status()
-        if self.last_status == None or self.last_status == "":
-            self.last_status = "Robot status not available!"
         self.last_status_time = time.time()
 
     def update(self):
