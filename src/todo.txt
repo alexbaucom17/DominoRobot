@@ -4,10 +4,8 @@ Robot:
 - Test lifter homing/switch control
 
 Stepper controller
-- Fine tune speeds and maybe add a voltage deadband
 
 Master:
-- Gracefully handle loss of wifi with robot (get rid of all the message exception prints and socket timeouts)
 - Add actions for base station
 - Figure out how to sequence loading between base and robot
 - Finish up status panels for gui
