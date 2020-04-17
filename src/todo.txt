@@ -1,7 +1,5 @@
 Robot:
-- Test lifter stepper control
-- Test lifter servo control
-- Test lifter homing/switch control
+- Put the hardware all together
 
 Stepper controller
 
@@ -11,12 +9,13 @@ Master:
 - Finish up status panels for gui
 - Make gui look a little bit better
 - Figure out if there is a way to use the output pane better - maybe also log to file or dump to console?
+- Hook up estop
 
 Base station:
 - Put together skeleton code for base station
 
 Purchase:
-- Possibly a usb A -> usb MINI cable for the arduino nanos
+- Usb A -> usb MINI cables for the arduino nanos
 
 
 

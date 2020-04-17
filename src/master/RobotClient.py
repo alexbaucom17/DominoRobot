@@ -164,6 +164,26 @@ class RobotClient(BaseClient):
         """ Tell robot to place pallet """
         msg = {'type': 'place'}
         self.send_msg_and_wait_for_ack(msg)
+    
+    def load(self):
+        """ Tell robot to load pallet """
+        msg = {'type': 'load'}
+        self.send_msg_and_wait_for_ack(msg)
+
+    def tray_init(self):
+        """ Tell robot to initialize tray """
+        msg = {'type': 'init'}
+        self.send_msg_and_wait_for_ack(msg)
+
+    def load_complete(self):
+        """ Tell robot that base station load is complete """
+        msg = {'type': 'lc'}
+        self.send_msg_and_wait_for_ack(msg)
+
+    def estop(self):
+        """ Tell robot to estop """
+        msg = {'type': 'estop'}
+        self.send_msg_and_wait_for_ack(msg)
 
     def send_position(self, x, y, a):
         """ Send robot coordinates from marvelmind sensors """

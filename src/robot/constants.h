@@ -19,12 +19,12 @@
 // #define PIN_ENABLE_2 27
 // #define PIN_ENABLE_3 29
 
-#define PIN_LATCH_SERVO_PIN 10
+#define PIN_LATCH_SERVO_PIN 12
 #define PIN_TRAY_STEPPER_LEFT_PULSE 44
 #define PIN_TRAY_STEPPER_LEFT_DIR 43
 #define PIN_TRAY_STEPPER_RIGHT_PULSE 46
 #define PIN_TRAY_STEPPER_RIGHT_DIR 47
-#define PIN_TRAY_HOME_SWITCH 15
+#define PIN_TRAY_HOME_SWITCH 53
 
 // Velocitiy limits
 #define MAX_TRANS_SPEED_FINE   0.08  // m/s
@@ -49,7 +49,6 @@
 // Physical dimensions
 #define WHEEL_DIAMETER 0.1016 // meters
 #define WHEEL_DIST_FROM_CENTER 0.4572 // meters
-
 
 // Scaling factors
 #define TRAJ_MAX_FRACTION 0.7  // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate
@@ -82,11 +81,13 @@
 #define TRAY_DEFAULT_POS 300   // Default position for driving in steps
 #define TRAY_LOAD_POS 100      // Loading position in steps
 #define TRAY_PLACE_POS 500     // Placing position in steps
-#define TRAY_MAX_SPEED 100     // Max tray speed in steps/sec
-#define TRAY_MAX_ACCEL 10      // Max tray acceleration in steps/sec/sec
-#define LATCH_CLOSE_POS 10     // Latch servo position for close in degrees
-#define LATCH_OPEN_POS 100     // Latch servo position for open in degrees
+#define TRAY_MAX_SPEED 200     // Max tray speed in steps/sec
+#define TRAY_MAX_ACCEL 100     // Max tray acceleration in steps/sec/sec
+#define LATCH_CLOSE_POS 20     // Latch servo position for close in degrees
+#define LATCH_OPEN_POS 150     // Latch servo position for open in degrees
 #define TRAY_PLACEMENT_PAUSE_TIME 3000 // How many ms to wait after opening the latch for placement
+#define TRAY_SERVO_MIN_PW 1000  // Min pulse witdh in microseconds corresponding to 0 position
+#define TRAY_SERVO_MAX_PW 2000  // Max pulse witdh in microseconds corresponding to 180 position
 
 
 #endif

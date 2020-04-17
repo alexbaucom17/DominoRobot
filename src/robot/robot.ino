@@ -41,13 +41,16 @@ void setup()
     // Need this delay for controller to setup correctly for some reason
     delay(100);
 
-    // Start server and controller
+    // Start server and controllers
     controller.begin();
     delay(100);
+    tray_controller.begin();
+    delay(100);
     server.begin();
-    
 
-    Serial.println("Done with setup");
+    #ifdef PRINT_DEBUG
+    Serial.println("Done with setup, starting loop");
+    #endif
 }
 
 bool tryStartNewCmd(RobotServer::COMMAND cmd)

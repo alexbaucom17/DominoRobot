@@ -11,6 +11,8 @@ class TrayController
 
     TrayController(HardwareSerial& debug);
 
+    void begin();
+
     void initialize();
 
     void place();

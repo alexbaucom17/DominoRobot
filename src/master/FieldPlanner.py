@@ -284,7 +284,9 @@ class ActionTypes(enum.Enum):
     MOVE_REL = 2,
     NET = 3,
     LOAD = 4,
-    PLACE = 5, 
+    PLACE = 5,
+    TRAY_INIT = 6, 
+    LOAD_COMPLETE = 7,
 
 class Action:
 

@@ -125,6 +125,14 @@ class RobotInterface:
         elif action.action_type == ActionTypes.NET:
             status = self.robot_client.net_status()
             print("Robot {} network status is: {}".format(self.robot_id, status))
+        elif action.action_type == ActionTypes.LOAD:
+            self.robot_client.load()
+        elif action.action_type == ActionTypes.PLACE:
+            self.robot_client.place()
+        elif action.action_type == ActionTypes.TRAY_INIT:
+            self.robot_client.tray_init()
+        elif action.action_type == ActionTypes.LOAD_COMPLETE:
+            self.robot_client.load_complete()
         else:
             print("Unknown action: {}".format(action.action_type))
 

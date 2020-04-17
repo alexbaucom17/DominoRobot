@@ -63,10 +63,11 @@ class RobotServer
     String getAnyIncomingMessage();
     String cleanString(String message);
     COMMAND getCommand(String message);
+    void printIncommingCommand(String message);
 
     const StatusUpdater& statusUpdater_;
     
-    void sendMsg(String msg);
+    void sendMsg(String msg, bool print_debug=true);
     void sendAck(String data);
     void sendErr(String data);
     void sendStatus();

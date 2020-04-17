@@ -11,9 +11,19 @@ TrayController::TrayController(HardwareSerial& debug)
   loadComplete_(false),
   startMillisForTimer_(0)
 {
-    latchServo_.attach(PIN_LATCH_SERVO_PIN);
+}
+
+void TrayController::begin()
+{
+    // Setup servo
+    pinMode(PIN_LATCH_SERVO_PIN, OUTPUT);
+    latchServo_.attach(PIN_LATCH_SERVO_PIN, TRAY_SERVO_MIN_PW, TRAY_SERVO_MAX_PW);
+    latchServo_.write(LATCH_CLOSE_POS);
+
+    // Setup home switch
     pinMode(PIN_TRAY_HOME_SWITCH, INPUT_PULLUP);
 
+    // Setup lifters
     lifterLeft_.setMaxSpeed(TRAY_MAX_SPEED);
     lifterRight_.setMaxSpeed(TRAY_MAX_SPEED);
     lifterLeft_.setAcceleration(TRAY_MAX_ACCEL);
@@ -99,6 +109,10 @@ void TrayController::updateInitialize()
         lifterLeft_.move(TRAY_HOME_POS);
         lifterRight_.move(TRAY_HOME_POS);
         actionStep_++;
+
+        #ifdef PRINT_DEBUG
+        debug_.println("TrayController - init started moving to home pos");
+        #endif
     }
 
     // 1 - Wait until we hit home
@@ -107,7 +121,7 @@ void TrayController::updateInitialize()
         // Run the motors
         bool leftRunning = lifterLeft_.run();
         bool rightRunning = lifterRight_.run();
-        bool switchPressed = digitalRead(PIN_TRAY_HOME_SWITCH);
+        bool switchPressed = !digitalRead(PIN_TRAY_HOME_SWITCH); // Switch pin goes low when pressed
 
         // If we bumped the switch, then we are homed
         if(switchPressed)
@@ -117,6 +131,9 @@ void TrayController::updateInitialize()
             lifterLeft_.setCurrentPosition(0);
             lifterRight_.setCurrentPosition(0);
             actionStep_++;
+            #ifdef PRINT_DEBUG
+            debug_.println("TrayController - switch pressed");
+            #endif
         }
         // If we didn't press the switch but one of the motors has stopped moving, something is wrong
         else if(!leftRunning || !rightRunning)
@@ -135,6 +152,9 @@ void TrayController::updateInitialize()
         lifterLeft_.moveTo(TRAY_DEFAULT_POS);
         lifterRight_.moveTo(TRAY_DEFAULT_POS);
         actionStep_++;
+        #ifdef PRINT_DEBUG
+        debug_.println("TrayController - moving to default pos");
+        #endif
     }
 
     // 3 - Wait for tray move to complete
@@ -151,7 +171,7 @@ void TrayController::updateInitialize()
             lifterRight_.stop();
             curAction_ = ACTION::NONE;
             #ifdef PRINT_DEBUG
-            debug_.println("Done with tray initialization");
+            debug_.println("TrayController - Done with tray initialization");
             #endif 
         }
     }
@@ -177,6 +197,9 @@ void TrayController::updatePlace()
         lifterLeft_.moveTo(TRAY_PLACE_POS);
         lifterRight_.moveTo(TRAY_PLACE_POS);
         actionStep_++;
+        #ifdef PRINT_DEBUG
+        debug_.println("TrayController - moving to place pos");
+        #endif
     }
 
     // 1 - Wait for tray move to finish
@@ -192,6 +215,9 @@ void TrayController::updatePlace()
             lifterLeft_.stop();
             lifterRight_.stop();
             actionStep_++;
+            #ifdef PRINT_DEBUG
+            debug_.println("TrayController - movement complete");
+            #endif
         }
     }
 
@@ -201,6 +227,9 @@ void TrayController::updatePlace()
         latchServo_.write(LATCH_OPEN_POS);
         actionStep_++;
         startMillisForTimer_ = millis();
+        #ifdef PRINT_DEBUG
+        debug_.println("TrayController - latch opening");
+        #endif
     }
 
     // 3 - Wait for latch to fully open and dominoes to settle
@@ -209,6 +238,9 @@ void TrayController::updatePlace()
         if (millis() - startMillisForTimer_ > TRAY_PLACEMENT_PAUSE_TIME)
         {
             actionStep_++;
+            #ifdef PRINT_DEBUG
+            debug_.println("TrayController - latch opened");
+            #endif
         }
     }
 
@@ -219,6 +251,9 @@ void TrayController::updatePlace()
         lifterLeft_.moveTo(TRAY_DEFAULT_POS);
         lifterRight_.moveTo(TRAY_DEFAULT_POS);
         actionStep_++;
+        #ifdef PRINT_DEBUG
+        debug_.println("TrayController - moving to default pos");
+        #endif
     }
 
 
@@ -235,6 +270,9 @@ void TrayController::updatePlace()
             lifterLeft_.stop();
             lifterRight_.stop();
             actionStep_++;
+            #ifdef PRINT_DEBUG
+            debug_.println("TrayController - movement complete");
+            #endif
         }
     }
 
@@ -244,7 +282,7 @@ void TrayController::updatePlace()
         latchServo_.write(LATCH_CLOSE_POS);
         curAction_ = ACTION::NONE;
         #ifdef PRINT_DEBUG
-        debug_.println("Done with tray placement");
+        debug_.println("TrayController - Done with tray placement");
         #endif 
     }
 
@@ -268,6 +306,9 @@ void TrayController::updateLoad()
         lifterLeft_.moveTo(TRAY_LOAD_POS);
         lifterRight_.moveTo(TRAY_LOAD_POS);
         actionStep_++;
+        #ifdef PRINT_DEBUG
+        debug_.println("TrayController - moving to load pos");
+        #endif
     }
 
     // 1 - Wait for tray move to finish
@@ -283,6 +324,9 @@ void TrayController::updateLoad()
             lifterLeft_.stop();
             lifterRight_.stop();
             actionStep_++;
+            #ifdef PRINT_DEBUG
+            debug_.println("TrayController - movement complete, awaiting load complete signal");
+            #endif
         }
     }
 
@@ -293,6 +337,9 @@ void TrayController::updateLoad()
         {
             loadComplete_ = false;
             actionStep_++;
+            #ifdef PRINT_DEBUG
+            debug_.println("TrayController - got load complete");
+            #endif
         }
     }
 
@@ -303,6 +350,9 @@ void TrayController::updateLoad()
         lifterLeft_.moveTo(TRAY_DEFAULT_POS);
         lifterRight_.moveTo(TRAY_DEFAULT_POS);
         actionStep_++;
+        #ifdef PRINT_DEBUG
+        debug_.println("TrayController - moving to default pos");
+        #endif
     }
 
 
@@ -320,7 +370,7 @@ void TrayController::updateLoad()
             lifterRight_.stop();
             curAction_ = ACTION::NONE;
             #ifdef PRINT_DEBUG
-            debug_.println("Done with tray loading");
+            debug_.println("TrayController - Done with tray loading");
             #endif 
         }
     }
