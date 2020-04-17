@@ -13,7 +13,7 @@
 
 #define MILLIS_BETWEEN_POLLING 10
 #define MILLIS_BETWEEN_PRINTING 200
-#define VOLTAGE_DEADBAND 5
+#define VOLTAGE_DEADBAND 10
 
 // This is assuming a mapping of 0V -> 5V = 0 steps/sec -> max_vel steps/sec
 const int max_vel = 1600; //steps/second
@@ -65,24 +65,24 @@ void loop()
           vel = 0;
         }
         motors[i].setSpeed(vel);
-      }
-      prevMillisRead = millis();
 
-      // Note this doesn't work properly anymore with the for loops. might want to fix
-//      if(millis() - prevMillisPrint > MILLIS_BETWEEN_PRINTING)
+//      if(i == 1 && millis() - prevMillisPrint > MILLIS_BETWEEN_PRINTING)
 //      {
 //       
 //       Serial.print(count);
 //       Serial.print(", ");
-//       Serial.print(voltage);
+//       Serial.print(max_val);
 //       Serial.print(", ");
 //       Serial.print(calibrated_voltage);
 //       Serial.print(", ");
 //       Serial.println(vel); 
 //       prevMillisPrint = millis();
 //       count = 0;
+//       max_val = 0;
 //      }
-      
+
+      }
+      prevMillisRead = millis();      
     }
 
     for (int i = 0; i < 4; i++)

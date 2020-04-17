@@ -3,10 +3,11 @@
 
 // Pins
 // Note - according to https://www.arduino.cc/reference/en/language/functions/analog-io/analogwrite/, pin 4 on the Mega has a different PWM frequency, need to make sure that doesn't affect things
-#define PIN_SPEED_0 7   
+#define PIN_SPEED_0 8   
 #define PIN_SPEED_1 6
 #define PIN_SPEED_2 5
 #define PIN_SPEED_3 4
+#define PIN_SPEED_DUMMY 7
 
 #define PIN_DIR_0 22
 #define PIN_DIR_1 24

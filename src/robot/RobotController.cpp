@@ -53,6 +53,8 @@ void RobotController::begin()
     pinMode(PIN_DIR_2, OUTPUT);
     pinMode(PIN_DIR_3, OUTPUT);
 
+    pinMode(PIN_SPEED_DUMMY, INPUT);
+
     // Setup Kalman filter
     double dt = 0.1;
     mat A = mat::identity(3); 
