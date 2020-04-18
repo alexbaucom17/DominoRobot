@@ -57,7 +57,7 @@
 #define TRAJ_MAX_FRACTION 0.7  // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate
 
 // Scaling for stepper drive motors
-#define STEPPER_PULSE_PER_REV 800 // steps per revolution
+#define STEPPER_PULSE_PER_REV 1600 // steps per revolution
 #define STEPPER_MAX_VEL 1600   // steps/second. This must match the value defined in stepper_driver.ino
 #define PWM_RESOLUTION 255   // Analog resolution of arduino pwm output.
 
