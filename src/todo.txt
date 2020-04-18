@@ -1,4 +1,8 @@
 Robot:
+- Diagnose motor issues
+    - Sometimes wheels are slipping too much - not sure if this is a mechanical thing or too much dust on the floor/tires
+    - Sometimes the wheels also seem to be binding up and then the driver is catching them up later (even without the lifter on)
+    - Seems like motors might not be strong enough - can't seem to drive with lifter on and if I apply force on the top of the bot I can get the wheels to sieze
 
 Stepper controller
 
@@ -24,7 +28,3 @@ Embedded (old, maybe not needed anymore):
     - Try to get plots generating from arduino serial plotter
     - Want to investigate jerkiness in controllers during fine motion
     - Want to investigate angle drift in controllers during fine motion
-- Interface with lifter steppers
-    - Investigate arduino timers to handle steps naitviely
-    - May need to try turning off comms for this (?)
-    - May be able to test out with simple sketch on uno I have at home
