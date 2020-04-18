@@ -387,10 +387,10 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     motor_velocities[3] = 1/WHEEL_DIAMETER * (-s0*local_cart_vel[0] - c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
 
     // Send the commanded velocity for each motor
-    writeVelocity(motor_velocities[0], PIN_SPEED_0, PIN_DIR_0);
-    writeVelocity(motor_velocities[1], PIN_SPEED_1, PIN_DIR_1);
-    writeVelocity(motor_velocities[2], PIN_SPEED_2, PIN_DIR_2);
-    writeVelocity(motor_velocities[3], PIN_SPEED_3, PIN_DIR_3);
+    writeVelocity(motor_velocities[DRIVER_0_MOTOR], PIN_SPEED_0, PIN_DIR_0);
+    writeVelocity(motor_velocities[DRIVER_1_MOTOR], PIN_SPEED_1, PIN_DIR_1);
+    writeVelocity(motor_velocities[DRIVER_2_MOTOR], PIN_SPEED_2, PIN_DIR_2);
+    writeVelocity(motor_velocities[DRIVER_3_MOTOR], PIN_SPEED_3, PIN_DIR_3);
 
 }
 

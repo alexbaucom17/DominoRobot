@@ -14,10 +14,7 @@
 #define PIN_DIR_2 26
 #define PIN_DIR_3 28
 
-#define PIN_ENABLE_ALL 23
-// #define PIN_ENABLE_1 25
-// #define PIN_ENABLE_2 27
-// #define PIN_ENABLE_3 29
+#define PIN_ENABLE_ALL 29
 
 #define PIN_LATCH_SERVO_PIN 12
 #define PIN_TRAY_STEPPER_LEFT_PULSE 44
@@ -25,6 +22,12 @@
 #define PIN_TRAY_STEPPER_RIGHT_PULSE 46
 #define PIN_TRAY_STEPPER_RIGHT_DIR 47
 #define PIN_TRAY_HOME_SWITCH 53
+
+// Mapping from driver to motor - needed becuase it is easy to accidentally swap the drivers (with fixed pins) to a different motor
+#define DRIVER_0_MOTOR 2
+#define DRIVER_1_MOTOR 3
+#define DRIVER_2_MOTOR 1
+#define DRIVER_3_MOTOR 0
 
 // Velocitiy limits
 #define MAX_TRANS_SPEED_FINE   0.08  // m/s
