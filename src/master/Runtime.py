@@ -107,6 +107,7 @@ class RobotInterface:
 
             # Request a status update if needed
             if time.time() - self.last_status_time > self.config.robot_status_wait_time:
+                # Note that this causes a slight delay in the lifter stepper motors
                 self._get_status_from_robot()
 
     def run_action(self, action):

@@ -2,6 +2,12 @@
 #include "constants.h"
 #include <Arduino.h>
 
+const float MM_TO_STEPS = TRAY_STEPPER_STEPS_PER_REV / TRAY_DIST_PER_REV;
+const float TRAY_DEFAULT_POS = TRAY_DEFAULT_POS_MM * MM_TO_STEPS;
+const float TRAY_LOAD_POS = TRAY_LOAD_POS_MM * MM_TO_STEPS;
+const float TRAY_PLACE_POS = TRAY_PLACE_POS_MM * MM_TO_STEPS;
+const float TRAY_MAX_STEPS = TRAY_MAX_LINEAR_TRAVEL * MM_TO_STEPS;
+
 TrayController::TrayController(HardwareSerial& debug)
 : debug_(debug),
   lifterLeft_(AccelStepper::DRIVER, PIN_TRAY_STEPPER_LEFT_PULSE, PIN_TRAY_STEPPER_LEFT_DIR),
@@ -106,8 +112,9 @@ void TrayController::updateInitialize()
         latchServo_.write(LATCH_CLOSE_POS);
 
         // Start moving towards home pos with limit of max steps
-        lifterLeft_.move(TRAY_HOME_POS);
-        lifterRight_.move(TRAY_HOME_POS);
+        // Note the negative is so that all other moves are positive
+        lifterLeft_.move(-1*TRAY_MAX_STEPS);
+        lifterRight_.move(-1*TRAY_MAX_STEPS);
         actionStep_++;
 
         #ifdef PRINT_DEBUG

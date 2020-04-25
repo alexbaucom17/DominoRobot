@@ -17,10 +17,10 @@
 #define PIN_ENABLE_ALL 29
 
 #define PIN_LATCH_SERVO_PIN 12
-#define PIN_TRAY_STEPPER_LEFT_PULSE 44
-#define PIN_TRAY_STEPPER_LEFT_DIR 43
-#define PIN_TRAY_STEPPER_RIGHT_PULSE 46
-#define PIN_TRAY_STEPPER_RIGHT_DIR 47
+#define PIN_TRAY_STEPPER_LEFT_PULSE 46
+#define PIN_TRAY_STEPPER_LEFT_DIR 47
+#define PIN_TRAY_STEPPER_RIGHT_PULSE 44
+#define PIN_TRAY_STEPPER_RIGHT_DIR 43
 #define PIN_TRAY_HOME_SWITCH 53
 
 // Mapping from driver to motor - needed becuase it is easy to accidentally swap the drivers (with fixed pins) to a different motor
@@ -79,18 +79,24 @@
 // Set debug printing, comment out to skip debug printing
 #define PRINT_DEBUG true
 
-// Tray control values
-#define TRAY_HOME_POS 1000     // Steps to move for homing, should be slightly larger than the max number of steps possible
-#define TRAY_DEFAULT_POS 300   // Default position for driving in steps
-#define TRAY_LOAD_POS 100      // Loading position in steps
-#define TRAY_PLACE_POS 500     // Placing position in steps
-#define TRAY_MAX_SPEED 200     // Max tray speed in steps/sec
-#define TRAY_MAX_ACCEL 100     // Max tray acceleration in steps/sec/sec
-#define LATCH_CLOSE_POS 20     // Latch servo position for close in degrees
-#define LATCH_OPEN_POS 150     // Latch servo position for open in degrees
-#define TRAY_PLACEMENT_PAUSE_TIME 3000 // How many ms to wait after opening the latch for placement
-#define TRAY_SERVO_MIN_PW 1000  // Min pulse witdh in microseconds corresponding to 0 position
-#define TRAY_SERVO_MAX_PW 2000  // Max pulse witdh in microseconds corresponding to 180 position
+// Tray stepper control values
+#define TRAY_STEPPER_STEPS_PER_REV 200  // Steps per rev for tray servos
+#define TRAY_DIST_PER_REV 1.8           // mm of linear travel per stepper revolution
+#define TRAY_MAX_LINEAR_TRAVEL 300      // mm of total linear travel possible
+// Note: all tray positions measured in mm from home pos
+#define TRAY_DEFAULT_POS_MM 100         // Default position for driving in mm
+#define TRAY_LOAD_POS_MM 50             // Loading position in mm
+#define TRAY_PLACE_POS_MM 250           // Placing position in mm
+#define TRAY_MAX_SPEED 1000             // Max tray speed in steps/sec
+#define TRAY_MAX_ACCEL 2000             // Max tray acceleration in steps/sec/sec
+
+// Tray servo control values
+#define LATCH_CLOSE_POS 20              // Latch servo position for close in degrees
+#define LATCH_OPEN_POS 150              // Latch servo position for open in degrees
+#define TRAY_SERVO_MIN_PW 1000          // Min pulse witdh in microseconds corresponding to 0 position
+#define TRAY_SERVO_MAX_PW 2000          // Max pulse witdh in microseconds corresponding to 180 position
+
+#define TRAY_PLACEMENT_PAUSE_TIME 3000  // How many ms to wait after opening the latch for placement
 
 
 #endif
