@@ -1,4 +1,5 @@
 /* Requires libraries:
+*  Encoder: https://github.com/PaulStoffregen/Encoder
 *  Filters: https://github.com/JonHub/Filters
 *  PID: https://playground.arduino.cc/Code/PIDLibrary/
 *  ArduinoJson: https://arduinojson.org
