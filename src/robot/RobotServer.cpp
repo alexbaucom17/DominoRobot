@@ -2,7 +2,7 @@
 #include <Arduino.h> // This has to be before ArduinoJson.h to fix compiler issues
 #include "RobotServer.h"
 #include <ArduinoJson.h>
-#include "globals.h"  // FOR PRINT_DEBUG
+#include "constants.h"  // FOR PRINT_DEBUG
 
 RobotServer::RobotServer(HardwareSerial& serial, HardwareSerial& debug, const StatusUpdater& statusUpdater)
 : serial_(serial),
@@ -67,9 +67,9 @@ RobotServer::COMMAND RobotServer::oneLoop()
         if(printDebug)
         {
             #ifdef PRINT_DEBUG
-            debug_.print("[RobotServer] ");
-            debug_.print("RX: ");
-            debug_.println(newMsg);
+//            debug_.print("[RobotServer] ");
+//            debug_.print("RX: ");
+//            debug_.println(newMsg);
             #endif
         }
 
@@ -131,22 +131,27 @@ String RobotServer::getAnyIncomingMessage()
     return new_msg;
 }
 
+void RobotServer::printIncommingCommand(String message)
+{
+    #ifdef PRINT_DEBUG
+    debug_.print("[RobotServer] GetCommand(): ");
+    debug_.println(message);
+    #endif
+}
+
 RobotServer::COMMAND RobotServer::getCommand(String message)
 {
     COMMAND cmd = COMMAND::NONE;
     StaticJsonDocument<256> doc;
     DeserializationError err = deserializeJson(doc, message);
 
-    debug_.print("[RobotServer] GetCommand(): ");
-    debug_.println(message);
-
     if(err)
     {
         #ifdef PRINT_DEBUG
+        printIncommingCommand(message);
         debug_.print("[RobotServer] Error parsing JSON: ");
         debug_.println(err.c_str());   
         #endif
-        cmd = COMMAND::ERROR_BAD_JSON;
         sendErr("bad_json");
     }
     else
@@ -158,6 +163,7 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
             moveData_.x = doc["data"]["x"];
             moveData_.y = doc["data"]["y"];
             moveData_.a = doc["data"]["a"];
+            printIncommingCommand(message);
             sendAck(type);
         }
         else if(type == "move_rel")
@@ -166,6 +172,7 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
             moveData_.x = doc["data"]["x"];
             moveData_.y = doc["data"]["y"];
             moveData_.a = doc["data"]["a"];
+            printIncommingCommand(message);
             sendAck(type);
         }
         else if(type == "move_fine")
@@ -174,11 +181,25 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
             moveData_.x = doc["data"]["x"];
             moveData_.y = doc["data"]["y"];
             moveData_.a = doc["data"]["a"];
+            printIncommingCommand(message);
             sendAck(type);
         }
         else if(type == "place")
         {
-            cmd = COMMAND::PLACE;
+            cmd = COMMAND::PLACE_TRAY;
+            printIncommingCommand(message);
+            sendAck(type);
+        }
+        else if(type == "load")
+        {
+            cmd = COMMAND::LOAD_TRAY;
+            printIncommingCommand(message);
+            sendAck(type);
+        }
+        else if(type == "init")
+        {
+            cmd = COMMAND::INITIALIZE_TRAY;
+            printIncommingCommand(message);
             sendAck(type);
         }
         else if(type == "p")
@@ -189,30 +210,40 @@ RobotServer::COMMAND RobotServer::getCommand(String message)
             positionData_.a = doc["data"]["a"];
             sendAck(type);
         }
+        else if(type == "estop")
+        {
+            cmd = COMMAND::ESTOP;
+            printIncommingCommand(message);
+            sendAck(type);
+        }
+        else if(type == "lc")
+        {
+            cmd = COMMAND::LOAD_COMPLETE;
+            printIncommingCommand(message);
+            sendAck(type);
+        }
         else if(type == "status")
         {
-            cmd = COMMAND::STATUS;
             sendStatus();
         }
         else if (type == "check")
         {
-            cmd = COMMAND::CHECK;
             sendAck(type);
         }
         else if(type == "")
         {
             #ifdef PRINT_DEBUG
+            printIncommingCommand(message);
             debug_.println("[RobotServer] ERROR: Type field empty or not specified ");
             #endif
-            cmd = COMMAND::ERROR_NO_TYPE;
             sendErr("no_type");
         }
         else
         {
             #ifdef PRINT_DEBUG
+            printIncommingCommand(message);
             debug_.println("[RobotServer] ERROR: Unkown type field ");
             #endif
-            cmd = COMMAND::ERROR_UNKOWN_TYPE;
             sendErr("unkown_type");
         }
     }
@@ -229,7 +260,7 @@ RobotServer::PositionData RobotServer::getPositionData()
     return positionData_;
 }
 
-void RobotServer::sendMsg(String msg)
+void RobotServer::sendMsg(String msg, bool print_debug=true)
 {
     if (msg.length() == 0)
     {
@@ -241,8 +272,11 @@ void RobotServer::sendMsg(String msg)
       serial_.print(msg);
       serial_.print(END_CHAR);
       #ifdef PRINT_DEBUG
-      debug_.print("[RobotServer] TX: ");
-      debug_.println(msg);
+      if(print_debug)
+      {
+        debug_.print("[RobotServer] TX: ");
+        debug_.println(msg);
+      }
       #endif
     }
 }
@@ -270,5 +304,5 @@ void RobotServer::sendErr(String data)
 void RobotServer::sendStatus()
 {
     String msg = statusUpdater_.getStatusJsonString();
-    sendMsg(msg);
+    sendMsg(msg, false);
 }

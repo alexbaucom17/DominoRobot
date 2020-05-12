@@ -71,18 +71,15 @@ class TcpClient:
         if print_debug and new_msg:
             print("RX: " + new_msg)
         if not new_msg_ready:
-            print("Socket timeout")
+            #print("Socket timeout")
             new_msg = ""
 
         return new_msg
 
+class BaseClient:
 
-class RobotClient:
-
-    def __init__(self, cfg, robot_id):
-        self.robot_id = robot_id
-        self.client = TcpClient(cfg.ip_map[self.robot_id], PORT, NET_TIMEOUT)
-        self.cfg = cfg
+    def __init__(self, ip): 
+        self.client = TcpClient(ip, PORT, NET_TIMEOUT)
 
     def wait_for_server_response(self, timeout=1, print_debug=True):
         """
@@ -102,7 +99,6 @@ class RobotClient:
 
         # Will get here if timeout is reached
         return None
-                
 
     def send_msg_and_wait_for_ack(self, msg, print_debug=True):
         """ 
@@ -121,7 +117,7 @@ class RobotClient:
                 print('ERROR: Incorrect ack type')
         
         return resp
-            
+
     def net_status(self):
         """ Check if the network connection is ok"""
         msg = {'type': 'check'}
@@ -132,7 +128,22 @@ class RobotClient:
             status = False
         finally:
             return status
-        
+
+    def request_status(self):
+        """ Request status from server """
+        msg = {'type' : 'status'}
+        self.client.send(json.dumps(msg), print_debug=False)
+        status_dict = self.wait_for_server_response(print_debug=False)
+        return status_dict
+
+
+class RobotClient(BaseClient):
+
+    def __init__(self, cfg, robot_id):
+        super().__init__(cfg.ip_map[robot_id])
+
+        self.robot_id = robot_id
+        self.cfg = cfg
 
     def move(self, x, y, a):
         """ Tell robot to move to specific location """
@@ -153,18 +164,91 @@ class RobotClient:
         """ Tell robot to place pallet """
         msg = {'type': 'place'}
         self.send_msg_and_wait_for_ack(msg)
+    
+    def load(self):
+        """ Tell robot to load pallet """
+        msg = {'type': 'load'}
+        self.send_msg_and_wait_for_ack(msg)
+
+    def tray_init(self):
+        """ Tell robot to initialize tray """
+        msg = {'type': 'init'}
+        self.send_msg_and_wait_for_ack(msg)
+
+    def load_complete(self):
+        """ Tell robot that base station load is complete """
+        msg = {'type': 'lc'}
+        self.send_msg_and_wait_for_ack(msg)
+
+    def estop(self):
+        """ Tell robot to estop """
+        msg = {'type': 'estop'}
+        self.send_msg_and_wait_for_ack(msg)
 
     def send_position(self, x, y, a):
         """ Send robot coordinates from marvelmind sensors """
         msg = {'type': 'p', 'data': {'x': round(x, 5), 'y': round(y, 5), 'a': round(a,4)}} # Try to reduce message size 
         self.send_msg_and_wait_for_ack(msg, print_debug=False)
 
+
+
+class BaseStationClient(BaseClient):
+    
+    def __init__(self, cfg):
+        super().__init__(cfg.base_station_ip)
+        self.cfg = cfg
+
+    def load(self):
+        """ Tells the station to load the next set of dominos into the robot"""
+        msg = {'type': 'load'}
+        self.send_msg_and_wait_for_ack(msg)
+
+
+
+
+# Hacky Mocks to use for testings
+class MockRobotClient:
+    def __init__(self, cfg, robot_id):
+        super().__init__()
+        self.robot_id = robot_id
+        self.cfg = cfg
+
+    def move(self, x, y, a):
+        pass
+
+    def move_rel(self, x, y, a):
+        pass
+
+    def move_fine(self, x, y, a):
+        pass
+
+    def place(self):
+        pass
+
+    def send_position(self, x, y, a):
+        pass
+
+    def net_status(self):
+        return True
+
     def request_status(self):
-        """ Request status from robot """
-        msg = {'type' : 'status'}
-        self.client.send(json.dumps(msg), print_debug=False)
-        status_dict = self.wait_for_server_response(print_debug=False)
-        return status_dict
+        return {"in_progress": False, "pos_x": 1, "pos_y": 2, "pos_a": 0}
+
+class MockBaseStationClient:
+    
+    def __init__(self, cfg):
+        super().__init__()
+        self.cfg = cfg
+
+    def load(self):
+        pass
+
+    def net_status(self):
+        return True
+
+    def request_status(self):
+        return {}
+    
 
 
 

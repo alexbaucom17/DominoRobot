@@ -19,14 +19,16 @@ class Config:
     # Defining first device in list as the one on the left side of the robot
     device_map = {
     "static": (1, 2),
-    "1": (6, 5)
+    "robot1": (6, 5)
     }
 
     # Specifies which IP address each robot has
-    ip_map = {1: '192.168.1.4'}
+    ip_map = {'robot1': '192.168.1.4'}
+    base_station_ip = '192.168.1.100'
 
     mm_forward_offset = 0.2969 # Meters from center of robot to center point of MM beacons
     mm_beacon_sep = 0.5715 # Meters between beacons on the robot
+    frame_to_robot_offset = np.array([0.5, 0]) # Offset from tile position to robot position
 
 
     # ====== PLAN GENERATION ========
@@ -35,7 +37,7 @@ class Config:
     image_name = os.path.join(config_dir_path, 'MR.jpg')
     desired_width = 200
     desired_height = 200
-    dominoes = np.array(
+    dominos = np.array(
                 [('black', (0,0,0)),
                 ('red',   (1,0,0)),
                 ('blue',  (0,0,1)),
@@ -50,7 +52,7 @@ class Config:
     domino_spacing_x = 0.008 # meters
     domino_spacing_y = 0.024 # meters
 
-    # Spacing for drawing dominoes as pixels instead of rectangles
+    # Spacing for drawing dominos as pixels instead of rectangles
     meters_per_pixel = 0.008
     domino_width_px = round(domino_width / meters_per_pixel)
     domino_height_px = round(domino_height / meters_per_pixel)
@@ -70,13 +72,20 @@ class Config:
 
     # Map configuration (distances in meters, angles in degrees)
     robot_boundaries = np.array([[0,0],[20,15]])
-    base_station_boundaries = np.array([[3,0],[10,2]])
-    charge_station_boundaries = np.array([[3,10],[4,13]])
-    tile_drop_location = np.array([3,2,-90]) # X, Y, theta
-    tile_pickup_location = np.array([9,2,-90]) # X, Y, theta
+    base_station_boundaries = np.array([[2,12],[4,14]])
+    base_station_target_pose = np.array([3, 12])
+    base_station_coarse_pose_offset = np.array([0, -2])
     domino_field_origin = np.array([12,6])
+    domino_field_angle = 90
+    tile_placement_coarse_offset = np.array([1,1])
+    prep_position_distance = 2 # How far out of field boundaries to do robot prep move
+    exit_position_distance = 2 # How far out of the field boundaries to move to exit
+
+    # Computed - don't change
     field_width = tile_size_x_meters * desired_width/tile_width
     field_height = tile_size_y_meters * desired_height/tile_height
     domino_field_boundaries = np.array([domino_field_origin,domino_field_origin + np.array([field_width,field_height])])
-    prep_position_distance = 2 # How far out of field boundaries to do robot prep move
-    exit_position_distance = 2 # How far out of the field boundaries to move to exit
+
+    # ====== RUNTIME CONFIGURATION ========
+    robot_status_wait_time = 0.5    # How many seconds to wait between status requests for each robot
+    base_station_status_wait_time = 1 # How many seconds to wait between status requests for the base station

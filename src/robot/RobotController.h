@@ -2,17 +2,13 @@
 #define RobotController_h
 
 #include "TrajectoryGenerator.h"
-#include <Filters.h>
 #include <HardwareSerial.h>
 #include "StatusUpdater.h"
 #include "KalmanFilter.h"
-#include <StepperDriver.h>
 
 class RobotController
 {
   public:
-
-    // TODO: Convert a bunch of the math here to use the new LinearAlgebra library
 
     // Constructor
     RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater);
@@ -40,6 +36,12 @@ class RobotController
     // Provide a position reading from the MarvelMind sensors
     void inputPosition(float x, float y, float a);
 
+    // Indicates if a trajectory is currently active
+    bool isTrajectoryRunning() { return trajRunning_; };
+
+    // Stops the currently running motion
+    void estop();
+
   private:
 
     //Internal methods
@@ -53,9 +55,10 @@ class RobotController
     bool checkForCompletedTrajectory(PVTPoint cmd);
     // Calculate wheel odometry
     void computeOdometry();
+    //Write velocity out to controller
+    void writeVelocity(float speed, int speed_pin, int dir_pin);
 
     // Member variables
-    axis_t motors[4];                      // Motor interface objects
     unsigned long prevPositionUpdateTime_; // Previous loop millis we were provided a position observation
     unsigned long prevControlLoopTime_;    // Previous loop millis through the cartesian control loop
     unsigned long prevUpdateLoopTime_;     // Previous loop millis through the update loop
@@ -76,8 +79,6 @@ class RobotController
     float motor_velocities[4];             // Track motor velocities in rad/s
 
     StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
-    RunningStatistics controller_time_averager_;  // Handles keeping average of the controller loop timing
-    RunningStatistics position_time_averager_;    // Handles keeping average of the position update timing
 
     // Kalman filter stuff
     KalmanFilter kf_;

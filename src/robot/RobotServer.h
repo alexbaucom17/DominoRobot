@@ -19,16 +19,15 @@ class RobotServer
     enum COMMAND
     {
        NONE,
-       ERROR_NO_TYPE,
-       ERROR_UNKOWN_TYPE,
-       ERROR_BAD_JSON,
        MOVE,
        MOVE_REL,
        MOVE_FINE,
-       PLACE,
+       PLACE_TRAY,
+       LOAD_TRAY,
+       INITIALIZE_TRAY,
        POSITION,
-       STATUS,
-       CHECK
+       ESTOP,
+       LOAD_COMPLETE,
     };
 
     struct PositionData
@@ -64,10 +63,11 @@ class RobotServer
     String getAnyIncomingMessage();
     String cleanString(String message);
     COMMAND getCommand(String message);
+    void printIncommingCommand(String message);
 
     const StatusUpdater& statusUpdater_;
     
-    void sendMsg(String msg);
+    void sendMsg(String msg, bool print_debug=true);
     void sendAck(String data);
     void sendErr(String data);
     void sendStatus();

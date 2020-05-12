@@ -6,6 +6,17 @@ import ctypes
 import math
 import time
 
+def get_file_bool(filename):
+    try:
+        with open(filename, 'r+') as f:
+            txt = f.readline()
+            if txt == 'True':
+                return True
+            else:
+                return False
+    except FileNotFoundError:
+        return False
+
 class MarvelMindPoint:
     """
     Simple class to hold a point structure
@@ -262,14 +273,21 @@ class RobotPositionHandler():
         self._mm = MarvelMindWrapper(cfg)
         self._mm._open_serial_port()
         self.cfg = cfg
+        self._robots_with_data_ready = set()
+
+        # Check if the marvelmind should be already setup from the last reboot
+        self.previously_running = False
+        if get_file_bool(self.cfg.mm_beacon_state_file):
+            self.previously_running = True
 
         # Metrics
         self.metrics = MsgMetrics(20)
 
         # Wake static beacons
-        static_beacons = self.cfg.device_map["static"]
-        for beacon in static_beacons:
-            self._mm.wake_device(beacon)
+        if not self.previously_running:
+            static_beacons = self.cfg.device_map["static"]
+            for beacon in static_beacons:
+                self._mm.wake_device(beacon)
 
         # Initialize position queues
         self.max_device_queue_size = 15
@@ -296,9 +314,10 @@ class RobotPositionHandler():
 
     def wake_robot(self, robot_number):
         # Wake up all beacons on the given robot
-        robot_beacons = self.cfg.device_map[str(robot_number)]
-        for beacon in robot_beacons:
-            self._mm.wake_device(beacon)
+        if not self.previously_running:
+            robot_beacons = self.cfg.device_map[str(robot_number)]
+            for beacon in robot_beacons:
+                self._mm.wake_device(beacon)
 
     def sleep_robot(self, robot_number):
         # Sleep all beacons on the given robot
@@ -309,19 +328,17 @@ class RobotPositionHandler():
     def get_position(self, robot_number):
         # Get current position of a specific robot
         try:
-            return self.robot_position_queues[str(robot_number)][0]
+            data = self.robot_position_queues[str(robot_number)][0]
+            self._robots_with_data_ready.remove(str(robot_number))
         except IndexError:
             return []
+
+    def new_data_ready(self, robot_number):
+        # Checks if there is data ready for a specific robot
+        return str(robot_number) in self._robots_with_data_ready
 
     def get_metrics(self):
         return self.metrics.get_stats()
-
-    def _get_device_position(self, device_addr):
-        # Returns device position
-        try:
-            return self.device_position_queues[device_addr][0]
-        except IndexError:
-            return []
 
     def service_queues(self):
         # Gets data from the marvelmind system and makes sense of it. Needs to be called
@@ -329,8 +346,14 @@ class RobotPositionHandler():
         
         new_data = self._mm.get_latest_location_data()
         self._update_device_positions(new_data)
-        robots_updated = self._update_robot_positions()
-        return robots_updated
+        self._update_robot_positions()
+
+    def _get_device_position(self, device_addr):
+        # Returns device position
+        try:
+            return self.device_position_queues[device_addr][0]
+        except IndexError:
+            return []
 
     def _update_device_positions(self, new_position_data):
         # Distribute position data to queues and do any post processing as needed
@@ -357,7 +380,6 @@ class RobotPositionHandler():
     def _update_robot_positions(self):
         # Handle the math of transforming device positions into robot positions and angles
 
-        robots_updated = []
         for robot_name in self.cfg.device_map:
             if robot_name == 'static':
                 continue
@@ -420,7 +442,8 @@ class RobotPositionHandler():
                 prev_point = cur_queue[0]
             if not prev_point or x != prev_point[0] or y != prev_point[1] or angle != prev_point[2]:
                 #print("Robot {}: {},{},{}, {}".format(robot_name, x, y, angle, t))
-                robots_updated.append(int(robot_name))
+                self._robots_with_data_ready.add(robot_name)
+                # TODO: Add metrics for each robot ?
                 self.metrics.add_msg_ok()
 
                 # Insert the new position, angle, and time into the queue
@@ -428,7 +451,35 @@ class RobotPositionHandler():
                 if len(cur_queue) > self.max_robot_queue_size:
                     cur_queue.pop() # remove element from end of list
 
-        return robots_updated
+
+
+# Hacky mock for testing
+class MockRobotPositionHandler:
+
+    def __init__(self, cfg):
+        self.still_running = True
+        pass
+
+    def close(self):
+        pass
+
+    def wake_robot(self, robot_number):
+        pass
+
+    def sleep_robot(self, robot_number):
+        pass
+
+    def get_position(self, robot_number):
+        return [1,1,1]
+
+    def new_data_ready(self, robot_number):
+        return False
+
+    def get_metrics(self):
+        return {}
+
+    def service_queues(self):
+        pass
 
 
 if __name__ == '__main__':

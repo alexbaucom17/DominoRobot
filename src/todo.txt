@@ -1,15 +1,30 @@
-- Diagnose delay in position update from robot
-- Try to get plots generating from arduino serial plotter
-    - Want to investigate jerkiness in controllers during fine motion
-    - Want to investigate angle drift in controllers during fine motion
-- Make controller robust so I only need to call fine pos once and get to the target
-- Consider updating to raspi for better beacon interface, processing power, and wifi
-- Investigate cases where trajectory endpoint doesn't line up with target point somehow. Make sure robot can still reach target
-- Test out new stepper code with full robot
+Robot:
+- Diagnose motor issues
+    - Sometimes wheels are slipping too much - not sure if this is a mechanical thing or too much dust on the floor/tires
+    - Sometimes the wheels also seem to be binding up and then the driver is catching them up later (even without the lifter on)
+    - Seems like motors might not be strong enough - can't seem to drive with lifter on and if I apply force on the top of the bot I can get the wheels to sieze
 
-- Fix interrupt issues
-    Got motors working by moving init of stepper library into begin method once HW is initialize, however, that seems
-    to be conflicting with the server and wifi comms now, don't fully understand how, but disabling stepper init makes 
-    the networking work again.
+Stepper controller
+
+Master:
+- Add actions for base station
+- Figure out how to sequence loading between base and robot
+- Finish up status panels for gui
+- Make gui look a little bit better
+- Figure out if there is a way to use the output pane better - maybe also log to file or dump to console?
+- Hook up estop
+
+Base station:
+- Put together skeleton code for base station
 
 Purchase:
+
+
+
+
+Embedded (old, maybe not needed anymore):
+- Diagnose delay in position update from robot
+- Controller tuning:
+    - Try to get plots generating from arduino serial plotter
+    - Want to investigate jerkiness in controllers during fine motion
+    - Want to investigate angle drift in controllers during fine motion

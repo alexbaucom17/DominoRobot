@@ -1,90 +1,156 @@
+import time
+import math
+import copy
+import config
 import os
 import pickle
-import time
-import copy
-import sys
-import math
 import PySimpleGUI as sg
-import config
-import FieldPlanner
-from MarvelMindHandler import RobotPositionHandler
-from RobotClient import RobotClient
+
+from FieldPlanner import Plan, ActionTypes, Action, MoveAction
+from Runtime import RuntimeManager
 
 
-def doWaypointGeneration(cfg, draw = False):
-    print('Generating domino field from image...',end='',flush=True)
-    field = FieldPlanner.generateField(cfg)
-    print('done.')
-
-    print('Generating tiles from field...',end='',flush=True)
-    tiles = field.generateTiles()
-    print('done.')
-
-    print('Generating robot paths...',end='',flush=True)
-    waypoints = FieldPlanner.generateWaypoints(tiles, cfg)
-    print('done.')
-
-    print('Generating tile build instructions...',end='',flush=True)
-    #build_instructions = tiles.generateBuildInstructions()
-    print('done.')
-
-    if draw:
-        print('Generating output diagrams:')
-        #field.printStats()
-        #field.show()
-        #tiles.draw()
-        #tiles.show_ordering()
-        waypoints.drawWaypoints(40)
-
-    return waypoints
-
-
-class NonBlockingTimer:
-
-    def __init__(self, trigger_time):
-        self.start_time = time.time()
-        self.trigger_time = trigger_time
-
-    def check(self):
-        if time.time() - self.start_time > self.trigger_time:
-            return True 
-        else:
-            return False
+def status_panel(name):
+    width = 40
+    height = 10
+    return [[sg.Text("{} status".format(name))], [sg.Text("{} offline".format(name), size=(width, height), relief=sg.RELIEF_RAISED, key='_{}_STATUS_'.format(name.upper())) ]]
 
 class CmdGui:
 
-    def __init__(self):
+    def __init__(self, config):
+
+        self.config = config
+        
         sg.change_look_and_feel('Dark Blue 3')
 
-        col1 = [[sg.Text('Command:'), sg.Input(key='_IN_')], [sg.Button('Send'), sg.Button('Exit')], [sg.Button('Exit keep MM')]]
-        col2 = [[sg.Text("Robot 1 status:")],
-               [sg.Text("Robot 1 offline",size=(40, 15),relief=sg.RELIEF_RAISED,key='_R1STATUS_')]]
-#sg.Output(size=(100, 15)),
-        layout = [[sg.Graph(canvas_size=(600,600),graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white")  ],
-                   [sg.Column(col1), sg.Column(col2)] ]
+        names = ["{}".format(n) for n in self.config.ip_map]
+        names += ['base', 'plan', 'pos']
+        col1 = []
+        for name in names:
+            col1 += status_panel(name)
+
+        targets = copy.deepcopy(names)
+        targets.remove('plan')
+        target_element = [ [sg.Text("Target: ")], [sg.Combo(targets, key='_TARGET_')] ]
+
+        actions = [a for a in ActionTypes]
+        action_element = [ [sg.Text("Action: ")], [sg.Combo(actions, key='_ACTION_')] ]
+
+        data_element = [ [sg.Text('Data:')], [sg.Input(key='_ACTION_DATA_')] ]
+
+        button_element = [[sg.Button('Send')], [sg.Button('Run Plan')]]
+
+        col2 = [[sg.Graph(canvas_size=(600,600), graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white") ],
+                [sg.Column(target_element), sg.Column(action_element), sg.Column(data_element), sg.Column(button_element)]]
+
+        col3 = [[sg.Output(size=(50, 50))]]
+        #col3 = [[sg.Text("Temp place for output")]]
+        
+        layout = [[ sg.Column(col1), sg.Column(col2), sg.Column(col3)]]
 
         self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True)
         self.window.finalize()
 
-        self.draw_robot(3,3,0)
+        self.viz_figs = {}
 
+    
+    def close(self):
+        self.window.close()
 
     def update(self):
 
         event, values = self.window.read(timeout=20)
-        command = None
+
+        # At exit, check if we should keep marvelmind on
         if event is None or event == 'Exit':
-            return True, None
-        if event == "Exit keep MM":
-            return True, 'exit_dbg'
-        if event in ('Send Command', '\r', '\n'): # Catch enter as well
-            command = values['_IN_']
-            self.window['_IN_'].update("")
+            clicked_value = sg.popup_yes_no('Do you want to keep the Marvelmind running')
+            if clicked_value == "Yes":
+                return "ExitMM", None
+            else:
+                return 'Exit', None
+        
+        # Sending a manual action (via button or pressing enter)
+        if event in ('Send', '\r', '\n'):
+            manual_action = self._parse_manual_action(values)
+            self.window['_ACTION_DATA_'].update("")
+            return 'Action', manual_action
 
-        return False, command
+        # Pressing the run plan button
+        if event in ("Run Plan"):
+            return "Run", None
 
-    def update_robot_status(self, status_dict, msg_metrics):
-        status_str = "Cannot get robot status"
+        return None, None
+
+    def _parse_manual_action(self, values):
+        target = values['_TARGET_']
+        action_type = ActionTypes(values['_ACTION_'])
+        data_str = values['_ACTION_DATA_']
+        name = 'ManualAction'
+
+        action = None
+        if action_type in [ActionTypes.MOVE_COARSE, ActionTypes.MOVE_REL, ActionTypes.MOVE_FINE]:
+            data = data_str.split(',')
+            data = [x.strip() for x in data]
+            action = MoveAction(action_type, name, data[0], data[1], data[2])
+        else:
+            action = Action(action_type, name)
+
+        return (target, action)
+
+    def update_status_panels(self, metrics):
+        for key, metric in metrics.items():
+            if key == 'pos':
+                self._update_pos_panel(metric)
+            elif key == 'plan':
+                self._update_plan_panel(metric)
+            elif key == 'base':
+                self._update_base_panel(metric)
+            else:
+                self._update_robot_panel(key, metric) 
+
+
+    def _update_pos_panel(self, status_dict):
+        status_str = "Cannot get marvelmind status"
+        if status_dict:
+            try:
+                status_str = ""
+                status_str += "Marvelmind message stats:\n  Dropped: {0:.1f}%\n  Dropped dist: {1:.1f}%\n  Dropped time {2:.1f}%\n  Last sent: {3:.2f}s".format(
+                    status_dict['frac_dropped_total']*100, status_dict['frac_dropped_dist']*100,
+                    status_dict['frac_dropped_time']*100, status_dict['time_since_last_sent'])
+            except Exception as e:
+                status_str = "Bad dict: " + str(status_dict)
+                print("Message exception: " + repr(e))
+
+        self.window['_POS_STATUS_'].update(status_str)
+
+    def _update_plan_panel(self, status_dict):
+        status_str = "Cannot get plan status"
+        if status_dict:
+            try:
+                # TODO: update when plan is ready
+                status_str = ""
+                status_str += "Got plan dict\n"
+            except Exception as e:
+                status_str = "Bad dict: " + str(status_dict)
+                print("Message exception: " + repr(e))
+
+        self.window['_PLAN_STATUS_'].update(status_str)
+
+    def _update_base_panel(self, status_dict):
+        status_str = "Cannot get base status"
+        if status_dict:
+            try:
+                # TODO: update when base is ready
+                status_str = ""
+                status_str += "Got base dict\n"
+            except Exception as e:
+                status_str = "Bad dict: " + str(status_dict)
+                print("Message exception: " + repr(e))
+
+        self.window['_BASE_STATUS_'].update(status_str)
+
+    def _update_robot_panel(self, robot_id, status_dict):
+        status_str = "Cannot get {} status".format(robot_id)
         if status_dict:
             try:
                 status_str = ""
@@ -96,26 +162,23 @@ class CmdGui:
                 status_str += "Motion in progress: {}\n".format(status_dict["in_progress"])
                 status_str += "Counter:   {}\n".format(status_dict['counter'])
                 status_str += "Free memory:   {} bytes\n".format(status_dict['free_memory'])
-                status_str += "Marvelmind message stats:\n  Dropped: {0:.1f}%\n  Dropped dist: {1:.1f}%\n  Dropped time {2:.1f}%\n  Last sent: {3:.2f}s".format(
-                    msg_metrics['frac_dropped_total']*100, msg_metrics['frac_dropped_dist']*100,
-                    msg_metrics['frac_dropped_time']*100, msg_metrics['time_since_last_sent'])
 
                 # Also update the visualization position
-                self.update_robot_viz_position(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
+                self._update_robot_viz_position(robot_id, status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
             except Exception as e:
-                status_str = "Bad dicts: " + str(status_dict) + str(msg_metrics)
+                status_str = "Bad dict: " + str(status_dict)
                 print("Message exception: " + repr(e))
 
-        self.window['_R1STATUS_'].update(status_str)
+        self.window['_{}_STATUS_'.format(robot_id.upper())].update(status_str)
 
-    def update_robot_viz_position(self, x, y, a):
-        if self.r1_figs:
-            for f in self.r1_figs:
+    def _update_robot_viz_position(self, robot_id, x, y, a):
+        if robot_id in self.viz_figs:
+            for f in self.viz_figs[robot_id]:
                 self.window['_GRAPH_'].DeleteFigure(f)
         
-        self.draw_robot(x, y, a)
+        self.viz_figs[robot_id] = self._draw_robot(x, y, a)
 
-    def draw_robot(self, x, y, a):
+    def _draw_robot(self, x, y, a):
         robot_length = 1
         robot_width = 1
         front_point = [x + robot_length/2 * math.cos(a), y + robot_length/2 * math.sin(a)]
@@ -124,18 +187,17 @@ class CmdGui:
         back_left_point = [back_point[0] + robot_width/2 * math.cos(ortho_angle), back_point[1] + robot_width/2 * math.sin(ortho_angle)]
         back_right_point = [back_point[0] - robot_width/2 * math.cos(ortho_angle), back_point[1] - robot_width/2 * math.sin(ortho_angle)]
 
-        self.r1_figs = []
-        self.r1_figs.append(self.window['_GRAPH_'].DrawLine(point_from=front_point, point_to=back_left_point, color='black'))
-        self.r1_figs.append(self.window['_GRAPH_'].DrawLine(point_from=back_left_point, point_to=back_right_point, color='black'))
-        self.r1_figs.append(self.window['_GRAPH_'].DrawLine(point_from=back_right_point, point_to=front_point, color='black'))
-        self.r1_figs.append(self.window['_GRAPH_'].DrawLine(point_from=[x,y], point_to=front_point, color='red'))
+        figs = []
+        figs.append(self.window['_GRAPH_'].DrawLine(point_from=front_point, point_to=back_left_point, color='black'))
+        figs.append(self.window['_GRAPH_'].DrawLine(point_from=back_left_point, point_to=back_right_point, color='black'))
+        figs.append(self.window['_GRAPH_'].DrawLine(point_from=back_right_point, point_to=front_point, color='black'))
+        figs.append(self.window['_GRAPH_'].DrawLine(point_from=[x,y], point_to=front_point, color='red'))
+        return figs
 
-
-    def close(self):
-        self.window.close()
 
 
 class CmdGenerator:
+    # TODO: Make this usable with refactor. Probably turns into a Plan object generated at runtime
     """ Generate commands for testing"""
     def __init__(self, steps=None):
         self.cur_step = 0
@@ -172,215 +234,85 @@ class CmdGenerator:
                     self.step_timer = NonBlockingTimer(new_cmd)
 
         return cmd
-
-
-def write_file(filename, text):
-    with open(filename, 'w+') as f:
-        f.write(text)
-
-def get_file_bool(filename):
-    try:
-        with open(filename, 'r+') as f:
-            txt = f.readline()
-            if txt == 'True':
-                return True
-            else:
-                return False
-    except FileNotFoundError:
-        return False
     
 
 class Master:
 
     def __init__(self, cfg):
 
-        # Init GUI
-        self.cmd_gui = CmdGui()
-
-        # Setup other miscellaneous variables
         self.cfg = cfg
+        self.plan_cycle_number = 0
+        self.plan = None
+        self.load_plan()
+        self.cmd_gui = CmdGui(self.cfg)
+        self.plan_running = False
 
         print("Initializing Master")
+        self.runtime_manager = RuntimeManager(self.cfg)
+        self.runtime_manager.initialize()
+        # TODO: Maybe make this non-blocking and handle waiting in background to make gui work
+        while self.runtime_manager.get_initialization_status() != RuntimeManager.STATUS_FULLY_INITIALIZED:
+            print("Waiting for init to finish")
+            time.sleep(1)
 
-        # Handle initial generation or loading of waypoints
-        if os.path.exists(cfg.plan_file):
-            with open(cfg.plan_file, 'rb') as f:
-                self.waypoints = pickle.load(f)
-                print("Loaded waypoint data from {}".format(cfg.plan_file))
-        else:
-            self.waypoints = doWaypointGeneration(cfg)
-            with open(cfg.plan_file, 'wb') as f:
-                pickle.dump(self.waypoints, f)
-                print("Saved waypoint data to {}".format(cfg.plan_file))
+        print("Init completed, starting main loop")
 
-        # Robot and marvelmind interfaces
-        self.pos_handler = None
-        self.robot_client = None
-        self.online = False
-        self.initialized = False
-        self.init_timer = None
-        self.bring_online(1) # robot_id = 1 - handle multiple in the future
-        self.cmd_generator = None
-        self.in_progress = False
+    def load_plan(self):
 
-        print("Starting loop")
-
-    def bring_online(self, robot_id):
-        try:
-            # Setup robot clients and communication
-            print("Attempting to connect to robot {} over wifi".format(robot_id))
-            self.robot_client = RobotClient(self.cfg, robot_id) # TODO Add a ping check here maybe to verify it is reachable, possible add retry logic too
-        except Exception as e:
-            print("Couldn't connect to robot {} online. Reason: {}".format(robot_id, repr(e)))
-            return
-
-        try:
-            # Setup marvelmind devices and position handler
-            print("Attempting to enable marvelmind beacons on robot {} ".format(robot_id))
-            self.pos_handler = RobotPositionHandler(self.cfg)
-            self.pos_handler.wake_robot(robot_id)
-            self.online = True
-            self.initialized = False
-            if get_file_bool(self.cfg.mm_beacon_state_file):
-                self.init_timer = NonBlockingTimer(2)
-                print("Beacons already awake, begninning position transmission immediately")
+        # If we don't already have a plan, load it or generate it
+        if not self.plan:
+            if os.path.exists(self.cfg.plan_file):
+                with open(self.cfg.plan_file, 'rb') as f:
+                    self.plan = pickle.load(f)
+                    print("Loaded plan from {}".format(self.cfg.plan_file))
             else:
-                self.init_timer = NonBlockingTimer(30)
-                print("Beacons enabled, will wait for 30 seconds to let them fully wake up")
-        except Exception as e:
-            print("Couldn't enable beacons on robot {}. Reason: {}".format(robot_id, repr(e)))
-
-
-    def cleanup(self, keep_mm_awake):
-
-        print("Cleaning up")
-        if self.online:
-            if not keep_mm_awake:
-                self.pos_handler.sleep_robot(1)
-                write_file(self.cfg.mm_beacon_state_file, 'False')
-            self.pos_handler.close()
-
-    def checkNetworkStatus(self):
-        net_status = self.robot_client.net_status()
-        if net_status:
-            print("Network status of Robot 1 is GOOD")
-        else:
-            print("Network status of Robot 1 is BAD")
-
-    def run_command(self, data):
-
-        if "move" in data:
-            start_idx = data.find('[')
-            end_idx = data.find(']')
-            vals = data[start_idx+1:end_idx].split(',')
-            vals = [x.strip() for x in vals]
-            print("Got move command with parameters [{},{},{}]".format(vals[0], vals[1], vals[2]))
-            if self.online:
-                self.robot_client.move(float(vals[0]), float(vals[1]), float(vals[2]))
-        elif "rel" in data:
-            start_idx = data.find('[')
-            end_idx = data.find(']')
-            vals = data[start_idx+1:end_idx].split(',')
-            vals = [x.strip() for x in vals]
-            print("Got move_rel command with parameters [{},{},{}]".format(vals[0], vals[1], vals[2]))
-            if self.online:
-                self.robot_client.move_rel(float(vals[0]), float(vals[1]), float(vals[2]))
-        elif "fine" in data:
-            start_idx = data.find('[')
-            end_idx = data.find(']')
-            vals = data[start_idx+1:end_idx].split(',')
-            vals = [x.strip() for x in vals]
-            print("Got move_fine command with parameters [{},{},{}]".format(vals[0], vals[1], vals[2]))
-            if self.online:
-                self.robot_client.move_fine(float(vals[0]), float(vals[1]), float(vals[2]))
-        elif "net" in data:
-            self.checkNetworkStatus()
-        elif "status" in data:
-            print("Got status command")
-            status_dict = {}
-            if self.online:
-                status_dict = self.robot_client.request_status()
-            self.cmd_gui.update_robot_status(status_dict)
-        elif "pos" in data:
-            start_idx = data.find('[')
-            end_idx = data.find(']')
-            vals = data[start_idx+1:end_idx].split(',')
-            vals = [x.strip() for x in vals]
-            print("Got pos command with parameters [{},{},{}]".format(vals[0], vals[1], vals[2]))
-            self.cmd_gui.update_robot_viz_position(float(vals[0]), float(vals[1]), float(vals[2]))
-            if self.online:
-                status = self.robot_client.send_position(x,y,a)
-        elif "online" in data:
-            print("Got online command")
-            self.bring_online(1)  # robot_id = 1
-        elif "test" in data:
-            print("Got test status")
-        elif "auto" in data:
-            self.cmd_generator = CmdGenerator()
-        elif "stop" in data:
-            self.cmd_generator = None
-        elif "exit_dbg" in data:
-            pass
-        else:
-            print("Unknown command: {}".format(data))
+                self.plan = Plan(self.cfg)
+                with open(self.cfg.plan_file, 'wb') as f:
+                    pickle.dump(self.plan, f)
+                    print("Saved plan to {}".format(self.cfg.plan_file))
 
 
     def loop(self):
-        last_status_time = 0
 
+        keep_mm_running = False
         while True:
             
-            if self.online:
+            # If we have an idle robot, send it the next cycle to execute
+            if self.plan_running and self.runtime_manager.any_idle_bots():
+                print("Sending cycle {} for execution".format(self.plan_cycle_number))
+                next_cycle = self.plan.get_cycle(self.plan_cycle_number)
+                
+                # If we get none, that means we are done with the plan
+                if next_cycle is None:
+                    self.plan_running = False
+                    self.plan_cycle_number = 0
+                    print("Completed plan!")
+                else:
+                    self.plan_cycle_number += 1
+                    self.runtime_manager.assign_new_cycle(next_cycle)
 
-                metrics = {'frac_dropped_total':0, 'frac_dropped_dist':0, 'frac_dropped_time': 0, 'time_since_last_sent': 999}
+            # Run updates for the runtime manager
+            self.runtime_manager.update()
 
-                if self.initialized:
+            # Get metrics and update the gui
+            metrics = self.runtime_manager.get_all_metrics()
+            self.cmd_gui.update_status_panels(metrics)
 
-                    # Service marvelmind queues
-                    robots_updated = self.pos_handler.service_queues()
-                    for robot in robots_updated:
-                        pos = self.pos_handler.get_position(robot)
-                        self.robot_client.send_position(pos[0], pos[1], pos[2]) # TODO: update for multiple robots
-
-                    # get metrics
-                    metrics = self.pos_handler.get_metrics()
-
-                elif self.init_timer.check():
-                    print("Beacons awake. Beginning position transmission")
-                    write_file(self.cfg.mm_beacon_state_file, 'True')
-                    self.initialized = True
-
-                # Update staus in gui
-                if time.time() - last_status_time > 0.5:
-                    status = self.robot_client.request_status()
-                    if status == None or status == "":
-                        status = "Robot status not available!"
-                    else:
-                        try:
-                            self.in_progress = status["in_progress"]
-                        except Exception:
-                            print("Status miissing expected in_progress field")
-                    self.cmd_gui.update_robot_status(status, metrics)
-                    last_status_time = time.time()
-            
             # Handle any input from gui
-            done, command_str = self.cmd_gui.update()
-
-            # Handle any input from cmd generator
-            if self.cmd_generator:
-                command_str = self.cmd_generator.next_step(self.in_progress)
-
-            if done:
+            event, manual_action = self.cmd_gui.update()
+            if event == "Exit":
                 break
-            if command_str:
-                self.run_command(command_str)
+            if event == "ExitMM":
+                keep_mm_running = True
+                break
+            if event == "Run":
+                self.plan_running = True
+            if event == "Action":
+                self.runtime_manager.run_manual_action(manual_action)
 
 
         # Clean up whenever loop exits
-        keep_mm_awake = False
-        if command_str == "exit_dbg":
-            keep_mm_awake = True;
-        self.cleanup(keep_mm_awake)
+        self.runtime_manager.shutdown(keep_mm_running)
         self.cmd_gui.close()
 
 
