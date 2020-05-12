@@ -1,2 +1,2 @@
 # DominoRobot
-Code for a robot that can set up dominoes (in progress)
+Code for a robot that can set up dominos (in progress)

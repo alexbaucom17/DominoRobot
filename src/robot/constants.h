@@ -2,12 +2,11 @@
 #define Contsants_h
 
 // Pins
-// Note - according to https://www.arduino.cc/reference/en/language/functions/analog-io/analogwrite/, pin 4 on the Mega has a different PWM frequency, need to make sure that doesn't affect things
-#define PIN_SPEED_0 8   
-#define PIN_SPEED_1 6
-#define PIN_SPEED_2 5
-#define PIN_SPEED_3 4
-#define PIN_SPEED_DUMMY 7
+// TODO: Fix all pin assignments
+#define PIN_PWM_0 8   
+#define PIN_PWM_2 5
+#define PIN_PWM_1 6
+#define PIN_PWM_3 4
 
 #define PIN_DIR_0 22
 #define PIN_DIR_1 24
@@ -16,18 +15,21 @@
 
 #define PIN_ENABLE_ALL 29
 
+#define PIN_ENC_A_0 10
+#define PIN_ENC_B_0 11
+#define PIN_ENC_A_1 12
+#define PIN_ENC_B_1 13
+#define PIN_ENC_A_2 14
+#define PIN_ENC_B_2 15
+#define PIN_ENC_A_3 16
+#define PIN_ENC_B_3 17
+
 #define PIN_LATCH_SERVO_PIN 12
 #define PIN_TRAY_STEPPER_LEFT_PULSE 46
 #define PIN_TRAY_STEPPER_LEFT_DIR 47
 #define PIN_TRAY_STEPPER_RIGHT_PULSE 44
 #define PIN_TRAY_STEPPER_RIGHT_DIR 43
 #define PIN_TRAY_HOME_SWITCH 53
-
-// Mapping from driver to motor - needed becuase it is easy to accidentally swap the drivers (with fixed pins) to a different motor
-#define DRIVER_0_MOTOR 2
-#define DRIVER_1_MOTOR 3
-#define DRIVER_2_MOTOR 1
-#define DRIVER_3_MOTOR 0
 
 // Velocitiy limits
 #define MAX_TRANS_SPEED_FINE   0.08  // m/s
@@ -49,17 +51,17 @@
 #define CART_ROT_KI 0.5
 #define CART_ROT_KD 0
 
+// Motor control gains
+#define MOTOR_KP 1
+#define MOTOR_KI 0
+#define MOTOR_KD 0
+
 // Physical dimensions
 #define WHEEL_DIAMETER 0.1016 // meters
 #define WHEEL_DIST_FROM_CENTER 0.4572 // meters
 
 // Scaling factors
 #define TRAJ_MAX_FRACTION 0.7  // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate
-
-// Scaling for stepper drive motors
-#define STEPPER_PULSE_PER_REV 1600 // steps per revolution
-#define STEPPER_MAX_VEL 1600   // steps/second. This must match the value defined in stepper_driver.ino
-#define PWM_RESOLUTION 255   // Analog resolution of arduino pwm output.
 
 // Kalman filter scales
 #define PROCESS_NOISE_SCALE 0.08

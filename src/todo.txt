@@ -1,10 +1,10 @@
 Robot:
-- Diagnose motor issues
-    - Sometimes wheels are slipping too much - not sure if this is a mechanical thing or too much dust on the floor/tires
-    - Sometimes the wheels also seem to be binding up and then the driver is catching them up later (even without the lifter on)
-    - Seems like motors might not be strong enough - can't seem to drive with lifter on and if I apply force on the top of the bot I can get the wheels to sieze
+- Convert back to DC motor controller
+- Test and tune motor controller for new motor
+- Test and tune top level controller for new motors 
 
 Stepper controller
+- Convert to working for lifter mechanism
 
 Master:
 - Add actions for base station

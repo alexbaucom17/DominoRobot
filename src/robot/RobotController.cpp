@@ -6,11 +6,13 @@
 
 const DynamicLimits FINE_LIMS = {MAX_TRANS_SPEED_FINE, MAX_TRANS_ACC_FINE, MAX_ROT_SPEED_FINE, MAX_ROT_ACC_FINE};
 const DynamicLimits COARSE_LIMS = {MAX_TRANS_SPEED_COARSE, MAX_TRANS_ACC_COARSE, MAX_ROT_SPEED_COARSE, MAX_ROT_ACC_COARSE};
-const float STEPS_PER_SECOND_TO_PWM = static_cast<float>(PWM_RESOLUTION) / static_cast<float>(STEPPER_MAX_VEL);
-const float RADS_PER_SECOND_TO_STEPS_PER_SECOND = STEPPER_PULSE_PER_REV / (2 * PI);
 
 RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater)
-: prevPositionUpdateTime_(millis()),
+: motors_{ Motor(PIN_PWM_0, PIN_DIR_0, PIN_ENC_A_0, PIN_ENC_B_0, MOTOR_KP, MOTOR_KI, MOTOR_KD),
+           Motor(PIN_PWM_1, PIN_DIR_1, PIN_ENC_A_1, PIN_ENC_B_1, MOTOR_KP, MOTOR_KI, MOTOR_KD),
+           Motor(PIN_PWM_2, PIN_DIR_2, PIN_ENC_A_2, PIN_ENC_B_2, MOTOR_KP, MOTOR_KI, MOTOR_KD),
+           Motor(PIN_PWM_3, PIN_DIR_3, PIN_ENC_A_3, PIN_ENC_B_3, MOTOR_KP, MOTOR_KI, MOTOR_KD) },
+  prevPositionUpdateTime_(millis()),
   prevControlLoopTime_(millis()),
   prevUpdateLoopTime_(millis()),
   prevOdomLoopTime_(millis()),
@@ -27,10 +29,8 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
   errSumA_(0),
   fineMode_(true),
   predict_once(false),
-  motor_velocities({0,0,0,0}),
   statusUpdater_(statusUpdater)
 {
-
 }
 
 void RobotController::begin()
@@ -38,22 +38,6 @@ void RobotController::begin()
     // Setup pins
     digitalWrite(PIN_ENABLE_ALL, HIGH);
     pinMode(PIN_ENABLE_ALL, OUTPUT);
-
-    analogWrite(PIN_SPEED_0, 0);
-    analogWrite(PIN_SPEED_1, 0);
-    analogWrite(PIN_SPEED_2, 0);
-    analogWrite(PIN_SPEED_3, 0);
-    pinMode(PIN_SPEED_0, OUTPUT);
-    pinMode(PIN_SPEED_1, OUTPUT);
-    pinMode(PIN_SPEED_2, OUTPUT);
-    pinMode(PIN_SPEED_3, OUTPUT);
-
-    pinMode(PIN_DIR_0, OUTPUT);
-    pinMode(PIN_DIR_1, OUTPUT);
-    pinMode(PIN_DIR_2, OUTPUT);
-    pinMode(PIN_DIR_3, OUTPUT);
-
-    pinMode(PIN_SPEED_DUMMY, INPUT);
 
     // Setup Kalman filter
     double dt = 0.1;
@@ -179,6 +163,10 @@ void RobotController::update()
     // Run controller and odometry update
     computeControl(cmd);
     computeOdometry();
+    for (int i = 0; i < 4; i++)
+    {
+        motors_[i].runLoop();
+    }
 
     // Update status 
     statusUpdater_.updatePosition(cartPos_.x_, cartPos_.y_, cartPos_.a_);
@@ -293,6 +281,13 @@ void RobotController::inputPosition(float x, float y, float a)
 
 void RobotController::computeOdometry()
 {  
+    // Read velocities from the motors
+    float motor_velocities[4];
+    for (int i = 0; i < 4; i++)
+    {
+        motor_velocities[i] = motors_[i].getCurrentVelocity();
+    }
+
     // Do forward kinematics to compute local cartesian velocity
     float local_cart_vel[3];
     float s0 = 0.5 * WHEEL_DIAMETER * sin(PI/4.0);
@@ -379,6 +374,7 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     local_cart_vel[2] = va;
 
     // Convert local velocities to wheel speeds with inverse kinematics
+    float motor_velocities[4];
     float s0 = sin(PI/4);
     float c0 = cos(PI/4);
     motor_velocities[0] = 1/WHEEL_DIAMETER * (-c0*local_cart_vel[0] + s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
@@ -387,39 +383,9 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     motor_velocities[3] = 1/WHEEL_DIAMETER * (-s0*local_cart_vel[0] - c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
 
     // Send the commanded velocity for each motor
-    writeVelocity(motor_velocities[DRIVER_0_MOTOR], PIN_SPEED_0, PIN_DIR_0);
-    writeVelocity(motor_velocities[DRIVER_1_MOTOR], PIN_SPEED_1, PIN_DIR_1);
-    writeVelocity(motor_velocities[DRIVER_2_MOTOR], PIN_SPEED_2, PIN_DIR_2);
-    writeVelocity(motor_velocities[DRIVER_3_MOTOR], PIN_SPEED_3, PIN_DIR_3);
-
-}
-
-void RobotController::writeVelocity(float speed, int speed_pin, int dir_pin)
-{
-    if(speed > 0)
+    for (int i = 0; i < 4; i++)
     {
-        digitalWrite(dir_pin, HIGH);
-    }
-    else
-    {
-        digitalWrite(dir_pin, LOW);
-        speed = -1*speed;
+        motors_[i].setCommand(motor_velocities[i]);
     }
 
-    // Speed is in rad/s so we have to translate to steps/sec and then to a pwm output
-    float speed_steps_per_sec = speed * RADS_PER_SECOND_TO_STEPS_PER_SECOND;
-    uint8_t val = static_cast<uint8_t>(speed_steps_per_sec * STEPS_PER_SECOND_TO_PWM);
-    analogWrite(speed_pin, val);
-
-//    debug_.print(speed_pin);
-//    debug_.print(", ");
-//    debug_.print(speed);
-//    debug_.print(", ");
-//    debug_.print(RADS_PER_SECOND_TO_STEPS_PER_SECOND);
-//    debug_.print(", ");
-//    debug_.print(speed_steps_per_sec);
-//    debug_.print(", ");
-//    debug_.print(STEPS_PER_SECOND_TO_PWM);
-//    debug_.print(", ");
-//    debug_.println(val);
 }

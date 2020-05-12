@@ -5,6 +5,7 @@
 #include <HardwareSerial.h>
 #include "StatusUpdater.h"
 #include "KalmanFilter.h"
+#include "Motor.h"
 
 class RobotController
 {
@@ -59,6 +60,7 @@ class RobotController
     void writeVelocity(float speed, int speed_pin, int dir_pin);
 
     // Member variables
+    Motor motors_[4];                      // Motor objects
     unsigned long prevPositionUpdateTime_; // Previous loop millis we were provided a position observation
     unsigned long prevControlLoopTime_;    // Previous loop millis through the cartesian control loop
     unsigned long prevUpdateLoopTime_;     // Previous loop millis through the update loop
@@ -76,7 +78,6 @@ class RobotController
     float errSumA_;                        // Sum of error in A dimension for integral control
     bool fineMode_;                        // If fine positioning mode is enabled or not.
     bool predict_once;                     // Bool to make sure kalman filter gets initialized properly
-    float motor_velocities[4];             // Track motor velocities in rad/s
 
     StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
 
