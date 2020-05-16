@@ -56,6 +56,10 @@
 #define MOTOR_KI 0
 #define MOTOR_KD 0
 
+// Motor control constants
+#define VEL_FILTER_FREQ 7            // HZ
+#define COUNTS_PER_SHAFT_REV = 2758; //Manually measured
+
 // Physical dimensions
 #define WHEEL_DIAMETER 0.1016 // meters
 #define WHEEL_DIST_FROM_CENTER 0.4572 // meters

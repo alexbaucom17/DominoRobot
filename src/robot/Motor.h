@@ -5,13 +5,6 @@
 #include <PID_v1.h>
 #include <Filters.h>
 
-/*const unsigned int COUNTS_PER_MOTOR_REV = 44; 
-const unsigned int MOTOR_GEAR_RATIO = 40;
-const double FUDGE_FACTOR = 1.5;
-const double COUNTS_PER_SHAFT_REV = COUNTS_PER_MOTOR_REV * MOTOR_GEAR_RATIO * FUDGE_FACTOR;*/
-#define VEL_FILTER_FREQ 7 // HZ
-const double COUNTS_PER_SHAFT_REV = 2758; //Manually measured
-
 class Motor
 {
   public:
@@ -29,9 +22,8 @@ class Motor
     Motor(int pwmPin, int dirPin, int encPinA, int encPinB, double Kp, double Ki, double Kd);
     
     /*
-     * Set the desired velocity in revs/second
+     * Set the desired velocity in rad/second
      */
-    //TODO: Change to rad/s
     void setCommand(double vel);
     
     /*
@@ -40,7 +32,7 @@ class Motor
     void runLoop();
 
     /*
-    * Get the current measured motor velocity
+    * Get the current measured motor velocity in rad/s
     */
     float getCurrentVelocity();
 
@@ -54,9 +46,9 @@ class Motor
     int dirPin_;   
 
     // Values for computation
-    double inputVel_;              // Desired velocity in revs/sec
-    double currentVelRaw_;         // Raw current velocity in revs/sec
-    double currentVelFiltered_;    // Filtered velocity in revs/sec
+    double inputVel_;              // Desired velocity in rad/sec
+    double currentVelRaw_;         // Raw current velocity in rad/sec
+    double currentVelFiltered_;    // Filtered velocity in rad/sec
     double pidOut_;                // Output from PID controller
     int outputCmd_;             // Output command in [-255, 255]
     long prevCount_;               // Encoder count from previous loop

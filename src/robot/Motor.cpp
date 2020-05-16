@@ -1,4 +1,5 @@
 #include "Motor.h"
+#include "constants.h"
 
 Motor::Motor(int pwmPin, int dirPin, int encPinA, int encPinB, double Kp, double Ki, double Kd)
 : pwmPin_(pwmPin),
@@ -45,7 +46,7 @@ void Motor::runLoop()
 
   // Compute delta
   long deltaCount = curCount - prevCount_;
-  double deltaRevs = static_cast<double>(deltaCount) / COUNTS_PER_SHAFT_REV;
+  double deltaRads = static_cast<double>(deltaCount) * 2 * PI / static_cast<double>(COUNTS_PER_SHAFT_REV);
   unsigned long deltaMillis = curMillis - prevMillis_;
 
   // Copy current values into previous
@@ -59,8 +60,8 @@ void Motor::runLoop()
     return;
   }
 
-  // Compute current velocity in revs/second
-  currentVelRaw_ = 1000.0 * deltaRevs / static_cast<double>(deltaMillis);
+  // Compute current velocity in rads/second
+  currentVelRaw_ = 1000.0 * deltaRads / static_cast<double>(deltaMillis);
   currentVelFiltered_ = velFilter_.input(currentVelRaw_);
   
   // Run PID controller
