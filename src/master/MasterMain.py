@@ -4,16 +4,43 @@ import copy
 import config
 import os
 import pickle
+import logging
 import PySimpleGUI as sg
 
 from FieldPlanner import Plan, ActionTypes, Action, MoveAction
-from Runtime import RuntimeManager
+from Runtime import RuntimeManager, OFFLINE_TESTING, SKIP_MARVELMIND
 
 
 def status_panel(name):
     width = 40
     height = 10
     return [[sg.Text("{} status".format(name))], [sg.Text("{} offline".format(name), size=(width, height), relief=sg.RELIEF_RAISED, key='_{}_STATUS_'.format(name.upper())) ]]
+
+def setup_gui_layout(panel_names, target_names):
+    # Left hand column with status panels
+    col1 = []
+    for name in panel_names:
+        col1 += status_panel(name)
+
+    # Middle column with plot and buttons
+    target_element = [ [sg.Text("Target: ")], [sg.Combo(target_names, key='_TARGET_')] ]
+
+    actions = [a for a in ActionTypes]
+    action_element = [ [sg.Text("Action: ")], [sg.Combo(actions, key='_ACTION_')] ]
+
+    data_element = [ [sg.Text('Data:')], [sg.Input(key='_ACTION_DATA_')] ]
+
+    button_element = [[sg.Button('Send')], [sg.Button('Run Plan')]]
+
+    col2 = [[sg.Graph(canvas_size=(600,600), graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white") ],
+            [sg.Column(target_element), sg.Column(action_element), sg.Column(data_element), sg.Column(button_element)]]
+
+    # Right hand column with text ouput
+    col3 = [[sg.Output(size=(50, 50))]]
+    #col3 = [[sg.Text("Temp place for output")]]
+    
+    return [[ sg.Column(col1), sg.Column(col2), sg.Column(col3)]]
+
 
 class CmdGui:
 
@@ -23,39 +50,20 @@ class CmdGui:
         
         sg.change_look_and_feel('Dark Blue 3')
 
-        names = ["{}".format(n) for n in self.config.ip_map]
-        names += ['base', 'plan', 'pos']
-        col1 = []
-        for name in names:
-            col1 += status_panel(name)
-
-        targets = copy.deepcopy(names)
-        targets.remove('plan')
-        target_element = [ [sg.Text("Target: ")], [sg.Combo(targets, key='_TARGET_')] ]
-
-        actions = [a for a in ActionTypes]
-        action_element = [ [sg.Text("Action: ")], [sg.Combo(actions, key='_ACTION_')] ]
-
-        data_element = [ [sg.Text('Data:')], [sg.Input(key='_ACTION_DATA_')] ]
-
-        button_element = [[sg.Button('Send')], [sg.Button('Run Plan')]]
-
-        col2 = [[sg.Graph(canvas_size=(600,600), graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white") ],
-                [sg.Column(target_element), sg.Column(action_element), sg.Column(data_element), sg.Column(button_element)]]
-
-        col3 = [[sg.Output(size=(50, 50))]]
-        #col3 = [[sg.Text("Temp place for output")]]
-        
-        layout = [[ sg.Column(col1), sg.Column(col2), sg.Column(col3)]]
+        panel_names = ["{}".format(n) for n in self.config.ip_map]
+        panel_names += ['base', 'plan', 'pos']
+        target_names = copy.deepcopy(panel_names)
+        target_names.remove('plan')
+        layout = setup_gui_layout(panel_names, target_names)
 
         self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True)
         self.window.finalize()
 
         self.viz_figs = {}
 
-    
     def close(self):
         self.window.close()
+
 
     def update(self):
 
@@ -63,11 +71,14 @@ class CmdGui:
 
         # At exit, check if we should keep marvelmind on
         if event is None or event == 'Exit':
-            clicked_value = sg.popup_yes_no('Do you want to keep the Marvelmind running')
-            if clicked_value == "Yes":
-                return "ExitMM", None
-            else:
+            if OFFLINE_TESTING or SKIP_MARVELMIND:
                 return 'Exit', None
+            else:
+                clicked_value = sg.popup_yes_no('Do you want to keep the Marvelmind running')
+                if clicked_value == "Yes":
+                    return "ExitMM", None
+                else:
+                    return 'Exit', None
         
         # Sending a manual action (via button or pressing enter)
         if event in ('Send', '\r', '\n'):
@@ -250,12 +261,8 @@ class Master:
         print("Initializing Master")
         self.runtime_manager = RuntimeManager(self.cfg)
         self.runtime_manager.initialize()
-        # TODO: Maybe make this non-blocking and handle waiting in background to make gui work
-        while self.runtime_manager.get_initialization_status() != RuntimeManager.STATUS_FULLY_INITIALIZED:
-            print("Waiting for init to finish")
-            time.sleep(1)
+        self.initialized = False
 
-        print("Init completed, starting main loop")
 
     def load_plan(self):
 
@@ -276,27 +283,38 @@ class Master:
 
         keep_mm_running = False
         while True:
-            
-            # If we have an idle robot, send it the next cycle to execute
-            if self.plan_running and self.runtime_manager.any_idle_bots():
-                print("Sending cycle {} for execution".format(self.plan_cycle_number))
-                next_cycle = self.plan.get_cycle(self.plan_cycle_number)
-                
-                # If we get none, that means we are done with the plan
-                if next_cycle is None:
-                    self.plan_running = False
-                    self.plan_cycle_number = 0
-                    print("Completed plan!")
+
+            # Only do some stuff once we are initialized
+            if not self.initialized:
+                if self.runtime_manager.get_initialization_status() != RuntimeManager.STATUS_FULLY_INITIALIZED:
+                    pass
                 else:
-                    self.plan_cycle_number += 1
-                    self.runtime_manager.assign_new_cycle(next_cycle)
+                    self.initialized = True
+                    print("Init completed, starting main loop")
 
-            # Run updates for the runtime manager
-            self.runtime_manager.update()
+            else:
+            
+                # If we have an idle robot, send it the next cycle to execute
+                if self.plan_running and self.runtime_manager.any_idle_bots():
+                    print("Sending cycle {} for execution".format(self.plan_cycle_number))
+                    next_cycle = self.plan.get_cycle(self.plan_cycle_number)
+                    
+                    # If we get none, that means we are done with the plan
+                    if next_cycle is None:
+                        self.plan_running = False
+                        self.plan_cycle_number = 0
+                        print("Completed plan!")
+                    else:
+                        self.plan_cycle_number += 1
+                        self.runtime_manager.assign_new_cycle(next_cycle)
 
-            # Get metrics and update the gui
-            metrics = self.runtime_manager.get_all_metrics()
-            self.cmd_gui.update_status_panels(metrics)
+                # Run updates for the runtime manager
+                self.runtime_manager.update()
+            
+                # Get metrics and update the gui
+                metrics = self.runtime_manager.get_all_metrics()
+                self.cmd_gui.update_status_panels(metrics)
+
 
             # Handle any input from gui
             event, manual_action = self.cmd_gui.update()
@@ -316,11 +334,21 @@ class Master:
         self.cmd_gui.close()
 
 
+def configure_logging(path):
 
+    logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(os.path.join(path,"master.log")),
+        logging.StreamHandler()
+        ]
+    )
 
 
 if __name__ == '__main__':
     cfg = config.Config()
+    configure_logging(cfg.log_folder)
     m = Master(cfg)
     m.loop()
 

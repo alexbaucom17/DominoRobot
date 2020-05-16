@@ -11,6 +11,7 @@ class Config:
     plan_file = os.path.join(config_dir_path, 'plan.p')
     mm_beacon_state_file = os.path.join(config_dir_path, 'beacon_state.txt')
     mm_api_path = os.path.join(root_path, mm_api_relative_path)
+    log_folder = os.path.join(config_dir_path, 'logs')
 
 
     # ====== ROBOT CONFIG ========
