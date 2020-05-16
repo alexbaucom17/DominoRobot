@@ -1,14 +1,14 @@
 Robot:
 - Test and tune motor controller for new motor
 - Test and tune top level controller for new motors 
+- Test estop
 
 Stepper controller
 - Convert to working for lifter mechanism
 
 Master:
 - Make gui look a little bit better
-- Figure out if there is a way to use the output pane better - maybe also log to file or dump to console?
-- Hook up estop
+- Try to fix key error spam/make badly formatted status panels fail gracefully
 - Waiting on fleshing out base station a bit more
     - Add actions for base station
     - Figure out how to sequence loading between base and robot

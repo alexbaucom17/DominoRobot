@@ -132,6 +132,8 @@ class RobotInterface:
             self.robot_client.tray_init()
         elif action.action_type == ActionTypes.LOAD_COMPLETE:
             self.robot_client.load_complete()
+        elif action.action_type == ActionTypes.ESTOP:
+            self.robot_client.estop()
         else:
             logging.info("Unknown action: {}".format(action.action_type))
 
@@ -177,6 +179,9 @@ class BaseStationInterface:
 
         if not self.comms_online:
             return
+
+        if action.action_type == ActionTypes.ESTOP:
+            self.client.estop()
         
         # TODO: impliment commands
 
@@ -257,6 +262,12 @@ class RuntimeManager:
         target = manual_action[0]
         action = manual_action[1]
         self._run_action(target, action)
+
+    def estop(self):
+        logging.warn("ESTOP")
+        self._run_action('base', Action(ActionTypes.ESTOP, 'ESTOP'))
+        for robot in self.robots:
+            robot.run_action(Action(ActionTypes.ESTOP, 'ESTOP'))
 
     def any_idle_bots(self):
         return len(self.idle_bots) > 0

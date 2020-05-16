@@ -288,6 +288,7 @@ class ActionTypes(enum.Enum):
     PLACE = 5,
     TRAY_INIT = 6, 
     LOAD_COMPLETE = 7,
+    ESTOP = 8,
 
 class Action:
 

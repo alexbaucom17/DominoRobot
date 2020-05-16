@@ -137,6 +137,11 @@ class BaseClient:
         status_dict = self.wait_for_server_response(print_debug=False)
         return status_dict
 
+    def estop(self):
+        """ Tell client to estop """
+        msg = {'type': 'estop'}
+        self.send_msg_and_wait_for_ack(msg)
+
 
 class RobotClient(BaseClient):
 
@@ -179,11 +184,6 @@ class RobotClient(BaseClient):
     def load_complete(self):
         """ Tell robot that base station load is complete """
         msg = {'type': 'lc'}
-        self.send_msg_and_wait_for_ack(msg)
-
-    def estop(self):
-        """ Tell robot to estop """
-        msg = {'type': 'estop'}
         self.send_msg_and_wait_for_ack(msg)
 
     def send_position(self, x, y, a):

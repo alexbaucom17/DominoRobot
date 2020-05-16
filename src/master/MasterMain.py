@@ -34,7 +34,8 @@ def setup_gui_layout(panel_names, target_names):
     button_element = [[sg.Button('Send')], [sg.Button('Run Plan')]]
 
     col2 = [[sg.Graph(canvas_size=(600,600), graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white") ],
-            [sg.Column(target_element), sg.Column(action_element), sg.Column(data_element), sg.Column(button_element)]]
+            [sg.Column(target_element), sg.Column(action_element), sg.Column(data_element), sg.Column(button_element)],
+            [sg.Button('ESTOP', button_color=('white','red'), size=[20,5])] ]
 
     # Right hand column with text ouput
     col3 = [[sg.Output(size=(50, 50))]]
@@ -90,6 +91,9 @@ class CmdGui:
         # Pressing the run plan button
         if event in ("Run Plan"):
             return "Run", None
+
+        if event in ("ESTOP"):
+            return "ESTOP", None
 
         return None, None
 
@@ -328,7 +332,8 @@ class Master:
                 self.plan_running = True
             if event == "Action":
                 self.runtime_manager.run_manual_action(manual_action)
-
+            if event == "ESTOP":
+                self.runtime_manager.estop()
 
         # Clean up whenever loop exits
         self.runtime_manager.shutdown(keep_mm_running)
