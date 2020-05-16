@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.patches as patches
 import math
 import enum
+import logging
 
 
 class DominoField:
@@ -22,23 +23,23 @@ class DominoField:
         self.n_tiles_y = 0
         self.tiles = []
 
-        print('Generating domino field from image...',end='',flush=True)
+        logging.info('Generating domino field from image...',end='',flush=True)
         self._generateField()
-        print('done.')
+        logging.info('done.')
 
-        print('Generating tiles from field...',end='',flush=True)
+        logging.info('Generating tiles from field...',end='',flush=True)
         self._generateTiles()
-        print('done.')
+        logging.info('done.')
 
 
     def printStats(self):
         # Output some metrics
-        print('Domino usage:')
-        print('Total number of dominos: ' + str(self.img_parsed_ids.size))
-        print('Colors:')
+        logging.info('Domino usage:')
+        logging.info('Total number of dominos: ' + str(self.img_parsed_ids.size))
+        logging.info('Colors:')
         unique_colors, counts = np.unique(self.img_parsed_ids, return_counts=True)
         for i, id in enumerate(unique_colors):
-            print('  ' + self.cfg.dominos[id][0] + ': ' + str(counts[i]))
+            logging.info('  ' + self.cfg.dominos[id][0] + ': ' + str(counts[i]))
 
     def show_image_parsing(self):
         # Plot images
@@ -473,9 +474,9 @@ class Plan:
         self.field = DominoField(cfg)
         self.cycles = []
 
-        print('Generating robot actions...',end='',flush=True)
+        logging.info('Generating robot actions...',end='',flush=True)
         self._generate_all_cycles()
-        print('done.')
+        logging.info('done.')
 
     def _generate_all_cycles(self):
         start_num = 1
@@ -505,6 +506,16 @@ if __name__ == '__main__':
 
     import config
     cfg = config.Config()
+
+    logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(os.path.join(cfg.log_folder,"planner.log")),
+        logging.StreamHandler()
+        ]
+    )
+
     pm = PlanManager(cfg)
 
     plan = pm.get_plan()

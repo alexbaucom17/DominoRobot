@@ -5,6 +5,7 @@ import socket
 import select
 import json
 import time
+import logging
 
 PORT = 1234
 NET_TIMEOUT = 5 # seconds
@@ -22,7 +23,7 @@ class TcpClient:
     def send(self, msg, print_debug=True):
         totalsent = 0
         if print_debug:
-            print("TX: " + msg)
+            logging.info("TX: " + msg)
         msg = START_CHAR + msg + END_CHAR
         msg_bytes = msg.encode()
         while totalsent < len(msg):
@@ -33,10 +34,10 @@ class TcpClient:
 
     def recieve(self, timeout=1, print_debug=True):
 
-        # print("Checking socket ready")
+        # logging.info("Checking socket ready")
         # socket_ready, _, _ = select.select([self.socket], [], [])
         # if not socket_ready:
-        #     print("Socket not ready")
+        #     logging.info("Socket not ready")
         #     return ""
 
         new_msg = ""
@@ -69,9 +70,9 @@ class TcpClient:
                     new_msg += new_str
 
         if print_debug and new_msg:
-            print("RX: " + new_msg)
+            logging.info("RX: " + new_msg)
         if not new_msg_ready:
-            #print("Socket timeout")
+            #logging.info("Socket timeout")
             new_msg = ""
 
         return new_msg
@@ -109,12 +110,12 @@ class BaseClient:
         self.client.send(json.dumps(msg,separators=(',',':')), print_debug=print_debug) # Make sure json dump is compact for transmission
         resp = self.wait_for_server_response(print_debug=print_debug)
         if not resp:
-            print('WARNING: Did not recieve ack')
+            logging.info('WARNING: Did not recieve ack')
         else:
             if resp['type'] != 'ack':
-                print('ERROR: Expecting return type ack')
+                logging.info('ERROR: Expecting return type ack')
             elif resp['data'] != msg['type']:
-                print('ERROR: Incorrect ack type')
+                logging.info('ERROR: Incorrect ack type')
         
         return resp
 
@@ -260,7 +261,7 @@ if __name__== '__main__':
     while(True):
         speed = input("Input move speed [x,y,a]: ").strip().split(',')
         if len(speed) != 3:
-            print("Need to provide comma separated values.")
+            logging.info("Need to provide comma separated values.")
         else:
             x = float(speed[0])
             y = float(speed[1])

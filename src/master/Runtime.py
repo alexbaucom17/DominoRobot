@@ -1,11 +1,12 @@
 import time
+import logging
 
 from MarvelMindHandler import RobotPositionHandler, MockRobotPositionHandler
 from RobotClient import RobotClient, BaseStationClient, MockRobotClient, MockBaseStationClient
 from FieldPlanner import ActionTypes, Action
 
 # Debugging flags
-OFFLINE_TESTING = False
+OFFLINE_TESTING = True
 SKIP_BASE_STATION = True
 SKIP_MARVELMIND = True
 
@@ -54,7 +55,7 @@ class RobotInterface:
 
     def _bring_comms_online(self, use_mock=False):
         try:
-            print("Attempting to connect to {} over wifi".format(self.robot_id))
+            logging.info("Attempting to connect to {} over wifi".format(self.robot_id))
 
             if use_mock:
                 self.robot_client = MockRobotClient(self.config, self.robot_id)
@@ -63,27 +64,27 @@ class RobotInterface:
 
             if self.robot_client.net_status():
                 self.comms_online = True
-                print("Connected to {} oover wifi".format(self.robot_id))
+                logging.info("Connected to {} oover wifi".format(self.robot_id))
         except Exception as e:
-            print("Couldn't connect to {} over wifi. Reason: {}".format(self.robot_id , repr(e)))
+            logging.info("Couldn't connect to {} over wifi. Reason: {}".format(self.robot_id , repr(e)))
             return 
 
     def _bring_position_online(self, quick=False):
         if not self.pos_handler:
-            print("No position handler attached for {}".format(self.robot_id))
+            logging.info("No position handler attached for {}".format(self.robot_id))
             return
     
         if self.position_online:
-            print("Pos handler still running, skipping beacon wake up on {}".format(self.robot_id))
+            logging.info("Pos handler still running, skipping beacon wake up on {}".format(self.robot_id))
             return
 
         try:
             # Setup marvelmind devices and position handler
-            print("Attempting to enable marvelmind beacons on {} ".format(self.robot_id))
+            logging.info("Attempting to enable marvelmind beacons on {} ".format(self.robot_id))
             self.pos_handler.wake_robot(self.robot_id)
             self.position_init_timer = NonBlockingTimer(30)
         except Exception as e:
-            print("Couldn't enable beacons on robot {}. Reason: {}".format(self.robot_id, repr(e)))
+            logging.info("Couldn't enable beacons on robot {}. Reason: {}".format(self.robot_id, repr(e)))
 
     def _get_status_from_robot(self):
         self.last_status = self.robot_client.request_status()
@@ -112,7 +113,7 @@ class RobotInterface:
         if not self.comms_online:
             return
 
-        print("Running {} on {}".format(action.action_type, self.robot_id))
+        logging.info("Running {} on {}".format(action.action_type, self.robot_id))
 
         if action.action_type == ActionTypes.MOVE_COARSE:
             self.robot_client.move(action.x, action.y, action.a)
@@ -122,7 +123,7 @@ class RobotInterface:
             self.robot_client.move_fine(action.x, action.y, action.a)
         elif action.action_type == ActionTypes.NET:
             status = self.robot_client.net_status()
-            print("Robot {} network status is: {}".format(self.robot_id, status))
+            logging.info("Robot {} network status is: {}".format(self.robot_id, status))
         elif action.action_type == ActionTypes.LOAD:
             self.robot_client.load()
         elif action.action_type == ActionTypes.PLACE:
@@ -132,7 +133,7 @@ class RobotInterface:
         elif action.action_type == ActionTypes.LOAD_COMPLETE:
             self.robot_client.load_complete()
         else:
-            print("Unknown action: {}".format(action.action_type))
+            logging.info("Unknown action: {}".format(action.action_type))
 
 
 
@@ -146,7 +147,7 @@ class BaseStationInterface:
         self.last_status_time = 0
 
     def bring_online(self, use_mock=False):
-        print("Bringing BaseStation comms online")
+        logging.info("Bringing BaseStation comms online")
         if use_mock:
             self.client = MockBaseStationClient(self.config)
         else:
@@ -224,7 +225,7 @@ class RuntimeManager:
 
     def shutdown(self, keep_mm_awake):
 
-        print("Shutting down")
+        logging.info("Shutting down")
         if self.initialization_status != RuntimeManager.STATUS_NOT_INITIALIZED:
             if not keep_mm_awake:
                 for robot in self.robots.values():
@@ -234,7 +235,7 @@ class RuntimeManager:
 
     def get_initialization_status(self):
         self._check_initialization_status()
-        print("Initialization status: {}".format(self.initialization_status))
+        logging.info("Initialization status: {}".format(self.initialization_status))
         return self.initialization_status
 
     def get_all_metrics(self):
@@ -265,7 +266,7 @@ class RuntimeManager:
         if expected_robot not in self.idle_bots:
             raise ValueError("Expected cycle {} to be run with {} but only available robots are {}".format(new_cycle.id, expected_robot, self.idle_bots))
         else:
-            print("Assigning cycle {} to {}".format(new_cycle.id, expected_robot))
+            logging.info("Assigning cycle {} to {}".format(new_cycle.id, expected_robot))
             self.cycle_tracker[expected_robot]['cycle'] = new_cycle
             self.cycle_tracker[expected_robot]['step'] = 0
             self.cycle_tracker[expected_robot]['action'] = None
@@ -279,7 +280,7 @@ class RuntimeManager:
             if target in self.idle_bots:
                 self.idle_bots.remove(target)
         else:
-            print("Unknown target: {}".format(target))
+            logging.info("Unknown target: {}".format(target))
 
     def _check_initialization_status(self):
         ready = []
@@ -326,7 +327,7 @@ class RuntimeManager:
                 if start_next_action:
                     # Check if there is a new action to run for this cycle, if not, end the cycle
                     if tracker_data['step'] >= len(tracker_data['cycle'].action_sequence):
-                        print("{} finished cycle {}".format(robot_id, tracker_data['cycle'].id))
+                        logging.info("{} finished cycle {}".format(robot_id, tracker_data['cycle'].id))
                         tracker_data['cycle'] = None
                         tracker_data['step'] = 0
                         tracker_data['action'] = None
@@ -335,7 +336,7 @@ class RuntimeManager:
                         # If there is a new action to run, start it
                         next_action = tracker_data['cycle'].action_sequence[tracker_data['step']]
                         tracker_data['action'] = next_action
-                        print("Starting action {} on {}".format(next_action.name, robot_id))
+                        logging.info("Starting action {} on {}".format(next_action.name, robot_id))
                         self._run_action(robot_id, next_action)
 
         # Update if any robots are idle

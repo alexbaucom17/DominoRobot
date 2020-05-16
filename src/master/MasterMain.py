@@ -3,6 +3,7 @@ import math
 import copy
 import config
 import os
+import sys
 import pickle
 import logging
 import PySimpleGUI as sg
@@ -130,7 +131,7 @@ class CmdGui:
                     status_dict['frac_dropped_time']*100, status_dict['time_since_last_sent'])
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
-                print("Message exception: " + repr(e))
+                logging.info("Message exception: " + repr(e))
 
         self.window['_POS_STATUS_'].update(status_str)
 
@@ -143,7 +144,7 @@ class CmdGui:
                 status_str += "Got plan dict\n"
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
-                print("Message exception: " + repr(e))
+                logging.info("Message exception: " + repr(e))
 
         self.window['_PLAN_STATUS_'].update(status_str)
 
@@ -156,7 +157,7 @@ class CmdGui:
                 status_str += "Got base dict\n"
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
-                print("Message exception: " + repr(e))
+                logging.info("Message exception: " + repr(e))
 
         self.window['_BASE_STATUS_'].update(status_str)
 
@@ -178,7 +179,7 @@ class CmdGui:
                 self._update_robot_viz_position(robot_id, status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
-                print("Message exception: " + repr(e))
+                logging.info("Message exception: " + repr(e))
 
         self.window['_{}_STATUS_'.format(robot_id.upper())].update(status_str)
 
@@ -230,18 +231,18 @@ class CmdGenerator:
             self.cur_step += 1
             if isinstance(new_cmd, str):
                 cmd = new_cmd
-                print("Command generator executing command: {}".format(new_cmd))
+                logging.info("Command generator executing command: {}".format(new_cmd))
                 self.step_timer = NonBlockingTimer(2)
             elif isinstance(new_cmd, int):
                 if new_cmd == -1:
-                    print("Command generator done")
+                    logging.info("Command generator done")
                     self.done = True
                 elif new_cmd == -2:
-                    print("Repeating command generator")
+                    logging.info("Repeating command generator")
                     self.step_timer = NonBlockingTimer(1)
                     self.cur_step = 0
                 else:
-                    print("Command generator waiting for {} seconds".format(new_cmd))
+                    logging.info("Command generator waiting for {} seconds".format(new_cmd))
                     self.step_timer = NonBlockingTimer(new_cmd)
 
         return cmd
@@ -249,16 +250,16 @@ class CmdGenerator:
 
 class Master:
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, gui_handle):
 
         self.cfg = cfg
         self.plan_cycle_number = 0
         self.plan = None
         self.load_plan()
-        self.cmd_gui = CmdGui(self.cfg)
+        self.cmd_gui = gui_handle
         self.plan_running = False
 
-        print("Initializing Master")
+        logging.info("Initializing Master")
         self.runtime_manager = RuntimeManager(self.cfg)
         self.runtime_manager.initialize()
         self.initialized = False
@@ -271,12 +272,12 @@ class Master:
             if os.path.exists(self.cfg.plan_file):
                 with open(self.cfg.plan_file, 'rb') as f:
                     self.plan = pickle.load(f)
-                    print("Loaded plan from {}".format(self.cfg.plan_file))
+                    logging.info("Loaded plan from {}".format(self.cfg.plan_file))
             else:
                 self.plan = Plan(self.cfg)
                 with open(self.cfg.plan_file, 'wb') as f:
                     pickle.dump(self.plan, f)
-                    print("Saved plan to {}".format(self.cfg.plan_file))
+                    logging.info("Saved plan to {}".format(self.cfg.plan_file))
 
 
     def loop(self):
@@ -290,20 +291,20 @@ class Master:
                     pass
                 else:
                     self.initialized = True
-                    print("Init completed, starting main loop")
+                    logging.info("Init completed, starting main loop")
 
             else:
             
                 # If we have an idle robot, send it the next cycle to execute
                 if self.plan_running and self.runtime_manager.any_idle_bots():
-                    print("Sending cycle {} for execution".format(self.plan_cycle_number))
+                    logging.info("Sending cycle {} for execution".format(self.plan_cycle_number))
                     next_cycle = self.plan.get_cycle(self.plan_cycle_number)
                     
                     # If we get none, that means we are done with the plan
                     if next_cycle is None:
                         self.plan_running = False
                         self.plan_cycle_number = 0
-                        print("Completed plan!")
+                        logging.info("Completed plan!")
                     else:
                         self.plan_cycle_number += 1
                         self.runtime_manager.assign_new_cycle(next_cycle)
@@ -336,19 +337,27 @@ class Master:
 
 def configure_logging(path):
 
-    logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler(os.path.join(path,"master.log")),
-        logging.StreamHandler()
-        ]
-    )
+    rootLogger = logging.getLogger()
+    rootLogger.setLevel(logging.INFO)
+
+    fileHandler = logging.FileHandler(os.path.join(path,"master.log"), 'w+')
+    fileFormatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+    fileHandler.setFormatter(fileFormatter)
+    rootLogger.addHandler(fileHandler)
+
+    consoleHandler = logging.StreamHandler()
+    consoleFormatter = logging.Formatter("%(message)s")
+    consoleHandler.setFormatter(consoleFormatter)
+    rootLogger.addHandler(consoleHandler)
 
 
 if __name__ == '__main__':
+    # Setup config and gui
     cfg = config.Config()
+    gui = CmdGui(cfg)
+    # Need to setup gui before logging to ensure that output pane captures logs correctly
     configure_logging(cfg.log_folder)
-    m = Master(cfg)
+    # Startup master and loop forever
+    m = Master(cfg, gui)
     m.loop()
 
