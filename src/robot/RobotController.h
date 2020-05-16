@@ -53,11 +53,17 @@ class RobotController
     // Run controller calculations
     void computeControl(PVTPoint cmd);
     // Check if the current trajectory is done
-    bool checkForCompletedTrajectory(PVTPoint cmd);
+    bool checkForCompletedTrajectory(const PVTPoint cmd);
     // Calculate wheel odometry
     void computeOdometry();
     //Write velocity out to controller
     void writeVelocity(float speed, int speed_pin, int dir_pin);
+    // Run the trajectory calculations and generate a command signal
+    void runTraj(PVTPoint* cmd);
+    // Reset everything for when a trajectory is not running
+    void resetTraj(PVTPoint* cmd);
+    // Sets up evertyhing to start the trajectory running
+    void startTraj();
 
     // Member variables
     Motor motors_[4];                      // Motor objects

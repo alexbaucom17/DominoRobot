@@ -55,38 +55,32 @@ void RobotController::moveToPosition(float x, float y, float a)
 {
     goalPos_ = Point(x,y,a);
     trajGen_.generate(cartPos_, goalPos_, COARSE_LIMS);
-    trajRunning_ = true;
-    trajStartTime_ = millis();
-    prevControlLoopTime_ = 0;
     fineMode_ = false;
-    enableAllMotors();
-    #ifdef PRINT_DEBUG
-    debug_.println("Starting move");
-    #endif
+    startTraj();
 }
 
 void RobotController::moveToPositionRelative(float x, float y, float a)
 {
     goalPos_ = Point(cartPos_.x_ + x, cartPos_.y_ + y, cartPos_.a_ + a);
     trajGen_.generate(cartPos_, goalPos_, COARSE_LIMS);
-    trajRunning_ = true;
-    trajStartTime_ = millis();
-    prevControlLoopTime_ = 0;
     fineMode_ = false;
-    enableAllMotors();
-    #ifdef PRINT_DEBUG
-    debug_.println("Starting move");
-    #endif
+    startTraj();
 }
 
 void RobotController::moveToPositionFine(float x, float y, float a)
 {
     goalPos_ = Point(x,y,a);
     trajGen_.generate(cartPos_, goalPos_, FINE_LIMS);
+    fineMode_ = false;
+    startTraj();
+
+}
+
+void RobotController::startTraj()
+{
     trajRunning_ = true;
     trajStartTime_ = millis();
     prevControlLoopTime_ = 0;
-    fineMode_ = false;
     enableAllMotors();
     #ifdef PRINT_DEBUG
     debug_.println("Starting move");
@@ -104,65 +98,23 @@ void RobotController::estop()
 }
 
 void RobotController::update()
-{
-    // Compute the amount of time since the last update
-    unsigned long curMillis = millis();
-    unsigned long dt_ms = curMillis - prevUpdateLoopTime_;
-    prevUpdateLoopTime_ = curMillis;  
-    
+{    
+    // Create a command based on the trajectory or not moving
     PVTPoint cmd;
     if(trajRunning_)
     {
-        float dt = static_cast<float>((curMillis - trajStartTime_) / 1000.0); // Convert to seconds
-        cmd = trajGen_.lookup(dt);
-
-        #ifdef PRINT_DEBUG
-        debug_.println("");
-        debug_.print("Target: ");
-        cmd.print(debug_);
-        debug_.println("");
-        debug_.print("Est Vel: ");
-        cartVel_.print(debug_);
-        debug_.println("");
-        debug_.print("Est Pos: ");
-        cartPos_.print(debug_);
-        debug_.println("");
-        #endif
-       
-        // Stop trajectory
-        if (checkForCompletedTrajectory(cmd))
-        {
-            disableAllMotors();
-            trajRunning_ = false;
-            // Re-enable fine mode at the end of a trajectory
-            fineMode_ = true;
-        }
+        runTraj(&cmd);
     }
     else
     {       
-        // Force velocity to 0
-        cartVel_.x_ = 0;
-        cartVel_.y_ = 0;
-        cartVel_.a_ = 0;
-      
-        // Force cmd to 0
-        cmd.position_.x_ = cartPos_.x_;
-        cmd.position_.y_ = cartPos_.y_;
-        cmd.position_.a_ = cartPos_.a_;;
-        cmd.velocity_.x_ = 0;
-        cmd.velocity_.y_ = 0;
-        cmd.velocity_.a_ = 0;
-        cmd.time_ = 0; // Doesn't matter, not used
-
-        // Make sure integral terms in controller don't wind up
-        errSumX_ = 0;
-        errSumY_ = 0;
-        errSumA_ = 0;
+        resetTraj(&cmd);
     }
 
     // Run controller and odometry update
     computeControl(cmd);
     computeOdometry();
+
+    // Update the motors
     for (int i = 0; i < 4; i++)
     {
         motors_[i].runLoop();
@@ -175,6 +127,56 @@ void RobotController::update()
     statusUpdater_.updatePositionConfidence(P(0,0), P(1,1), P(2,2));
 }
 
+
+void RobotController::runTraj(PVTPoint* cmd)
+{
+    float dt = static_cast<float>((millis() - trajStartTime_) / 1000.0); // Convert to seconds
+    *cmd = trajGen_.lookup(dt);
+
+    #ifdef PRINT_DEBUG
+    debug_.println("");
+    debug_.print("Target: ");
+    cmd->print(debug_);
+    debug_.println("");
+    debug_.print("Est Vel: ");
+    cartVel_.print(debug_);
+    debug_.println("");
+    debug_.print("Est Pos: ");
+    cartPos_.print(debug_);
+    debug_.println("");
+    #endif
+    
+    // Stop trajectory
+    if (checkForCompletedTrajectory(*cmd))
+    {
+        disableAllMotors();
+        trajRunning_ = false;
+        // Re-enable fine mode at the end of a trajectory
+        fineMode_ = true;
+    }
+}
+
+void RobotController::resetTraj(PVTPoint* cmd)
+{
+    // Force velocity to 0
+    cartVel_.x_ = 0;
+    cartVel_.y_ = 0;
+    cartVel_.a_ = 0;
+    
+    // Force cmd to 0
+    cmd->position_.x_ = cartPos_.x_;
+    cmd->position_.y_ = cartPos_.y_;
+    cmd->position_.a_ = cartPos_.a_;;
+    cmd->velocity_.x_ = 0;
+    cmd->velocity_.y_ = 0;
+    cmd->velocity_.a_ = 0;
+    cmd->time_ = 0; // Doesn't matter, not used
+
+    // Make sure integral terms in controller don't wind up
+    errSumX_ = 0;
+    errSumY_ = 0;
+    errSumA_ = 0;
+}
 
 void RobotController::computeControl(PVTPoint cmd)
 {
@@ -205,7 +207,7 @@ void RobotController::computeControl(PVTPoint cmd)
     setCartVelCommand(x_cmd, y_cmd, a_cmd);
 }
 
-bool RobotController::checkForCompletedTrajectory(PVTPoint cmd)
+bool RobotController::checkForCompletedTrajectory(const PVTPoint cmd)
 {
     float trans_pos_err = TRANS_POS_ERR_COARSE;
     float ang_pos_err = ANG_POS_ERR_COARSE;
@@ -259,11 +261,12 @@ void RobotController::inputPosition(float x, float y, float a)
 {
     if(fineMode_)
     {
-      // Updat kalman filter for position observation
+      // Update kalman filter for position observation
       mat z = mat::zeros(3,1);
       z(0,0) = x;
       z(1,0) = y;
       z(2,0) = a;
+
       // Scale covariance estimate based on velocity due to measurment lag
       mat R = mat::zeros(3,3);
       R(0,0) = MEAS_NOISE_SCALE + MEAS_NOISE_VEL_SCALE_FACTOR * fabs(cartVel_.x_);
