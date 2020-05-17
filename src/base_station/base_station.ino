@@ -3,16 +3,14 @@
 #include "constants.h"
 #include "BaseStationServer.h"
 #include "StatusUpdater.h"
+#include "BaseController.h"
 
 StatusUpdater StatusUpdater;
 BaseStationServer server = BaseStationServer(Serial3, Serial, StatusUpdater);
-
-// Variables used for loop
-COMMAND newCmd = COMMAND::NONE;
+BaseController base_controller = BaseController(StatusUpdater, Serial);
 
 void setup() 
 {
-
     // Communication with the host computer
     Serial.begin(115200); 
     #ifdef PRINT_DEBUG
@@ -27,10 +25,33 @@ void setup()
     #endif
 }
 
-void loop()
+void runCmd(COMMAND cmd)
 {
 
-    // Check for new command and try to start it
-    newCmd = server.oneLoop();
+    if(cmd == COMMAND::LOAD)
+    {
+        base_controller.load();
+    }
+    else if (cmd == COMMAND::ESTOP)
+    {
+        base_controller.estop();
+    }
+    else if (cmd == COMMAND::NONE)
+    {
+      // do nothing...
+    }
+    else
+    {
+        #ifdef PRINT_DEBUG
+        Serial.println("Unknown command!");
+        #endif
+    }
 
+}
+
+void loop()
+{
+    COMMAND newCmd = server.oneLoop();
+    runCmd(newCmd);
+    base_controller.update();
 }

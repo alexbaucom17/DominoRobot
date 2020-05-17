@@ -34,6 +34,20 @@ COMMAND BaseStationServer::getCommand(String message)
             printIncommingCommand(message);
             sendAck(type);
         }
+        else if(type == "load")
+        {
+            cmd = COMMAND::LOAD;
+            printIncommingCommand(message);
+            sendAck(type);
+        }
+        else if(type == "status")
+        {
+            sendStatus();
+        }
+        else if (type == "check")
+        {
+            sendAck(type);
+        }
         else if(type == "")
         {
             #ifdef PRINT_DEBUG

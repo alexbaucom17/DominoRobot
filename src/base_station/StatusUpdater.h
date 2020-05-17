@@ -13,6 +13,8 @@ class StatusUpdater
 
     String getStatusJsonString();
 
+    void updateSensors(bool sensor_1, bool sensor_2, bool sensor_3, bool sensor_4);
+
     void updateInProgress(bool in_progress);
 
   private:
