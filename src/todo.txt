@@ -8,10 +8,7 @@ Stepper controller
 
 Master:
 - Try to make it so master doesn't crash when network has trouble
-- Waiting on fleshing out base station a bit more
-    - Add actions for base station
-    - Figure out how to sequence loading between base and robot
-    - Finish up status panels for gui
+- Figure out how to sequence loading between base and robot
 
 Base station:
 

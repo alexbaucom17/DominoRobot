@@ -289,6 +289,7 @@ class ActionTypes(enum.Enum):
     TRAY_INIT = 6, 
     LOAD_COMPLETE = 7,
     ESTOP = 8,
+    WAIT = 9, # TODO: Make sure this is handled correctly everywhere, probably just in master....
 
 class Action:
 
@@ -494,6 +495,26 @@ class Plan:
         ax = draw_env(self.cfg)
         self.cycles[cycle_num].draw_cycle(ax)
         plt.show()
+
+    def get_cycle(self, cycle_num):
+        try:
+            return self.cycles[cycle_num]
+        except IndexError:
+            return None
+
+
+
+class TestPlan:
+    """
+    Test plan used for debugging and testing various action sequences
+    """
+
+    def __init__(self):
+        actions = []
+        actions.append(MoveAction(ActionTypes.MOVE_COARSE, "TestMoveCoarse", 0.5, 0.5, 0))
+        actions.append(MoveAction(ActionTypes.MOVE_FINE, 'TestMoveFine', 1,1,0)))
+
+        self.cycles = [{'id':'robot1', 'action_sequence': actions}]
 
     def get_cycle(self, cycle_num):
         try:

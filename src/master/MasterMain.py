@@ -8,7 +8,7 @@ import pickle
 import logging
 import PySimpleGUI as sg
 
-from FieldPlanner import Plan, ActionTypes, Action, MoveAction
+from FieldPlanner import Plan, ActionTypes, Action, MoveAction, TestPlan
 from Runtime import RuntimeManager, OFFLINE_TESTING, SKIP_MARVELMIND
 
 
@@ -210,47 +210,6 @@ class CmdGui:
         figs.append(self.window['_GRAPH_'].DrawLine(point_from=back_right_point, point_to=front_point, color='black'))
         figs.append(self.window['_GRAPH_'].DrawLine(point_from=[x,y], point_to=front_point, color='red'))
         return figs
-
-
-
-class CmdGenerator:
-    # TODO: Make this usable with refactor. Probably turns into a Plan object generated at runtime
-    """ Generate commands for testing"""
-    def __init__(self, steps=None):
-        self.cur_step = 0
-        self.step_timer = NonBlockingTimer(1)
-        # Number is wait for that long, string is command, -1 is done, -2 is repeat
-        if steps:
-            self.steps = steps
-        else:
-            self.steps = [1, "move[2.75,2.75,-1.57]", 3, "fine[3,3,-1.57]", 2, "fine[2.75,2.75,-1.57]", 1, "move[1,2,-1.57]", -2]
-        self.done = False
-
-    def next_step(self, in_progress):
-        cmd = None
-        if self.done:
-            return cmd
-
-        if self.step_timer.check() and in_progress is False:
-            new_cmd = self.steps[self.cur_step]
-            self.cur_step += 1
-            if isinstance(new_cmd, str):
-                cmd = new_cmd
-                logging.info("Command generator executing command: {}".format(new_cmd))
-                self.step_timer = NonBlockingTimer(2)
-            elif isinstance(new_cmd, int):
-                if new_cmd == -1:
-                    logging.info("Command generator done")
-                    self.done = True
-                elif new_cmd == -2:
-                    logging.info("Repeating command generator")
-                    self.step_timer = NonBlockingTimer(1)
-                    self.cur_step = 0
-                else:
-                    logging.info("Command generator waiting for {} seconds".format(new_cmd))
-                    self.step_timer = NonBlockingTimer(new_cmd)
-
-        return cmd
     
 
 class Master:
@@ -261,6 +220,8 @@ class Master:
         self.plan_cycle_number = 0
         self.plan = None
         self.load_plan()
+        # For debugging, comment out plan lines above
+        # self.plan = TestPlan()
         self.cmd_gui = gui_handle
         self.plan_running = False
 
