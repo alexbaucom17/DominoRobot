@@ -1,9 +1,11 @@
 // Code for domino loading base station
 
-#include "BaseStationServer.h"
 #include "constants.h"
+#include "BaseStationServer.h"
+#include "StatusUpdater.h"
 
-BaseStationServer server = BaseStationServer(Serial3, Serial);
+StatusUpdater StatusUpdater;
+BaseStationServer server = BaseStationServer(Serial3, Serial, StatusUpdater);
 
 // Variables used for loop
 COMMAND newCmd = COMMAND::NONE;

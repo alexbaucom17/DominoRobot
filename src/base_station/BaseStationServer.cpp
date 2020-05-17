@@ -4,8 +4,9 @@
 #include <ArduinoJson.h>
 #include "constants.h"  // FOR PRINT_DEBUG
 
-BaseStationServer::BaseStationServer(HardwareSerial& serial, HardwareSerial& debug)
-: SimpleServer(serial, debug)
+BaseStationServer::BaseStationServer(HardwareSerial& serial, HardwareSerial& debug, const StatusUpdater& statusUpdater)
+: SimpleServer(serial, debug),
+  statusUpdater_(statusUpdater)
 {
 }
 
@@ -53,3 +54,8 @@ COMMAND BaseStationServer::getCommand(String message)
     return cmd;    
 }
 
+void BaseStationServer::sendStatus()
+{
+    String msg = statusUpdater_.getStatusJsonString();
+    sendMsg(msg, false);
+}
