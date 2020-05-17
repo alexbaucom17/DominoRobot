@@ -14,7 +14,7 @@ Master:
     - Finish up status panels for gui
 
 Base station:
-- Put together skeleton code for base station
+- Flesh out actions for base station
 
 Purchase:
 
