@@ -25,8 +25,8 @@ RunningStatistics loop_time_averager;        // Handles keeping average of the l
 RunningStatistics position_time_averager;    // Handles keeping average of the position update timing
 
 // Variables used for loop
-RobotServer::COMMAND newCmd = RobotServer::COMMAND::NONE;
-RobotServer::COMMAND curCmd = RobotServer::COMMAND::NONE;
+COMMAND newCmd = COMMAND::NONE;
+COMMAND curCmd = COMMAND::NONE;
 unsigned long prevLoopMillis = millis();
 unsigned long prevPositionMillis = millis();
 
@@ -54,11 +54,11 @@ void setup()
     #endif
 }
 
-bool tryStartNewCmd(RobotServer::COMMAND cmd)
+bool tryStartNewCmd(COMMAND cmd)
 {
     // Position info doesn't cound as a real 'command' since it doesn't interrupt anything
     // Always service it, but don't consider it starting a new command
-    if (cmd == RobotServer::COMMAND::POSITION)
+    if (cmd == COMMAND::POSITION)
     {
         RobotServer::PositionData data = server.getPositionData();
         controller.inputPosition(data.x, data.y, data.a);
@@ -70,14 +70,14 @@ bool tryStartNewCmd(RobotServer::COMMAND cmd)
         return false;
     }
     // Same with ESTOP
-    if (cmd == RobotServer::COMMAND::ESTOP)
+    if (cmd == COMMAND::ESTOP)
     {
         controller.estop();
         tray_controller.estop();
         return false;
     }
     // Same with LOAD_COMPLETE
-    if (cmd == RobotServer::COMMAND::LOAD_COMPLETE)
+    if (cmd == COMMAND::LOAD_COMPLETE)
     {
         tray_controller.setLoadComplete();
         return false;
@@ -93,34 +93,34 @@ bool tryStartNewCmd(RobotServer::COMMAND cmd)
     }
     
     // Start new command
-    if(cmd == RobotServer::COMMAND::MOVE)
+    if(cmd == COMMAND::MOVE)
     {
         RobotServer::PositionData data = server.getMoveData();
         controller.moveToPosition(data.x, data.y, data.a);
     }
-    else if(cmd == RobotServer::COMMAND::MOVE_REL)
+    else if(cmd == COMMAND::MOVE_REL)
     {
         RobotServer::PositionData data = server.getMoveData();
         controller.moveToPositionRelative(data.x, data.y, data.a);
     }
-    else if(cmd == RobotServer::COMMAND::MOVE_FINE)
+    else if(cmd == COMMAND::MOVE_FINE)
     {
         RobotServer::PositionData data = server.getMoveData();
         controller.moveToPositionFine(data.x, data.y, data.a);
     }
-    else if(cmd == RobotServer::COMMAND::PLACE_TRAY)
+    else if(cmd == COMMAND::PLACE_TRAY)
     {
         tray_controller.place();
     }
-    else if(cmd == RobotServer::COMMAND::LOAD_TRAY)
+    else if(cmd == COMMAND::LOAD_TRAY)
     {
         tray_controller.load();
     }
-    else if(cmd == RobotServer::COMMAND::INITIALIZE_TRAY)
+    else if(cmd == COMMAND::INITIALIZE_TRAY)
     {
         tray_controller.initialize();
     }
-    else if (cmd == RobotServer::COMMAND::NONE)
+    else if (cmd == COMMAND::NONE)
     {
       // do nothing...
     }
@@ -135,21 +135,21 @@ bool tryStartNewCmd(RobotServer::COMMAND cmd)
     return true;
 }
 
-bool checkForCmdComplete(RobotServer::COMMAND cmd)
+bool checkForCmdComplete(COMMAND cmd)
 {
-    if (cmd == RobotServer::COMMAND::NONE)
+    if (cmd == COMMAND::NONE)
     {
         return true;
     }
-    else if(cmd == RobotServer::COMMAND::MOVE || 
-            cmd == RobotServer::COMMAND::MOVE_REL ||
-            cmd == RobotServer::COMMAND::MOVE_FINE)
+    else if(cmd == COMMAND::MOVE || 
+            cmd == COMMAND::MOVE_REL ||
+            cmd == COMMAND::MOVE_FINE)
     {
         return controller.isTrajectoryRunning();
     }
-    else if(cmd == RobotServer::COMMAND::PLACE_TRAY ||
-            cmd == RobotServer::COMMAND::LOAD_TRAY ||
-            cmd == RobotServer::COMMAND::INITIALIZE_TRAY)
+    else if(cmd == COMMAND::PLACE_TRAY ||
+            cmd == COMMAND::LOAD_TRAY ||
+            cmd == COMMAND::INITIALIZE_TRAY)
     {
         return tray_controller.isActionRunning();
     }
@@ -185,7 +185,7 @@ void loop()
     bool done = checkForCmdComplete(curCmd);
     if(done)
     {
-        curCmd = RobotServer::COMMAND::NONE;
+        curCmd = COMMAND::NONE;
         statusUpdater.updateInProgress(false);
     }
 

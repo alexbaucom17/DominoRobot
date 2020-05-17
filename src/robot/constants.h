@@ -1,5 +1,5 @@
 #ifndef Constants_h
-#define Contsants_h
+#define Constants_h
 
 // Pins
 // TODO: Fix all pin assignments
@@ -104,5 +104,18 @@
 
 #define TRAY_PLACEMENT_PAUSE_TIME 3000  // How many ms to wait after opening the latch for placement
 
+enum COMMAND
+{
+    NONE,
+    MOVE,
+    MOVE_REL,
+    MOVE_FINE,
+    PLACE_TRAY,
+    LOAD_TRAY,
+    INITIALIZE_TRAY,
+    POSITION,
+    ESTOP,
+    LOAD_COMPLETE,
+};
 
 #endif
