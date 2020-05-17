@@ -15,7 +15,7 @@ from Runtime import RuntimeManager, OFFLINE_TESTING, SKIP_MARVELMIND
 def status_panel(name):
     width = 40
     height = 10
-    return [[sg.Text("{} status".format(name))], [sg.Text("{} offline".format(name), size=(width, height), relief=sg.RELIEF_RAISED, key='_{}_STATUS_'.format(name.upper())) ]]
+    return [[sg.Text("{} status".format(name))], [sg.Text("{} offline".format(name), size=(width, height), relief=sg.RELIEF_RIDGE, key='_{}_STATUS_'.format(name.upper())) ]]
 
 def setup_gui_layout(panel_names, target_names):
     # Left hand column with status panels
@@ -31,15 +31,16 @@ def setup_gui_layout(panel_names, target_names):
 
     data_element = [ [sg.Text('Data:')], [sg.Input(key='_ACTION_DATA_')] ]
 
-    button_element = [[sg.Button('Send')], [sg.Button('Run Plan')]]
+    run_button = [[sg.Button('Run Plan', button_color=('white','green'), size=[20,5], pad=(5,30)) ]]
+    estop_button = [[sg.Button('ESTOP', button_color=('white','red'), size=[20,5], pad=(5,30)) ]]
+    manual_button = [[sg.Button('Send Command', button_color=('white','blue'), size=[20,5], pad=(5,30)) ]]
 
-    col2 = [[sg.Graph(canvas_size=(600,600), graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white") ],
-            [sg.Column(target_element), sg.Column(action_element), sg.Column(data_element), sg.Column(button_element)],
-            [sg.Button('ESTOP', button_color=('white','red'), size=[20,5])] ]
+    col2 = [[sg.Graph(canvas_size=(600,600), graph_bottom_left=(-5,-5), graph_top_right=(5, 5), key="_GRAPH_", background_color="grey") ],
+            [sg.Column(target_element), sg.Column(action_element), sg.Column(data_element)],
+            [sg.Column(run_button), sg.Column(estop_button), sg.Column(manual_button)]  ]
 
     # Right hand column with text ouput
     col3 = [[sg.Output(size=(50, 50))]]
-    #col3 = [[sg.Text("Temp place for output")]]
     
     return [[ sg.Column(col1), sg.Column(col2), sg.Column(col3)]]
 
@@ -50,7 +51,7 @@ class CmdGui:
 
         self.config = config
         
-        sg.change_look_and_feel('Dark Blue 3')
+        sg.change_look_and_feel('DarkBlack')
 
         panel_names = ["{}".format(n) for n in self.config.ip_map]
         panel_names += ['base', 'plan', 'pos']
@@ -83,16 +84,16 @@ class CmdGui:
                     return 'Exit', None
         
         # Sending a manual action (via button or pressing enter)
-        if event in ('Send', '\r', '\n'):
+        if event in ('Send Command', '\r', '\n'):
             manual_action = self._parse_manual_action(values)
             self.window['_ACTION_DATA_'].update("")
             return 'Action', manual_action
 
         # Pressing the run plan button
-        if event in ("Run Plan"):
+        if event == "Run Plan":
             return "Run", None
 
-        if event in ("ESTOP"):
+        if event == "ESTOP":
             return "ESTOP", None
 
         return None, None
@@ -135,7 +136,6 @@ class CmdGui:
                     status_dict['frac_dropped_time']*100, status_dict['time_since_last_sent'])
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
-                logging.info("Message exception: " + repr(e))
 
         self.window['_POS_STATUS_'].update(status_str)
 
@@ -148,7 +148,6 @@ class CmdGui:
                 status_str += "Got plan dict\n"
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
-                logging.info("Message exception: " + repr(e))
 
         self.window['_PLAN_STATUS_'].update(status_str)
 
@@ -161,7 +160,6 @@ class CmdGui:
                 status_str += "Got base dict\n"
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
-                logging.info("Message exception: " + repr(e))
 
         self.window['_BASE_STATUS_'].update(status_str)
 
@@ -183,7 +181,6 @@ class CmdGui:
                 self._update_robot_viz_position(robot_id, status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
-                logging.info("Message exception: " + repr(e))
 
         self.window['_{}_STATUS_'.format(robot_id.upper())].update(status_str)
 
