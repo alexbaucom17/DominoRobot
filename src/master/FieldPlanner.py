@@ -371,7 +371,7 @@ def generate_action_sequence(cfg, tile):
     # Setup positions
     tile_pos_in_field_frame = np.array(tile.getPlacementPositionInMeters())
     tile_pos_in_global_frame = tile_pos_in_field_frame + cfg.domino_field_origin
-    robot_placement_fine_pose = tile_pos_in_global_frame + cfg.frame_to_robot_offset #TODO: make sure this work, might need to be a transform
+    robot_placement_fine_pose = tile_pos_in_global_frame + cfg.frame_to_robot_offset #TODO: make sure this works, might need to be a transform
     robot_placement_coarse_pose = robot_placement_fine_pose - cfg.tile_placement_coarse_offset
     base_station_coarse_pos = cfg.base_station_target_pose + cfg.base_station_coarse_pose_offset
 

@@ -140,12 +140,14 @@ class CmdGui:
         self.window['_POS_STATUS_'].update(status_str)
 
     def _update_plan_panel(self, status_dict):
-        status_str = "Cannot get plan status"
+        status_str = "Plan is not running"
         if status_dict:
             try:
-                # TODO: update when plan is ready
                 status_str = ""
-                status_str += "Got plan dict\n"
+                for id, data in status_dict.items():
+                    status_str += "{}\n".format(id)
+                    status_str += "  Cycle: {}\n".format(data["cycle"])
+                    status_str += "  Action: {}\n".format(data["action"])
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
 
@@ -155,9 +157,11 @@ class CmdGui:
         status_str = "Cannot get base status"
         if status_dict:
             try:
-                # TODO: update when base is ready
                 status_str = ""
-                status_str += "Got base dict\n"
+                status_str += "Sensors: [{}, {}, {}, {}]\n".format(
+                    status_dict['sensor_1'],status_dict['sensor_2'],status_dict['sensor_3'],status_dict['sensor_4'])
+                status_str += "Action in Progress: {}\n".format(status_dict['in_progress'])
+                status_str += "Counter: {}\n".format(status_dict['counter'])
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
 

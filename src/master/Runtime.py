@@ -182,8 +182,13 @@ class BaseStationInterface:
 
         if action.action_type == ActionTypes.ESTOP:
             self.client.estop()
-        
-        # TODO: impliment commands
+        elif action.action_type == ActionTypes.NET:
+            status = self.client.net_status()
+            logging.info("Base station network status is: {}".format(self.robot_id, status))
+        elif action.action_type == ActionTypes.LOAD:
+            self.client.load()
+        else:
+            logging.info("Unknown action: {}".format(action.action_type))
 
 
 class RuntimeManager:
@@ -309,9 +314,23 @@ class RuntimeManager:
         self.last_metrics = {}
         self.last_metrics['pos'] = self.pos_handler.get_metrics()
         self.last_metrics['base'] = self.base_station.get_last_status()
-        self.last_metrics['plan'] = {} # TODO: Fill in data for plan exectution
+        self.last_metrics['plan'] = self._get_plan_metrics()
         for robot in self.robots.values():
             self.last_metrics[str(robot.robot_id)] = robot.get_last_status()
+
+    def _get_plan_metrics(self):
+        plan_metrics = {}
+        for id, data in self.cycle_tracker.items():
+            if data['cycle']:
+                plan_metrics[id] = {'cycle': data['cycle'].id}
+            else:
+                plan_metrics[id] = {'cycle': 'None'}
+            if data['action']:
+                plan_metrics[id]['action'] = data['action'].name
+            else:
+                plan_metrics[id]['action'] = 'None'
+
+        return plan_metrics
 
     def _update_cycle_actions(self):
 

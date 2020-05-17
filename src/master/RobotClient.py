@@ -232,6 +232,12 @@ class MockRobotClient:
     def net_status(self):
         return True
 
+    def estop(self):
+        pass
+
+    def load(self):
+        pass
+
     def request_status(self):
         return {"in_progress": False, "pos_x": 1, "pos_y": 2, "pos_a": 0}
 
@@ -246,13 +252,13 @@ class MockBaseStationClient:
 
     def net_status(self):
         return True
+    
+    def estop(self):
+        pass
 
     def request_status(self):
         return {}
     
-
-
-
 
 if __name__== '__main__':
     r = RobotClient(1)
