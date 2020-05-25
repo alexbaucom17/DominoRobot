@@ -2,27 +2,29 @@
 #define Constants_h
 
 // Pins
-// TODO: Fix all pin assignments
-#define PIN_PWM_0 8   
+#define PIN_PWM_0 3   
+#define PIN_PWM_1 4
 #define PIN_PWM_2 5
-#define PIN_PWM_1 6
-#define PIN_PWM_3 4
+#define PIN_PWM_3 6
 
-#define PIN_DIR_0 22
-#define PIN_DIR_1 24
-#define PIN_DIR_2 26
-#define PIN_DIR_3 28
+#define PIN_DIR_0 41
+#define PIN_DIR_1 40
+#define PIN_DIR_2 39
+#define PIN_DIR_3 38
 
-#define PIN_ENABLE_ALL 29
+#define PIN_ENABLE_0 49
+#define PIN_ENABLE_1 48
+#define PIN_ENABLE_2 47
+#define PIN_ENABLE_3 46
 
-#define PIN_ENC_A_0 10
-#define PIN_ENC_B_0 11
-#define PIN_ENC_A_1 12
-#define PIN_ENC_B_1 13
-#define PIN_ENC_A_2 14
-#define PIN_ENC_B_2 15
-#define PIN_ENC_A_3 16
-#define PIN_ENC_B_3 17
+#define PIN_ENC_A_0 21
+#define PIN_ENC_B_0 25
+#define PIN_ENC_A_1 20
+#define PIN_ENC_B_1 23
+#define PIN_ENC_A_2 19
+#define PIN_ENC_B_2 24
+#define PIN_ENC_A_3 18
+#define PIN_ENC_B_3 22
 
 #define PIN_LATCH_SERVO_PIN 12
 #define PIN_TRAY_STEPPER_LEFT_PULSE 46

@@ -36,8 +36,14 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
 void RobotController::begin()
 {
     // Setup pins
-    digitalWrite(PIN_ENABLE_ALL, HIGH);
-    pinMode(PIN_ENABLE_ALL, OUTPUT);
+    digitalWrite(PIN_ENABLE_0, LOW);
+    digitalWrite(PIN_ENABLE_1, LOW);
+    digitalWrite(PIN_ENABLE_2, LOW);
+    digitalWrite(PIN_ENABLE_3, LOW);
+    pinMode(PIN_ENABLE_0, OUTPUT);
+    pinMode(PIN_ENABLE_1, OUTPUT);
+    pinMode(PIN_ENABLE_2, OUTPUT);
+    pinMode(PIN_ENABLE_3, OUTPUT);
 
     // Setup Kalman filter
     double dt = 0.1;
@@ -241,7 +247,10 @@ bool RobotController::checkForCompletedTrajectory(const PVTPoint cmd)
 
 void RobotController::enableAllMotors()
 {
-    digitalWrite(PIN_ENABLE_ALL, LOW);
+    digitalWrite(PIN_ENABLE_0, HIGH);
+    digitalWrite(PIN_ENABLE_1, HIGH);
+    digitalWrite(PIN_ENABLE_2, HIGH);
+    digitalWrite(PIN_ENABLE_3, HIGH);
     enabled_ = true;
     #ifdef PRINT_DEBUG
     debug_.println("Enabling motors");
@@ -250,7 +259,10 @@ void RobotController::enableAllMotors()
 
 void RobotController::disableAllMotors()
 {
-    digitalWrite(PIN_ENABLE_ALL, HIGH);
+    digitalWrite(PIN_ENABLE_0, LOW);
+    digitalWrite(PIN_ENABLE_1, LOW);
+    digitalWrite(PIN_ENABLE_2, LOW);
+    digitalWrite(PIN_ENABLE_3, LOW);
     enabled_ = false;
     #ifdef PRINT_DEBUG
     debug_.println("Disabling motors");
