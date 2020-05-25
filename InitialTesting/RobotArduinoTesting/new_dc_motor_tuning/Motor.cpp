@@ -1,6 +1,8 @@
 #include "Motor.h"
 #include "constants.h"
 
+constexpr double COUNTS_TO_RADS = 2.0 * PI / static_cast<double>(COUNTS_PER_OUTPUT_SHAFT_REV);
+
 Motor::Motor(int pwmPin, int dirPin, int encPinA, int encPinB, double Kp, double Ki, double Kd)
 : pwmPin_(pwmPin),
   dirPin_(dirPin),
@@ -10,7 +12,7 @@ Motor::Motor(int pwmPin, int dirPin, int encPinA, int encPinB, double Kp, double
   pidOut_(0.0),
   outputCmd_(0.0),
   prevCount_(0),
-  prevMillis_(millis()),
+  prevMicros_(micros()),
   enc_(encPinA, encPinB),
   controller_(&currentVelFiltered_, &pidOut_, &inputVel_, Kp, Ki, Kd, DIRECT),
   velFilter_(LOWPASS, VEL_FILTER_FREQ)
@@ -42,31 +44,36 @@ void Motor::runLoop()
 
   // Read current values
   long curCount = enc_.read();
-  unsigned long curMillis = millis();
+  unsigned long curMicros = micros();
 
   // Compute delta
   long deltaCount = curCount - prevCount_;
-  double deltaRads = static_cast<double>(deltaCount) * 2 * PI / static_cast<double>(COUNTS_PER_SHAFT_REV);
-  unsigned long deltaMillis = curMillis - prevMillis_;
+  double deltaRads = static_cast<double>(deltaCount) * COUNTS_TO_RADS;
+  unsigned long deltaMicros = curMicros - prevMicros_;
+
+  if(deltaMicros == 0)
+  {
+    // This will break things due to div by 0, so just skip
+    return;
+  }
 
   // Copy current values into previous
   prevCount_ = curCount;
-  prevMillis_ = curMillis;
+  prevMicros_ = curMicros;
 
   // Do a check for large time deltas. This likely means the controller hasn't run for a while and we should ignore this value
-  if(deltaMillis > 100)
+  if(deltaMicros > 100000)
   {
-    // TODO make this more robust and less likely to cause weird bugs
     return;
   }
 
   // Compute current velocity in rads/second
-  currentVelRaw_ = 1000.0 * deltaRads / static_cast<double>(deltaMillis);
+  currentVelRaw_ = 1000000.0 * deltaRads / static_cast<double>(deltaMicros);
   currentVelFiltered_ = velFilter_.input(currentVelRaw_);
-  
+
   // Run PID controller
   controller_.Compute();
-
+  
   /* Use output from PID to update our current command. Since this is a velocity controller, when the error is 0
   *  and the PID controller drives the output to 0, we actually want to maintain a certian PWM value. Hence, the 
   *  PID output is used to modify our control singal and not drive it directly
@@ -103,18 +110,24 @@ void Motor::runLoop()
   analogWrite(pwmPin_, abs(outputCmd_));
 
   // Debugging prints
-/*
-//  Serial.print(curCount);
-//  Serial.print(" ");
-   Serial.print(currentVelRaw_);
-   Serial.print(" ");
-   Serial.print(currentVelFiltered_);
-   Serial.print(" ");
-   Serial.print(inputVel_);
-   Serial.print(" ");
-   Serial.print(outputCmd_/127.0);
-//   Serial.print(" ");
-//   Serial.print(deltaMillis);
-   Serial.println("");*/
+  //Serial.print(deltaMicros);
+  //Serial.print(" ");
+  //Serial.print(curCount);
+  //Serial.print(" ");
+  /*Serial.print("currentVelRaw_:");
+  Serial.print(currentVelRaw_, 5);
+  Serial.print(" ");
+  Serial.print("currentVelFiltered_:");
+  Serial.print(currentVelFiltered_, 5);
+  Serial.print(" ");
+  Serial.print("inputVel_:");
+  Serial.print(inputVel_, 5);
+  Serial.print(" ");
+  //Serial.print(pidOut_, 5);
+  //Serial.print(" ");
+  Serial.print("outputCmd_:");
+  Serial.print(outputCmd_/127.0);
+  Serial.println(""); */
+
   
 }

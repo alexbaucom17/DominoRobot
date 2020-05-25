@@ -60,10 +60,10 @@
 
 // Motor control constants
 #define VEL_FILTER_FREQ 7            // HZ
-#define COUNTS_PER_SHAFT_REV 2758    //Manually measured
+#define COUNTS_PER_OUTPUT_SHAFT_REV 36000 // Manually measrued/estimated
 
 // Physical dimensions
-#define WHEEL_DIAMETER 0.1016 // meters
+#define WHEEL_DIAMETER 0.152 // meters
 #define WHEEL_DIST_FROM_CENTER 0.4572 // meters
 
 // Scaling factors
