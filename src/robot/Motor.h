@@ -50,11 +50,11 @@ class Motor
     double currentVelRaw_;         // Raw current velocity in rad/sec
     double currentVelFiltered_;    // Filtered velocity in rad/sec
     double pidOut_;                // Output from PID controller
-    int outputCmd_;             // Output command in [-255, 255]
+    int outputCmd_;                // Output command in [-255, 255]
     long prevCount_;               // Encoder count from previous loop
 
     // Timer
-    unsigned long prevMillis_;   // Timer from previous loop
+    unsigned long prevMicros_;   // Timer from previous loop
 
     // Other objects
     Encoder enc_;                  // Encoder object
