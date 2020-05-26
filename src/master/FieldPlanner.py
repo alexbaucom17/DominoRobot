@@ -512,7 +512,7 @@ class TestPlan:
     def __init__(self):
         actions = []
         actions.append(MoveAction(ActionTypes.MOVE_COARSE, "TestMoveCoarse", 0.5, 0.5, 0))
-        actions.append(MoveAction(ActionTypes.MOVE_FINE, 'TestMoveFine', 1,1,0)))
+        actions.append(MoveAction(ActionTypes.MOVE_FINE, 'TestMoveFine', 1,1,0))
 
         self.cycles = [{'id':'robot1', 'action_sequence': actions}]
 

@@ -2,25 +2,25 @@
 #define Constants_h
 
 // Pins
-#define PIN_PWM_0 3   
-#define PIN_PWM_1 4
-#define PIN_PWM_2 5
-#define PIN_PWM_3 6
+#define PIN_PWM_0 4   // FL
+#define PIN_PWM_1 3   // FR
+#define PIN_PWM_2 5   // BR
+#define PIN_PWM_3 6   // BL
 
-#define PIN_DIR_0 41
-#define PIN_DIR_1 40
+#define PIN_DIR_0 40
+#define PIN_DIR_1 41
 #define PIN_DIR_2 39
 #define PIN_DIR_3 38
 
-#define PIN_ENABLE_0 49
-#define PIN_ENABLE_1 48
+#define PIN_ENABLE_0 48
+#define PIN_ENABLE_1 49
 #define PIN_ENABLE_2 47
 #define PIN_ENABLE_3 46
 
-#define PIN_ENC_A_0 21
-#define PIN_ENC_B_0 25
-#define PIN_ENC_A_1 20
-#define PIN_ENC_B_1 23
+#define PIN_ENC_A_0 20
+#define PIN_ENC_B_0 23
+#define PIN_ENC_A_1 21
+#define PIN_ENC_B_1 25
 #define PIN_ENC_A_2 19
 #define PIN_ENC_B_2 24
 #define PIN_ENC_A_3 18

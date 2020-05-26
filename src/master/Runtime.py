@@ -6,7 +6,7 @@ from RobotClient import RobotClient, BaseStationClient, MockRobotClient, MockBas
 from FieldPlanner import ActionTypes, Action
 
 # Debugging flags
-OFFLINE_TESTING = True
+OFFLINE_TESTING = False
 SKIP_BASE_STATION = True
 SKIP_MARVELMIND = True
 
@@ -64,7 +64,7 @@ class RobotInterface:
 
             if self.robot_client.net_status():
                 self.comms_online = True
-                logging.info("Connected to {} oover wifi".format(self.robot_id))
+                logging.info("Connected to {} over wifi".format(self.robot_id))
         except Exception as e:
             logging.info("Couldn't connect to {} over wifi. Reason: {}".format(self.robot_id , repr(e)))
             return 
@@ -271,7 +271,7 @@ class RuntimeManager:
     def estop(self):
         logging.warn("ESTOP")
         self._run_action('base', Action(ActionTypes.ESTOP, 'ESTOP'))
-        for robot in self.robots:
+        for robot in self.robots.values():
             robot.run_action(Action(ActionTypes.ESTOP, 'ESTOP'))
 
     def any_idle_bots(self):

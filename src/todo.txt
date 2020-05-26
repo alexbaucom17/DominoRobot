@@ -1,7 +1,6 @@
 Robot:
-- Test and tune motor controller for new motor
 - Test and tune top level controller for new motors 
-- Test estop
+- Figure out how to fix coordinate flip
 
 Stepper controller
 - Convert to working for lifter mechanism
