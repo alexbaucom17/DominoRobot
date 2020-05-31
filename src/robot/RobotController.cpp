@@ -306,7 +306,7 @@ void RobotController::computeOdometry()
     float motor_velocities[4];
     for (int i = 0; i < 4; i++)
     {
-        motor_velocities[i] = motors_[i].getCurrentVelocity();
+        motor_velocities[i] = motors_[i].getCurrentVelocity() / FUDGE_FACTOR;
     }
 
     #ifdef PRINT_DEBUG
@@ -441,7 +441,7 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     // Send the commanded velocity for each motor
     for (int i = 0; i < 4; i++)
     {
-        motors_[i].setCommand(motor_velocities[i]);
+        motors_[i].setCommand(FUDGE_FACTOR * motor_velocities[i]);
     }
 
 }

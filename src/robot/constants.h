@@ -64,10 +64,11 @@
 
 // Physical dimensions
 #define WHEEL_DIAMETER 0.152 // meters
-#define WHEEL_DIST_FROM_CENTER 0.4572 // meters
+#define WHEEL_DIST_FROM_CENTER 0.4794 // meters
 
 // Scaling factors
 #define TRAJ_MAX_FRACTION 0.7  // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate
+#define FUDGE_FACTOR 2.0 // Scaling factor for compensating for some math error I can't find
 
 // Kalman filter scales
 #define PROCESS_NOISE_SCALE 0.08
