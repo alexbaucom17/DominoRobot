@@ -29,7 +29,7 @@ class Motor
     /*
      * Run the actual controller. Make sure this gets called reasonably quickly (i.e. every 20 ms or so)
      */
-    void runLoop();
+    void runLoop(bool pub);
 
     /*
     * Get the current measured motor velocity in rad/s

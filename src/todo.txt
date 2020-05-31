@@ -1,6 +1,7 @@
 Robot:
 - Test and tune top level controller for new motors 
 - Figure out how to fix coordinate flip
+- Consider setting up different motor controller params for fine motions
 
 Stepper controller
 - Convert to working for lifter mechanism

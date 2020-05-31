@@ -69,7 +69,7 @@ void Motor::runLoop()
 
   // Compute current velocity in rads/second
   currentVelRaw_ = 1000000.0 * deltaRads / static_cast<double>(deltaMicros);
-  currentVelFiltered_ = velFilter_.input(currentVelRaw_);
+  currentVelFiltered_ = currentVelRaw_; // velFilter_.input(currentVelRaw_);
 
   // Run PID controller
   controller_.Compute();

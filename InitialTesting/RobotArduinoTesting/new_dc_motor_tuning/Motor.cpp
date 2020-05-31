@@ -39,7 +39,7 @@ long Motor::getCounts()
   return enc_.read();
 }
 
-void Motor::runLoop()
+void Motor::runLoop(bool pub)
 {
 
   // Read current values
@@ -69,16 +69,17 @@ void Motor::runLoop()
 
   // Compute current velocity in rads/second
   currentVelRaw_ = 1000000.0 * deltaRads / static_cast<double>(deltaMicros);
-  currentVelFiltered_ = velFilter_.input(currentVelRaw_);
+  currentVelFiltered_ = currentVelRaw_; // velFilter_.input(currentVelRaw_);
 
   // Run PID controller
   controller_.Compute();
   
   /* Use output from PID to update our current command. Since this is a velocity controller, when the error is 0
   *  and the PID controller drives the output to 0, we actually want to maintain a certian PWM value. Hence, the 
-  *  PID output is used to modify our control singal and not drive it directly
+  *  PID output is used to modify our control singal and not drive it directly.
   */
   outputCmd_ += int(pidOut_);
+  //outputCmd_ = static_cast<int>(pidOut_ + inputVel_ * 10);
 
   // Set a deadband region based on input vel to avoid integral windup
   if(fabs(inputVel_) < 0.001)
@@ -109,12 +110,14 @@ void Motor::runLoop()
   // Actually write out the motor power
   analogWrite(pwmPin_, abs(outputCmd_));
 
+if (pub)
+{
   // Debugging prints
   //Serial.print(deltaMicros);
   //Serial.print(" ");
   //Serial.print(curCount);
   //Serial.print(" ");
-  /*Serial.print("currentVelRaw_:");
+  Serial.print("currentVelRaw_:");
   Serial.print(currentVelRaw_, 5);
   Serial.print(" ");
   Serial.print("currentVelFiltered_:");
@@ -126,8 +129,8 @@ void Motor::runLoop()
   //Serial.print(pidOut_, 5);
   //Serial.print(" ");
   Serial.print("outputCmd_:");
-  Serial.print(outputCmd_/127.0);
-  Serial.println(""); */
-
+  Serial.print(outputCmd_/10.0);
+  Serial.println(""); 
+}
   
 }

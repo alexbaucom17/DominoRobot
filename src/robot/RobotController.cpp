@@ -126,6 +126,18 @@ void RobotController::update()
         motors_[i].runLoop();
     }
 
+    #ifdef PRINT_DEBUG
+    if (trajRunning_)
+    {
+        debug_.print("Est Vel: ");
+        cartVel_.print(debug_);
+        debug_.println("");
+        debug_.print("Est Pos: ");
+        cartPos_.print(debug_);
+        debug_.println("");
+    }
+    #endif
+
     // Update status 
     statusUpdater_.updatePosition(cartPos_.x_, cartPos_.y_, cartPos_.a_);
     statusUpdater_.updateVelocity(cartVel_.x_, cartVel_.y_, cartVel_.a_);
@@ -143,12 +155,6 @@ void RobotController::runTraj(PVTPoint* cmd)
     debug_.println("");
     debug_.print("Target: ");
     cmd->print(debug_);
-    debug_.println("");
-    debug_.print("Est Vel: ");
-    cartVel_.print(debug_);
-    debug_.println("");
-    debug_.print("Est Pos: ");
-    cartPos_.print(debug_);
     debug_.println("");
     #endif
     
@@ -303,6 +309,21 @@ void RobotController::computeOdometry()
         motor_velocities[i] = motors_[i].getCurrentVelocity();
     }
 
+    #ifdef PRINT_DEBUG
+    if (trajRunning_)
+    {
+        debug_.print("MotorMeasured: [");
+        debug_.print(motor_velocities[0], 4);
+        debug_.print(", ");
+        debug_.print(motor_velocities[1], 4);
+        debug_.print(", ");
+        debug_.print(motor_velocities[2], 4);
+        debug_.print(", ");
+        debug_.print(motor_velocities[3], 4);
+        debug_.println("]");
+    }
+    #endif
+
     // Do forward kinematics to compute local cartesian velocity
     float local_cart_vel[3];
     float s0 = 0.5 * WHEEL_DIAMETER * sin(PI/4.0);
@@ -346,13 +367,18 @@ void RobotController::computeOdometry()
 
 void RobotController::setCartVelCommand(float vx, float vy, float va)
 {
-//    debug_.print("CartVelCmd: [vx: ");
-//    debug_.print(vx, 4);
-//    debug_.print(", vy ");
-//    debug_.print(vy, 4);
-//    debug_.print(", va: ");
-//    debug_.print(va, 4);
-//    debug_.println("]");
+    #ifdef PRINT_DEBUG
+    if (trajRunning_) 
+    {
+        debug_.print("CartVelCmd: [vx: ");
+        debug_.print(vx, 4);
+        debug_.print(", vy ");
+        debug_.print(vy, 4);
+        debug_.print(", va: ");
+        debug_.print(va, 4);
+        debug_.println("]");
+    }
+    #endif
 
     float max_trans_speed = COARSE_LIMS.max_trans_vel_;
     float max_rot_speed = COARSE_LIMS.max_rot_vel_;
@@ -396,6 +422,21 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     motor_velocities[1] = 1/WHEEL_DIAMETER * ( s0*local_cart_vel[0] + c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
     motor_velocities[2] = 1/WHEEL_DIAMETER * ( c0*local_cart_vel[0] - s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
     motor_velocities[3] = 1/WHEEL_DIAMETER * (-s0*local_cart_vel[0] - c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+
+    #ifdef PRINT_DEBUG
+    if (trajRunning_)
+    {
+        debug_.print("MotorCommands: [");
+        debug_.print(motor_velocities[0], 4);
+        debug_.print(", ");
+        debug_.print(motor_velocities[1], 4);
+        debug_.print(", ");
+        debug_.print(motor_velocities[2], 4);
+        debug_.print(", ");
+        debug_.print(motor_velocities[3], 4);
+        debug_.println("]");
+    }
+    #endif
 
     // Send the commanded velocity for each motor
     for (int i = 0; i < 4; i++)

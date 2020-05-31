@@ -54,12 +54,12 @@
 #define CART_ROT_KD 0
 
 // Motor control gains
-#define MOTOR_KP 3
+#define MOTOR_KP 14
 #define MOTOR_KI 0.1
-#define MOTOR_KD 0.1
+#define MOTOR_KD 0.08
 
 // Motor control constants
-#define VEL_FILTER_FREQ 7            // HZ
+#define VEL_FILTER_FREQ 20            // HZ
 #define COUNTS_PER_OUTPUT_SHAFT_REV 36000 // Manually measrued/estimated
 
 // Physical dimensions
