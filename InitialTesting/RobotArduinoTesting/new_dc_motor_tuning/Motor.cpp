@@ -43,7 +43,7 @@ void Motor::runLoop(bool pub)
 {
 
   // Read current values
-  long curCount = enc_.read();
+  long curCount = -1*enc_.read();
   unsigned long curMicros = micros();
 
   // Compute delta
@@ -100,11 +100,11 @@ void Motor::runLoop(bool pub)
   // Update output direction
   if(outputCmd_ < 0)
   {
-    digitalWrite(dirPin_,0);
+    digitalWrite(dirPin_,1);
   }
   else
   {
-    digitalWrite(dirPin_,1);
+    digitalWrite(dirPin_,0);
   }
   
   // Actually write out the motor power

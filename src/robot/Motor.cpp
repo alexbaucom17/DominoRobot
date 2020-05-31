@@ -36,14 +36,15 @@ float Motor::getCurrentVelocity()
 
 long Motor::getCounts()
 {
-  return enc_.read();
+  // Sign change is needed for directions to work out with kinematics
+  return -1*enc_.read();
 }
 
 void Motor::runLoop()
 {
 
   // Read current values
-  long curCount = enc_.read();
+  long curCount = getCounts();
   unsigned long curMicros = micros();
 
   // Compute delta
@@ -96,14 +97,15 @@ void Motor::runLoop()
     outputCmd_ = -255;
   }
 
-  // Update output direction
+  // Update output direction, note that to flip these you also have 
+  // to change the sign for reading the encoder
   if(outputCmd_ < 0)
   {
-    digitalWrite(dirPin_,0);
+    digitalWrite(dirPin_,1);
   }
   else
   {
-    digitalWrite(dirPin_,1);
+    digitalWrite(dirPin_,0);
   }
   
   // Actually write out the motor power

@@ -11,8 +11,8 @@ unsigned long prevStepTime = millis();
 unsigned long prevLoopTime = millis();
 double cur_speed = 0;
 
-double max_vel = 0.8;
-double max_acc = 2;
+double max_vel = 2;
+double max_acc = 5;
 double max_acc_time = 1000 * max_vel / max_acc;
 
 template <typename T> int sgn(T val) {
