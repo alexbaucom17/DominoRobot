@@ -1,7 +1,5 @@
 Robot:
 - Test and tune top level controller for new motors 
-    - Looks like I might need to adjust motor gains for more weight in front
-- Consider setting up different motor controller gains for fine/slow motions
 - Try to hunt down that blasted 2x error, or at least adjust so I'm not scaling the input speed
     - I confirmed that just pushing the robot around definitely has an error (so odom only). That is about 2x.
 
