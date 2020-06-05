@@ -54,9 +54,24 @@
 #define CART_ROT_KD 0
 
 // Motor control gains
-#define MOTOR_KP 14
-#define MOTOR_KI 0.1
-#define MOTOR_KD 0.08
+#define FRONT_MOTOR_KP_COARSE  14
+#define FRONT_MOTOR_KI_COARSE  0.1
+#define FRONT_MOTOR_KD_COARSE  0.08
+#define REAR_MOTOR_KP_COARSE   14
+#define REAR_MOTOR_KI_COARSE   0.1
+#define REAR_MOTOR_KD_COARSE   0.08
+#define FRONT_MOTOR_KP_FINE    14
+#define FRONT_MOTOR_KI_FINE    0.1
+#define FRONT_MOTOR_KD_FINE    0.08
+#define REAR_MOTOR_KP_FINE     14
+#define REAR_MOTOR_KI_FINE     0.1
+#define REAR_MOTOR_KD_FINE     0.08
+
+// Motor indices
+#define MOTOR_IDX_FL  0
+#define MOTOR_IDX_FR  1
+#define MOTOR_IDX_BR  2
+#define MOTOR_IDX_BL  3
 
 // Motor control constants
 #define VEL_FILTER_FREQ 20            // HZ

@@ -8,10 +8,10 @@ const DynamicLimits FINE_LIMS = {MAX_TRANS_SPEED_FINE, MAX_TRANS_ACC_FINE, MAX_R
 const DynamicLimits COARSE_LIMS = {MAX_TRANS_SPEED_COARSE, MAX_TRANS_ACC_COARSE, MAX_ROT_SPEED_COARSE, MAX_ROT_ACC_COARSE};
 
 RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater)
-: motors_{ Motor(PIN_PWM_0, PIN_DIR_0, PIN_ENC_A_0, PIN_ENC_B_0, MOTOR_KP, MOTOR_KI, MOTOR_KD),
-           Motor(PIN_PWM_1, PIN_DIR_1, PIN_ENC_A_1, PIN_ENC_B_1, MOTOR_KP, MOTOR_KI, MOTOR_KD),
-           Motor(PIN_PWM_2, PIN_DIR_2, PIN_ENC_A_2, PIN_ENC_B_2, MOTOR_KP, MOTOR_KI, MOTOR_KD),
-           Motor(PIN_PWM_3, PIN_DIR_3, PIN_ENC_A_3, PIN_ENC_B_3, MOTOR_KP, MOTOR_KI, MOTOR_KD) },
+: motors_{ Motor(PIN_PWM_0, PIN_DIR_0, PIN_ENC_A_0, PIN_ENC_B_0),
+           Motor(PIN_PWM_1, PIN_DIR_1, PIN_ENC_A_1, PIN_ENC_B_1),
+           Motor(PIN_PWM_2, PIN_DIR_2, PIN_ENC_A_2, PIN_ENC_B_2),
+           Motor(PIN_PWM_3, PIN_DIR_3, PIN_ENC_A_3, PIN_ENC_B_3) },
   prevPositionUpdateTime_(millis()),
   prevControlLoopTime_(millis()),
   prevUpdateLoopTime_(millis()),
@@ -31,6 +31,7 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
   predict_once(false),
   statusUpdater_(statusUpdater)
 {
+    setCoarseMotorGains();
 }
 
 void RobotController::begin()
@@ -87,6 +88,17 @@ void RobotController::startTraj()
     trajRunning_ = true;
     trajStartTime_ = millis();
     prevControlLoopTime_ = 0;
+
+    if(fineMode_)
+    {
+        setFineMotorGains();
+    }
+    else
+    {
+        setCoarseMotorGains();
+    }
+    
+
     enableAllMotors();
     #ifdef PRINT_DEBUG
     debug_.println("Starting move");
@@ -101,6 +113,22 @@ void RobotController::estop()
     trajRunning_ = false;
     fineMode_ = true;
     disableAllMotors();
+}
+
+void RobotController::setCoarseMotorGains()
+{
+    motors_[MOTOR_IDX_FL].setGains(FRONT_MOTOR_KP_COARSE, FRONT_MOTOR_KI_COARSE, FRONT_MOTOR_KD_COARSE);
+    motors_[MOTOR_IDX_FR].setGains(FRONT_MOTOR_KP_COARSE, FRONT_MOTOR_KI_COARSE, FRONT_MOTOR_KD_COARSE);
+    motors_[MOTOR_IDX_BL].setGains(REAR_MOTOR_KP_COARSE, REAR_MOTOR_KI_COARSE, REAR_MOTOR_KD_COARSE);
+    motors_[MOTOR_IDX_BR].setGains(REAR_MOTOR_KP_COARSE, REAR_MOTOR_KI_COARSE, REAR_MOTOR_KD_COARSE);
+}
+
+void RobotController::setFineMotorGains()
+{
+    motors_[MOTOR_IDX_FL].setGains(FRONT_MOTOR_KP_FINE, FRONT_MOTOR_KI_FINE, FRONT_MOTOR_KD_FINE);
+    motors_[MOTOR_IDX_FR].setGains(FRONT_MOTOR_KP_FINE, FRONT_MOTOR_KI_FINE, FRONT_MOTOR_KD_FINE);
+    motors_[MOTOR_IDX_BL].setGains(REAR_MOTOR_KP_FINE, REAR_MOTOR_KI_FINE, REAR_MOTOR_KD_FINE);
+    motors_[MOTOR_IDX_BR].setGains(REAR_MOTOR_KP_FINE, REAR_MOTOR_KI_FINE, REAR_MOTOR_KD_FINE);
 }
 
 void RobotController::update()

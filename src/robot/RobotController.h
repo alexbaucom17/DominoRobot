@@ -64,6 +64,10 @@ class RobotController
     void resetTraj(PVTPoint* cmd);
     // Sets up evertyhing to start the trajectory running
     void startTraj();
+    // Sets up coarse motor gains on respective motors
+    void setCoarseMotorGains();
+    // Sets up fine motor gains on respective motors
+    void setFineMotorGains();
 
     // Member variables
     Motor motors_[4];                      // Motor objects

@@ -14,7 +14,7 @@ Motor::Motor(int pwmPin, int dirPin, int encPinA, int encPinB, double Kp, double
   prevCount_(0),
   prevMicros_(micros()),
   enc_(encPinA, encPinB),
-  controller_(&currentVelFiltered_, &pidOut_, &inputVel_, Kp, Ki, Kd, DIRECT),
+  controller_(&currentVelFiltered_, &pidOut_, &inputVel_, 0, 0, 0, DIRECT), // Gains initialized as 0, will be set by setGains
   velFilter_(LOWPASS, VEL_FILTER_FREQ)
 {
   pinMode(pwmPin_, OUTPUT);
@@ -27,6 +27,11 @@ Motor::Motor(int pwmPin, int dirPin, int encPinA, int encPinB, double Kp, double
 void Motor::setCommand(double vel)
 {
   inputVel_ = vel;  
+}
+
+void Motor::setGains(double Kp, double Ki, double Kd)
+{
+  controller_.setTunings(Kp, Ki, Kd);
 }
 
 float Motor::getCurrentVelocity()

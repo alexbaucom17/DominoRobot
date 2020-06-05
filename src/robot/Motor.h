@@ -15,16 +15,18 @@ class Motor
      * dirPin - which pin the motor direction is connected to
      * encPinA - which pin the encoder wire A is connected to. This should be a pin capable of handling interrupts
      * encPinB - which pin the encoder wire B is connected to. This should ideally (but not required) be a pin capable of handling interrupts
-     * Kp - Proportional gain
-     * Ki - Integral gain
-     * Kd - Derrivative gain
      */
-    Motor(int pwmPin, int dirPin, int encPinA, int encPinB, double Kp, double Ki, double Kd);
+    Motor(int pwmPin, int dirPin, int encPinA, int encPinB);
     
     /*
      * Set the desired velocity in rad/second
      */
     void setCommand(double vel);
+
+    /* 
+    * Set the motor control gains
+    */ 
+    void setGains(double Kp, double Ki, double Kd);
     
     /*
      * Run the actual controller. Make sure this gets called reasonably quickly (i.e. every 20 ms or so)
@@ -36,7 +38,9 @@ class Motor
     */
     float getCurrentVelocity();
 
-    // Get number of counts from encoder - for debugging
+    /*
+    * Get number of counts from encoder - for debugging
+    */
     long getCounts();
 
   private:
