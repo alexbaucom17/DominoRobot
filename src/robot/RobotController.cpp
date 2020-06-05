@@ -357,9 +357,9 @@ void RobotController::computeOdometry()
     float s0 = 0.5 * WHEEL_DIAMETER * sin(PI/4.0);
     float c0 = 0.5 * WHEEL_DIAMETER * cos(PI/4.0);
     float d0 = WHEEL_DIAMETER / (4.0 * WHEEL_DIST_FROM_CENTER);
-    local_cart_vel[0] = -c0 * motor_velocities[0] + s0 * motor_velocities[1] + c0 * motor_velocities[2] - s0 * motor_velocities[3];
-    local_cart_vel[1] =  s0 * motor_velocities[0] + c0 * motor_velocities[1] - s0 * motor_velocities[2] - c0 * motor_velocities[3];
-    local_cart_vel[2] =  d0 * motor_velocities[0] + d0 * motor_velocities[1] + d0 * motor_velocities[2] + d0 * motor_velocities[3];
+    local_cart_vel[0] = -c0 * motor_velocities[MOTOR_IDX_FL] + s0 * motor_velocities[MOTOR_IDX_FR] + c0 * motor_velocities[MOTOR_IDX_BR] - s0 * motor_velocities[MOTOR_IDX_BL];
+    local_cart_vel[1] =  s0 * motor_velocities[MOTOR_IDX_FL] + c0 * motor_velocities[MOTOR_IDX_FR] - s0 * motor_velocities[MOTOR_IDX_BR] - c0 * motor_velocities[MOTOR_IDX_BL];
+    local_cart_vel[2] =  d0 * motor_velocities[MOTOR_IDX_FL] + d0 * motor_velocities[MOTOR_IDX_FR] + d0 * motor_velocities[MOTOR_IDX_BR] + d0 * motor_velocities[MOTOR_IDX_BL];
 
     // Convert local cartesian velocity to global cartesian velocity using the last estimated angle
     float cA = cos(cartPos_.a_);
@@ -446,10 +446,10 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     float motor_velocities[4];
     float s0 = sin(PI/4);
     float c0 = cos(PI/4);
-    motor_velocities[0] = 1/WHEEL_DIAMETER * (-c0*local_cart_vel[0] + s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motor_velocities[1] = 1/WHEEL_DIAMETER * ( s0*local_cart_vel[0] + c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motor_velocities[2] = 1/WHEEL_DIAMETER * ( c0*local_cart_vel[0] - s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motor_velocities[3] = 1/WHEEL_DIAMETER * (-s0*local_cart_vel[0] - c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[MOTOR_IDX_FL] = 1/WHEEL_DIAMETER * (-c0*local_cart_vel[0] + s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[MOTOR_IDX_FR] = 1/WHEEL_DIAMETER * ( s0*local_cart_vel[0] + c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[MOTOR_IDX_BR] = 1/WHEEL_DIAMETER * ( c0*local_cart_vel[0] - s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[MOTOR_IDX_BL] = 1/WHEEL_DIAMETER * (-s0*local_cart_vel[0] - c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
 
     #ifdef PRINT_DEBUG
     if (trajRunning_)
