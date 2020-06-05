@@ -3,7 +3,7 @@
 
 constexpr double COUNTS_TO_RADS = 2.0 * PI / static_cast<double>(COUNTS_PER_OUTPUT_SHAFT_REV);
 
-Motor::Motor(int pwmPin, int dirPin, int encPinA, int encPinB, double Kp, double Ki, double Kd)
+Motor::Motor(int pwmPin, int dirPin, int encPinA, int encPinB)
 : pwmPin_(pwmPin),
   dirPin_(dirPin),
   inputVel_(0.0),
@@ -31,7 +31,7 @@ void Motor::setCommand(double vel)
 
 void Motor::setGains(double Kp, double Ki, double Kd)
 {
-  controller_.setTunings(Kp, Ki, Kd);
+  controller_.SetTunings(Kp, Ki, Kd);
 }
 
 float Motor::getCurrentVelocity()
