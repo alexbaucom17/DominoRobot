@@ -2,6 +2,7 @@ Robot:
 - Test and tune top level controller for new motors 
 - Try to hunt down that blasted 2x error, or at least adjust so I'm not scaling the input speed
     - I confirmed that just pushing the robot around definitely has an error (so odom only). That is about 2x.
+- Make plotting utility for robot output
 
 Stepper controller
 - Convert to working for lifter mechanism

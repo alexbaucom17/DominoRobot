@@ -54,7 +54,7 @@
 #define CART_ROT_KD 0
 
 // Motor control gains
-#define FRONT_MOTOR_KP_COARSE  14
+#define FRONT_MOTOR_KP_COARSE  20
 #define FRONT_MOTOR_KI_COARSE  0.1
 #define FRONT_MOTOR_KD_COARSE  0.08
 #define REAR_MOTOR_KP_COARSE   14

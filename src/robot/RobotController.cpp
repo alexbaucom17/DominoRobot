@@ -400,7 +400,7 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     {
         debug_.print("CartVelCmd: [vx: ");
         debug_.print(vx, 4);
-        debug_.print(", vy ");
+        debug_.print(", vy: ");
         debug_.print(vy, 4);
         debug_.print(", va: ");
         debug_.print(va, 4);
