@@ -36,7 +36,6 @@ class LogParser:
     def __init__(self, path):
 
         self.path = path
-        self.t_idx = 0
         self.time = np.zeros((1,1))
         self.target_pos = np.zeros((3,1))
         self.target_vel = np.zeros((3,1))
@@ -45,6 +44,7 @@ class LogParser:
         self.est_pos = np.zeros((3,1))
         self.motor_cmd_vel = np.zeros((4,1))
         self.motor_est_vel = np.zeros((4,1))
+        self.t_offset = 0
 
     def parse_logs(self):
 
@@ -53,8 +53,7 @@ class LogParser:
 
                 if line.startswith("Target:"):
                     # time
-                    self.t_idx += 1
-                    self.time = np.append(self.time, get_value(line, ['Target', 'T']))
+                    self.time = np.append(self.time, get_value(line, ['Target', 'T']) + self.t_offset)
                     # target position
                     data = []
                     data.append(get_value(line, ['Target','Position','X']))
@@ -103,12 +102,63 @@ class LogParser:
                     data.append(get_value(line, ['Est Pos','A']))
                     arr = np.asarray(data).reshape((3,1))
                     self.est_pos = np.hstack((self.est_pos, arr))
+                elif line.startswith("Reached goal"):
+                    # Drop extra target line if needed
+                    if self.time.shape[0] > self.est_pos.shape[1]:
+                        self.time = self.time[:-1]
+                        self.target_pos = self.target_pos[:,:-1]
+                        self.target_vel = self.target_vel[:,:-1]
+
+                    # Update time offset
+                    self.t_offset += self.time[-1] + 0.5 #some extra spacing
+
                 else:
                     continue
         
     
+    def plot_pos(self):
+        fig = plt.figure()
+        fig.canvas.set_window_title('Cartesian Position')
+
+        labels = ['x', 'y', 'a']
+        for i in range(3):
+            ax = fig.add_subplot(3,1,i+1)
+            ax.plot(self.time,self.target_pos[i,:], 'b', self.time,self.est_pos[i,:], 'r')
+            ax.legend(['Target', 'Estimate'])
+            ax.set_ylabel("Position: {}".format(labels[i]))
+        
+        ax.set_xlabel('Time')
+
+    def plot_vel(self):
+        fig = plt.figure()
+        fig.canvas.set_window_title('Cartesian Velocity')
+
+        labels = ['x', 'y', 'a']
+        for i in range(3):
+            ax = fig.add_subplot(3,1,i+1)
+            ax.plot(self.time,self.target_vel[i,:], 'b', self.time,self.est_vel[i,:], 'r', self.time,self.cmd_vel[i,:], 'g')
+            ax.legend(['Target', 'Estimate', 'Command'])
+            ax.set_ylabel("Velocity: {}".format(labels[i]))
+        
+        ax.set_xlabel('Time')
+
+    def plot_motors(self):
+        fig = plt.figure()
+        fig.canvas.set_window_title('Motor Velocity')
+
+        labels = ['0', '1', '2', '3']
+        for i in range(4):
+            ax = fig.add_subplot(4,1,i+1)
+            ax.plot(self.time,self.motor_cmd_vel[i,:], 'b', self.time,self.motor_est_vel[i,:], 'r')
+            ax.legend(['Target', 'Estimate'])
+            ax.set_ylabel("Motor Velocity: {}".format(labels[i]))
+        
+        ax.set_xlabel('Time')
+    
     def plot_logs(self):
-        plt.plot(self.time,self.target_pos[0,:], self.time,self.est_pos[0,:])
+        self.plot_pos()
+        self.plot_vel()
+        self.plot_motors()
         plt.show()
 
 
