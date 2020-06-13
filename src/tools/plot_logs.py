@@ -3,6 +3,7 @@ import os
 import numpy as np
 import json
 import matplotlib.pyplot as plt
+import PySimpleGUI as sg
 
 DEFAULT_LOG_PATH = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\log"
 
@@ -162,15 +163,64 @@ class LogParser:
         plt.show()
 
 
+def get_all_log_files():
+    return [f for f in os.listdir(DEFAULT_LOG_PATH) if os.path.isfile(os.path.join(DEFAULT_LOG_PATH, f))]
+
+class PlottingGui:
+
+    def __init__(self):
+        sg.change_look_and_feel('DarkBlue')
+
+        all_files = get_all_log_files()
+        left_side = sg.Column( [[sg.Listbox(values=all_files, size=(50, 10), key='_FILES_')]] )
+
+        pos = [sg.Checkbox('Plot Positions', default=True, key='_POS_')]
+        vel = [sg.Checkbox('Plot Velocities', default=True, key='_VEL_')]
+        motors = [sg.Checkbox('Plot Motors', default=True, key='_MOTOR_')]
+        buttons = [sg.Button('PLOT')]
+        right_side = sg.Column([ pos, vel, motors, buttons ])
+
+        layout = [[left_side, right_side]]
+        self.window = sg.Window('Plotting Utility', layout)
+        self.window.finalize()
+
+    def loop(self):
+
+        while True:  # Event Loop
+
+            # Keep files in list updated
+            all_files = get_all_log_files()
+            self.window['_FILES_'].update(values=all_files)
+
+            # Handle buttons
+            event, values = self.window.read()
+            if event is None or event == 'Exit':
+                break
+            if event == 'PLOT':
+                # Get file
+                vals = self.window['_FILES_'].get_list_values()
+                idx = self.window['_FILES_'].get_indexes()
+                fname = vals[idx[0]]
+                fpath = os.path.join(DEFAULT_LOG_PATH, fname)
+                print("Loading logs from {}".format(fpath))
+
+                # Parse logs and generate plots for desired items
+                lp = LogParser(fpath)
+                lp.parse_logs()
+                if self.window['_POS_'].Get():
+                    lp.plot_pos()
+                if self.window['_VEL_'].Get():
+                    lp.plot_vel()
+                if self.window['_MOTOR_'].Get():
+                    lp.plot_motors()
+
+                # Show figures
+                plt.show(block=False)
+        
+        self.window.close()
+
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Plot logfiles")
-    parser.add_argument('filename', type=str)
-    args = parser.parse_args()
 
-    fpath = os.path.join(DEFAULT_LOG_PATH, args.filename)
-    print("Loading logs from {}".format(fpath))
-
-    lp = LogParser(fpath)
-    lp.parse_logs()
-    lp.plot_logs()
+    pg = PlottingGui()
+    pg.loop()
