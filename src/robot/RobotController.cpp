@@ -352,7 +352,7 @@ void RobotController::computeOdometry()
     float motor_velocities[4];
     for (int i = 0; i < 4; i++)
     {
-        motor_velocities[i] = motors_[i].getCurrentVelocity() / FUDGE_FACTOR;
+        motor_velocities[i] = motors_[i].getCurrentVelocity();
     }
 
     #ifdef PRINT_DEBUG
@@ -375,9 +375,9 @@ void RobotController::computeOdometry()
     float s0 = 0.5 * WHEEL_DIAMETER * sin(PI/4.0);
     float c0 = 0.5 * WHEEL_DIAMETER * cos(PI/4.0);
     float d0 = WHEEL_DIAMETER / (4.0 * WHEEL_DIST_FROM_CENTER);
-    local_cart_vel[0] = -c0 * motor_velocities[MOTOR_IDX_FL] + s0 * motor_velocities[MOTOR_IDX_FR] + c0 * motor_velocities[MOTOR_IDX_BR] - s0 * motor_velocities[MOTOR_IDX_BL];
-    local_cart_vel[1] =  s0 * motor_velocities[MOTOR_IDX_FL] + c0 * motor_velocities[MOTOR_IDX_FR] - s0 * motor_velocities[MOTOR_IDX_BR] - c0 * motor_velocities[MOTOR_IDX_BL];
-    local_cart_vel[2] =  d0 * motor_velocities[MOTOR_IDX_FL] + d0 * motor_velocities[MOTOR_IDX_FR] + d0 * motor_velocities[MOTOR_IDX_BR] + d0 * motor_velocities[MOTOR_IDX_BL];
+    local_cart_vel[0] = 1/FUDGE_FACTOR* (-c0 * motor_velocities[MOTOR_IDX_FL] + s0 * motor_velocities[MOTOR_IDX_FR] + c0 * motor_velocities[MOTOR_IDX_BR] - s0 * motor_velocities[MOTOR_IDX_BL]);
+    local_cart_vel[1] = 1/FUDGE_FACTOR* ( s0 * motor_velocities[MOTOR_IDX_FL] + c0 * motor_velocities[MOTOR_IDX_FR] - s0 * motor_velocities[MOTOR_IDX_BR] - c0 * motor_velocities[MOTOR_IDX_BL]);
+    local_cart_vel[2] = 1/FUDGE_FACTOR* ( d0 * motor_velocities[MOTOR_IDX_FL] + d0 * motor_velocities[MOTOR_IDX_FR] + d0 * motor_velocities[MOTOR_IDX_BR] + d0 * motor_velocities[MOTOR_IDX_BL]);
 
     // Convert local cartesian velocity to global cartesian velocity using the last estimated angle
     float cA = cos(cartPos_.a_);
@@ -464,10 +464,10 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     float motor_velocities[4];
     float s0 = sin(PI/4);
     float c0 = cos(PI/4);
-    motor_velocities[MOTOR_IDX_FL] = 1/WHEEL_DIAMETER * (-c0*local_cart_vel[0] + s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motor_velocities[MOTOR_IDX_FR] = 1/WHEEL_DIAMETER * ( s0*local_cart_vel[0] + c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motor_velocities[MOTOR_IDX_BR] = 1/WHEEL_DIAMETER * ( c0*local_cart_vel[0] - s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motor_velocities[MOTOR_IDX_BL] = 1/WHEEL_DIAMETER * (-s0*local_cart_vel[0] - c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[MOTOR_IDX_FL] = FUDGE_FACTOR * 1/WHEEL_DIAMETER * (-c0*local_cart_vel[0] + s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[MOTOR_IDX_FR] = FUDGE_FACTOR * 1/WHEEL_DIAMETER * ( s0*local_cart_vel[0] + c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[MOTOR_IDX_BR] = FUDGE_FACTOR * 1/WHEEL_DIAMETER * ( c0*local_cart_vel[0] - s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[MOTOR_IDX_BL] = FUDGE_FACTOR * 1/WHEEL_DIAMETER * (-s0*local_cart_vel[0] - c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
 
     #ifdef PRINT_DEBUG
     if (trajRunning_)
@@ -487,7 +487,7 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     // Send the commanded velocity for each motor
     for (int i = 0; i < 4; i++)
     {
-        motors_[i].setCommand(FUDGE_FACTOR * motor_velocities[i]);
+        motors_[i].setCommand(motor_velocities[i]);
     }
 
 }

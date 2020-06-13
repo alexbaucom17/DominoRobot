@@ -98,7 +98,7 @@ class BaseClient:
             if incoming_msg:
                 try:
                     return json.loads(incoming_msg)
-                except JSONDecodeError:
+                except e:
                     logging.warn("Error decoding json: {}".format(incoming_msg))
                     break
 

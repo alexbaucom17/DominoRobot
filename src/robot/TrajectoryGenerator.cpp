@@ -83,9 +83,9 @@ void TrajectoryGenerator::generateConstVel(const Point& initialPoint,
 {
 
     // Scale max speeds and accelerations for trajectory generation
-    float TRAJ_MAX_TRANS_SPEED = (vx > vy) ? vx : vy;
+    float TRAJ_MAX_TRANS_SPEED = (fabs(vx) > fabs(vy)) ? fabs(vx) : fabs(vy);
     float TRAJ_MAX_TRANS_ACC = TRAJ_MAX_FRACTION * limits.max_trans_acc_;
-    float TRAJ_MAX_ROT_SPEED = va;
+    float TRAJ_MAX_ROT_SPEED = fabs(va);
     float TRAJ_MAX_ROT_ACC = TRAJ_MAX_FRACTION * limits.max_rot_acc_;
 
     // Pre-compute some useful values
@@ -223,8 +223,8 @@ std::vector<trajParams> TrajectoryGenerator::generate_vel_for_time_1D(float star
 
     int dir = sgn(vel);
     
-    float timeToReachConstVel = vel / maxAcc;
-    float posToReachConstVel = 0.5 * maxAcc * timeToReachConstVel * timeToReachConstVel;
+    float timeToReachConstVel = fabs(vel) / maxAcc;
+    float posToReachConstVel = dir * 0.5 * maxAcc * timeToReachConstVel * timeToReachConstVel;
     float deltaTimeConstVel = time - 2*timeToReachConstVel;
     float deltaPositionConstVel = deltaTimeConstVel * vel;
 
@@ -241,8 +241,8 @@ std::vector<trajParams> TrajectoryGenerator::generate_vel_for_time_1D(float star
     trajParams phase2;
     phase2.t0_ = phase1.t_end_;
     phase2.t_end_ = phase2.t0_ + deltaTimeConstVel;
-    phase2.p0_ = phase1.p0_ + dir * posToReachConstVel;
-    phase2.v0_ = dir*vel;
+    phase2.p0_ = phase1.p0_ + posToReachConstVel;
+    phase2.v0_ = vel;
     phase2.a_ = 0;
     outTraj.push_back(phase2);
 
@@ -250,7 +250,7 @@ std::vector<trajParams> TrajectoryGenerator::generate_vel_for_time_1D(float star
     trajParams phase3;
     phase3.t0_ = phase2.t_end_;
     phase3.t_end_ = phase3.t0_ + timeToReachConstVel; // Same time for deceleration as acceleration
-    phase3.p0_ = phase2.p0_ + dir * deltaPositionConstVel; // Same position change for deceleration
+    phase3.p0_ = phase2.p0_ + deltaPositionConstVel;
     phase3.v0_ = phase2.v0_;
     phase3.a_ = -1 * phase1.a_;
     outTraj.push_back(phase3);
