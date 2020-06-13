@@ -290,6 +290,7 @@ class ActionTypes(enum.Enum):
     LOAD_COMPLETE = 7,
     ESTOP = 8,
     WAIT = 9, # TODO: Make sure this is handled correctly everywhere, probably just in master....
+    MOVE_CONST_VEL = 10,
 
 class Action:
 
@@ -300,6 +301,22 @@ class Action:
     def draw(self, ax):
         pass
 
+class MoveConstVelAction(Action):
+
+    def __init__(self, action_type, name, vx, vy, va, t):
+        # action_type (enum)
+        # string name
+        # X velocity [m/s]
+        # Y velocity [m/s]
+        # Angle [rad/s]
+        # time [sec]
+
+        super().__init__(action_type, name)
+
+        self.vx = float(vx)
+        self.vy = float(vy)
+        self.va = float(va)
+        self.t = float(t)
 
 class MoveAction(Action):
 
@@ -308,7 +325,7 @@ class MoveAction(Action):
         # string name
         # X position [m]
         # Y position [m]
-        # Angle [deg]
+        # Angle [rad]
 
         super().__init__(action_type, name)
 

@@ -108,6 +108,11 @@ bool tryStartNewCmd(COMMAND cmd)
         RobotServer::PositionData data = server.getMoveData();
         controller.moveToPositionFine(data.x, data.y, data.a);
     }
+    else if(cmd == COMMAND::MOVE_CONST_VEL)
+    {
+        RobotServer::VelocityData data = server.getVelocityData();
+        controller.moveConstVel(data.vx, data.vy, data.va, data.t);
+    }
     else if(cmd == COMMAND::PLACE_TRAY)
     {
         tray_controller.place();
@@ -143,7 +148,8 @@ bool checkForCmdComplete(COMMAND cmd)
     }
     else if(cmd == COMMAND::MOVE || 
             cmd == COMMAND::MOVE_REL ||
-            cmd == COMMAND::MOVE_FINE)
+            cmd == COMMAND::MOVE_FINE ||
+            cmd == COMMAND::MOVE_CONST_VEL)
     {
         return controller.isTrajectoryRunning();
     }

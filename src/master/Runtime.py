@@ -134,6 +134,8 @@ class RobotInterface:
             self.robot_client.load_complete()
         elif action.action_type == ActionTypes.ESTOP:
             self.robot_client.estop()
+        elif action.action_type == ActionTypes.MOVE_CONST_VEL:
+            self.robot_client.move_const_vel(action.vx, action.vy, action.va, action.t)
         else:
             logging.info("Unknown action: {}".format(action.action_type))
 

@@ -87,6 +87,7 @@ class TrajectoryGenerator
 
         TrajectoryGenerator(HardwareSerial& debug);
         void generate(const Point& initialPoint, const Point& targetPoint, const DynamicLimits& limits);
+        void generateConstVel(const Point& initialPoint, const float vx, const float vy, const float va, const float t, const DynamicLimits& limits);
         PVTPoint lookup(float time);
 
     private:
@@ -125,6 +126,7 @@ class TrajectoryGenerator
         // Helper functions
         std::vector<trajParams> generate_triangle_1D(float startPos, float endPos, float maxVel, float maxAcc) const;
         std::vector<trajParams> generate_trapazoid_1D(float startPos, float endPos, float maxVel, float maxAcc) const;
+        std::vector<trajParams> generate_vel_for_time_1D(float startPos, float vel, float time, float maxAcc) const;
         std::vector<float> lookup_1D(float time, std::vector<trajParams> traj) const;
 
         MultiTrajectory currentTraj_;

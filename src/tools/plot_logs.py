@@ -122,9 +122,14 @@ class LogParser:
         fig.canvas.set_window_title('Cartesian Position')
 
         labels = ['x', 'y', 'a']
+        main_ax = None
         for i in range(3):
-            ax = fig.add_subplot(3,1,i+1)
-            ax.plot(self.time,self.target_pos[i,:], 'b', self.time,self.est_pos[i,:], 'r')
+            if not main_ax:
+                main_ax = fig.add_subplot(3,1,i+1)
+                ax = main_ax
+            else:
+                ax = fig.add_subplot(3,1,i+1, sharex=main_ax)
+            ax.plot(self.time,self.target_pos[i,:], '-b.', self.time,self.est_pos[i,:], '-r.')
             ax.legend(['Target', 'Estimate'])
             ax.set_ylabel("Position: {}".format(labels[i]))
         
@@ -135,9 +140,14 @@ class LogParser:
         fig.canvas.set_window_title('Cartesian Velocity')
 
         labels = ['x', 'y', 'a']
+        main_ax = None
         for i in range(3):
-            ax = fig.add_subplot(3,1,i+1)
-            ax.plot(self.time,self.target_vel[i,:], 'b', self.time,self.est_vel[i,:], 'r', self.time,self.cmd_vel[i,:], 'g')
+            if not main_ax:
+                main_ax = fig.add_subplot(3,1,i+1)
+                ax = main_ax
+            else:
+                ax = fig.add_subplot(3,1,i+1, sharex=main_ax)
+            ax.plot(self.time,self.target_vel[i,:], '-b.', self.time,self.est_vel[i,:], '-r.', self.time,self.cmd_vel[i,:], '-g.')
             ax.legend(['Target', 'Estimate', 'Command'])
             ax.set_ylabel("Velocity: {}".format(labels[i]))
         
@@ -148,9 +158,14 @@ class LogParser:
         fig.canvas.set_window_title('Motor Velocity')
 
         labels = ['0', '1', '2', '3']
+        main_ax = None
         for i in range(4):
-            ax = fig.add_subplot(4,1,i+1)
-            ax.plot(self.time,self.motor_cmd_vel[i,:], 'b', self.time,self.motor_est_vel[i,:], 'r')
+            if not main_ax:
+                main_ax = fig.add_subplot(4,1,i+1)
+                ax = main_ax
+            else:
+                ax = fig.add_subplot(4,1,i+1, sharex=main_ax)
+            ax.plot(self.time,self.motor_cmd_vel[i,:], '-b.', self.time,self.motor_est_vel[i,:], '-r.')
             ax.legend(['Target', 'Estimate'])
             ax.set_ylabel("Motor Velocity: {}".format(labels[i]))
         

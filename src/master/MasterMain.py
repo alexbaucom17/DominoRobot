@@ -8,7 +8,7 @@ import pickle
 import logging
 import PySimpleGUI as sg
 
-from FieldPlanner import Plan, ActionTypes, Action, MoveAction, TestPlan
+from FieldPlanner import Plan, ActionTypes, Action, MoveAction, TestPlan, MoveConstVelAction
 from Runtime import RuntimeManager, OFFLINE_TESTING, SKIP_MARVELMIND
 
 
@@ -109,6 +109,10 @@ class CmdGui:
             data = data_str.split(',')
             data = [x.strip() for x in data]
             action = MoveAction(action_type, name, data[0], data[1], data[2])
+        elif action_type in [ActionTypes.MOVE_CONST_VEL]:
+            data = data_str.split(',')
+            data = [x.strip() for x in data]
+            action = MoveConstVelAction(action_type, name, data[0], data[1], data[2], data[3])
         else:
             action = Action(action_type, name)
 

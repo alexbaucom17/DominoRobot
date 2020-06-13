@@ -20,6 +20,14 @@ class RobotServer : public SimpleServer
       float y;
       float a;
     };
+
+    struct VelocityData
+    {
+      float vx;
+      float vy;
+      float va;
+      float t;
+    };
     
     // Constructor
     RobotServer(HardwareSerial& serial, HardwareSerial& debug, const StatusUpdater& statusUpdater);
@@ -28,9 +36,12 @@ class RobotServer : public SimpleServer
 
     RobotServer::PositionData getPositionData();
 
+    RobotServer::VelocityData getVelocityData();
+
   private:
     PositionData moveData_;
     PositionData positionData_;
+    VelocityData velocityData_;
     const StatusUpdater& statusUpdater_;
 
     virtual COMMAND getCommand(String message) override;

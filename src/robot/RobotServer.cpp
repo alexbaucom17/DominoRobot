@@ -8,6 +8,7 @@ RobotServer::RobotServer(HardwareSerial& serial, HardwareSerial& debug, const St
 : SimpleServer(serial, debug),
   moveData_(),
   positionData_(),
+  velocityData_(),
   statusUpdater_(statusUpdater)
 {
 }
@@ -54,6 +55,16 @@ COMMAND RobotServer::getCommand(String message)
             moveData_.x = doc["data"]["x"];
             moveData_.y = doc["data"]["y"];
             moveData_.a = doc["data"]["a"];
+            printIncommingCommand(message);
+            sendAck(type);
+        }
+        else if(type == "move_const_vel")
+        {
+            cmd = COMMAND::MOVE_CONST_VEL;
+            velocityData_.vx = doc["data"]["vx"];
+            velocityData_.vy = doc["data"]["vy"];
+            velocityData_.va = doc["data"]["va"];
+            velocityData_.t = doc["data"]["t"];
             printIncommingCommand(message);
             sendAck(type);
         }
@@ -131,6 +142,11 @@ RobotServer::PositionData RobotServer::getMoveData()
 RobotServer::PositionData RobotServer::getPositionData()
 {
     return positionData_;
+}
+
+RobotServer::VelocityData RobotServer::getVelocityData()
+{
+    return velocityData_;
 }
 
 void RobotServer::sendStatus()

@@ -28,6 +28,7 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
   errSumY_(0),
   errSumA_(0),
   fineMode_(true),
+  velOnlyMode_(false),
   predict_once(false),
   statusUpdater_(statusUpdater)
 {
@@ -63,6 +64,7 @@ void RobotController::moveToPosition(float x, float y, float a)
     goalPos_ = Point(x,y,a);
     trajGen_.generate(cartPos_, goalPos_, COARSE_LIMS);
     fineMode_ = false;
+    velOnlyMode_ = false;
     startTraj();
 }
 
@@ -71,6 +73,7 @@ void RobotController::moveToPositionRelative(float x, float y, float a)
     goalPos_ = Point(cartPos_.x_ + x, cartPos_.y_ + y, cartPos_.a_ + a);
     trajGen_.generate(cartPos_, goalPos_, COARSE_LIMS);
     fineMode_ = false;
+    velOnlyMode_ = false;
     startTraj();
 }
 
@@ -79,8 +82,17 @@ void RobotController::moveToPositionFine(float x, float y, float a)
     goalPos_ = Point(x,y,a);
     trajGen_.generate(cartPos_, goalPos_, FINE_LIMS);
     fineMode_ = false;
+    velOnlyMode_ = false;
     startTraj();
 
+}
+
+void RobotController::moveConstVel(float vx , float vy, float va, float t)
+{
+    trajGen_.generateConstVel(cartPos_, vx, vy, va, t, COARSE_LIMS);
+    fineMode_ = false;
+    velOnlyMode_ = true;
+    startTraj();
 }
 
 void RobotController::startTraj()
@@ -112,6 +124,7 @@ void RobotController::estop()
     #endif 
     trajRunning_ = false;
     fineMode_ = true;
+    velOnlyMode_ = false;
     disableAllMotors();
 }
 
@@ -216,6 +229,10 @@ void RobotController::resetTraj(PVTPoint* cmd)
     errSumX_ = 0;
     errSumY_ = 0;
     errSumA_ = 0;
+
+    // Flags
+    fineMode_ = true;
+    velOnlyMode_ = false;
 }
 
 void RobotController::computeControl(PVTPoint cmd)
@@ -264,9 +281,10 @@ bool RobotController::checkForCompletedTrajectory(const PVTPoint cmd)
        fabs(cartVel_.x_) < trans_vel_err && 
        fabs(cartVel_.y_) < trans_vel_err && 
        fabs(cartVel_.a_) < ang_vel_err &&
-       fabs(goalPos_.x_ - cartPos_.x_) < trans_pos_err &&
-       fabs(goalPos_.y_ - cartPos_.y_) < trans_pos_err &&
-       fabs(angle_diff(goalPos_.a_, cartPos_.a_)) < ang_pos_err )
+       (velOnlyMode_ || 
+       (fabs(goalPos_.x_ - cartPos_.x_) < trans_pos_err &&
+        fabs(goalPos_.y_ - cartPos_.y_) < trans_pos_err &&
+        fabs(angle_diff(goalPos_.a_, cartPos_.a_)) < ang_pos_err )) )
     {
         #ifdef PRINT_DEBUG
         debug_.println("Reached goal");

@@ -25,6 +25,9 @@ class RobotController
     // Command robot to move to a specific position with high accuracy
     void moveToPositionFine(float x, float y, float a);
 
+    // Command robot to move with a constant velocity for some amount of time
+    void moveConstVel(float vx , float vy, float va, float t);
+
     // Main update loop. Should be called as fast as possible
     void update();
 
@@ -87,6 +90,7 @@ class RobotController
     float errSumY_;                        // Sum of error in Y dimension for integral control
     float errSumA_;                        // Sum of error in A dimension for integral control
     bool fineMode_;                        // If fine positioning mode is enabled or not.
+    bool velOnlyMode_;                     // If we are only interested in velocity and not goal position
     bool predict_once;                     // Bool to make sure kalman filter gets initialized properly
 
     StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller

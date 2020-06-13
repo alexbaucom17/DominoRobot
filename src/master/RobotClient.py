@@ -96,9 +96,13 @@ class BaseClient:
             except socket.timeout:
                 break
             if incoming_msg:
-                return json.loads(incoming_msg)
+                try:
+                    return json.loads(incoming_msg)
+                except JSONDecodeError:
+                    logging.warn("Error decoding json: {}".format(incoming_msg))
+                    break
 
-        # Will get here if timeout is reached
+        # Will get here if timeout is reached or decode error happens
         return None
 
     def send_msg_and_wait_for_ack(self, msg, print_debug=True):
@@ -122,11 +126,12 @@ class BaseClient:
     def net_status(self):
         """ Check if the network connection is ok"""
         msg = {'type': 'check'}
-        status = True
+        status = False
         try:
             self.send_msg_and_wait_for_ack(msg)
+            status = True
         except:
-            status = False
+            pass
         finally:
             return status
 
@@ -164,6 +169,11 @@ class RobotClient(BaseClient):
     def move_fine(self, x, y, a):
         """ Tell robot to move to a specific location with fine precision """
         msg = {'type': 'move_fine', 'data': {'x': x, 'y': y, 'a': a}}
+        self.send_msg_and_wait_for_ack(msg)
+
+    def move_const_vel(self, vx, vy, va, t):
+        """ Tell robot to move at constant velocity for a specific amount of time"""
+        msg = {'type': 'move_const_vel', 'data': {'vx': vx, 'vy': vy, 'va': va, 't': t}}
         self.send_msg_and_wait_for_ack(msg)
 
     def place(self):
