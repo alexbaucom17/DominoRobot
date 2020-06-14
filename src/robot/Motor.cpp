@@ -45,7 +45,7 @@ long Motor::getCounts()
   return -1*enc_.read();
 }
 
-void Motor::runLoop()
+void Motor::runLoop(bool print)
 {
 
   // Read current values
@@ -115,6 +115,23 @@ void Motor::runLoop()
   
   // Actually write out the motor power
   analogWrite(pwmPin_, abs(outputCmd_));
+
+  #ifdef PRINT_DEBUG
+  // This is qutie a hack
+  if (print)
+  {
+    Serial.print("[deltaRads: ");
+    Serial.print(deltaRads);
+    Serial.print(", deltaMicros: ");
+    Serial.print(deltaMicros);
+    Serial.print(", pidOut: ");
+    Serial.print(pidOut_);
+    Serial.print(", outputCmd: ");
+    Serial.print(outputCmd_);
+    Serial.println("]");
+  }
+  #endif
+
 
   // Debugging prints
   //Serial.print(deltaMicros);

@@ -164,7 +164,16 @@ void RobotController::update()
     // Update the motors
     for (int i = 0; i < 4; i++)
     {
-        motors_[i].runLoop();
+        // Hack
+        bool print = false;
+        if(trajRunning_)
+        {
+            print = true;
+            debug_.print("Motor");
+            debug_.print(i);
+            debug_.print(": ");
+        }
+        motors_[i].runLoop(print);
     }
 
     #ifdef PRINT_DEBUG
@@ -260,6 +269,19 @@ void RobotController::computeControl(PVTPoint cmd)
     float velErrA = cmd.velocity_.a_ - cartVel_.a_;
     errSumA_ += posErrA * dt;
     float a_cmd = cmd.velocity_.a_ + CART_ROT_KP * posErrA + CART_ROT_KD * velErrA + CART_ROT_KI * errSumA_;
+
+    #ifdef PRINT_DEBUG
+    if(trajRunning_)
+    {
+        debug_.print("CartesianControlX: [PosErr:");
+        debug_.print(posErrX, 4);
+        debug_.print(", VelErr:");
+        debug_.print(velErrX, 4);
+        debug_.print(", ErrSum:");
+        debug_.print(errSumX_, 4);
+        debug_.println("]");
+    }
+    #endif
 
     setCartVelCommand(x_cmd, y_cmd, a_cmd);
 }
@@ -370,14 +392,36 @@ void RobotController::computeOdometry()
     }
     #endif
 
+    // Read encoder counts for debugging
+    long motor_counts[4];
+    for (int i = 0; i < 4; i++)
+    {
+        motor_counts[i] = motors_[i].getCounts();
+    }
+
+    #ifdef PRINT_DEBUG
+    if (trajRunning_)
+    {
+        debug_.print("MotorCounts: [");
+        debug_.print(motor_counts[0]);
+        debug_.print(", ");
+        debug_.print(motor_counts[1]);
+        debug_.print(", ");
+        debug_.print(motor_counts[2]);
+        debug_.print(", ");
+        debug_.print(motor_counts[3]);
+        debug_.println("]");
+    }
+    #endif
+
     // Do forward kinematics to compute local cartesian velocity
     float local_cart_vel[3];
     float s0 = 0.5 * WHEEL_DIAMETER * sin(PI/4.0);
     float c0 = 0.5 * WHEEL_DIAMETER * cos(PI/4.0);
     float d0 = WHEEL_DIAMETER / (4.0 * WHEEL_DIST_FROM_CENTER);
-    local_cart_vel[0] = 1/FUDGE_FACTOR* (-c0 * motor_velocities[MOTOR_IDX_FL] + s0 * motor_velocities[MOTOR_IDX_FR] + c0 * motor_velocities[MOTOR_IDX_BR] - s0 * motor_velocities[MOTOR_IDX_BL]);
-    local_cart_vel[1] = 1/FUDGE_FACTOR* ( s0 * motor_velocities[MOTOR_IDX_FL] + c0 * motor_velocities[MOTOR_IDX_FR] - s0 * motor_velocities[MOTOR_IDX_BR] - c0 * motor_velocities[MOTOR_IDX_BL]);
-    local_cart_vel[2] = 1/FUDGE_FACTOR* ( d0 * motor_velocities[MOTOR_IDX_FL] + d0 * motor_velocities[MOTOR_IDX_FR] + d0 * motor_velocities[MOTOR_IDX_BR] + d0 * motor_velocities[MOTOR_IDX_BL]);
+    local_cart_vel[0] = 1/ODOM_SCALE_FACTOR* (-c0 * motor_velocities[MOTOR_IDX_FL] + s0 * motor_velocities[MOTOR_IDX_FR] + c0 * motor_velocities[MOTOR_IDX_BR] - s0 * motor_velocities[MOTOR_IDX_BL]);
+    local_cart_vel[1] = 1/ODOM_SCALE_FACTOR* ( s0 * motor_velocities[MOTOR_IDX_FL] + c0 * motor_velocities[MOTOR_IDX_FR] - s0 * motor_velocities[MOTOR_IDX_BR] - c0 * motor_velocities[MOTOR_IDX_BL]);
+    local_cart_vel[2] = 1/ODOM_SCALE_FACTOR* ( d0 * motor_velocities[MOTOR_IDX_FL] + d0 * motor_velocities[MOTOR_IDX_FR] + d0 * motor_velocities[MOTOR_IDX_BR] + d0 * motor_velocities[MOTOR_IDX_BL]);
 
     // Convert local cartesian velocity to global cartesian velocity using the last estimated angle
     float cA = cos(cartPos_.a_);
@@ -464,10 +508,10 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     float motor_velocities[4];
     float s0 = sin(PI/4);
     float c0 = cos(PI/4);
-    motor_velocities[MOTOR_IDX_FL] = FUDGE_FACTOR * 1/WHEEL_DIAMETER * (-c0*local_cart_vel[0] + s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motor_velocities[MOTOR_IDX_FR] = FUDGE_FACTOR * 1/WHEEL_DIAMETER * ( s0*local_cart_vel[0] + c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motor_velocities[MOTOR_IDX_BR] = FUDGE_FACTOR * 1/WHEEL_DIAMETER * ( c0*local_cart_vel[0] - s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motor_velocities[MOTOR_IDX_BL] = FUDGE_FACTOR * 1/WHEEL_DIAMETER * (-s0*local_cart_vel[0] - c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[MOTOR_IDX_FL] = ODOM_SCALE_FACTOR * 1/WHEEL_DIAMETER * (-c0*local_cart_vel[0] + s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[MOTOR_IDX_FR] = ODOM_SCALE_FACTOR * 1/WHEEL_DIAMETER * ( s0*local_cart_vel[0] + c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[MOTOR_IDX_BR] = ODOM_SCALE_FACTOR * 1/WHEEL_DIAMETER * ( c0*local_cart_vel[0] - s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[MOTOR_IDX_BL] = ODOM_SCALE_FACTOR * 1/WHEEL_DIAMETER * (-s0*local_cart_vel[0] - c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
 
     #ifdef PRINT_DEBUG
     if (trajRunning_)

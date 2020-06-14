@@ -45,6 +45,8 @@ class LogParser:
         self.est_pos = np.zeros((3,1))
         self.motor_cmd_vel = np.zeros((4,1))
         self.motor_est_vel = np.zeros((4,1))
+        self.motor_counts = np.zeros((4,1))
+        self.cartesian_controller = np.zeros((3,1))
         self.t_offset = 0
 
     def parse_logs(self):
@@ -69,6 +71,14 @@ class LogParser:
                     data.append(get_value(line, ['Target','Velocity','A']))
                     arr = np.asarray(data).reshape((3,1))
                     self.target_vel = np.hstack((self.target_vel, arr))
+                elif line.startswith("CartesianControlX:"):
+                    # control values
+                    data = []
+                    data.append(get_value(line, ['CartesianControlX','PosErr']))
+                    data.append(get_value(line, ['CartesianControlX','VelErr']))
+                    data.append(get_value(line, ['CartesianControlX','ErrSum']))
+                    arr = np.asarray(data).reshape((3,1))
+                    self.cartesian_controller = np.hstack((self.cartesian_controller, arr))
                 elif line.startswith("CartVelCmd:"):
                     # command velocity
                     data = []
@@ -87,6 +97,11 @@ class LogParser:
                     data = get_array(line)
                     arr = np.asarray(data).reshape((4,1))
                     self.motor_est_vel = np.hstack((self.motor_est_vel, arr))
+                elif line.startswith("MotorCounts:"):
+                    # motor encoder counts
+                    data = get_array(line)
+                    arr = np.asarray(data).reshape((4,1))
+                    self.motor_counts = np.hstack((self.motor_counts, arr))
                 elif line.startswith("Est Vel:"):
                     # est velocity
                     data = []
@@ -135,6 +150,33 @@ class LogParser:
         
         ax.set_xlabel('Time')
 
+    def plot_x_control(self):
+        fig = plt.figure()
+        fig.canvas.set_window_title('Cartesian X Control')
+        
+        # X position
+        main_ax = fig.add_subplot(3,1,1)
+        ax = main_ax
+        ax.plot(self.time,self.target_pos[0,:], '-b.', self.time,self.est_pos[0,:], '-r.')
+        ax.legend(['Target', 'Estimate'])
+        ax.set_ylabel("Position")
+
+        # X velocity
+        ax = fig.add_subplot(3,1,2, sharex=main_ax)
+        ax.plot(self.time,self.target_vel[0,:], '-b.', self.time,self.est_vel[0,:], '-r.', self.time,self.cmd_vel[0,:], '-g.')
+        ax.legend(['Target', 'Estimate', 'Command'])
+        ax.set_ylabel("Velocity")
+        
+        # X control - gains just copied from constants.h
+        kp = 2
+        ki = 0.1
+        kd = 0
+        ax = fig.add_subplot(3,1,3, sharex=main_ax)
+        ax.plot(self.time,self.cartesian_controller[0,:], '-b.', self.time,self.cartesian_controller[1,:], '-r.', self.time,self.cartesian_controller[2,:], '-g.')
+        ax.plot(self.time,kp*self.cartesian_controller[0,:], '--b', self.time, kd*self.cartesian_controller[1,:], '--r', self.time, ki*self.cartesian_controller[2,:], '--g')
+        ax.legend(['PosErr', 'VelErr', 'ErrSum'])
+        ax.set_ylabel("Controller")
+
     def plot_vel(self):
         fig = plt.figure()
         fig.canvas.set_window_title('Cartesian Velocity')
@@ -170,6 +212,19 @@ class LogParser:
             ax.set_ylabel("Motor Velocity: {}".format(labels[i]))
         
         ax.set_xlabel('Time')
+
+    def plot_motor_counts(self):
+        fig = plt.figure()
+        fig.canvas.set_window_title('Motor Counts')
+        ax = fig.add_subplot(1,1,1)
+        colors = ['r','g','b','k']
+        for i in range(4):
+            ax.plot(self.time,self.motor_counts[i,:], '-{}.'.format(colors[i]))
+        labels = ['0', '1', '2', '3']
+        ax.legend(labels)
+        ax.set_ylabel("Motor counts")
+        ax.set_xlabel('Time')
+
     
     def plot_logs(self):
         self.plot_pos()
@@ -192,8 +247,10 @@ class PlottingGui:
         pos = [sg.Checkbox('Plot Positions', default=True, key='_POS_')]
         vel = [sg.Checkbox('Plot Velocities', default=True, key='_VEL_')]
         motors = [sg.Checkbox('Plot Motors', default=True, key='_MOTOR_')]
-        buttons = [sg.Button('PLOT')]
-        right_side = sg.Column([ pos, vel, motors, buttons ])
+        motor_counts = [sg.Checkbox('Plot Motor Counts', default=False, key='_MOTORCOUNTS_')]
+        x_control = [sg.Checkbox('Plot X Controller', default=False, key='_XCONTROL_')]
+        plot_button = [sg.Button('PLOT')]
+        right_side = sg.Column([ pos, vel, motors, motor_counts, x_control, plot_button ])
 
         layout = [[left_side, right_side]]
         self.window = sg.Window('Plotting Utility', layout)
@@ -228,6 +285,10 @@ class PlottingGui:
                     lp.plot_vel()
                 if self.window['_MOTOR_'].Get():
                     lp.plot_motors()
+                if self.window['_MOTORCOUNTS_'].Get():
+                    lp.plot_motor_counts()
+                if self.window['_XCONTROL_'].Get():
+                    lp.plot_x_control()
 
                 # Show figures
                 plt.show(block=False)

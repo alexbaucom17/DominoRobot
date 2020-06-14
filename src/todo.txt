@@ -1,7 +1,12 @@
 Robot:
-- Test and tune top level controller for new motors 
-- Try to hunt down that blasted 2x error, or at least adjust so I'm not scaling the input speed
-    - I confirmed that just pushing the robot around definitely has an error (so odom only). That is about 2x.
+- Controller tuning potential issues:
+    - Delay while sending status update seems to cause impact to controller performance
+    - Controller seems to be able to sometimes get into positive feedback situation
+        - Seems to be an issue with one of the motors, need to plot some more to figure out whats going on
+    - Motors have stiction that is on the order of magnitude of how fast I want to move
+    - Back wheels can slip sometimes, adding more weight doesn't seem to fix it
+        - All 4 wheels still not making good contact sometimes
+        - More weight on back seems to fix (jk not always)
 
 Stepper controller
 - Convert to working for lifter mechanism
@@ -16,13 +21,3 @@ Purchase:
 QOL stuff:
 - Try to make it so master doesn't crash when network has trouble (need to handle detecting disconnect and then auto-reconnecting)
 - Add check to master to verify network is correct and print a useful message
-
-
-
-
-Embedded (old, maybe not needed anymore):
-- Diagnose delay in position update from robot
-- Controller tuning:
-    - Try to get plots generating from arduino serial plotter
-    - Want to investigate jerkiness in controllers during fine motion
-    - Want to investigate angle drift in controllers during fine motion

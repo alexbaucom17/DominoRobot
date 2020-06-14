@@ -36,7 +36,7 @@
 // Velocitiy limits
 #define MAX_TRANS_SPEED_FINE   0.08  // m/s
 #define MAX_ROT_SPEED_FINE     0.5   // rad/2
-#define MAX_TRANS_SPEED_COARSE 0.5  // m/s
+#define MAX_TRANS_SPEED_COARSE 0.2   // m/s
 #define MAX_ROT_SPEED_COARSE   1.0   // rad/2
 
 // Acceleration limits
@@ -83,7 +83,7 @@
 
 // Scaling factors
 #define TRAJ_MAX_FRACTION 0.7  // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate
-#define FUDGE_FACTOR 2.0 // Scaling factor for compensating for some math error I can't find
+#define ODOM_SCALE_FACTOR 2.0
 
 // Kalman filter scales
 #define PROCESS_NOISE_SCALE 0.08
