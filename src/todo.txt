@@ -3,7 +3,12 @@ Robot:
     - Delay while sending status update seems to cause impact to controller performance
     - Controller seems to be able to sometimes get into positive feedback situation
         - Seems to be an issue with one of the motors, need to plot some more to figure out whats going on
+        - Made some plots, still not totally clear what is going on. Basically looks like motor2 gets into a situation
+            where the controller is indeed doing the right thing, but the motor is respoding by moving in the opposite direction
+            as intended. Probably need to do some more testing on this specific motor to understand what is going on or if something
+            is wired incorrectly or something.
     - Motors have stiction that is on the order of magnitude of how fast I want to move
+        - Need to investigate how to mitigate stiction in controller
     - Back wheels can slip sometimes, adding more weight doesn't seem to fix it
         - All 4 wheels still not making good contact sometimes
         - More weight on back seems to fix (jk not always)

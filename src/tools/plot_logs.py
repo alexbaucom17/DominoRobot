@@ -47,6 +47,7 @@ class LogParser:
         self.motor_est_vel = np.zeros((4,1))
         self.motor_counts = np.zeros((4,1))
         self.cartesian_controller = np.zeros((3,1))
+        self.motor_info = [{"deltaRads": [0], "deltaMicros":[0], "pidOut": [0], "outputCmd": [0]} for i in range(4)]
         self.t_offset = 0
 
     def parse_logs(self):
@@ -127,6 +128,21 @@ class LogParser:
 
                     # Update time offset
                     self.t_offset += self.time[-1] + 0.5 #some extra spacing
+
+                elif line.startswith("Motor0:") or line.startswith("Motor1:") or \
+                     line.startswith("Motor2:") or line.startswith("Motor3:"):
+                    n = int(line[5])
+                    name = "Motor{}".format(n)
+                    if line[7:].strip():
+                        self.motor_info[n]["deltaRads"].append(get_value(line, [name, "deltaRads"]))
+                        self.motor_info[n]["deltaMicros"].append(get_value(line, [name, "deltaMicros"]))
+                        self.motor_info[n]["pidOut"].append(get_value(line, [name, "pidOut"]))
+                        self.motor_info[n]["outputCmd"].append(get_value(line, [name, "outputCmd"]))
+                    else:
+                        self.motor_info[n]["deltaRads"].append(0.00123)
+                        self.motor_info[n]["deltaMicros"].append(0.00123)
+                        self.motor_info[n]["pidOut"].append(0.00123)
+                        self.motor_info[n]["outputCmd"].append(0.00123)
 
                 else:
                     continue
@@ -225,6 +241,25 @@ class LogParser:
         ax.set_ylabel("Motor counts")
         ax.set_xlabel('Time')
 
+    def plot_motor_info(self):
+        fig = plt.figure()
+        fig.canvas.set_window_title('Motor Info')
+
+        labels = ['0', '1', '2', '3']
+        main_ax = None
+        for i in range(4):
+            if not main_ax:
+                main_ax = fig.add_subplot(4,1,i+1)
+                ax = main_ax
+            else:
+                ax = fig.add_subplot(4,1,i+1, sharex=main_ax)
+
+            ax.plot(self.time,self.motor_info[i]["pidOut"], '-b.', self.time,self.motor_info[i]["outputCmd"], '-r.')
+            ax.legend(['pidOut', 'outputCmd'])
+            ax.set_ylabel("Motor Info: {}".format(labels[i]))
+        
+        ax.set_xlabel('Time')
+
     
     def plot_logs(self):
         self.plot_pos()
@@ -234,7 +269,9 @@ class LogParser:
 
 
 def get_all_log_files():
-    return [f for f in os.listdir(DEFAULT_LOG_PATH) if os.path.isfile(os.path.join(DEFAULT_LOG_PATH, f))]
+    files = [f for f in os.listdir(DEFAULT_LOG_PATH) if os.path.isfile(os.path.join(DEFAULT_LOG_PATH, f))]
+    files.reverse()
+    return files
 
 class PlottingGui:
 
@@ -249,8 +286,9 @@ class PlottingGui:
         motors = [sg.Checkbox('Plot Motors', default=True, key='_MOTOR_')]
         motor_counts = [sg.Checkbox('Plot Motor Counts', default=False, key='_MOTORCOUNTS_')]
         x_control = [sg.Checkbox('Plot X Controller', default=False, key='_XCONTROL_')]
+        motor_info = [sg.Checkbox('Plot Motor Info', default=False, key='_MOTORINFO_')]
         plot_button = [sg.Button('PLOT')]
-        right_side = sg.Column([ pos, vel, motors, motor_counts, x_control, plot_button ])
+        right_side = sg.Column([ pos, vel, motors, motor_counts, x_control, motor_info, plot_button ])
 
         layout = [[left_side, right_side]]
         self.window = sg.Window('Plotting Utility', layout)
@@ -289,6 +327,8 @@ class PlottingGui:
                     lp.plot_motor_counts()
                 if self.window['_XCONTROL_'].Get():
                     lp.plot_x_control()
+                if self.window['_MOTORINFO_'].Get():
+                    lp.plot_motor_info()
 
                 # Show figures
                 plt.show(block=False)

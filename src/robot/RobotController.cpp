@@ -174,6 +174,11 @@ void RobotController::update()
             debug_.print(": ");
         }
         motors_[i].runLoop(print);
+
+        if(print)
+        {
+            debug_.println("");
+        }
     }
 
     #ifdef PRINT_DEBUG

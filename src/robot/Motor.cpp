@@ -83,6 +83,7 @@ void Motor::runLoop(bool print)
   /* Use output from PID to update our current command. Since this is a velocity controller, when the error is 0
   *  and the PID controller drives the output to 0, we actually want to maintain a certian PWM value. Hence, the 
   *  PID output is used to modify our control singal and not drive it directly
+  *  Also found similar info here after the fact: https://www.chiefdelphi.com/t/pid-for-velocity-control/85640/13
   */
   outputCmd_ += int(pidOut_);
 
@@ -128,7 +129,7 @@ void Motor::runLoop(bool print)
     Serial.print(pidOut_);
     Serial.print(", outputCmd: ");
     Serial.print(outputCmd_);
-    Serial.println("]");
+    Serial.print("]");
   }
   #endif
 
