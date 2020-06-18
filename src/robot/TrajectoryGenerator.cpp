@@ -74,6 +74,77 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     
 }
 
+void TrajectoryGenerator::generateConstVel(const Point& initialPoint,
+                                           const float vx,
+                                           const float vy,
+                                           const float va,
+                                           const float t,
+                                           const DynamicLimits& limits)
+{
+
+    // Scale max speeds and accelerations for trajectory generation
+    float TRAJ_MAX_TRANS_SPEED = (fabs(vx) > fabs(vy)) ? fabs(vx) : fabs(vy);
+    float TRAJ_MAX_TRANS_ACC = TRAJ_MAX_FRACTION * limits.max_trans_acc_;
+    float TRAJ_MAX_ROT_SPEED = fabs(va);
+    float TRAJ_MAX_ROT_ACC = TRAJ_MAX_FRACTION * limits.max_rot_acc_;
+
+    // Pre-compute some useful values
+    float timeForConstVelTrans = TRAJ_MAX_TRANS_SPEED / TRAJ_MAX_TRANS_ACC;
+    float posForConstVelTrans = 0.5 * TRAJ_MAX_TRANS_ACC * timeForConstVelTrans * timeForConstVelTrans;
+    float timeForConstVelRot = TRAJ_MAX_ROT_SPEED / TRAJ_MAX_ROT_ACC;
+    float posForConstVelRot = 0.5 * TRAJ_MAX_ROT_ACC * timeForConstVelRot * timeForConstVelRot;
+
+    // NOTE: Not checking angular component right now, can add later if needed
+    if(t < 2*timeForConstVelTrans)
+    {
+        // If the time given is too short to actually reach constant vel, just estimate a target point so that 
+        // we actually do something, and then print out a big warning
+        #ifdef PRINT_DEBUG
+        debug_.print("WARNING: SPECIFIED TRAJECTORY TIME ");
+        debug_.print(t);
+        debug_.print(" LESS THAN REQUIRED TIME ");
+        debug_.println(2*timeForConstVelTrans);
+        #endif
+
+        Point targetPoint;
+        targetPoint.x_ = initialPoint.x_ + vx * t;
+        targetPoint.y_ = initialPoint.y_ + vy * t;
+        targetPoint.a_ = initialPoint.a_ + va * t;
+            
+        generate(initialPoint, targetPoint, limits);
+    }
+    else
+    {
+        #ifdef PRINT_DEBUG
+        debug_.println("Generating const vel trajectory");
+        debug_.println("Starting point:");
+        initialPoint.print(debug_);
+        debug_.println("");
+        debug_.println("Target velocity: ");
+        debug_.print("[vx: ");
+        debug_.print(vx);
+        debug_.print(", vy: ");
+        debug_.print(vy);
+        debug_.print(", va: ");
+        debug_.print(va);
+        debug_.print(", t: ");
+        debug_.print(t);
+        debug_.println("]");
+        debug_.println("");
+        #endif
+
+        currentTraj_.xtraj_ = generate_vel_for_time_1D(initialPoint.x_, vx, t, TRAJ_MAX_TRANS_ACC);
+        currentTraj_.ytraj_ = generate_vel_for_time_1D(initialPoint.y_, vy, t, TRAJ_MAX_TRANS_ACC);
+        currentTraj_.atraj_ = generate_vel_for_time_1D(initialPoint.a_, va, t, TRAJ_MAX_ROT_ACC);
+
+        #ifdef PRINT_DEBUG
+        currentTraj_.print(debug_);
+        #endif
+
+    }
+    
+}
+
 
 std::vector<trajParams> TrajectoryGenerator::generate_triangle_1D(float startPos, float endPos, float maxVel, float maxAcc) const
 {
@@ -139,7 +210,48 @@ std::vector<trajParams> TrajectoryGenerator::generate_trapazoid_1D(float startPo
     phase3.t0_ = phase2.t_end_;
     phase3.t_end_ = phase3.t0_ + timeToReachConstVel; // Same time for deceleration as acceleration
     phase3.p0_ = phase2.p0_ + dir * deltaPositionConstVel; // Same position change for deceleration
-    phase3.v0_ = dir*maxVel;
+    phase3.v0_ = phase2.v0_;
+    phase3.a_ = -1 * phase1.a_;
+    outTraj.push_back(phase3);
+
+    return outTraj;
+}
+
+std::vector<trajParams> TrajectoryGenerator::generate_vel_for_time_1D(float startPos, float vel, float time, float maxAcc) const
+{
+    std::vector<trajParams> outTraj;
+
+    int dir = sgn(vel);
+    
+    float timeToReachConstVel = fabs(vel) / maxAcc;
+    float posToReachConstVel = dir * 0.5 * maxAcc * timeToReachConstVel * timeToReachConstVel;
+    float deltaTimeConstVel = time - 2*timeToReachConstVel;
+    float deltaPositionConstVel = deltaTimeConstVel * vel;
+
+    // First phase - acceleration to vel
+    trajParams phase1;
+    phase1.t0_ = 0;
+    phase1.t_end_ = timeToReachConstVel;
+    phase1.p0_ = startPos;
+    phase1.v0_ = 0;
+    phase1.a_ = dir*maxAcc;
+    outTraj.push_back(phase1);
+
+    // Second phase - constant velocity
+    trajParams phase2;
+    phase2.t0_ = phase1.t_end_;
+    phase2.t_end_ = phase2.t0_ + deltaTimeConstVel;
+    phase2.p0_ = phase1.p0_ + posToReachConstVel;
+    phase2.v0_ = vel;
+    phase2.a_ = 0;
+    outTraj.push_back(phase2);
+
+    // Third phase - deceleration
+    trajParams phase3;
+    phase3.t0_ = phase2.t_end_;
+    phase3.t_end_ = phase3.t0_ + timeToReachConstVel; // Same time for deceleration as acceleration
+    phase3.p0_ = phase2.p0_ + deltaPositionConstVel;
+    phase3.v0_ = phase2.v0_;
     phase3.a_ = -1 * phase1.a_;
     outTraj.push_back(phase3);
 

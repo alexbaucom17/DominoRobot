@@ -6,11 +6,13 @@
 
 const DynamicLimits FINE_LIMS = {MAX_TRANS_SPEED_FINE, MAX_TRANS_ACC_FINE, MAX_ROT_SPEED_FINE, MAX_ROT_ACC_FINE};
 const DynamicLimits COARSE_LIMS = {MAX_TRANS_SPEED_COARSE, MAX_TRANS_ACC_COARSE, MAX_ROT_SPEED_COARSE, MAX_ROT_ACC_COARSE};
-const float STEPS_PER_SECOND_TO_PWM = static_cast<float>(PWM_RESOLUTION) / static_cast<float>(STEPPER_MAX_VEL);
-const float RADS_PER_SECOND_TO_STEPS_PER_SECOND = STEPPER_PULSE_PER_REV / (2 * PI);
 
 RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater)
-: prevPositionUpdateTime_(millis()),
+: motors_{ Motor(PIN_PWM_0, PIN_DIR_0, PIN_ENC_A_0, PIN_ENC_B_0),
+           Motor(PIN_PWM_1, PIN_DIR_1, PIN_ENC_A_1, PIN_ENC_B_1),
+           Motor(PIN_PWM_2, PIN_DIR_2, PIN_ENC_A_2, PIN_ENC_B_2),
+           Motor(PIN_PWM_3, PIN_DIR_3, PIN_ENC_A_3, PIN_ENC_B_3) },
+  prevPositionUpdateTime_(millis()),
   prevControlLoopTime_(millis()),
   prevUpdateLoopTime_(millis()),
   prevOdomLoopTime_(millis()),
@@ -26,34 +28,24 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
   errSumY_(0),
   errSumA_(0),
   fineMode_(true),
+  velOnlyMode_(false),
   predict_once(false),
-  motor_velocities({0,0,0,0}),
   statusUpdater_(statusUpdater)
 {
-
+    setCoarseMotorGains();
 }
 
 void RobotController::begin()
 {
     // Setup pins
-    digitalWrite(PIN_ENABLE_ALL, HIGH);
-    pinMode(PIN_ENABLE_ALL, OUTPUT);
-
-    analogWrite(PIN_SPEED_0, 0);
-    analogWrite(PIN_SPEED_1, 0);
-    analogWrite(PIN_SPEED_2, 0);
-    analogWrite(PIN_SPEED_3, 0);
-    pinMode(PIN_SPEED_0, OUTPUT);
-    pinMode(PIN_SPEED_1, OUTPUT);
-    pinMode(PIN_SPEED_2, OUTPUT);
-    pinMode(PIN_SPEED_3, OUTPUT);
-
-    pinMode(PIN_DIR_0, OUTPUT);
-    pinMode(PIN_DIR_1, OUTPUT);
-    pinMode(PIN_DIR_2, OUTPUT);
-    pinMode(PIN_DIR_3, OUTPUT);
-
-    pinMode(PIN_SPEED_DUMMY, INPUT);
+    digitalWrite(PIN_ENABLE_0, LOW);
+    digitalWrite(PIN_ENABLE_1, LOW);
+    digitalWrite(PIN_ENABLE_2, LOW);
+    digitalWrite(PIN_ENABLE_3, LOW);
+    pinMode(PIN_ENABLE_0, OUTPUT);
+    pinMode(PIN_ENABLE_1, OUTPUT);
+    pinMode(PIN_ENABLE_2, OUTPUT);
+    pinMode(PIN_ENABLE_3, OUTPUT);
 
     // Setup Kalman filter
     double dt = 0.1;
@@ -71,38 +63,54 @@ void RobotController::moveToPosition(float x, float y, float a)
 {
     goalPos_ = Point(x,y,a);
     trajGen_.generate(cartPos_, goalPos_, COARSE_LIMS);
-    trajRunning_ = true;
-    trajStartTime_ = millis();
-    prevControlLoopTime_ = 0;
     fineMode_ = false;
-    enableAllMotors();
-    #ifdef PRINT_DEBUG
-    debug_.println("Starting move");
-    #endif
+    velOnlyMode_ = false;
+    startTraj();
 }
 
 void RobotController::moveToPositionRelative(float x, float y, float a)
 {
     goalPos_ = Point(cartPos_.x_ + x, cartPos_.y_ + y, cartPos_.a_ + a);
     trajGen_.generate(cartPos_, goalPos_, COARSE_LIMS);
-    trajRunning_ = true;
-    trajStartTime_ = millis();
-    prevControlLoopTime_ = 0;
     fineMode_ = false;
-    enableAllMotors();
-    #ifdef PRINT_DEBUG
-    debug_.println("Starting move");
-    #endif
+    velOnlyMode_ = false;
+    startTraj();
 }
 
 void RobotController::moveToPositionFine(float x, float y, float a)
 {
     goalPos_ = Point(x,y,a);
     trajGen_.generate(cartPos_, goalPos_, FINE_LIMS);
+    fineMode_ = false;
+    velOnlyMode_ = false;
+    startTraj();
+
+}
+
+void RobotController::moveConstVel(float vx , float vy, float va, float t)
+{
+    trajGen_.generateConstVel(cartPos_, vx, vy, va, t, COARSE_LIMS);
+    fineMode_ = false;
+    velOnlyMode_ = true;
+    startTraj();
+}
+
+void RobotController::startTraj()
+{
     trajRunning_ = true;
     trajStartTime_ = millis();
     prevControlLoopTime_ = 0;
-    fineMode_ = false;
+
+    if(fineMode_)
+    {
+        setFineMotorGains();
+    }
+    else
+    {
+        setCoarseMotorGains();
+    }
+    
+
     enableAllMotors();
     #ifdef PRINT_DEBUG
     debug_.println("Starting move");
@@ -116,69 +124,74 @@ void RobotController::estop()
     #endif 
     trajRunning_ = false;
     fineMode_ = true;
+    velOnlyMode_ = false;
     disableAllMotors();
 }
 
-void RobotController::update()
+void RobotController::setCoarseMotorGains()
 {
-    // Compute the amount of time since the last update
-    unsigned long curMillis = millis();
-    unsigned long dt_ms = curMillis - prevUpdateLoopTime_;
-    prevUpdateLoopTime_ = curMillis;  
-    
+    motors_[MOTOR_IDX_FL].setGains(FRONT_MOTOR_KP_COARSE, FRONT_MOTOR_KI_COARSE, FRONT_MOTOR_KD_COARSE);
+    motors_[MOTOR_IDX_FR].setGains(FRONT_MOTOR_KP_COARSE, FRONT_MOTOR_KI_COARSE, FRONT_MOTOR_KD_COARSE);
+    motors_[MOTOR_IDX_BL].setGains(REAR_MOTOR_KP_COARSE, REAR_MOTOR_KI_COARSE, REAR_MOTOR_KD_COARSE);
+    motors_[MOTOR_IDX_BR].setGains(REAR_MOTOR_KP_COARSE, REAR_MOTOR_KI_COARSE, REAR_MOTOR_KD_COARSE);
+}
+
+void RobotController::setFineMotorGains()
+{
+    motors_[MOTOR_IDX_FL].setGains(FRONT_MOTOR_KP_FINE, FRONT_MOTOR_KI_FINE, FRONT_MOTOR_KD_FINE);
+    motors_[MOTOR_IDX_FR].setGains(FRONT_MOTOR_KP_FINE, FRONT_MOTOR_KI_FINE, FRONT_MOTOR_KD_FINE);
+    motors_[MOTOR_IDX_BL].setGains(REAR_MOTOR_KP_FINE, REAR_MOTOR_KI_FINE, REAR_MOTOR_KD_FINE);
+    motors_[MOTOR_IDX_BR].setGains(REAR_MOTOR_KP_FINE, REAR_MOTOR_KI_FINE, REAR_MOTOR_KD_FINE);
+}
+
+void RobotController::update()
+{    
+    // Create a command based on the trajectory or not moving
     PVTPoint cmd;
     if(trajRunning_)
     {
-        float dt = static_cast<float>((curMillis - trajStartTime_) / 1000.0); // Convert to seconds
-        cmd = trajGen_.lookup(dt);
+        runTraj(&cmd);
+    }
+    else
+    {       
+        resetTraj(&cmd);
+    }
 
-        #ifdef PRINT_DEBUG
-        debug_.println("");
-        debug_.print("Target: ");
-        cmd.print(debug_);
-        debug_.println("");
+    // Run controller and odometry update
+    computeControl(cmd);
+    computeOdometry();
+
+    // Update the motors
+    for (int i = 0; i < 4; i++)
+    {
+        // Hack
+        bool print = false;
+        if(trajRunning_)
+        {
+            print = true;
+            debug_.print("Motor");
+            debug_.print(i);
+            debug_.print(": ");
+        }
+        motors_[i].runLoop(print);
+
+        if(print)
+        {
+            debug_.println("");
+        }
+    }
+
+    #ifdef PRINT_DEBUG
+    if (trajRunning_)
+    {
         debug_.print("Est Vel: ");
         cartVel_.print(debug_);
         debug_.println("");
         debug_.print("Est Pos: ");
         cartPos_.print(debug_);
         debug_.println("");
-        #endif
-       
-        // Stop trajectory
-        if (checkForCompletedTrajectory(cmd))
-        {
-            disableAllMotors();
-            trajRunning_ = false;
-            // Re-enable fine mode at the end of a trajectory
-            fineMode_ = true;
-        }
     }
-    else
-    {       
-        // Force velocity to 0
-        cartVel_.x_ = 0;
-        cartVel_.y_ = 0;
-        cartVel_.a_ = 0;
-      
-        // Force cmd to 0
-        cmd.position_.x_ = cartPos_.x_;
-        cmd.position_.y_ = cartPos_.y_;
-        cmd.position_.a_ = cartPos_.a_;;
-        cmd.velocity_.x_ = 0;
-        cmd.velocity_.y_ = 0;
-        cmd.velocity_.a_ = 0;
-        cmd.time_ = 0; // Doesn't matter, not used
-
-        // Make sure integral terms in controller don't wind up
-        errSumX_ = 0;
-        errSumY_ = 0;
-        errSumA_ = 0;
-    }
-
-    // Run controller and odometry update
-    computeControl(cmd);
-    computeOdometry();
+    #endif
 
     // Update status 
     statusUpdater_.updatePosition(cartPos_.x_, cartPos_.y_, cartPos_.a_);
@@ -187,6 +200,54 @@ void RobotController::update()
     statusUpdater_.updatePositionConfidence(P(0,0), P(1,1), P(2,2));
 }
 
+
+void RobotController::runTraj(PVTPoint* cmd)
+{
+    float dt = static_cast<float>((millis() - trajStartTime_) / 1000.0); // Convert to seconds
+    *cmd = trajGen_.lookup(dt);
+
+    #ifdef PRINT_DEBUG
+    debug_.println("");
+    debug_.print("Target: ");
+    cmd->print(debug_);
+    debug_.println("");
+    #endif
+    
+    // Stop trajectory
+    if (checkForCompletedTrajectory(*cmd))
+    {
+        disableAllMotors();
+        trajRunning_ = false;
+        // Re-enable fine mode at the end of a trajectory
+        fineMode_ = true;
+    }
+}
+
+void RobotController::resetTraj(PVTPoint* cmd)
+{
+    // Force velocity to 0
+    cartVel_.x_ = 0;
+    cartVel_.y_ = 0;
+    cartVel_.a_ = 0;
+    
+    // Force cmd to 0
+    cmd->position_.x_ = cartPos_.x_;
+    cmd->position_.y_ = cartPos_.y_;
+    cmd->position_.a_ = cartPos_.a_;;
+    cmd->velocity_.x_ = 0;
+    cmd->velocity_.y_ = 0;
+    cmd->velocity_.a_ = 0;
+    cmd->time_ = 0; // Doesn't matter, not used
+
+    // Make sure integral terms in controller don't wind up
+    errSumX_ = 0;
+    errSumY_ = 0;
+    errSumA_ = 0;
+
+    // Flags
+    fineMode_ = true;
+    velOnlyMode_ = false;
+}
 
 void RobotController::computeControl(PVTPoint cmd)
 {
@@ -214,10 +275,23 @@ void RobotController::computeControl(PVTPoint cmd)
     errSumA_ += posErrA * dt;
     float a_cmd = cmd.velocity_.a_ + CART_ROT_KP * posErrA + CART_ROT_KD * velErrA + CART_ROT_KI * errSumA_;
 
+    #ifdef PRINT_DEBUG
+    if(trajRunning_)
+    {
+        debug_.print("CartesianControlX: [PosErr:");
+        debug_.print(posErrX, 4);
+        debug_.print(", VelErr:");
+        debug_.print(velErrX, 4);
+        debug_.print(", ErrSum:");
+        debug_.print(errSumX_, 4);
+        debug_.println("]");
+    }
+    #endif
+
     setCartVelCommand(x_cmd, y_cmd, a_cmd);
 }
 
-bool RobotController::checkForCompletedTrajectory(PVTPoint cmd)
+bool RobotController::checkForCompletedTrajectory(const PVTPoint cmd)
 {
     float trans_pos_err = TRANS_POS_ERR_COARSE;
     float ang_pos_err = ANG_POS_ERR_COARSE;
@@ -234,9 +308,10 @@ bool RobotController::checkForCompletedTrajectory(PVTPoint cmd)
        fabs(cartVel_.x_) < trans_vel_err && 
        fabs(cartVel_.y_) < trans_vel_err && 
        fabs(cartVel_.a_) < ang_vel_err &&
-       fabs(goalPos_.x_ - cartPos_.x_) < trans_pos_err &&
-       fabs(goalPos_.y_ - cartPos_.y_) < trans_pos_err &&
-       fabs(angle_diff(goalPos_.a_, cartPos_.a_)) < ang_pos_err )
+       (velOnlyMode_ || 
+       (fabs(goalPos_.x_ - cartPos_.x_) < trans_pos_err &&
+        fabs(goalPos_.y_ - cartPos_.y_) < trans_pos_err &&
+        fabs(angle_diff(goalPos_.a_, cartPos_.a_)) < ang_pos_err )) )
     {
         #ifdef PRINT_DEBUG
         debug_.println("Reached goal");
@@ -251,7 +326,10 @@ bool RobotController::checkForCompletedTrajectory(PVTPoint cmd)
 
 void RobotController::enableAllMotors()
 {
-    digitalWrite(PIN_ENABLE_ALL, LOW);
+    digitalWrite(PIN_ENABLE_0, HIGH);
+    digitalWrite(PIN_ENABLE_1, HIGH);
+    digitalWrite(PIN_ENABLE_2, HIGH);
+    digitalWrite(PIN_ENABLE_3, HIGH);
     enabled_ = true;
     #ifdef PRINT_DEBUG
     debug_.println("Enabling motors");
@@ -260,7 +338,10 @@ void RobotController::enableAllMotors()
 
 void RobotController::disableAllMotors()
 {
-    digitalWrite(PIN_ENABLE_ALL, HIGH);
+    digitalWrite(PIN_ENABLE_0, LOW);
+    digitalWrite(PIN_ENABLE_1, LOW);
+    digitalWrite(PIN_ENABLE_2, LOW);
+    digitalWrite(PIN_ENABLE_3, LOW);
     enabled_ = false;
     #ifdef PRINT_DEBUG
     debug_.println("Disabling motors");
@@ -271,11 +352,12 @@ void RobotController::inputPosition(float x, float y, float a)
 {
     if(fineMode_)
     {
-      // Updat kalman filter for position observation
+      // Update kalman filter for position observation
       mat z = mat::zeros(3,1);
       z(0,0) = x;
       z(1,0) = y;
       z(2,0) = a;
+
       // Scale covariance estimate based on velocity due to measurment lag
       mat R = mat::zeros(3,3);
       R(0,0) = MEAS_NOISE_SCALE + MEAS_NOISE_VEL_SCALE_FACTOR * fabs(cartVel_.x_);
@@ -293,14 +375,58 @@ void RobotController::inputPosition(float x, float y, float a)
 
 void RobotController::computeOdometry()
 {  
+    // Read velocities from the motors
+    float motor_velocities[4];
+    for (int i = 0; i < 4; i++)
+    {
+        motor_velocities[i] = motors_[i].getCurrentVelocity();
+    }
+
+    #ifdef PRINT_DEBUG
+    if (trajRunning_)
+    {
+        debug_.print("MotorMeasured: [");
+        debug_.print(motor_velocities[0], 4);
+        debug_.print(", ");
+        debug_.print(motor_velocities[1], 4);
+        debug_.print(", ");
+        debug_.print(motor_velocities[2], 4);
+        debug_.print(", ");
+        debug_.print(motor_velocities[3], 4);
+        debug_.println("]");
+    }
+    #endif
+
+    // Read encoder counts for debugging
+    long motor_counts[4];
+    for (int i = 0; i < 4; i++)
+    {
+        motor_counts[i] = motors_[i].getCounts();
+    }
+
+    #ifdef PRINT_DEBUG
+    if (trajRunning_)
+    {
+        debug_.print("MotorCounts: [");
+        debug_.print(motor_counts[0]);
+        debug_.print(", ");
+        debug_.print(motor_counts[1]);
+        debug_.print(", ");
+        debug_.print(motor_counts[2]);
+        debug_.print(", ");
+        debug_.print(motor_counts[3]);
+        debug_.println("]");
+    }
+    #endif
+
     // Do forward kinematics to compute local cartesian velocity
     float local_cart_vel[3];
     float s0 = 0.5 * WHEEL_DIAMETER * sin(PI/4.0);
     float c0 = 0.5 * WHEEL_DIAMETER * cos(PI/4.0);
     float d0 = WHEEL_DIAMETER / (4.0 * WHEEL_DIST_FROM_CENTER);
-    local_cart_vel[0] = -c0 * motor_velocities[0] + s0 * motor_velocities[1] + c0 * motor_velocities[2] - s0 * motor_velocities[3];
-    local_cart_vel[1] =  s0 * motor_velocities[0] + c0 * motor_velocities[1] - s0 * motor_velocities[2] - c0 * motor_velocities[3];
-    local_cart_vel[2] =  d0 * motor_velocities[0] + d0 * motor_velocities[1] + d0 * motor_velocities[2] + d0 * motor_velocities[3];
+    local_cart_vel[0] = 1/ODOM_SCALE_FACTOR* (-c0 * motor_velocities[MOTOR_IDX_FL] + s0 * motor_velocities[MOTOR_IDX_FR] + c0 * motor_velocities[MOTOR_IDX_BR] - s0 * motor_velocities[MOTOR_IDX_BL]);
+    local_cart_vel[1] = 1/ODOM_SCALE_FACTOR* ( s0 * motor_velocities[MOTOR_IDX_FL] + c0 * motor_velocities[MOTOR_IDX_FR] - s0 * motor_velocities[MOTOR_IDX_BR] - c0 * motor_velocities[MOTOR_IDX_BL]);
+    local_cart_vel[2] = 1/ODOM_SCALE_FACTOR* ( d0 * motor_velocities[MOTOR_IDX_FL] + d0 * motor_velocities[MOTOR_IDX_FR] + d0 * motor_velocities[MOTOR_IDX_BR] + d0 * motor_velocities[MOTOR_IDX_BL]);
 
     // Convert local cartesian velocity to global cartesian velocity using the last estimated angle
     float cA = cos(cartPos_.a_);
@@ -336,13 +462,18 @@ void RobotController::computeOdometry()
 
 void RobotController::setCartVelCommand(float vx, float vy, float va)
 {
-//    debug_.print("CartVelCmd: [vx: ");
-//    debug_.print(vx, 4);
-//    debug_.print(", vy ");
-//    debug_.print(vy, 4);
-//    debug_.print(", va: ");
-//    debug_.print(va, 4);
-//    debug_.println("]");
+    #ifdef PRINT_DEBUG
+    if (trajRunning_) 
+    {
+        debug_.print("CartVelCmd: [vx: ");
+        debug_.print(vx, 4);
+        debug_.print(", vy: ");
+        debug_.print(vy, 4);
+        debug_.print(", va: ");
+        debug_.print(va, 4);
+        debug_.println("]");
+    }
+    #endif
 
     float max_trans_speed = COARSE_LIMS.max_trans_vel_;
     float max_rot_speed = COARSE_LIMS.max_rot_vel_;
@@ -379,47 +510,33 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     local_cart_vel[2] = va;
 
     // Convert local velocities to wheel speeds with inverse kinematics
+    float motor_velocities[4];
     float s0 = sin(PI/4);
     float c0 = cos(PI/4);
-    motor_velocities[0] = 1/WHEEL_DIAMETER * (-c0*local_cart_vel[0] + s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motor_velocities[1] = 1/WHEEL_DIAMETER * ( s0*local_cart_vel[0] + c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motor_velocities[2] = 1/WHEEL_DIAMETER * ( c0*local_cart_vel[0] - s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motor_velocities[3] = 1/WHEEL_DIAMETER * (-s0*local_cart_vel[0] - c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[MOTOR_IDX_FL] = ODOM_SCALE_FACTOR * 1/WHEEL_DIAMETER * (-c0*local_cart_vel[0] + s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[MOTOR_IDX_FR] = ODOM_SCALE_FACTOR * 1/WHEEL_DIAMETER * ( s0*local_cart_vel[0] + c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[MOTOR_IDX_BR] = ODOM_SCALE_FACTOR * 1/WHEEL_DIAMETER * ( c0*local_cart_vel[0] - s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    motor_velocities[MOTOR_IDX_BL] = ODOM_SCALE_FACTOR * 1/WHEEL_DIAMETER * (-s0*local_cart_vel[0] - c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+
+    #ifdef PRINT_DEBUG
+    if (trajRunning_)
+    {
+        debug_.print("MotorCommands: [");
+        debug_.print(motor_velocities[0], 4);
+        debug_.print(", ");
+        debug_.print(motor_velocities[1], 4);
+        debug_.print(", ");
+        debug_.print(motor_velocities[2], 4);
+        debug_.print(", ");
+        debug_.print(motor_velocities[3], 4);
+        debug_.println("]");
+    }
+    #endif
 
     // Send the commanded velocity for each motor
-    writeVelocity(motor_velocities[DRIVER_0_MOTOR], PIN_SPEED_0, PIN_DIR_0);
-    writeVelocity(motor_velocities[DRIVER_1_MOTOR], PIN_SPEED_1, PIN_DIR_1);
-    writeVelocity(motor_velocities[DRIVER_2_MOTOR], PIN_SPEED_2, PIN_DIR_2);
-    writeVelocity(motor_velocities[DRIVER_3_MOTOR], PIN_SPEED_3, PIN_DIR_3);
-
-}
-
-void RobotController::writeVelocity(float speed, int speed_pin, int dir_pin)
-{
-    if(speed > 0)
+    for (int i = 0; i < 4; i++)
     {
-        digitalWrite(dir_pin, HIGH);
-    }
-    else
-    {
-        digitalWrite(dir_pin, LOW);
-        speed = -1*speed;
+        motors_[i].setCommand(motor_velocities[i]);
     }
 
-    // Speed is in rad/s so we have to translate to steps/sec and then to a pwm output
-    float speed_steps_per_sec = speed * RADS_PER_SECOND_TO_STEPS_PER_SECOND;
-    uint8_t val = static_cast<uint8_t>(speed_steps_per_sec * STEPS_PER_SECOND_TO_PWM);
-    analogWrite(speed_pin, val);
-
-//    debug_.print(speed_pin);
-//    debug_.print(", ");
-//    debug_.print(speed);
-//    debug_.print(", ");
-//    debug_.print(RADS_PER_SECOND_TO_STEPS_PER_SECOND);
-//    debug_.print(", ");
-//    debug_.print(speed_steps_per_sec);
-//    debug_.print(", ");
-//    debug_.print(STEPS_PER_SECOND_TO_PWM);
-//    debug_.print(", ");
-//    debug_.println(val);
 }

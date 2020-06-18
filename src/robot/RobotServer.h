@@ -7,28 +7,12 @@
 #define RobotServer_h
 
 #include <HardwareSerial.h>
+#include "SimpleServer.h"
 #include "StatusUpdater.h"
 
-#define START_CHAR '<'
-#define END_CHAR '>'
-
-class RobotServer
+class RobotServer : public SimpleServer
 {
   public:
-
-    enum COMMAND
-    {
-       NONE,
-       MOVE,
-       MOVE_REL,
-       MOVE_FINE,
-       PLACE_TRAY,
-       LOAD_TRAY,
-       INITIALIZE_TRAY,
-       POSITION,
-       ESTOP,
-       LOAD_COMPLETE,
-    };
 
     struct PositionData
     {
@@ -36,40 +20,32 @@ class RobotServer
       float y;
       float a;
     };
+
+    struct VelocityData
+    {
+      float vx;
+      float vy;
+      float va;
+      float t;
+    };
     
     // Constructor
     RobotServer(HardwareSerial& serial, HardwareSerial& debug, const StatusUpdater& statusUpdater);
-
-    void begin();
-
-    RobotServer::COMMAND oneLoop();
 
     RobotServer::PositionData getMoveData();
 
     RobotServer::PositionData getPositionData();
 
-  private:
+    RobotServer::VelocityData getVelocityData();
 
-    HardwareSerial& serial_;
-    HardwareSerial& debug_;
-    bool clientConnected_;
-    bool wifiConnected_;
-    bool recvInProgress_;
-    int recvIdx_;
-    String buffer_;
+  private:
     PositionData moveData_;
     PositionData positionData_;
-
-    String getAnyIncomingMessage();
-    String cleanString(String message);
-    COMMAND getCommand(String message);
-    void printIncommingCommand(String message);
-
+    VelocityData velocityData_;
     const StatusUpdater& statusUpdater_;
-    
-    void sendMsg(String msg, bool print_debug=true);
-    void sendAck(String data);
-    void sendErr(String data);
+
+    virtual COMMAND getCommand(String message) override;
+
     void sendStatus();
 
 };

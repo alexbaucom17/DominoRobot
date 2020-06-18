@@ -12,7 +12,6 @@ String StatusUpdater::getStatusJsonString()
 {
     // Return the status string
     return currentStatus_.toJsonString();
-
 }
 
 void StatusUpdater::updatePosition(float x, float y, float a)

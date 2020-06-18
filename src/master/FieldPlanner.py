@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.patches as patches
 import math
 import enum
+import logging
 
 
 class DominoField:
@@ -22,23 +23,23 @@ class DominoField:
         self.n_tiles_y = 0
         self.tiles = []
 
-        print('Generating domino field from image...',end='',flush=True)
+        logging.info('Generating domino field from image...',end='',flush=True)
         self._generateField()
-        print('done.')
+        logging.info('done.')
 
-        print('Generating tiles from field...',end='',flush=True)
+        logging.info('Generating tiles from field...',end='',flush=True)
         self._generateTiles()
-        print('done.')
+        logging.info('done.')
 
 
     def printStats(self):
         # Output some metrics
-        print('Domino usage:')
-        print('Total number of dominos: ' + str(self.img_parsed_ids.size))
-        print('Colors:')
+        logging.info('Domino usage:')
+        logging.info('Total number of dominos: ' + str(self.img_parsed_ids.size))
+        logging.info('Colors:')
         unique_colors, counts = np.unique(self.img_parsed_ids, return_counts=True)
         for i, id in enumerate(unique_colors):
-            print('  ' + self.cfg.dominos[id][0] + ': ' + str(counts[i]))
+            logging.info('  ' + self.cfg.dominos[id][0] + ': ' + str(counts[i]))
 
     def show_image_parsing(self):
         # Plot images
@@ -287,6 +288,9 @@ class ActionTypes(enum.Enum):
     PLACE = 5,
     TRAY_INIT = 6, 
     LOAD_COMPLETE = 7,
+    ESTOP = 8,
+    WAIT = 9, # TODO: Make sure this is handled correctly everywhere, probably just in master....
+    MOVE_CONST_VEL = 10,
 
 class Action:
 
@@ -297,6 +301,22 @@ class Action:
     def draw(self, ax):
         pass
 
+class MoveConstVelAction(Action):
+
+    def __init__(self, action_type, name, vx, vy, va, t):
+        # action_type (enum)
+        # string name
+        # X velocity [m/s]
+        # Y velocity [m/s]
+        # Angle [rad/s]
+        # time [sec]
+
+        super().__init__(action_type, name)
+
+        self.vx = float(vx)
+        self.vy = float(vy)
+        self.va = float(va)
+        self.t = float(t)
 
 class MoveAction(Action):
 
@@ -305,7 +325,7 @@ class MoveAction(Action):
         # string name
         # X position [m]
         # Y position [m]
-        # Angle [deg]
+        # Angle [rad]
 
         super().__init__(action_type, name)
 
@@ -369,7 +389,7 @@ def generate_action_sequence(cfg, tile):
     # Setup positions
     tile_pos_in_field_frame = np.array(tile.getPlacementPositionInMeters())
     tile_pos_in_global_frame = tile_pos_in_field_frame + cfg.domino_field_origin
-    robot_placement_fine_pose = tile_pos_in_global_frame + cfg.frame_to_robot_offset #TODO: make sure this work, might need to be a transform
+    robot_placement_fine_pose = tile_pos_in_global_frame + cfg.frame_to_robot_offset #TODO: make sure this works, might need to be a transform
     robot_placement_coarse_pose = robot_placement_fine_pose - cfg.tile_placement_coarse_offset
     base_station_coarse_pos = cfg.base_station_target_pose + cfg.base_station_coarse_pose_offset
 
@@ -473,9 +493,9 @@ class Plan:
         self.field = DominoField(cfg)
         self.cycles = []
 
-        print('Generating robot actions...',end='',flush=True)
+        logging.info('Generating robot actions...',end='',flush=True)
         self._generate_all_cycles()
-        print('done.')
+        logging.info('done.')
 
     def _generate_all_cycles(self):
         start_num = 1
@@ -501,10 +521,40 @@ class Plan:
 
 
 
+class TestPlan:
+    """
+    Test plan used for debugging and testing various action sequences
+    """
+
+    def __init__(self):
+        actions = []
+        actions.append(MoveAction(ActionTypes.MOVE_COARSE, "TestMoveCoarse", 0.5, 0.5, 0))
+        actions.append(MoveAction(ActionTypes.MOVE_FINE, 'TestMoveFine', 1,1,0))
+
+        self.cycles = [{'id':'robot1', 'action_sequence': actions}]
+
+    def get_cycle(self, cycle_num):
+        try:
+            return self.cycles[cycle_num]
+        except IndexError:
+            return None
+
+
+
 if __name__ == '__main__':
 
     import config
     cfg = config.Config()
+
+    logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(os.path.join(cfg.log_folder,"planner.log")),
+        logging.StreamHandler()
+        ]
+    )
+
     pm = PlanManager(cfg)
 
     plan = pm.get_plan()

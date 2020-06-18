@@ -3,17 +3,47 @@ import math
 import copy
 import config
 import os
+import sys
 import pickle
+import logging
 import PySimpleGUI as sg
 
-from FieldPlanner import Plan, ActionTypes, Action, MoveAction
-from Runtime import RuntimeManager
+from FieldPlanner import Plan, ActionTypes, Action, MoveAction, TestPlan, MoveConstVelAction
+from Runtime import RuntimeManager, OFFLINE_TESTING, SKIP_MARVELMIND
 
 
 def status_panel(name):
     width = 40
     height = 10
-    return [[sg.Text("{} status".format(name))], [sg.Text("{} offline".format(name), size=(width, height), relief=sg.RELIEF_RAISED, key='_{}_STATUS_'.format(name.upper())) ]]
+    return [[sg.Text("{} status".format(name))], [sg.Text("{} offline".format(name), size=(width, height), relief=sg.RELIEF_RIDGE, key='_{}_STATUS_'.format(name.upper())) ]]
+
+def setup_gui_layout(panel_names, target_names):
+    # Left hand column with status panels
+    col1 = []
+    for name in panel_names:
+        col1 += status_panel(name)
+
+    # Middle column with plot and buttons
+    target_element = [ [sg.Text("Target: ")], [sg.Combo(target_names, key='_TARGET_')] ]
+
+    actions = [a for a in ActionTypes]
+    action_element = [ [sg.Text("Action: ")], [sg.Combo(actions, key='_ACTION_')] ]
+
+    data_element = [ [sg.Text('Data:')], [sg.Input(key='_ACTION_DATA_')] ]
+
+    run_button = [[sg.Button('Run Plan', button_color=('white','green'), size=[20,5], pad=(5,30)) ]]
+    estop_button = [[sg.Button('ESTOP', button_color=('white','red'), size=[20,5], pad=(5,30)) ]]
+    manual_button = [[sg.Button('Send Command', button_color=('white','blue'), size=[20,5], pad=(5,30)) ]]
+
+    col2 = [[sg.Graph(canvas_size=(600,600), graph_bottom_left=(-5,-5), graph_top_right=(5, 5), key="_GRAPH_", background_color="grey") ],
+            [sg.Column(target_element), sg.Column(action_element), sg.Column(data_element)],
+            [sg.Column(run_button), sg.Column(estop_button), sg.Column(manual_button)]  ]
+
+    # Right hand column with text ouput
+    col3 = [[sg.Output(size=(50, 50))]]
+    
+    return [[ sg.Column(col1), sg.Column(col2), sg.Column(col3)]]
+
 
 class CmdGui:
 
@@ -21,41 +51,22 @@ class CmdGui:
 
         self.config = config
         
-        sg.change_look_and_feel('Dark Blue 3')
+        sg.change_look_and_feel('DarkBlack')
 
-        names = ["{}".format(n) for n in self.config.ip_map]
-        names += ['base', 'plan', 'pos']
-        col1 = []
-        for name in names:
-            col1 += status_panel(name)
-
-        targets = copy.deepcopy(names)
-        targets.remove('plan')
-        target_element = [ [sg.Text("Target: ")], [sg.Combo(targets, key='_TARGET_')] ]
-
-        actions = [a for a in ActionTypes]
-        action_element = [ [sg.Text("Action: ")], [sg.Combo(actions, key='_ACTION_')] ]
-
-        data_element = [ [sg.Text('Data:')], [sg.Input(key='_ACTION_DATA_')] ]
-
-        button_element = [[sg.Button('Send')], [sg.Button('Run Plan')]]
-
-        col2 = [[sg.Graph(canvas_size=(600,600), graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white") ],
-                [sg.Column(target_element), sg.Column(action_element), sg.Column(data_element), sg.Column(button_element)]]
-
-        col3 = [[sg.Output(size=(50, 50))]]
-        #col3 = [[sg.Text("Temp place for output")]]
-        
-        layout = [[ sg.Column(col1), sg.Column(col2), sg.Column(col3)]]
+        panel_names = ["{}".format(n) for n in self.config.ip_map]
+        panel_names += ['base', 'plan', 'pos']
+        target_names = copy.deepcopy(panel_names)
+        target_names.remove('plan')
+        layout = setup_gui_layout(panel_names, target_names)
 
         self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True)
         self.window.finalize()
 
         self.viz_figs = {}
 
-    
     def close(self):
         self.window.close()
+
 
     def update(self):
 
@@ -63,21 +74,27 @@ class CmdGui:
 
         # At exit, check if we should keep marvelmind on
         if event is None or event == 'Exit':
-            clicked_value = sg.popup_yes_no('Do you want to keep the Marvelmind running')
-            if clicked_value == "Yes":
-                return "ExitMM", None
-            else:
+            if OFFLINE_TESTING or SKIP_MARVELMIND:
                 return 'Exit', None
+            else:
+                clicked_value = sg.popup_yes_no('Do you want to keep the Marvelmind running')
+                if clicked_value == "Yes":
+                    return "ExitMM", None
+                else:
+                    return 'Exit', None
         
         # Sending a manual action (via button or pressing enter)
-        if event in ('Send', '\r', '\n'):
+        if event in ('Send Command', '\r', '\n'):
             manual_action = self._parse_manual_action(values)
             self.window['_ACTION_DATA_'].update("")
             return 'Action', manual_action
 
         # Pressing the run plan button
-        if event in ("Run Plan"):
+        if event == "Run Plan":
             return "Run", None
+
+        if event == "ESTOP":
+            return "ESTOP", None
 
         return None, None
 
@@ -92,6 +109,10 @@ class CmdGui:
             data = data_str.split(',')
             data = [x.strip() for x in data]
             action = MoveAction(action_type, name, data[0], data[1], data[2])
+        elif action_type in [ActionTypes.MOVE_CONST_VEL]:
+            data = data_str.split(',')
+            data = [x.strip() for x in data]
+            action = MoveConstVelAction(action_type, name, data[0], data[1], data[2], data[3])
         else:
             action = Action(action_type, name)
 
@@ -119,20 +140,20 @@ class CmdGui:
                     status_dict['frac_dropped_time']*100, status_dict['time_since_last_sent'])
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
-                print("Message exception: " + repr(e))
 
         self.window['_POS_STATUS_'].update(status_str)
 
     def _update_plan_panel(self, status_dict):
-        status_str = "Cannot get plan status"
+        status_str = "Plan is not running"
         if status_dict:
             try:
-                # TODO: update when plan is ready
                 status_str = ""
-                status_str += "Got plan dict\n"
+                for id, data in status_dict.items():
+                    status_str += "{}\n".format(id)
+                    status_str += "  Cycle: {}\n".format(data["cycle"])
+                    status_str += "  Action: {}\n".format(data["action"])
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
-                print("Message exception: " + repr(e))
 
         self.window['_PLAN_STATUS_'].update(status_str)
 
@@ -140,12 +161,13 @@ class CmdGui:
         status_str = "Cannot get base status"
         if status_dict:
             try:
-                # TODO: update when base is ready
                 status_str = ""
-                status_str += "Got base dict\n"
+                status_str += "Sensors: [{}, {}, {}, {}]\n".format(
+                    status_dict['sensor_1'],status_dict['sensor_2'],status_dict['sensor_3'],status_dict['sensor_4'])
+                status_str += "Action in Progress: {}\n".format(status_dict['in_progress'])
+                status_str += "Counter: {}\n".format(status_dict['counter'])
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
-                print("Message exception: " + repr(e))
 
         self.window['_BASE_STATUS_'].update(status_str)
 
@@ -167,7 +189,6 @@ class CmdGui:
                 self._update_robot_viz_position(robot_id, status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
-                print("Message exception: " + repr(e))
 
         self.window['_{}_STATUS_'.format(robot_id.upper())].update(status_str)
 
@@ -193,69 +214,26 @@ class CmdGui:
         figs.append(self.window['_GRAPH_'].DrawLine(point_from=back_right_point, point_to=front_point, color='black'))
         figs.append(self.window['_GRAPH_'].DrawLine(point_from=[x,y], point_to=front_point, color='red'))
         return figs
-
-
-
-class CmdGenerator:
-    # TODO: Make this usable with refactor. Probably turns into a Plan object generated at runtime
-    """ Generate commands for testing"""
-    def __init__(self, steps=None):
-        self.cur_step = 0
-        self.step_timer = NonBlockingTimer(1)
-        # Number is wait for that long, string is command, -1 is done, -2 is repeat
-        if steps:
-            self.steps = steps
-        else:
-            self.steps = [1, "move[2.75,2.75,-1.57]", 3, "fine[3,3,-1.57]", 2, "fine[2.75,2.75,-1.57]", 1, "move[1,2,-1.57]", -2]
-        self.done = False
-
-    def next_step(self, in_progress):
-        cmd = None
-        if self.done:
-            return cmd
-
-        if self.step_timer.check() and in_progress is False:
-            new_cmd = self.steps[self.cur_step]
-            self.cur_step += 1
-            if isinstance(new_cmd, str):
-                cmd = new_cmd
-                print("Command generator executing command: {}".format(new_cmd))
-                self.step_timer = NonBlockingTimer(2)
-            elif isinstance(new_cmd, int):
-                if new_cmd == -1:
-                    print("Command generator done")
-                    self.done = True
-                elif new_cmd == -2:
-                    print("Repeating command generator")
-                    self.step_timer = NonBlockingTimer(1)
-                    self.cur_step = 0
-                else:
-                    print("Command generator waiting for {} seconds".format(new_cmd))
-                    self.step_timer = NonBlockingTimer(new_cmd)
-
-        return cmd
     
 
 class Master:
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, gui_handle):
 
         self.cfg = cfg
         self.plan_cycle_number = 0
         self.plan = None
         self.load_plan()
-        self.cmd_gui = CmdGui(self.cfg)
+        # For debugging, comment out plan lines above
+        # self.plan = TestPlan()
+        self.cmd_gui = gui_handle
         self.plan_running = False
 
-        print("Initializing Master")
+        logging.info("Initializing Master")
         self.runtime_manager = RuntimeManager(self.cfg)
         self.runtime_manager.initialize()
-        # TODO: Maybe make this non-blocking and handle waiting in background to make gui work
-        while self.runtime_manager.get_initialization_status() != RuntimeManager.STATUS_FULLY_INITIALIZED:
-            print("Waiting for init to finish")
-            time.sleep(1)
+        self.initialized = False
 
-        print("Init completed, starting main loop")
 
     def load_plan(self):
 
@@ -264,39 +242,50 @@ class Master:
             if os.path.exists(self.cfg.plan_file):
                 with open(self.cfg.plan_file, 'rb') as f:
                     self.plan = pickle.load(f)
-                    print("Loaded plan from {}".format(self.cfg.plan_file))
+                    logging.info("Loaded plan from {}".format(self.cfg.plan_file))
             else:
                 self.plan = Plan(self.cfg)
                 with open(self.cfg.plan_file, 'wb') as f:
                     pickle.dump(self.plan, f)
-                    print("Saved plan to {}".format(self.cfg.plan_file))
+                    logging.info("Saved plan to {}".format(self.cfg.plan_file))
 
 
     def loop(self):
 
         keep_mm_running = False
         while True:
-            
-            # If we have an idle robot, send it the next cycle to execute
-            if self.plan_running and self.runtime_manager.any_idle_bots():
-                print("Sending cycle {} for execution".format(self.plan_cycle_number))
-                next_cycle = self.plan.get_cycle(self.plan_cycle_number)
-                
-                # If we get none, that means we are done with the plan
-                if next_cycle is None:
-                    self.plan_running = False
-                    self.plan_cycle_number = 0
-                    print("Completed plan!")
+
+            # Only do some stuff once we are initialized
+            if not self.initialized:
+                if self.runtime_manager.get_initialization_status() != RuntimeManager.STATUS_FULLY_INITIALIZED:
+                    pass
                 else:
-                    self.plan_cycle_number += 1
-                    self.runtime_manager.assign_new_cycle(next_cycle)
+                    self.initialized = True
+                    logging.info("Init completed, starting main loop")
 
-            # Run updates for the runtime manager
-            self.runtime_manager.update()
+            else:
+            
+                # If we have an idle robot, send it the next cycle to execute
+                if self.plan_running and self.runtime_manager.any_idle_bots():
+                    logging.info("Sending cycle {} for execution".format(self.plan_cycle_number))
+                    next_cycle = self.plan.get_cycle(self.plan_cycle_number)
+                    
+                    # If we get none, that means we are done with the plan
+                    if next_cycle is None:
+                        self.plan_running = False
+                        self.plan_cycle_number = 0
+                        logging.info("Completed plan!")
+                    else:
+                        self.plan_cycle_number += 1
+                        self.runtime_manager.assign_new_cycle(next_cycle)
 
-            # Get metrics and update the gui
-            metrics = self.runtime_manager.get_all_metrics()
-            self.cmd_gui.update_status_panels(metrics)
+                # Run updates for the runtime manager
+                self.runtime_manager.update()
+            
+                # Get metrics and update the gui
+                metrics = self.runtime_manager.get_all_metrics()
+                self.cmd_gui.update_status_panels(metrics)
+
 
             # Handle any input from gui
             event, manual_action = self.cmd_gui.update()
@@ -309,18 +298,37 @@ class Master:
                 self.plan_running = True
             if event == "Action":
                 self.runtime_manager.run_manual_action(manual_action)
-
+            if event == "ESTOP":
+                self.runtime_manager.estop()
 
         # Clean up whenever loop exits
         self.runtime_manager.shutdown(keep_mm_running)
         self.cmd_gui.close()
 
 
+def configure_logging(path):
 
+    rootLogger = logging.getLogger()
+    rootLogger.setLevel(logging.INFO)
+
+    fileHandler = logging.FileHandler(os.path.join(path,"master.log"), 'w+')
+    fileFormatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+    fileHandler.setFormatter(fileFormatter)
+    rootLogger.addHandler(fileHandler)
+
+    consoleHandler = logging.StreamHandler()
+    consoleFormatter = logging.Formatter("%(message)s")
+    consoleHandler.setFormatter(consoleFormatter)
+    rootLogger.addHandler(consoleHandler)
 
 
 if __name__ == '__main__':
+    # Setup config and gui
     cfg = config.Config()
-    m = Master(cfg)
+    gui = CmdGui(cfg)
+    # Need to setup gui before logging to ensure that output pane captures logs correctly
+    configure_logging(cfg.log_folder)
+    # Startup master and loop forever
+    m = Master(cfg, gui)
     m.loop()
 

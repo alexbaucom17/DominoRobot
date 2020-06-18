@@ -1,30 +1,29 @@
 Robot:
-- Diagnose motor issues
-    - Sometimes wheels are slipping too much - not sure if this is a mechanical thing or too much dust on the floor/tires
-    - Sometimes the wheels also seem to be binding up and then the driver is catching them up later (even without the lifter on)
-    - Seems like motors might not be strong enough - can't seem to drive with lifter on and if I apply force on the top of the bot I can get the wheels to sieze
+- Controller tuning potential issues:
+    - Delay while sending status update seems to cause impact to controller performance
+    - Controller seems to be able to sometimes get into positive feedback situation
+        - Seems to be an issue with one of the motors, need to plot some more to figure out whats going on
+        - Made some plots, still not totally clear what is going on. Basically looks like motor2 gets into a situation
+            where the controller is indeed doing the right thing, but the motor is respoding by moving in the opposite direction
+            as intended. Probably need to do some more testing on this specific motor to understand what is going on or if something
+            is wired incorrectly or something.
+        - Consider adding motor level velocity limits and over-speed detection
+    - Motors have stiction that is on the order of magnitude of how fast I want to move
+        - Need to investigate how to mitigate stiction in controller
+    - Back wheels can slip sometimes, adding more weight doesn't seem to fix it
+        - All 4 wheels still not making good contact sometimes
+        - More weight on back seems to fix (jk not always)
 
 Stepper controller
+- Convert to working for lifter mechanism
 
 Master:
-- Add actions for base station
 - Figure out how to sequence loading between base and robot
-- Finish up status panels for gui
-- Make gui look a little bit better
-- Figure out if there is a way to use the output pane better - maybe also log to file or dump to console?
-- Hook up estop
 
 Base station:
-- Put together skeleton code for base station
 
 Purchase:
 
-
-
-
-Embedded (old, maybe not needed anymore):
-- Diagnose delay in position update from robot
-- Controller tuning:
-    - Try to get plots generating from arduino serial plotter
-    - Want to investigate jerkiness in controllers during fine motion
-    - Want to investigate angle drift in controllers during fine motion
+QOL stuff:
+- Try to make it so master doesn't crash when network has trouble (need to handle detecting disconnect and then auto-reconnecting)
+- Add check to master to verify network is correct and print a useful message

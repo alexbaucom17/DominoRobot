@@ -5,6 +5,7 @@
 #include <HardwareSerial.h>
 #include "StatusUpdater.h"
 #include "KalmanFilter.h"
+#include "Motor.h"
 
 class RobotController
 {
@@ -23,6 +24,9 @@ class RobotController
     
     // Command robot to move to a specific position with high accuracy
     void moveToPositionFine(float x, float y, float a);
+
+    // Command robot to move with a constant velocity for some amount of time
+    void moveConstVel(float vx , float vy, float va, float t);
 
     // Main update loop. Should be called as fast as possible
     void update();
@@ -52,13 +56,24 @@ class RobotController
     // Run controller calculations
     void computeControl(PVTPoint cmd);
     // Check if the current trajectory is done
-    bool checkForCompletedTrajectory(PVTPoint cmd);
+    bool checkForCompletedTrajectory(const PVTPoint cmd);
     // Calculate wheel odometry
     void computeOdometry();
     //Write velocity out to controller
     void writeVelocity(float speed, int speed_pin, int dir_pin);
+    // Run the trajectory calculations and generate a command signal
+    void runTraj(PVTPoint* cmd);
+    // Reset everything for when a trajectory is not running
+    void resetTraj(PVTPoint* cmd);
+    // Sets up evertyhing to start the trajectory running
+    void startTraj();
+    // Sets up coarse motor gains on respective motors
+    void setCoarseMotorGains();
+    // Sets up fine motor gains on respective motors
+    void setFineMotorGains();
 
     // Member variables
+    Motor motors_[4];                      // Motor objects
     unsigned long prevPositionUpdateTime_; // Previous loop millis we were provided a position observation
     unsigned long prevControlLoopTime_;    // Previous loop millis through the cartesian control loop
     unsigned long prevUpdateLoopTime_;     // Previous loop millis through the update loop
@@ -75,8 +90,8 @@ class RobotController
     float errSumY_;                        // Sum of error in Y dimension for integral control
     float errSumA_;                        // Sum of error in A dimension for integral control
     bool fineMode_;                        // If fine positioning mode is enabled or not.
+    bool velOnlyMode_;                     // If we are only interested in velocity and not goal position
     bool predict_once;                     // Bool to make sure kalman filter gets initialized properly
-    float motor_velocities[4];             // Track motor velocities in rad/s
 
     StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
 

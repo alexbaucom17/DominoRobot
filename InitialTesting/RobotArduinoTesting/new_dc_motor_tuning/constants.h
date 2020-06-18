@@ -2,25 +2,25 @@
 #define Constants_h
 
 // Pins
-#define PIN_PWM_0 4   // FL
-#define PIN_PWM_1 3   // FR
-#define PIN_PWM_2 5   // BR
-#define PIN_PWM_3 6   // BL
+#define PIN_PWM_0 3   
+#define PIN_PWM_1 4
+#define PIN_PWM_2 5
+#define PIN_PWM_3 6
 
-#define PIN_DIR_0 40
-#define PIN_DIR_1 41
+#define PIN_DIR_0 41
+#define PIN_DIR_1 40
 #define PIN_DIR_2 39
 #define PIN_DIR_3 38
 
-#define PIN_ENABLE_0 48
-#define PIN_ENABLE_1 49
+#define PIN_ENABLE_0 49
+#define PIN_ENABLE_1 48
 #define PIN_ENABLE_2 47
 #define PIN_ENABLE_3 46
 
-#define PIN_ENC_A_0 20
-#define PIN_ENC_B_0 23
-#define PIN_ENC_A_1 21
-#define PIN_ENC_B_1 25
+#define PIN_ENC_A_0 21
+#define PIN_ENC_B_0 25
+#define PIN_ENC_A_1 20
+#define PIN_ENC_B_1 23
 #define PIN_ENC_A_2 19
 #define PIN_ENC_B_2 24
 #define PIN_ENC_A_3 18
@@ -36,7 +36,7 @@
 // Velocitiy limits
 #define MAX_TRANS_SPEED_FINE   0.08  // m/s
 #define MAX_ROT_SPEED_FINE     0.5   // rad/2
-#define MAX_TRANS_SPEED_COARSE 0.2   // m/s
+#define MAX_TRANS_SPEED_COARSE 0.5  // m/s
 #define MAX_ROT_SPEED_COARSE   1.0   // rad/2
 
 // Acceleration limits
@@ -54,24 +54,9 @@
 #define CART_ROT_KD 0
 
 // Motor control gains
-#define FRONT_MOTOR_KP_COARSE  10//20
-#define FRONT_MOTOR_KI_COARSE  0.05//0.1
-#define FRONT_MOTOR_KD_COARSE  0.05//0.08
-#define REAR_MOTOR_KP_COARSE   10//14
-#define REAR_MOTOR_KI_COARSE   0.05//0.1
-#define REAR_MOTOR_KD_COARSE   0.05//0.08
-#define FRONT_MOTOR_KP_FINE    14
-#define FRONT_MOTOR_KI_FINE    0.1
-#define FRONT_MOTOR_KD_FINE    0.08
-#define REAR_MOTOR_KP_FINE     14
-#define REAR_MOTOR_KI_FINE     0.1
-#define REAR_MOTOR_KD_FINE     0.08
-
-// Motor indices
-#define MOTOR_IDX_FL  0
-#define MOTOR_IDX_FR  1
-#define MOTOR_IDX_BR  2
-#define MOTOR_IDX_BL  3
+#define MOTOR_KP 1
+#define MOTOR_KI 0
+#define MOTOR_KD 0
 
 // Motor control constants
 #define VEL_FILTER_FREQ 20            // HZ
@@ -79,11 +64,10 @@
 
 // Physical dimensions
 #define WHEEL_DIAMETER 0.152 // meters
-#define WHEEL_DIST_FROM_CENTER 0.4794 // meters
+#define WHEEL_DIST_FROM_CENTER 0.4572 // meters
 
 // Scaling factors
 #define TRAJ_MAX_FRACTION 0.7  // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate
-#define ODOM_SCALE_FACTOR 2.0
 
 // Kalman filter scales
 #define PROCESS_NOISE_SCALE 0.08
@@ -128,7 +112,6 @@ enum COMMAND
     MOVE,
     MOVE_REL,
     MOVE_FINE,
-    MOVE_CONST_VEL,
     PLACE_TRAY,
     LOAD_TRAY,
     INITIALIZE_TRAY,

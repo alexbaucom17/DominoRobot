@@ -5,6 +5,7 @@ Python wrapper for Marvelmind C API
 import ctypes
 import math
 import time
+import logging
 
 def get_file_bool(filename):
     try:
@@ -106,7 +107,7 @@ class MarvelMindWrapper:
         Establish communication with marvelmind router. Required for all other functions.
         """
 
-        print("Opening communication with MarvelMind")
+        logging.info("Opening communication with MarvelMind")
         fn = self.lib.mm_open_port
         fn.restype = ctypes.c_bool
         fn.argtypes = [ctypes.POINTER(ctypes.c_void_p)]
@@ -128,7 +129,7 @@ class MarvelMindWrapper:
         Returns list of beacon addresses
         """
 
-        print("Getting device list")
+        logging.info("Getting device list")
         fn = self.lib.mm_get_devices_list
         fn.restype = ctypes.c_bool
         fn.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
@@ -140,7 +141,7 @@ class MarvelMindWrapper:
 
         num_devices = dataptr[0]
 
-        print("Num devices: " + str(num_devices))
+        logging.info("Num devices: " + str(num_devices))
         idx = 1
         device_offset = 9
         addr_offset = 0
@@ -158,14 +159,14 @@ class MarvelMindWrapper:
         Wake up the device with the given address
         """
 
-        print("Waking device: {}".format(address))
+        logging.info("Waking device: {}".format(address))
         fn = self.lib.mm_wake_device
         fn.restype = ctypes.c_bool
         fn.argtypes = [ctypes.c_uint8]
 
         status = fn(address)
         if not status:
-            print("Warning: unable to wake device {}".format(address))
+            logging.info("Warning: unable to wake device {}".format(address))
 
 
     def sleep_device(self, address):
@@ -173,14 +174,14 @@ class MarvelMindWrapper:
         Sleep the device with the given address
         """
 
-        print("Sleeping device: {}".format(address))
+        logging.info("Sleeping device: {}".format(address))
         fn = self.lib.mm_send_to_sleep_device
         fn.restype = ctypes.c_bool
         fn.argtypes = [ctypes.c_uint8]
 
         status = fn(address)
         if not status:
-            print("Warning: unable to sleep device {}".format(address))
+            logging.info("Warning: unable to sleep device {}".format(address))
 
 
 
@@ -228,7 +229,7 @@ class MsgMetrics:
     def _add_msg(self, t):
         self.msgs.insert(0, t)
         self.last_sent = time.time()
-        #print(self.msgs)
+        #logging.info(self.msgs)
         if len(self.msgs) > self.max_msgs:
             self.msgs.pop()
 
@@ -369,12 +370,12 @@ class RobotPositionHandler():
                 # to update the queues pretty regularly. If it isn't regular or accurate enough, I may need
                 # to look into other ways to handle this
                 if not cur_queue or point != cur_queue[0]:
-                    #print(str(point))
+                    #logging.info(str(point))
                     cur_queue.insert(0,point) # Add new element to front of queue
                     if len(cur_queue) > self.max_device_queue_size:
                         cur_queue.pop() # remove element from end of list
         #else:
-        #    print("No new data")
+        #    logging.info("No new data")
 
 
     def _update_robot_positions(self):
@@ -398,8 +399,8 @@ class RobotPositionHandler():
             beacon_dist_mm = math.sqrt((p0.x - p1.x)**2 + (p0.y-p1.y)**2)
             expected_beacon_dist_mm = 1000*self.cfg.mm_beacon_sep
             if abs(beacon_dist_mm - expected_beacon_dist_mm) > 40:
-                print("Thowing out beacon values due to failing distance check")
-                print("Becon dist: {}, expected: {}, delta: {}".format(beacon_dist_mm, expected_beacon_dist_mm, abs(beacon_dist_mm - expected_beacon_dist_mm)))
+                logging.info("Thowing out beacon values due to failing distance check")
+                logging.info("Becon dist: {}, expected: {}, delta: {}".format(beacon_dist_mm, expected_beacon_dist_mm, abs(beacon_dist_mm - expected_beacon_dist_mm)))
                 self.metrics.drop_msg_dist()
                 continue
 
@@ -431,7 +432,7 @@ class RobotPositionHandler():
             max_time_delta = 0.3 #seconds
             #if abs(p0.t - p1.t) > max_time_delta:
                 #self.metrics.drop_msg_time()
-                # print("WARNING: Max time delta exceeded between {} and {}".format(str(p0), str(p1))) 
+                # logging.info("WARNING: Max time delta exceeded between {} and {}".format(str(p0), str(p1))) 
 
             t = (p0.t + p1.t)/2.0 # Just take average time
 
@@ -441,7 +442,7 @@ class RobotPositionHandler():
             if cur_queue:
                 prev_point = cur_queue[0]
             if not prev_point or x != prev_point[0] or y != prev_point[1] or angle != prev_point[2]:
-                #print("Robot {}: {},{},{}, {}".format(robot_name, x, y, angle, t))
+                #logging.info("Robot {}: {},{},{}, {}".format(robot_name, x, y, angle, t))
                 self._robots_with_data_ready.add(robot_name)
                 # TODO: Add metrics for each robot ?
                 self.metrics.add_msg_ok()
@@ -489,7 +490,7 @@ if __name__ == '__main__':
 
     # Wait for devices to fully wake up and give good data
     sleep_time = 30
-    print('Waiting {} seconds for beacons to fully wake up'.format(sleep_time))
+    logging.info('Waiting {} seconds for beacons to fully wake up'.format(sleep_time))
     time.sleep(sleep_time)
 
     t_start = time.time()

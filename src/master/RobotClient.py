@@ -5,6 +5,7 @@ import socket
 import select
 import json
 import time
+import logging
 
 PORT = 1234
 NET_TIMEOUT = 5 # seconds
@@ -22,7 +23,7 @@ class TcpClient:
     def send(self, msg, print_debug=True):
         totalsent = 0
         if print_debug:
-            print("TX: " + msg)
+            logging.info("TX: " + msg)
         msg = START_CHAR + msg + END_CHAR
         msg_bytes = msg.encode()
         while totalsent < len(msg):
@@ -33,10 +34,10 @@ class TcpClient:
 
     def recieve(self, timeout=1, print_debug=True):
 
-        # print("Checking socket ready")
+        # logging.info("Checking socket ready")
         # socket_ready, _, _ = select.select([self.socket], [], [])
         # if not socket_ready:
-        #     print("Socket not ready")
+        #     logging.info("Socket not ready")
         #     return ""
 
         new_msg = ""
@@ -69,9 +70,9 @@ class TcpClient:
                     new_msg += new_str
 
         if print_debug and new_msg:
-            print("RX: " + new_msg)
+            logging.info("RX: " + new_msg)
         if not new_msg_ready:
-            #print("Socket timeout")
+            #logging.info("Socket timeout")
             new_msg = ""
 
         return new_msg
@@ -95,9 +96,13 @@ class BaseClient:
             except socket.timeout:
                 break
             if incoming_msg:
-                return json.loads(incoming_msg)
+                try:
+                    return json.loads(incoming_msg)
+                except:
+                    logging.warn("Error decoding json: {}".format(incoming_msg))
+                    break
 
-        # Will get here if timeout is reached
+        # Will get here if timeout is reached or decode error happens
         return None
 
     def send_msg_and_wait_for_ack(self, msg, print_debug=True):
@@ -109,23 +114,24 @@ class BaseClient:
         self.client.send(json.dumps(msg,separators=(',',':')), print_debug=print_debug) # Make sure json dump is compact for transmission
         resp = self.wait_for_server_response(print_debug=print_debug)
         if not resp:
-            print('WARNING: Did not recieve ack')
+            logging.info('WARNING: Did not recieve ack')
         else:
             if resp['type'] != 'ack':
-                print('ERROR: Expecting return type ack')
+                logging.info('ERROR: Expecting return type ack')
             elif resp['data'] != msg['type']:
-                print('ERROR: Incorrect ack type')
+                logging.info('ERROR: Incorrect ack type')
         
         return resp
 
     def net_status(self):
         """ Check if the network connection is ok"""
         msg = {'type': 'check'}
-        status = True
+        status = False
         try:
             self.send_msg_and_wait_for_ack(msg)
+            status = True
         except:
-            status = False
+            pass
         finally:
             return status
 
@@ -135,6 +141,11 @@ class BaseClient:
         self.client.send(json.dumps(msg), print_debug=False)
         status_dict = self.wait_for_server_response(print_debug=False)
         return status_dict
+
+    def estop(self):
+        """ Tell client to estop """
+        msg = {'type': 'estop'}
+        self.send_msg_and_wait_for_ack(msg)
 
 
 class RobotClient(BaseClient):
@@ -160,6 +171,11 @@ class RobotClient(BaseClient):
         msg = {'type': 'move_fine', 'data': {'x': x, 'y': y, 'a': a}}
         self.send_msg_and_wait_for_ack(msg)
 
+    def move_const_vel(self, vx, vy, va, t):
+        """ Tell robot to move at constant velocity for a specific amount of time"""
+        msg = {'type': 'move_const_vel', 'data': {'vx': vx, 'vy': vy, 'va': va, 't': t}}
+        self.send_msg_and_wait_for_ack(msg)
+
     def place(self):
         """ Tell robot to place pallet """
         msg = {'type': 'place'}
@@ -178,11 +194,6 @@ class RobotClient(BaseClient):
     def load_complete(self):
         """ Tell robot that base station load is complete """
         msg = {'type': 'lc'}
-        self.send_msg_and_wait_for_ack(msg)
-
-    def estop(self):
-        """ Tell robot to estop """
-        msg = {'type': 'estop'}
         self.send_msg_and_wait_for_ack(msg)
 
     def send_position(self, x, y, a):
@@ -231,6 +242,12 @@ class MockRobotClient:
     def net_status(self):
         return True
 
+    def estop(self):
+        pass
+
+    def load(self):
+        pass
+
     def request_status(self):
         return {"in_progress": False, "pos_x": 1, "pos_y": 2, "pos_a": 0}
 
@@ -245,13 +262,13 @@ class MockBaseStationClient:
 
     def net_status(self):
         return True
+    
+    def estop(self):
+        pass
 
     def request_status(self):
         return {}
     
-
-
-
 
 if __name__== '__main__':
     r = RobotClient(1)
@@ -260,7 +277,7 @@ if __name__== '__main__':
     while(True):
         speed = input("Input move speed [x,y,a]: ").strip().split(',')
         if len(speed) != 3:
-            print("Need to provide comma separated values.")
+            logging.info("Need to provide comma separated values.")
         else:
             x = float(speed[0])
             y = float(speed[1])
