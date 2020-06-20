@@ -16,6 +16,7 @@ Robot:
 
 Stepper controller
 - Convert to working for lifter mechanism
+- Add manual control of lifter 
 
 Master:
 - Figure out how to sequence loading between base and robot
