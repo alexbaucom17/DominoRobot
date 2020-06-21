@@ -15,8 +15,9 @@ Robot:
         - More weight on back seems to fix (jk not always)
 
 Stepper controller
-- Convert to working for lifter mechanism
-- Add manual control of lifter 
+- Wire up Nano for lifter control (including manual buttons)
+- Test stepper driver code (maybe use a test sketch rather than the full robot code to start)
+- Update robot code to use new stepper interface
 
 Master:
 - Figure out how to sequence loading between base and robot
