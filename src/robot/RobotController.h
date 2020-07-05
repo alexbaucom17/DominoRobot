@@ -53,7 +53,7 @@ class RobotController
     void computeOdometry();
 
     // Member variables
-    Motor motors[4];                       // Motor interface objects
+    Motor motors[3];                       // Motor interface objects
     unsigned long prevPositionUpdateTime_; // Previous loop millis we were provided a position observation
     unsigned long prevControlLoopTime_;    // Previous loop millis through the cartesian control loop
     unsigned long prevUpdateLoopTime_;     // Previous loop millis through the update loop

@@ -22,8 +22,7 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
 : motors{
     Motor(PIN_PWM_1, PIN_DIR_1, PIN_ENCA_1, PIN_ENCB_1, MOTOR_KP, MOTOR_KI, MOTOR_KD),
     Motor(PIN_PWM_2, PIN_DIR_2, PIN_ENCA_2, PIN_ENCB_2, MOTOR_KP, MOTOR_KI, MOTOR_KD),
-    Motor(PIN_PWM_3, PIN_DIR_3, PIN_ENCA_3, PIN_ENCB_3, MOTOR_KP, MOTOR_KI, MOTOR_KD),
-    Motor(PIN_PWM_4, PIN_DIR_4, PIN_ENCA_4, PIN_ENCB_4, MOTOR_KP, MOTOR_KI, MOTOR_KD)},
+    Motor(PIN_PWM_3, PIN_DIR_3, PIN_ENCA_3, PIN_ENCB_3, MOTOR_KP, MOTOR_KI, MOTOR_KD)},
   prevPositionUpdateTime_(millis()),
   prevControlLoopTime_(millis()),
   prevUpdateLoopTime_(millis()),
@@ -297,21 +296,23 @@ void RobotController::updateMotors()
 void RobotController::computeOdometry()
 {
     // Get wheel velocities from each motor
-    float motor_vel[4];
-    for(int i = 0; i < 4; i++)
+    float motor_vel[3];
+    for(int i = 0; i < 3; i++)
     {
         // Need to convert from revs/sec to rad/sec
         motor_vel[i] = FUDGE_FACTOR * 2.0 * PI * motors[i].getCurrentVelocity();
     }
 
+    // From https://pdf.sciencedirectassets.com/314898/1-s2.0-S1474667016X60399/1-s2.0-S1474667016335807/main.pdf?X-Amz-Security-Token=IQoJb3JpZ2luX2VjEJ7%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIQCCutSVKuv0biFes8qZVMW8e5qX4Zbhsc91ukgTxQbXdAIgfe%2BlULvDupKzeSV0KcHjNSIC%2Bj1I%2F6gyzGHlhgoZuboqtAMINhADGgwwNTkwMDM1NDY4NjUiDDSifCecU8YPaq8CVyqRA%2BwO3avwwxn%2FeRSI%2BD%2Fy5JlsUYZ1agfPVHsH%2F3r854KVGjXYg%2Be0hEH3QeQOE%2F9A6xgrt5TRILir%2Fm%2FwJEP5YsAbyzPsZ77jUonW0o4kXDCPExhxCu5xLMuv%2FR3UE4ncEBuNOj1WYzaqkDa2zv5LeLlTqDUY1wJsjSB%2BLyHB%2BOk2ueO4Vzdckv%2FaEbc4G0tW8Xn%2BjlJ0qoqRwegbpE%2BQr3eBylhiFBo8k8r8cHczot8I6nGlcyhXcJkrJsPsrGumgOnTl3hkK8bL%2FQgEC3NwCvDFCIUOWO8%2BnbA%2F%2FjMs64fm4LixAJxWf8AtnytG3XdPKo9rtShu4WoMPLRT4qyYzcECupr3uzbVUNO3BxrzwTtZGb71Uewf3Wfi8%2Bi6ZMrrUdzBFQE%2B0rptVQ4R%2FkGQcIxqiJHE9ZSmH4hKKRVBDJStSKh5xnXD96VLhBI5yM%2FOLBbsU1XpBsPkauggmaJfYpopo%2Bqq02%2FrQUSPfCou07KBBZeL%2BIDiBx7BLWPbSA4eFdMLqxPhDViSBQsa4X1CXpOvMKXZ7vcFOusBVuA6SWvTjnVdLB6dKFrKs3iwBrfnDdXEmpBi8yFBGXqeQcQAx%2BU7cfufxtYQ%2BiUnrwWeueQVPxzv5qF5D0ZbOvP4unRalEpqZG%2Buhzm6tY3RDoZmwm27VcHG54ou3QrmfUoK6rVbkkVckgrl5H1mfcX%2BUogEuN9KqkaR7pWjOkotX9G77b7r1sY5nk2YepNE7QeeBdLSMZ9ll2vqSBoFqyM4k2c9P7fC5cBGEjTZvYvWpllOVcHK5SZiinwY7%2FkMcLloAdJ9VDWqdg%2FnDkUxIDpG8fRuKdHgOpSujn8m8qT81oZXdG9Z3oXB8w%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20200630T220828Z&X-Amz-SignedHeaders=host&X-Amz-Expires=300&X-Amz-Credential=ASIAQ3PHCVTY4ZAQCZ7C%2F20200630%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=da3142a09a69bc6af157498b8d85d57a720dcedfd3d4ac9ddd59953c3a0f9ab3&hash=1a0de8c54a69a8bdeac34b9708f6a3d9e1324381d5ccc6c44cba22e68484fd4c&host=68042c943591013ac2b2430a89b270f6af2c76d8dfd086a07176afe7c76c2c61&pii=S1474667016335807&tid=spdf-a2f5d570-fdf4-4e0e-974f-5782a5e7e79d&sid=c391fa0c2656944f7119ddb8a9a44fb5f061gxrqa&type=client
+    // [[0,       r * sqrt(3)/3, -r * sqrt(3)/3], 
+    //  [2r/3,    r/3,            r/3], 
+    //  [r/(3*b), r/(3*b),        r/(3*b)]]      * [m0, m1, m2]
+
     // Do forward kinematics to compute local cartesian velocity
     float local_cart_vel[3];
-    float s0 = 0.5 * WHEEL_DIAMETER * sin(PI/4.0);
-    float c0 = 0.5 * WHEEL_DIAMETER * cos(PI/4.0);
-    float d0 = WHEEL_DIAMETER / (4.0 * WHEEL_DIST_FROM_CENTER);
-    local_cart_vel[0] = -c0 * motor_vel[0] + s0 * motor_vel[1] + c0 * motor_vel[2] - s0 * motor_vel[3];
-    local_cart_vel[1] =  s0 * motor_vel[0] + c0 * motor_vel[1] - s0 * motor_vel[2] - c0 * motor_vel[3];
-    local_cart_vel[2] =  d0 * motor_vel[0] + d0 * motor_vel[1] + d0 * motor_vel[2] + d0 * motor_vel[3];
+    local_cart_vel[0] = WHEEL_RADIUS * ( sqrt(3) / 3 * motor_vel[1] - sqrt(3) / 3 * motor_vel[2]);
+    local_cart_vel[1] = WHEEL_RADIUS * (2 / 3 * motor_vel[0] + 1 / 3 * motor_vel[1] + 1/ 3 * motor_vel[2]); 
+    local_cart_vel[2] = WHEEL_RADIUS / (3 * WHEEL_DIST_FROM_CENTER) * (motor_vel[0] + motor_vel[1] + motor_vel[2]);
 
     // Convert local cartesian velocity to global cartesian velocity using the last estimated angle
     float cA = cos(cartPos_.a_);
@@ -389,17 +390,21 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     local_cart_vel[1] = -sA * vx + cA * vy;
     local_cart_vel[2] = va;
 
+
+    // From WolframAlpha
+//     (0            |      3/r | -(3 b)/r
+//     sqrt(3)/(2 r) | -3/(2 r) | (3 b)/r
+//    -sqrt(3)/(2 r) | -3/(2 r) | (3 b)/r)    * [v, vn, w]
+
     // Convert local velocities to wheel speeds with inverse kinematics
-    float motorSpeed[4];
-    float s0 = sin(PI/4);
-    float c0 = cos(PI/4);
-    motorSpeed[0] = 1/WHEEL_DIAMETER * (-c0*local_cart_vel[0] + s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motorSpeed[1] = 1/WHEEL_DIAMETER * ( s0*local_cart_vel[0] + c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motorSpeed[2] = 1/WHEEL_DIAMETER * ( c0*local_cart_vel[0] - s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motorSpeed[3] = 1/WHEEL_DIAMETER * (-s0*local_cart_vel[0] - c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
+    float motorSpeed[3];
+    float s3 = sqrt(3);
+    motorSpeed[0] = 1/WHEEL_RADIUS * (                               3     * local_cart_vel[1] - 3 * WHEEL_DIST_FROM_CENTER * local_cart_vel[2]);
+    motorSpeed[1] = 1/WHEEL_RADIUS * ( s3 / 2 * local_cart_vel[0]  - 3 / 2 * local_cart_vel[1] + 3 * WHEEL_DIST_FROM_CENTER * local_cart_vel[2]);
+    motorSpeed[2] = 1/WHEEL_RADIUS * (-s3 / 2 * local_cart_vel[0]  - 3 / 2 * local_cart_vel[1] + 3 * WHEEL_DIST_FROM_CENTER * local_cart_vel[2]);
 
     // Set the commanded values for each motor
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 3; i++)
     {
         // Need to convert motor speed into revs/sec from rad/sec
         motorSpeed[i] = motorSpeed[i] / (2.0 * PI * FUDGE_FACTOR);

@@ -51,7 +51,7 @@
 #define CART_ROT_KD 0
 
 // Physical dimensions
-#define WHEEL_DIAMETER 0.1016 // meters
+#define WHEEL_RADIUS 0.1016 / 2 // meters
 #define WHEEL_DIST_FROM_CENTER 0.3548 // meters
 
 // Scaling factors
