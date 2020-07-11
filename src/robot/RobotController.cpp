@@ -25,7 +25,8 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
 : motors{
     Motor(PIN_PWM_1, PIN_DIR_1, PIN_ENCA_1, PIN_ENCB_1, MOTOR_KP, MOTOR_KI, MOTOR_KD),
     Motor(PIN_PWM_2, PIN_DIR_2, PIN_ENCA_2, PIN_ENCB_2, MOTOR_KP, MOTOR_KI, MOTOR_KD),
-    Motor(PIN_PWM_4, PIN_DIR_4, PIN_ENCA_4, PIN_ENCB_4, MOTOR_KP, MOTOR_KI, MOTOR_KD)},
+    Motor(PIN_PWM_4, PIN_DIR_4, PIN_ENCA_4, PIN_ENCB_4, MOTOR_KP, MOTOR_KI, MOTOR_KD),
+    Motor(PIN_PWM_3, PIN_DIR_3, PIN_ENCA_3, PIN_ENCB_3, MOTOR_KP, MOTOR_KI, MOTOR_KD)},
   prevPositionUpdateTime_(millis()),
   prevControlLoopTime_(millis()),
   prevUpdateLoopTime_(millis()),
@@ -309,6 +310,17 @@ void RobotController::computeOdometry()
         motor_vel[i] = FUDGE_FACTOR * 2.0 * PI * motors[i].getCurrentVelocity();
     }
 
+        if(trajRunning_)
+    {
+        debug_.print("Motor measured: [");
+        debug_.print(motor_vel[0]);
+        debug_.print(", ");
+        debug_.print(motor_vel[1]);
+        debug_.print(", ");
+        debug_.print(motor_vel[2]);
+        debug_.println("]");
+    }
+
     // https://www.wolframalpha.com/input/?i=inv%28%5B%5B-cosd%2830%29%2C+sind%2830%29%2C+d%5D%2C%5Bcosd%2830%29%2C+sind%2830%29%2C+d%5D%2C%5B0%2C-1%2Cd%5D%5D%29
 
     // Do forward kinematics to compute local cartesian velocity
@@ -393,14 +405,36 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     local_cart_vel[1] = -sA * vx + cA * vy;
     local_cart_vel[2] = va;
 
+        if(trajRunning_)
+    {
+        debug_.print("Local cart vel: [");
+        debug_.print(local_cart_vel[0],4);
+        debug_.print(", ");
+        debug_.print(local_cart_vel[1],4);
+        debug_.print(", ");
+        debug_.print(local_cart_vel[2],4);
+        debug_.println("]");
+    }
+
 
     // https://www.wolframalpha.com/input/?i=%5B%5B-cosd%2830%29%2C+sind%2830%29%2C+d%5D%2C%5Bcosd%2830%29%2C+sind%2830%29%2C+d%5D%2C%5B0%2C-1%2Cd%5D%5D
 
     // Convert local velocities to wheel speeds with inverse kinematics
     float motorSpeed[3];
-    motorSpeed[0] = 1/WHEEL_RADIUS * (-sq3 / 2 * local_cart_vel[0]  + 1 / 2 * local_cart_vel[1] + WHEEL_DIST_FROM_CENTER * local_cart_vel[2]);
-    motorSpeed[1] = 1/WHEEL_RADIUS * ( sq3 / 2 * local_cart_vel[0]  + 1 / 2 * local_cart_vel[1] + WHEEL_DIST_FROM_CENTER * local_cart_vel[2]);
-    motorSpeed[3] = 1/WHEEL_RADIUS * (                              - 1     * local_cart_vel[1] - WHEEL_DIST_FROM_CENTER * local_cart_vel[2]);
+    motorSpeed[0] = 1/WHEEL_RADIUS * (-1 * sq3 / 2 * local_cart_vel[0]  + 1 / 2 * local_cart_vel[1] + WHEEL_DIST_FROM_CENTER * local_cart_vel[2]);
+    motorSpeed[1] = 1/WHEEL_RADIUS * (     sq3 / 2 * local_cart_vel[0]  + 1 / 2 * local_cart_vel[1] + WHEEL_DIST_FROM_CENTER * local_cart_vel[2]);
+    motorSpeed[2] = 1/WHEEL_RADIUS * (                                  - 1     * local_cart_vel[1] + WHEEL_DIST_FROM_CENTER * local_cart_vel[2]);
+
+    if(trajRunning_)
+    {
+        debug_.print("Motor cmd: [");
+        debug_.print(motorSpeed[0],4);
+        debug_.print(", ");
+        debug_.print(motorSpeed[1],4);
+        debug_.print(", ");
+        debug_.print(motorSpeed[2],4);
+        debug_.println("]");
+    }
 
     // Set the commanded values for each motor
     for (int i = 0; i < 3; i++)

@@ -6,22 +6,22 @@
 
 #define PIN_ENCA_1 21
 #define PIN_ENCA_2 20
-//#define PIN_ENCA_3 18
+#define PIN_ENCA_3 18
 #define PIN_ENCA_4 19
 
 #define PIN_ENCB_1 25
 #define PIN_ENCB_2 24
-//#define PIN_ENCB_3 22
+#define PIN_ENCB_3 22
 #define PIN_ENCB_4 23
 
 #define PIN_DIR_1 39
 #define PIN_DIR_2 13
-//#define PIN_DIR_3 12
+#define PIN_DIR_3 12
 #define PIN_DIR_4 37
 
 #define PIN_PWM_1 5
 #define PIN_PWM_2 6
-//#define PIN_PWM_3 7
+#define PIN_PWM_3 7
 #define PIN_PWM_4 4
 
 // Velocities
@@ -51,12 +51,12 @@
 #define CART_ROT_KD 0
 
 // Physical dimensions
-#define WHEEL_RADIUS 0.1016 / 2 // meters
+#define WHEEL_RADIUS 0.0508 // meters
 #define WHEEL_DIST_FROM_CENTER 0.332 // meters
 
 // Scaling factors
 #define TRAJ_MAX_FRACTION 0.7  // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate
-#define FUDGE_FACTOR 0.55 // Fudgy scaling factor to use until I find where my actual scaling problem is. Scales how far the robot has actually moved when it thinks it has moved 1 meter
+#define FUDGE_FACTOR 1 // Fudgy scaling factor to use until I find where my actual scaling problem is. Scales how far the robot has actually moved when it thinks it has moved 1 meter
 
 // Notes keys - saves space to use numbers instead of string
 // If need to save more space could consider loading strings into program memory instead of RAM
