@@ -2,6 +2,8 @@
 #include <math.h>
 #include "utils.h"
 
+#include <MemoryFree.h>
+
 
 TrajectoryGenerator::TrajectoryGenerator(HardwareSerial& debug)
   : currentTraj_(),
@@ -38,6 +40,9 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     debug_.println("");
     #endif
 
+    currentTraj_.print(debug_);
+    debug_.print(freeMemory());
+
     // Compute X trajectory
     if(fabs(deltaPoint.x_) < 2*posForConstVelTrans)
     {
@@ -46,7 +51,11 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     else
     {
         currentTraj_.xtraj_ = generate_trapazoid_1D(initialPoint.x_, targetPoint.x_, TRAJ_MAX_TRANS_SPEED, TRAJ_MAX_TRANS_ACC);
+        debug_.println("hi");
+        debug_.print(freeMemory());
     }
+
+    debug_.println("traj1");
 
     // Compute y trajectory
     if(fabs(deltaPoint.y_) < 2*posForConstVelTrans)
@@ -58,6 +67,8 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
         currentTraj_.ytraj_ = generate_trapazoid_1D(initialPoint.y_, targetPoint.y_, TRAJ_MAX_TRANS_SPEED, TRAJ_MAX_TRANS_ACC);
     }
 
+    debug_.println("traj2");
+
     // Compute angle trajectory
     if(fabs(deltaPoint.a_) < 2*posForConstVelRot)
     {
@@ -67,6 +78,8 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     {
         currentTraj_.atraj_ = generate_trapazoid_1D(initialPoint.a_, targetPoint.a_, TRAJ_MAX_ROT_SPEED, TRAJ_MAX_ROT_ACC);
     }
+
+    debug_.println("traj3");
 
     #ifdef PRINT_DEBUG
     currentTraj_.print(debug_);
@@ -78,6 +91,8 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
 std::vector<trajParams> TrajectoryGenerator::generate_triangle_1D(float startPos, float endPos, float maxVel, float maxAcc) const
 {
     std::vector<trajParams> outTraj;
+
+    debug_.println("triangle1");
 
     float deltaPosition = endPos - startPos;
     int dir = sgn(deltaPosition);
@@ -108,13 +123,24 @@ std::vector<trajParams> TrajectoryGenerator::generate_trapazoid_1D(float startPo
 {
     std::vector<trajParams> outTraj;
 
+    debug_.println("trap1");
+    debug_.println(startPos);
+    debug_.println(endPos);
+    debug_.println(maxVel);
+    debug_.println(maxAcc);
+    debug_.print(freeMemory());
+
     float deltaPosition = endPos - startPos;
     int dir = sgn(deltaPosition);
+
+    debug_.println("trap2");
     
     float timeToReachConstVel = maxVel / maxAcc;
     float posToReachConstVel = 0.5 * maxAcc * timeToReachConstVel * timeToReachConstVel;
     float deltaPositionConstVel = fabs(deltaPosition) - 2 * posToReachConstVel;
     float deltaTimeConstVel = fabs(deltaPositionConstVel) / maxVel;
+
+    debug_.println("trap3");
 
     // First phase - acceleration to max vel
     trajParams phase1;
@@ -125,6 +151,8 @@ std::vector<trajParams> TrajectoryGenerator::generate_trapazoid_1D(float startPo
     phase1.a_ = dir*maxAcc;
     outTraj.push_back(phase1);
 
+    debug_.println("trap4");
+
     // Second phase - constant velocity
     trajParams phase2;
     phase2.t0_ = phase1.t_end_;
@@ -134,6 +162,8 @@ std::vector<trajParams> TrajectoryGenerator::generate_trapazoid_1D(float startPo
     phase2.a_ = 0;
     outTraj.push_back(phase2);
 
+    debug_.println("trap5");
+
     // Third phase - deceleration
     trajParams phase3;
     phase3.t0_ = phase2.t_end_;
@@ -142,6 +172,15 @@ std::vector<trajParams> TrajectoryGenerator::generate_trapazoid_1D(float startPo
     phase3.v0_ = dir*maxVel;
     phase3.a_ = -1 * phase1.a_;
     outTraj.push_back(phase3);
+
+    debug_.println("trap6");
+    
+
+    for(int i = 0; i < outTraj.size(); i++)
+    {
+    outTraj[i].print(debug_);
+    debug_.println("");
+    }
 
     return outTraj;
 }
