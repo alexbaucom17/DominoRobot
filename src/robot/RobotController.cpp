@@ -10,7 +10,7 @@
 #define MEAS_NOISE_VEL_SCALE_FACTOR 10000
 
 // Possition accuracy targets
-#define TRANS_POS_ERR_COARSE 0.10 // m
+#define TRANS_POS_ERR_COARSE 0.15 // m
 #define ANG_POS_ERR_COARSE   0.08 // rad
 #define TRANS_POS_ERR_FINE   0.01 // m
 #define ANG_POS_ERR_FINE     0.02 // rad

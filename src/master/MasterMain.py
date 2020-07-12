@@ -60,7 +60,7 @@ class CmdGui:
         col2 = [[sg.Text("Robot 1 status:")],
                [sg.Text("Robot 1 offline",size=(40, 15),relief=sg.RELIEF_RAISED,key='_R1STATUS_')]]
 #sg.Output(size=(100, 15)),
-        layout = [[sg.Graph(canvas_size=(600,600),graph_bottom_left=(0,0), graph_top_right=(10, 10), key="_GRAPH_", background_color="white")  ],
+        layout = [[sg.Graph(canvas_size=(600,600),graph_bottom_left=(-5,-5), graph_top_right=(5, 5), key="_GRAPH_", background_color="white")  ],
                    [sg.Column(col1), sg.Column(col2)] ]
 
         self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True)
@@ -144,7 +144,7 @@ class CmdGenerator:
         if steps:
             self.steps = steps
         else:
-            self.steps = [1, "move[1.75,0.75,0]", 3, "fine[2,1,0]", 2, "fine[1.75,0.75,0]", 1, "move[0,0,0]", -2]
+            self.steps = [1, "move[1.75,2.25,0.01]", 3, "fine[2,2.5,0.01]", 2, "fine[1.75,2.25,0.01]", 1, "move[0,2,0.01]", -2]
         self.done = False
 
     def next_step(self, in_progress):

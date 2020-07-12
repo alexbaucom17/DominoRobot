@@ -44,7 +44,7 @@
 
 // Cartesian control gains
 #define CART_TRANS_KP 2
-#define CART_TRANS_KI 0.1
+#define CART_TRANS_KI 0.2
 #define CART_TRANS_KD 0
 #define CART_ROT_KP 3
 #define CART_ROT_KI 0.5

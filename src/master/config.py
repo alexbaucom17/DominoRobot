@@ -18,14 +18,14 @@ class Config:
     # Maps robot (or static) to sets of marvel mind beacons
     # Defining first device in list as the one on the left side of the robot
     device_map = {
-    "static": (1, 2),
+    "static": (3, 2),
     "1": (6, 5)
     }
 
     # Specifies which IP address each robot has
     ip_map = {1: '192.168.1.3'}
 
-    mm_forward_offset = 0.2969 # Meters from center of robot to center point of MM beacons
+    mm_forward_offset = 0.3111 # Meters from center of rotation of robot to center point of MM beacons
     mm_beacon_sep = 0.5715 # Meters between beacons on the robot
 
 
