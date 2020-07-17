@@ -1,1 +1,1 @@
-../lib/serial_comm.h
+../common/serial_comm.h
