@@ -28,6 +28,6 @@ class SerialComms
     int recvIdx_;
     String buffer_;
 
-}
+};
 
 #endif
