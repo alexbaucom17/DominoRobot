@@ -1,16 +1,27 @@
 #include "SerialComms.h"
 
-SerialComms comm(Serial1, Serial2);
+// From https://teknic-inc.github.io/ClearCore-library/ArduinoRef.html
+// Serial = USB
+// Serial0 + Serial1 = COM ports
+
+SerialComms comm(Serial0, Serial);
 
 void setup()
 {
-    Serial2.begin(115200);
+    Serial.begin(115200);
 }
 
 void loop()
 {
-    comm.send("Test");
-    delay(1000);
     String msg = comm.rcv();
-    Serial2.print(msg);
+    if(!msg.empty())
+    {
+        CartVelocity cmd_v = decodeMsg(msg);
+        MotorVelocity motor_v = doIK(cmd_v);
+        SendCommandsToMotors(motor_v);
+        MotorVelocity motor_v_measured = ReadMotorSpeeds();
+        CartVelocity robot_v_measured = doFK(motor_v_measured);
+        ReportRobotVelocity(robot_v_measured);
+    }
+
 }
