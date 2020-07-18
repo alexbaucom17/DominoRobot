@@ -7,7 +7,6 @@ SerialComms::SerialComms(HardwareSerial& serial, HardwareSerial& debug)
   recvIdx_(0),
   buffer_("")
 {
-    serial_.begin(115200);
 }
 
 SerialComms::~SerialComms()
