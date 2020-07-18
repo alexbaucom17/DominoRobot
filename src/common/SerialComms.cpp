@@ -14,7 +14,6 @@ SerialComms::~SerialComms()
 {
 }
 
-
 String SerialComms::rcv()
 {
     bool newData = false;
