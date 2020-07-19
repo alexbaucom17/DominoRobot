@@ -2,9 +2,7 @@
 #ifndef StatusUpdater_h
 #define StatusUpdater_h
 
-#include <Arduino.h> // This has to be before ArduinoJson.h to fix compiler issues
-#include <ArduinoJson.h>
-#include <MemoryFree.h>
+#include <ArduinoJson/ArduinoJson.h>
 
 
 class StatusUpdater
@@ -47,7 +45,6 @@ class StatusUpdater
 
       bool in_progress;
       uint8_t counter; // Just to show that the status is updating. Okay to roll over
-      int free_memory;
 
       //When adding extra fields, update toJsonString method to serialize and add aditional capacity
 
@@ -64,8 +61,7 @@ class StatusUpdater
       controller_loop_ms(999),
       position_loop_ms(999),
       in_progress(false),
-      counter(0),
-      free_memory(999)
+      counter(0)
       {
       }
 

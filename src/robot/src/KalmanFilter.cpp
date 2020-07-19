@@ -1,17 +1,18 @@
 #include "KalmanFilter.h"
 #include "utils.h"
+#include <spdlog/spdlog.h>
 
 KalmanFilter::KalmanFilter(
     double dt,
-    const mat& A,
-    const mat& B,
-    const mat& C,
-    const mat& Q,
-    const mat& R,
-    const mat& P)
+    const Eigen::Matrix3f& A,
+    const Eigen::Matrix3f& B,
+    const Eigen::Matrix3f& C,
+    const Eigen::Matrix3f& Q,
+    const Eigen::Matrix3f& R,
+    const Eigen::Matrix3f& P)
   : A(A), B(B), C(C), Q(Q), R(R), P0(P),
-    m(C.get_rows()), n(A.get_rows()), dt(dt),
-    I(mat::identity(n)), x_hat(1,n), x_hat_new(1,n)
+    dt(dt),
+    I(Eigen::Matrix3f::Identity
 {
 }
 
@@ -27,13 +28,13 @@ void KalmanFilter::init(double t0, mat x0)
 
 void KalmanFilter::init() 
 {
-  x_hat = mat::zeros(n,1);
+  x_hat = Eigen::Vector3f::zero();
   P = P0;
   t0 = 0;
   t = t0;
 }
 
-void KalmanFilter::predict(double dt, const mat& B, const mat& u)
+void KalmanFilter::predict(double dt, const Eigen::Matrix3f& B, const Eigen::Vector3f& u)
 {
   this->B = B;
   this->dt = dt;
@@ -47,26 +48,26 @@ void KalmanFilter::predict(double dt, const mat& B, const mat& u)
   x_hat = x_hat_new;
 }
 
-void KalmanFilter::update(const mat& y, const mat& R, HardwareSerial& debug) 
+void KalmanFilter::update(const Eigen::Vector3f& y, const Eigen::Matrix3f& R) 
 {
 
 #ifdef PRINT_DEBUG
-  debug.print("xhat rows: ");
-  debug.print(x_hat.get_rows());
-  debug.print(" cols: ");
-  debug.print(x_hat.get_cols());
-  debug.println("");
+  spdlog::logger* logger = spdlog::get("robot_logger")
+  logger->info("xhat rows: ");
+  logger->info(x_hat.get_rows());
+  logger->info(" cols: ");
+  logger->info(x_hat.get_cols());
+  logger->info("");
 
   // Note print for a single column matrix doesn't work for some reason
-  debug.println("State estimate before update");
-  debug.print("[X: ");
-  debug.print(x_hat(0,0), 4);
-  debug.print(", Y: ");
-  debug.print(x_hat(1,0), 4);
-  debug.print(", A: ");
-  debug.print(x_hat(2,0), 4);
-  debug.println("]");
-  #error "NO"
+  logger->info("State estimate before update");
+  logger->info("[X: ");
+  logger->info(x_hat(0,0), 4);
+  logger->info(", Y: ");
+  logger->info(x_hat(1,0), 4);
+  logger->info(", A: ");
+  logger->info(x_hat(2,0), 4);
+  logger->info("]");
 #endif
 
   this->R = R;
@@ -76,34 +77,28 @@ void KalmanFilter::update(const mat& y, const mat& R, HardwareSerial& debug)
   x_hat = x_hat_new;
 
 #ifdef PRINT_DEBUG
-  String s1;
-  debug.println("R matrix");
-  R.print(s1);
-  debug.println(s1);
+  logger->info("R matrix");
+  logger->info(R);
 
-  String s2;
-  debug.println("P matrix");
-  P.print(s2);
-  debug.println(s2);
+  logger->info("P matrix");
+  logger->info(P);
 
-  String s3;
-  debug.println("K matrix");
-  K.print(s3);
-  debug.println(s3);
+  logger->info("K matrix");
+  logger->info(K);
 
-  debug.print("xhat rows: ");
-  debug.print(x_hat.get_rows());
-  debug.print(" cols: ");
-  debug.print(x_hat.get_cols());
-  debug.println("");
+  // logger->info("xhat rows: ");
+  // logger->info(x_hat.get_rows());
+  // logger->info(" cols: ");
+  // logger->info(x_hat.get_cols());
+  // logger->info("");
   
-  debug.println("State estimate after update");
-  debug.print("[X: ");
-  debug.print(x_hat(0,0), 4);
-  debug.print(", Y: ");
-  debug.print(x_hat(1,0), 4);
-  debug.print(", A: ");
-  debug.print(x_hat(2,0), 4);
-  debug.println("]");
+  logger->info("State estimate after update");
+  logger->info("[X: ");
+  logger->info(x_hat(0,0));
+  logger->info(", Y: ");
+  logger->info(x_hat(1,0));
+  logger->info(", A: ");
+  logger->info(x_hat(2,0));
+  logger->info("]");
 #endif
 }

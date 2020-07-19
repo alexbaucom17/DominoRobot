@@ -1,15 +1,13 @@
 #ifndef TrayController_h
 #define TrayController_h
 
-#include <HardwareSerial.h>
-#include <Servo.h>
-#include "AccelStepper.h"
+#include "spdlog/spdlog.h"
 
 class TrayController
 {
   public:
 
-    TrayController(HardwareSerial& debug);
+    TrayController();
 
     void begin();
 
@@ -37,14 +35,11 @@ class TrayController
         LOAD,
     };
 
-    HardwareSerial& debug_;
-    Servo latchServo_;
-    AccelStepper lifterLeft_;
-    AccelStepper lifterRight_;
     ACTION curAction_;
     uint8_t actionStep_;
     bool loadComplete_;
     unsigned long startMillisForTimer_;
+    spdlog::logger* logger;
 
     void updateInitialize();
     void updateLoad();

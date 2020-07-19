@@ -6,7 +6,6 @@
 #ifndef RobotServer_h
 #define RobotServer_h
 
-#include <HardwareSerial.h>
 #include "SimpleServer.h"
 #include "StatusUpdater.h"
 
@@ -30,7 +29,7 @@ class RobotServer : public SimpleServer
     };
     
     // Constructor
-    RobotServer(HardwareSerial& serial, HardwareSerial& debug, const StatusUpdater& statusUpdater);
+    RobotServer(const StatusUpdater& statusUpdater);
 
     RobotServer::PositionData getMoveData();
 

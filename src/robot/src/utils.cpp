@@ -1,15 +1,17 @@
+#define _USE_MATH_DEFINES
+ 
+#include <cmath>
 #include "utils.h"
-#include <arduino.h> // Needed for PI
 
 float wrap_angle(float a)
 {
-  if(a > PI)
+  if(a > M_PI)
   {
-    a -= TWO_PI;
+    a -= M_2_PI;
   }
-  else if (a < -1*PI)
+  else if (a < -1*M_PI)
   {
-    a += TWO_PI;
+    a += M_2_PI;
   }
   return a;
 }

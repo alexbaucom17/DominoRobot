@@ -2,6 +2,7 @@
 #include "constants.h"
 #include "utils.h"
 #include <math.h>
+#include <Eigen/Core>
 
 const DynamicLimits FINE_LIMS = {MAX_TRANS_SPEED_FINE, MAX_TRANS_ACC_FINE, MAX_ROT_SPEED_FINE, MAX_ROT_ACC_FINE};
 const DynamicLimits COARSE_LIMS = {MAX_TRANS_SPEED_COARSE, MAX_TRANS_ACC_COARSE, MAX_ROT_SPEED_COARSE, MAX_ROT_ACC_COARSE};
@@ -35,13 +36,12 @@ void RobotController::begin()
     // Setup Kalman filter
     double dt = 0.1;
 
-    // TODO: New linear algerba library
-    mat A = mat::identity(3); 
-    mat B = mat::identity(3); // Doesn't matter right now since we update this at each time step
-    mat C = mat::identity(3);
-    mat Q = mat::identity(3) * PROCESS_NOISE_SCALE;
-    mat R = mat::identity(3) * MEAS_NOISE_SCALE;
-    mat P = mat::identity(3);
+    Eigen::Matrix3f A = Eigen::Matrix3f::Identity(); 
+    Eigen::Matrix3f B = Eigen::Matrix3f::Identity(); // Doesn't matter right now since we update this at each time step
+    Eigen::Matrix3f C = Eigen::Matrix3f::Identity(); 
+    Eigen::Matrix3f Q = Eigen::Matrix3f::Identity()  * PROCESS_NOISE_SCALE;
+    Eigen::Matrix3f R = Eigen::Matrix3f::Identity()  * MEAS_NOISE_SCALE;
+    Eigen::Matrix3f P = Eigen::Matrix3f::Identity(); 
     kf_ = KalmanFilter(dt, A, B, C, Q, R, P);
     kf_.init();
 }
@@ -314,20 +314,20 @@ void RobotController::inputPosition(float x, float y, float a)
     if(fineMode_)
     {
       // Update kalman filter for position observation
-      mat z = mat::zeros(3,1);
+      Eigen::Vector3f z = Eigen::Vector3f::Zero();
       z(0,0) = x;
       z(1,0) = y;
       z(2,0) = a;
 
       // Scale covariance estimate based on velocity due to measurment lag
-      mat R = mat::zeros(3,3);
+      Eigen::Matrix3f R = Eigen::Matrix3f::Zeros(); 
       R(0,0) = MEAS_NOISE_SCALE + MEAS_NOISE_VEL_SCALE_FACTOR * fabs(cartVel_.x_);
       R(1,1) = MEAS_NOISE_SCALE + MEAS_NOISE_VEL_SCALE_FACTOR * fabs(cartVel_.y_);
       R(2,2) = MEAS_NOISE_SCALE + MEAS_NOISE_VEL_SCALE_FACTOR * fabs(cartVel_.a_);
       kf_.update(z, R, debug_);
   
       // Retrieve new state estimate
-      mat x_hat = kf_.state();
+      Eigen::Vector3f x_hat = kf_.state();
       cartPos_.x_ = x_hat(0,0);
       cartPos_.y_ = x_hat(1,0);
       cartPos_.a_ = x_hat(2,0);

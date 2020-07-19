@@ -1,13 +1,9 @@
-
-#include <Arduino.h> // This has to be before ArduinoJson.h to fix compiler issues
-#include "SimpleServer.h"
-#include <ArduinoJson.h>
 #include "constants.h"  // FOR PRINT_DEBUG
+#include <ArduinoJson/ArduinoJson.h>
+#include "spdlog/spdlog.h"
 
-SimpleServer::SimpleServer(HardwareSerial& serial, HardwareSerial& debug)
-: serial_(serial),
-  debug_(debug),
-  clientConnected_(false),
+SimpleServer::SimpleServer()
+: clientConnected_(false),
   wifiConnected_(false),
   recvInProgress_(false),
   recvIdx_(0),
@@ -21,13 +17,12 @@ SimpleServer::~SimpleServer()
 
 void SimpleServer::begin()
 {
-  serial_.begin(115200);
 }
 
 COMMAND SimpleServer::oneLoop()
 {
     COMMAND cmd = COMMAND::NONE;
-    String newMsg = getAnyIncomingMessage();
+    std::string newMsg = getAnyIncomingMessage();
     
     if(newMsg.length() != 0)
     {    
@@ -82,65 +77,59 @@ COMMAND SimpleServer::oneLoop()
     return cmd;
 }
 
-String SimpleServer::cleanString(String message)
+std::string SimpleServer::cleanString(std::string message)
 {
   int idx_start = message.indexOf("{");
   int idx_end = message.lastIndexOf("}") + 1;
   return message.substring(idx_start, idx_end);
 }
 
-String SimpleServer::getAnyIncomingMessage()
+std::string SimpleServer::getAnyIncomingMessage()
 {
     bool newData = false;
-    String new_msg;
-    while (serial_.available() > 0 && newData == false) 
-    {
-        char rc = serial_.read();
-        //debug_.print(millis());
-        //debug_.print(" data: ");
-        //debug_.println(rc);
-        if (recvInProgress_ == true) 
-        {
-            if (rc == START_CHAR)
-            {
-              #ifdef PRINT_DEBUG
-              debug_.println("Receive already in progress! Dropping old message");
-              debug_.print("Partial message: ");
-              debug_.println(buffer_);
-              #endif
-              buffer_ = "";
-            }
-            else if (rc != END_CHAR) 
-            {
-                buffer_ += rc;
-            }
-            else 
-            {
-                recvInProgress_ = false;
-                newData = true;
-                new_msg = buffer_;
-                buffer_ = "";
-                //debug_.println("Found end char");
-            }
-        }
-        else if (rc == START_CHAR) 
-        {
-            recvInProgress_ = true;
-            //debug_.println("Found start char");
-        }
-    }
+    std::string new_msg = "Test";
+
+    //TODO: Change to use sockets
+    // while (serial_.available() > 0 && newData == false) 
+    // {
+    //     char rc = serial_.read();
+    //     //debug_.print(millis());
+    //     //debug_.print(" data: ");
+    //     //debug_.println(rc);
+    //     if (recvInProgress_ == true) 
+    //     {
+    //         if (rc == START_CHAR)
+    //         {
+    //           #ifdef PRINT_DEBUG
+    //           debug_.println("Receive already in progress! Dropping old message");
+    //           debug_.print("Partial message: ");
+    //           debug_.println(buffer_);
+    //           #endif
+    //           buffer_ = "";
+    //         }
+    //         else if (rc != END_CHAR) 
+    //         {
+    //             buffer_ += rc;
+    //         }
+    //         else 
+    //         {
+    //             recvInProgress_ = false;
+    //             newData = true;
+    //             new_msg = buffer_;
+    //             buffer_ = "";
+    //             //debug_.println("Found end char");
+    //         }
+    //     }
+    //     else if (rc == START_CHAR) 
+    //     {
+    //         recvInProgress_ = true;
+    //         //debug_.println("Found start char");
+    //     }
+    // }
     return new_msg;
 }
 
-void SimpleServer::printIncommingCommand(String message)
-{
-    #ifdef PRINT_DEBUG
-    debug_.print("[SimpleServer] GetCommand(): ");
-    debug_.println(message);
-    #endif
-}
-
-void SimpleServer::sendMsg(String msg, bool print_debug=true)
+void SimpleServer::sendMsg(std::string msg, bool print_debug=true)
 {
     if (msg.length() == 0)
     {
@@ -148,35 +137,35 @@ void SimpleServer::sendMsg(String msg, bool print_debug=true)
     }
     else
     {
-      serial_.print(START_CHAR);
-      serial_.print(msg);
-      serial_.print(END_CHAR);
-      #ifdef PRINT_DEBUG
-      if(print_debug)
-      {
-        debug_.print("[SimpleServer] TX: ");
-        debug_.println(msg);
-      }
-      #endif
+        // TODO: Change to sockets
+    //   serial_.print(START_CHAR);
+    //   serial_.print(msg);
+    //   serial_.print(END_CHAR);
     }
 }
 
-void SimpleServer::sendAck(String data)
+void SimpleServer::printIncommingCommand(std::string message)
+{
+    spdlog::logger* logger = spdlog::get("robot_logger")
+    logger->info(message);
+}
+
+void SimpleServer::sendAck(std::string data)
 {
     StaticJsonDocument<64> doc;
     doc["type"] = "ack";
     doc["data"] = data;
-    String msg;
+    std::string msg;
     serializeJson(doc, msg);
     sendMsg(msg);
 }
 
-void SimpleServer::sendErr(String data)
+void SimpleServer::sendErr(std::string data)
 {
     StaticJsonDocument<64> doc;
     doc["type"] = "ack";
     doc["data"] = data;
-    String msg;
+    std::string msg;
     serializeJson(doc, msg);
     sendMsg(msg);
 }

@@ -3,8 +3,7 @@
 #ifndef KalmanFilter_h
 #define KalmanFilter_h
 
-#include <LinearAlgebra.h>
-#include <HardwareSerial.h>
+#include <Eigen/core>
 
 class KalmanFilter 
 {
@@ -22,12 +21,12 @@ class KalmanFilter
      */
     KalmanFilter(
         double dt,
-        const mat& A,
-        const mat& B,
-        const mat& C,
-        const mat& Q,
-        const mat& R,
-        const mat& P
+        const Eigen::Matrix3f& A,
+        const Eigen::Matrix3f& B,
+        const Eigen::Matrix3f& C,
+        const Eigen::Matrix3f& Q,
+        const Eigen::Matrix3f& R,
+        const Eigen::Matrix3f& P
     );
 
     /**
@@ -43,34 +42,31 @@ class KalmanFilter
     /**
      * Initialize the filter with a guess for initial states.
      */
-    void init(double t0, mat x0);
+    void init(double t0, Eigen::Vector3f x0);
 
     /**
      * Predict estimated state based on the time step, control matrix, and control input
      * Note that I am using B and an input because it varies with time for my system
      */
-    void predict(double dt, const mat& B, const mat& u);
+    void predict(double dt, const Eigen::Matrix3f& B, const Eigen::Vector3f& u);
 
     /**
      * Update the estimated state based on measured values.
      * Can pass in R to scale how much measurement error there will be based on situation (in my case, velocity)
      */
-    void update(const mat& y, const mat& R, HardwareSerial& debug);
+    void update(const Eigen::Vector3f& y, const Eigen::Matrix3f& R);
 
     /**
      * Return the current state and time.
      */
-    mat state() { return x_hat; };
+    Eigen::Vector3f state() { return x_hat; };
     double time() { return t; };
-    mat cov() {return P; };
+    Eigen::Matrix3f cov() {return P; };
 
   private:
 
     // Matrices for computation
-    mat A, B, C, Q, R, P, K, P0;
-
-    // System dimensions
-    uint8_t m, n;
+    Eigen::Matrix3f A, B, C, Q, R, P, K, P0;
 
     // Initial and current time
     double t0, t;
@@ -79,10 +75,10 @@ class KalmanFilter
     double dt;
 
     // n-size identity
-    mat I;
+    Eigen::Matrix3f I;
 
     // Estimated states
-    mat x_hat, x_hat_new;
+    Eigen::Vector3f x_hat, x_hat_new;
 };
 
 #endif

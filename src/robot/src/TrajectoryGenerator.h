@@ -2,8 +2,6 @@
 #define TrajectoryGenerator_h
 
 #include "constants.h"
-#include <ArduinoSTL.h>
-#include <HardwareSerial.h>
 
 struct Point
 {
@@ -15,15 +13,16 @@ struct Point
         : x_(x), y_(y), a_(a)
     {}
 
-    void print(HardwareSerial& debug)
+    void print()
     {
-      debug.print("[X: ");
-      debug.print(x_, 4);
-      debug.print(", Y: ");
-      debug.print(y_, 4);
-      debug.print(", A: ");
-      debug.print(a_, 4);
-      debug.print("]");
+      spdlog::logger* logger = spdlog::get("robot_logger")
+      logger->info("[X: ");
+      logger->info(x_, 4);
+      logger->info(", Y: ");
+      logger->info(y_, 4);
+      logger->info(", A: ");
+      logger->info(a_, 4);
+      logger->info("]");
     }
 };
 
@@ -34,15 +33,16 @@ struct PVTPoint
     Point velocity_;
     float time_;
 
-    void print(HardwareSerial& debug)
+    void print()
     {
-      debug.print("[Position: ");
-      position_.print(debug);
-      debug.print(", Velocity: ");
-      velocity_.print(debug);
-      debug.print(", T: ");
-      debug.print(time_, 4);
-      debug.print("]");
+      spdlog::logger* logger = spdlog::get("robot_logger")
+      logger->info("[Position: ");
+      position_.print();
+      logger->info(", Velocity: ");
+      velocity_.print();
+      logger->info(", T: ");
+      logger->info(time_, 4);
+      logger->info("]");
     }
 };
 
@@ -65,17 +65,18 @@ struct trajParams
 
     void print(HardwareSerial& debug)
     {
-      debug.print("[p0: ");
-      debug.print(p0_, 4);
-      debug.print(", v0: ");
-      debug.print(v0_, 4);
-      debug.print(", t0: ");
-      debug.print(t0_, 4);
-      debug.print(", a: ");
-      debug.print(a_, 4);
-      debug.print(", tend: ");
-      debug.print(t_end_, 4);
-      debug.print("]");
+      spdlog::logger* logger = spdlog::get("robot_logger")
+      logger->info("[p0: ");
+      logger->info(p0_, 4);
+      logger->info(", v0: ");
+      logger->info(v0_, 4);
+      logger->info(", t0: ");
+      logger->info(t0_, 4);
+      logger->info(", a: ");
+      logger->info(a_, 4);
+      logger->info(", tend: ");
+      logger->info(t_end_, 4);
+      logger->info("]");
     }
 };
 
@@ -85,7 +86,7 @@ class TrajectoryGenerator
 
     public:
 
-        TrajectoryGenerator(HardwareSerial& debug);
+        TrajectoryGenerator();
         void generate(const Point& initialPoint, const Point& targetPoint, const DynamicLimits& limits);
         void generateConstVel(const Point& initialPoint, const float vx, const float vy, const float va, const float t, const DynamicLimits& limits);
         PVTPoint lookup(float time);
@@ -100,25 +101,22 @@ class TrajectoryGenerator
             std::vector<trajParams> ytraj_;
             std::vector<trajParams> atraj_;
 
-            void print(HardwareSerial& debug)
+            void print()
             {
-              debug.println("XTRAJ:");
+              logger.info("XTRAJ:");
               for(int i = 0; i < xtraj_.size(); i++)
               {
-                xtraj_[i].print(debug);
-                debug.println("");
+                xtraj_[i].print();
               }
-              debug.println("YTRAJ:");
+              logger.info("YTRAJ:");
               for(int i = 0; i < ytraj_.size(); i++)
               {
-                ytraj_[i].print(debug);
-                debug.println("");
+                ytraj_[i].print();
               }
-              debug.println("ATRAJ:");
+              logger.info("ATRAJ:");
               for(int i = 0; i < atraj_.size(); i++)
               {
-                atraj_[i].print(debug);
-                debug.println("");
+                atraj_[i].print();
               }
             }
         };
@@ -130,7 +128,6 @@ class TrajectoryGenerator
         std::vector<float> lookup_1D(float time, std::vector<trajParams> traj) const;
 
         MultiTrajectory currentTraj_;
-        HardwareSerial& debug_;
 
 
 };

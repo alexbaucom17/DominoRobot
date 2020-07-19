@@ -3,9 +3,8 @@
 #include "utils.h"
 
 
-TrajectoryGenerator::TrajectoryGenerator(HardwareSerial& debug)
-  : currentTraj_(),
-    debug_(debug)
+TrajectoryGenerator::TrajectoryGenerator()
+  : currentTraj_()
 {
 }
 
@@ -29,13 +28,13 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     float posForConstVelRot = 0.5 * TRAJ_MAX_ROT_ACC * timeForConstVelRot * timeForConstVelRot;
 
     #ifdef PRINT_DEBUG
-    debug_.println("Generating trajectory");
-    debug_.println("Starting point:");
-    initialPoint.print(debug_);
-    debug_.println("");
-    debug_.println("Target point: ");
-    targetPoint.print(debug_);
-    debug_.println("");
+    logger->info("Generating trajectory");
+    logger->info("Starting point:");
+    initialPoint.print();
+    logger->info("");
+    logger->info("Target point: ");
+    targetPoint.print();
+    logger->info("");
     #endif
 
     // Compute X trajectory
@@ -69,7 +68,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     }
 
     #ifdef PRINT_DEBUG
-    currentTraj_.print(debug_);
+    currentTraj_.print();
     #endif
     
 }
@@ -100,10 +99,10 @@ void TrajectoryGenerator::generateConstVel(const Point& initialPoint,
         // If the time given is too short to actually reach constant vel, just estimate a target point so that 
         // we actually do something, and then print out a big warning
         #ifdef PRINT_DEBUG
-        debug_.print("WARNING: SPECIFIED TRAJECTORY TIME ");
-        debug_.print(t);
-        debug_.print(" LESS THAN REQUIRED TIME ");
-        debug_.println(2*timeForConstVelTrans);
+        logger->info("WARNING: SPECIFIED TRAJECTORY TIME ");
+        logger->info(t);
+        logger->info(" LESS THAN REQUIRED TIME ");
+        logger->info(2*timeForConstVelTrans);
         #endif
 
         Point targetPoint;
@@ -116,21 +115,21 @@ void TrajectoryGenerator::generateConstVel(const Point& initialPoint,
     else
     {
         #ifdef PRINT_DEBUG
-        debug_.println("Generating const vel trajectory");
-        debug_.println("Starting point:");
-        initialPoint.print(debug_);
-        debug_.println("");
-        debug_.println("Target velocity: ");
-        debug_.print("[vx: ");
-        debug_.print(vx);
-        debug_.print(", vy: ");
-        debug_.print(vy);
-        debug_.print(", va: ");
-        debug_.print(va);
-        debug_.print(", t: ");
-        debug_.print(t);
-        debug_.println("]");
-        debug_.println("");
+        logger->info("Generating const vel trajectory");
+        logger->info("Starting point:");
+        initialPoint.print();
+        logger->info("");
+        logger->info("Target velocity: ");
+        logger->info("[vx: ");
+        logger->info(vx);
+        logger->info(", vy: ");
+        logger->info(vy);
+        logger->info(", va: ");
+        logger->info(va);
+        logger->info(", t: ");
+        logger->info(t);
+        logger->info("]");
+        logger->info("");
         #endif
 
         currentTraj_.xtraj_ = generate_vel_for_time_1D(initialPoint.x_, vx, t, TRAJ_MAX_TRANS_ACC);
@@ -138,7 +137,7 @@ void TrajectoryGenerator::generateConstVel(const Point& initialPoint,
         currentTraj_.atraj_ = generate_vel_for_time_1D(initialPoint.a_, va, t, TRAJ_MAX_ROT_ACC);
 
         #ifdef PRINT_DEBUG
-        currentTraj_.print(debug_);
+        currentTraj_.print();
         #endif
 
     }

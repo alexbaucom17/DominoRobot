@@ -1,7 +1,6 @@
 #ifndef SimpleServer_h
 #define SimpleServer_h
 
-#include <HardwareSerial.h>
 #include "constants.h"
 
 #define START_CHAR '<'
@@ -19,7 +18,7 @@ class SimpleServer
   public:
     
     // Constructor
-    SimpleServer(HardwareSerial& serial, HardwareSerial& debug);
+    SimpleServer();
 
     virtual ~SimpleServer();
 
@@ -29,17 +28,14 @@ class SimpleServer
 
   protected:
 
-    HardwareSerial& serial_;
-    HardwareSerial& debug_;
-
-    void sendMsg(String msg, bool print_debug=true);
-    void sendAck(String data);
-    void sendErr(String data);
-    String getAnyIncomingMessage();
-    String cleanString(String message);
-    void printIncommingCommand(String message);
+    void sendMsg(std::string msg, bool print_debug=true);
+    void sendAck(std::string data);
+    void sendErr(std::string data);
+    std::string getAnyIncomingMessage();
+    std::string cleanstd::string(std::string message);
+    void printIncommingCommand(std::string message);
     
-    virtual COMMAND getCommand(String message)=0;
+    virtual COMMAND getCommand(std::string message)=0;
 
   private:
 
@@ -47,7 +43,7 @@ class SimpleServer
     bool wifiConnected_;
     bool recvInProgress_;
     int recvIdx_;
-    String buffer_;
+    std::string buffer_;
 
 
 
