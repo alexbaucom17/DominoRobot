@@ -1,6 +1,6 @@
 #include "constants.h"  // FOR PRINT_DEBUG
 #include <ArduinoJson/ArduinoJson.h>
-#include "spdlog/spdlog.h"
+#include <plog/Log.h>
 
 SimpleServer::SimpleServer()
 : clientConnected_(false),
@@ -146,8 +146,7 @@ void SimpleServer::sendMsg(std::string msg, bool print_debug=true)
 
 void SimpleServer::printIncommingCommand(std::string message)
 {
-    spdlog::logger* logger = spdlog::get("robot_logger")
-    logger->info(message);
+    PLOGI.printf(message);
 }
 
 void SimpleServer::sendAck(std::string data)

@@ -2,6 +2,7 @@
  
 #include <cmath>
 #include "utils.h"
+#include <chrono>
 
 float wrap_angle(float a)
 {
@@ -22,4 +23,11 @@ float angle_diff(float a1, float a2)
   // Handle angle wrapping and compute the correct error amount
   outA = wrap_angle(outA);
   return outA;
+}
+
+unsigned long millis()
+{
+  using namespace std::chrono;
+  milliseconds ms = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+  return ms.count();
 }

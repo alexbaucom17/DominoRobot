@@ -8,7 +8,7 @@ StatusUpdater::StatusUpdater() :
 {
 }
 
-String StatusUpdater::getStatusJsonString() 
+std::string StatusUpdater::getStatusJsonString() 
 {
     // Return the status string
     return currentStatus_.toJsonString();

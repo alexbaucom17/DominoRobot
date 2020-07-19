@@ -2,6 +2,8 @@
 #define TrajectoryGenerator_h
 
 #include "constants.h"
+#include <plog/Log.h>
+#include <vector>
 
 struct Point
 {
@@ -15,14 +17,13 @@ struct Point
 
     void print()
     {
-      spdlog::logger* logger = spdlog::get("robot_logger")
-      logger->info("[X: ");
-      logger->info(x_, 4);
-      logger->info(", Y: ");
-      logger->info(y_, 4);
-      logger->info(", A: ");
-      logger->info(a_, 4);
-      logger->info("]");
+      PLOGI.printf("[X: ");
+      PLOGI.printf(x_, 4);
+      PLOGI.printf(", Y: ");
+      PLOGI.printf(y_, 4);
+      PLOGI.printf(", A: ");
+      PLOGI.printf(a_, 4);
+      PLOGI.printf("]");
     }
 };
 
@@ -35,14 +36,13 @@ struct PVTPoint
 
     void print()
     {
-      spdlog::logger* logger = spdlog::get("robot_logger")
-      logger->info("[Position: ");
+      PLOGI.printf("[Position: ");
       position_.print();
-      logger->info(", Velocity: ");
+      PLOGI.printf(", Velocity: ");
       velocity_.print();
-      logger->info(", T: ");
-      logger->info(time_, 4);
-      logger->info("]");
+      PLOGI.printf(", T: ");
+      PLOGI.printf(time_, 4);
+      PLOGI.printf("]");
     }
 };
 
@@ -65,18 +65,17 @@ struct trajParams
 
     void print(HardwareSerial& debug)
     {
-      spdlog::logger* logger = spdlog::get("robot_logger")
-      logger->info("[p0: ");
-      logger->info(p0_, 4);
-      logger->info(", v0: ");
-      logger->info(v0_, 4);
-      logger->info(", t0: ");
-      logger->info(t0_, 4);
-      logger->info(", a: ");
-      logger->info(a_, 4);
-      logger->info(", tend: ");
-      logger->info(t_end_, 4);
-      logger->info("]");
+      PLOGI.printf("[p0: ");
+      PLOGI.printf(p0_, 4);
+      PLOGI.printf(", v0: ");
+      PLOGI.printf(v0_, 4);
+      PLOGI.printf(", t0: ");
+      PLOGI.printf(t0_, 4);
+      PLOGI.printf(", a: ");
+      PLOGI.printf(a_, 4);
+      PLOGI.printf(", tend: ");
+      PLOGI.printf(t_end_, 4);
+      PLOGI.printf("]");
     }
 };
 
@@ -103,17 +102,17 @@ class TrajectoryGenerator
 
             void print()
             {
-              logger.info("XTRAJ:");
+              PLOGI.printf("XTRAJ:");
               for(int i = 0; i < xtraj_.size(); i++)
               {
                 xtraj_[i].print();
               }
-              logger.info("YTRAJ:");
+              PLOGI.printf("YTRAJ:");
               for(int i = 0; i < ytraj_.size(); i++)
               {
                 ytraj_[i].print();
               }
-              logger.info("ATRAJ:");
+              PLOGI.printf("ATRAJ:");
               for(int i = 0; i < atraj_.size(); i++)
               {
                 atraj_[i].print();

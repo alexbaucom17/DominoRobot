@@ -3,6 +3,7 @@
 #include "utils.h"
 #include <math.h>
 #include <Eigen/Core>
+#include <plog/Log.h>
 
 const DynamicLimits FINE_LIMS = {MAX_TRANS_SPEED_FINE, MAX_TRANS_ACC_FINE, MAX_ROT_SPEED_FINE, MAX_ROT_ACC_FINE};
 const DynamicLimits COARSE_LIMS = {MAX_TRANS_SPEED_COARSE, MAX_TRANS_ACC_COARSE, MAX_ROT_SPEED_COARSE, MAX_ROT_ACC_COARSE};
@@ -13,7 +14,7 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
   prevUpdateLoopTime_(millis()),
   prevOdomLoopTime_(millis()),
   enabled_(false),
-  trajGen_(debug),
+  trajGen_(),
   cartPos_(0),
   cartVel_(0),
   goalPos_(0),
@@ -25,10 +26,8 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
   fineMode_(true),
   velOnlyMode_(false),
   predict_once(false),
-  statusUpdater_(statusUpdater),
-  logger_(spdlog::get("robot_logger"))
+  statusUpdater_(statusUpdater)
 {
-    setCoarseMotorGains();
 }
 
 void RobotController::begin()
@@ -100,35 +99,19 @@ void RobotController::startTraj()
 
     enableAllMotors();
     #ifdef PRINT_DEBUG
-    logger_->info("Starting move");
+    PLOGI.printf("Starting move");
     #endif
 }
 
 void RobotController::estop()
 {
     #ifdef PRINT_DEBUG
-    logger_->info("Estopping robot control");
+    PLOGI.printf("Estopping robot control");
     #endif 
     trajRunning_ = false;
     fineMode_ = true;
     velOnlyMode_ = false;
     disableAllMotors();
-}
-
-void RobotController::setCoarseMotorGains()
-{
-    motors_[MOTOR_IDX_FL].setGains(FRONT_MOTOR_KP_COARSE, FRONT_MOTOR_KI_COARSE, FRONT_MOTOR_KD_COARSE);
-    motors_[MOTOR_IDX_FR].setGains(FRONT_MOTOR_KP_COARSE, FRONT_MOTOR_KI_COARSE, FRONT_MOTOR_KD_COARSE);
-    motors_[MOTOR_IDX_BL].setGains(REAR_MOTOR_KP_COARSE, REAR_MOTOR_KI_COARSE, REAR_MOTOR_KD_COARSE);
-    motors_[MOTOR_IDX_BR].setGains(REAR_MOTOR_KP_COARSE, REAR_MOTOR_KI_COARSE, REAR_MOTOR_KD_COARSE);
-}
-
-void RobotController::setFineMotorGains()
-{
-    motors_[MOTOR_IDX_FL].setGains(FRONT_MOTOR_KP_FINE, FRONT_MOTOR_KI_FINE, FRONT_MOTOR_KD_FINE);
-    motors_[MOTOR_IDX_FR].setGains(FRONT_MOTOR_KP_FINE, FRONT_MOTOR_KI_FINE, FRONT_MOTOR_KD_FINE);
-    motors_[MOTOR_IDX_BL].setGains(REAR_MOTOR_KP_FINE, REAR_MOTOR_KI_FINE, REAR_MOTOR_KD_FINE);
-    motors_[MOTOR_IDX_BR].setGains(REAR_MOTOR_KP_FINE, REAR_MOTOR_KI_FINE, REAR_MOTOR_KD_FINE);
 }
 
 void RobotController::update()
@@ -151,12 +134,12 @@ void RobotController::update()
     #ifdef PRINT_DEBUG
     if (trajRunning_)
     {
-        logger_->info("Est Vel: ");
+        PLOGI.printf("Est Vel: ");
         cartVel_.print(logger_);
-        logger_->info("");
-        logger_->info("Est Pos: ");
+        PLOGI.printf("");
+        PLOGI.printf("Est Pos: ");
         cartPos_.print(logger_);
-        logger_->info("");
+        PLOGI.printf("");
     }
     #endif
 
@@ -174,10 +157,10 @@ void RobotController::runTraj(PVTPoint* cmd)
     *cmd = trajGen_.lookup(dt);
 
     #ifdef PRINT_DEBUG
-    logger_->info("");
-    logger_->info("Target: ");
+    PLOGI.printf("");
+    PLOGI.printf("Target: ");
     cmd->print(logger_);
-    logger_->info("");
+    PLOGI.printf("");
     #endif
     
     // Stop trajectory
@@ -245,13 +228,13 @@ void RobotController::computeControl(PVTPoint cmd)
     #ifdef PRINT_DEBUG
     if(trajRunning_)
     {
-        logger_->info("CartesianControlX: [PosErr:");
-        logger_->info(sprintf("%.4f", posErrX));
-        logger_->info(", VelErr:");
-        logger_->info(sprintf("%.4f", velErrX));
-        logger_->info(", ErrSum:");
-        logger_->info(sprintf("%.4f", errSumX_));
-        logger_->info("]");
+        PLOGI.printf("CartesianControlX: [PosErr:");
+        PLOGI.printf(sprintf("%.4f", posErrX));
+        PLOGI.printf(", VelErr:");
+        PLOGI.printf(sprintf("%.4f", velErrX));
+        PLOGI.printf(", ErrSum:");
+        PLOGI.printf(sprintf("%.4f", errSumX_));
+        PLOGI.printf("]");
     }
     #endif
 
@@ -281,7 +264,7 @@ bool RobotController::checkForCompletedTrajectory(const PVTPoint cmd)
         fabs(angle_diff(goalPos_.a_, cartPos_.a_)) < ang_pos_err )) )
     {
         #ifdef PRINT_DEBUG
-        logger_->info("Reached goal");
+        PLOGI.printf("Reached goal");
         #endif
         return true;
     } 
@@ -377,13 +360,13 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     #ifdef PRINT_DEBUG
     if (trajRunning_) 
     {
-        logger_->info("CartVelCmd: [vx: ");
-        logger_->info(sprintf("%.4f", vx));
-        logger_->info(", vy: ");
-        logger_->info(sprintf("%.4f", vy));
-        logger_->info(", va: ");
-        logger_->info(sprintf("%.4f", va));
-        logger_->info("]");
+        PLOGI.printf("CartVelCmd: [vx: ");
+        PLOGI.printf(sprintf("%.4f", vx));
+        PLOGI.printf(", vy: ");
+        PLOGI.printf(sprintf("%.4f", vy));
+        PLOGI.printf(", va: ");
+        PLOGI.printf(sprintf("%.4f", va));
+        PLOGI.printf("]");
     }
     #endif
 

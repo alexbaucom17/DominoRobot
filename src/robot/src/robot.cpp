@@ -1,8 +1,13 @@
-#include "spdlog/spdlog.h"
 #include "RobotServer.h"
 #include "RobotController.h"
 #include "StatusUpdater.h"
 #include "TrayController.h"
+
+#include <plog/Log.h> 
+#include <plog/Init.h>
+#include <plog/Formatters/TxtFormatter.h>
+#include <plog/Appenders/ConsoleAppender.h>
+#include <plog/Appenders/RollingFileAppender.h>
 
 // Top level objects 
 StatusUpdater statusUpdater;
@@ -11,8 +16,8 @@ RobotController controller = RobotController(statusUpdater);
 TrayController tray_controller = TrayController(Serial);
 
 // TODO: Find new library for these
-RunningStatistics loop_time_averager;        // Handles keeping average of the loop timing
-RunningStatistics position_time_averager;    // Handles keeping average of the position update timing
+// RunningStatistics loop_time_averager;        // Handles keeping average of the loop timing
+// RunningStatistics position_time_averager;    // Handles keeping average of the position update timing
 
 // Variables used for loop
 COMMAND newCmd = COMMAND::NONE;
@@ -21,16 +26,17 @@ unsigned long prevLoopMillis = millis();
 unsigned long prevPositionMillis = millis();
 
 
-spdlog::logger configure_logger()
+void configure_logger()
 {
-    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-    console_sink->set_level(spdlog::level::info);
-    console_sink->set_pattern("[logging_test] [%^%l%$] %v");
+{
+    static plog::RollingFileAppender<plog::TxtFormatter> fileAppender("Testlog.txt", 8000, 3); // Create the 1st appender.
+    static plog::ConsoleAppender<plog::TxtFormatter> consoleAppender; // Create the 2nd appender.
+    plog::init(plog::debug, &fileAppender).addAppender(&consoleAppender); // Initialize the logger with the both appenders.
 
-    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/logging_test.txt", true);
-    file_sink->set_level(spdlog::level::debug);
+    // Step3: write log messages using a special macro
+    // There are several log macros, use the macro you liked the most
 
-    spdlog::logger logger("robot_logger", {console_sink, file_sink});
+    PLOG_INFO << "Logger ready";
 }
 
 
@@ -38,7 +44,6 @@ void setup()
 {
     configure_logger();
 
-    spdlog::logger* logger = spdlog::get("robot_logger");
     #ifdef PRINT_DEBUG
     logger->info("Robot starting");
     #endif
@@ -68,7 +73,7 @@ bool tryStartNewCmd(COMMAND cmd)
         controller.inputPosition(data.x, data.y, data.a);
 
         // Update the position rate
-        position_time_averager.input(millis() - prevPositionMillis);
+        // position_time_averager.input(millis() - prevPositionMillis);
         prevPositionMillis = millis();
 
         return false;
@@ -199,9 +204,9 @@ void loop()
     }
 
     // Update loop time and status updater
-    loop_time_averager.input(static_cast<float>(millis() - prevLoopMillis));
+    // loop_time_averager.input(static_cast<float>(millis() - prevLoopMillis));
     prevLoopMillis = millis();
-    statusUpdater.updateLoopTimes(static_cast<int>(loop_time_averager.mean()), static_cast<int>(position_time_averager.mean()));
+    // statusUpdater.updateLoopTimes(static_cast<int>(loop_time_averager.mean()), static_cast<int>(position_time_averager.mean()));
     
 }
 

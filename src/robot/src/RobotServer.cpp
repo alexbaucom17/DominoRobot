@@ -2,7 +2,7 @@
 #include "RobotServer.h"
 #include <ArduinoJson/ArduinoJson.h>
 #include "constants.h"  // FOR PRINT_DEBUG
-#include "spdlog/spdlog.h"
+#include <plog/Log.h>
 
 RobotServer::RobotServer(const StatusUpdater& statusUpdater)
 : SimpleServer(),
@@ -18,14 +18,13 @@ COMMAND RobotServer::getCommand(String message)
     COMMAND cmd = COMMAND::NONE;
     StaticJsonDocument<256> doc;
     DeserializationError err = deserializeJson(doc, message);
-    spdlog::logger* logger = spdlog::get("robot_logger")
 
     if(err)
     {
         #ifdef PRINT_DEBUG
         printIncommingCommand(message);
-        logger->info("[RobotServer] Error parsing JSON: ");
-        logger->info(err.c_str());   
+        PLOGI.printf("[RobotServer] Error parsing JSON: ");
+        PLOGI.printf(err.c_str());   
         #endif
         sendErr("bad_json");
     }
@@ -119,7 +118,7 @@ COMMAND RobotServer::getCommand(String message)
         {
             #ifdef PRINT_DEBUG
             printIncommingCommand(message);
-            logger->info("[RobotServer] ERROR: Type field empty or not specified ");
+            PLOGI.printf("[RobotServer] ERROR: Type field empty or not specified ");
             #endif
             sendErr("no_type");
         }
@@ -127,7 +126,7 @@ COMMAND RobotServer::getCommand(String message)
         {
             #ifdef PRINT_DEBUG
             printIncommingCommand(message);
-            logger->info("[RobotServer] ERROR: Unkown type field ");
+            PLOGI.printf("[RobotServer] ERROR: Unkown type field ");
             #endif
             sendErr("unkown_type");
         }

@@ -1,7 +1,6 @@
 #ifndef TrayController_h
 #define TrayController_h
 
-#include "spdlog/spdlog.h"
 
 class TrayController
 {
@@ -36,10 +35,9 @@ class TrayController
     };
 
     ACTION curAction_;
-    uint8_t actionStep_;
+    int actionStep_;
     bool loadComplete_;
     unsigned long startMillisForTimer_;
-    spdlog::logger* logger;
 
     void updateInitialize();
     void updateLoad();

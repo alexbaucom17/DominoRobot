@@ -10,7 +10,7 @@ class StatusUpdater
   public:
     StatusUpdater();
 
-    String getStatusJsonString();
+    std::string getStatusJsonString();
 
     void updatePosition(float x, float y, float a);
 
@@ -65,7 +65,7 @@ class StatusUpdater
       {
       }
 
-      String toJsonString()
+      std::string toJsonString()
       {
         // Size the object correctly
         const size_t capacity = JSON_OBJECT_SIZE(16); // Update when adding new fields
@@ -74,8 +74,6 @@ class StatusUpdater
         // Format to match messages sent by server
         root["type"] = "status";
         JsonObject doc = root.createNestedObject("data");
-
-        free_memory = freeMemory();
 
         // Fill in data
         doc["pos_x"] = pos_x;
@@ -91,10 +89,9 @@ class StatusUpdater
         doc["position_loop_ms"] = position_loop_ms;
         doc["in_progress"] = in_progress;
         doc["counter"] = counter++;
-        doc["free_memory"] = free_memory;
 
         // Serialze and return string
-        String msg;
+        std::string msg;
         serializeJson(doc, msg);
         return msg;
       }

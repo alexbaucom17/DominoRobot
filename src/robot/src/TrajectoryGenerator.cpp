@@ -3,6 +3,7 @@
 #include "utils.h"
 
 
+
 TrajectoryGenerator::TrajectoryGenerator()
   : currentTraj_()
 {
@@ -28,13 +29,13 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     float posForConstVelRot = 0.5 * TRAJ_MAX_ROT_ACC * timeForConstVelRot * timeForConstVelRot;
 
     #ifdef PRINT_DEBUG
-    logger->info("Generating trajectory");
-    logger->info("Starting point:");
+    PLOGI.printf("Generating trajectory");
+    PLOGI.printf("Starting point:");
     initialPoint.print();
-    logger->info("");
-    logger->info("Target point: ");
+    PLOGI.printf("");
+    PLOGI.printf("Target point: ");
     targetPoint.print();
-    logger->info("");
+    PLOGI.printf("");
     #endif
 
     // Compute X trajectory
@@ -99,10 +100,10 @@ void TrajectoryGenerator::generateConstVel(const Point& initialPoint,
         // If the time given is too short to actually reach constant vel, just estimate a target point so that 
         // we actually do something, and then print out a big warning
         #ifdef PRINT_DEBUG
-        logger->info("WARNING: SPECIFIED TRAJECTORY TIME ");
-        logger->info(t);
-        logger->info(" LESS THAN REQUIRED TIME ");
-        logger->info(2*timeForConstVelTrans);
+        PLOGI.printf("WARNING: SPECIFIED TRAJECTORY TIME ");
+        PLOGI.printf(t);
+        PLOGI.printf(" LESS THAN REQUIRED TIME ");
+        PLOGI.printf(2*timeForConstVelTrans);
         #endif
 
         Point targetPoint;
@@ -115,21 +116,21 @@ void TrajectoryGenerator::generateConstVel(const Point& initialPoint,
     else
     {
         #ifdef PRINT_DEBUG
-        logger->info("Generating const vel trajectory");
-        logger->info("Starting point:");
+        PLOGI.printf("Generating const vel trajectory");
+        PLOGI.printf("Starting point:");
         initialPoint.print();
-        logger->info("");
-        logger->info("Target velocity: ");
-        logger->info("[vx: ");
-        logger->info(vx);
-        logger->info(", vy: ");
-        logger->info(vy);
-        logger->info(", va: ");
-        logger->info(va);
-        logger->info(", t: ");
-        logger->info(t);
-        logger->info("]");
-        logger->info("");
+        PLOGI.printf("");
+        PLOGI.printf("Target velocity: ");
+        PLOGI.printf("[vx: ");
+        PLOGI.printf(vx);
+        PLOGI.printf(", vy: ");
+        PLOGI.printf(vy);
+        PLOGI.printf(", va: ");
+        PLOGI.printf(va);
+        PLOGI.printf(", t: ");
+        PLOGI.printf(t);
+        PLOGI.printf("]");
+        PLOGI.printf("");
         #endif
 
         currentTraj_.xtraj_ = generate_vel_for_time_1D(initialPoint.x_, vx, t, TRAJ_MAX_TRANS_ACC);

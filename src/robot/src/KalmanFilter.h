@@ -3,7 +3,7 @@
 #ifndef KalmanFilter_h
 #define KalmanFilter_h
 
-#include <Eigen/core>
+#include <Eigen/Core>
 
 class KalmanFilter 
 {

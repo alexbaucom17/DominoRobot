@@ -1,6 +1,6 @@
 #include "KalmanFilter.h"
 #include "utils.h"
-#include <spdlog/spdlog.h>
+#include <plog/Log.h>
 
 KalmanFilter::KalmanFilter(
     double dt,
@@ -12,13 +12,13 @@ KalmanFilter::KalmanFilter(
     const Eigen::Matrix3f& P)
   : A(A), B(B), C(C), Q(Q), R(R), P0(P),
     dt(dt),
-    I(Eigen::Matrix3f::Identity
+    I(Eigen::Matrix3f::Identity())
 {
 }
 
 KalmanFilter::KalmanFilter() {}
 
-void KalmanFilter::init(double t0, mat x0) 
+void KalmanFilter::init(double t0, Eigen::Vector3f x0) 
 {
   x_hat = x0;
   P = P0;
@@ -28,7 +28,7 @@ void KalmanFilter::init(double t0, mat x0)
 
 void KalmanFilter::init() 
 {
-  x_hat = Eigen::Vector3f::zero();
+  x_hat = Eigen::Vector3f::Zero();
   P = P0;
   t0 = 0;
   t = t0;
@@ -39,7 +39,7 @@ void KalmanFilter::predict(double dt, const Eigen::Matrix3f& B, const Eigen::Vec
   this->B = B;
   this->dt = dt;
   x_hat_new = A * x_hat + B * u;
-  P = A*P*A.t() + Q;
+  P = A*P*A.transpose() + Q;
   t += dt;
 
   // Customize kalman filter to handle 3rd element as an angle and wrap between +/- pi
@@ -52,53 +52,52 @@ void KalmanFilter::update(const Eigen::Vector3f& y, const Eigen::Matrix3f& R)
 {
 
 #ifdef PRINT_DEBUG
-  spdlog::logger* logger = spdlog::get("robot_logger")
-  logger->info("xhat rows: ");
-  logger->info(x_hat.get_rows());
-  logger->info(" cols: ");
-  logger->info(x_hat.get_cols());
-  logger->info("");
+  PLOGI.printf("xhat rows: ");
+  PLOGI.printf(x_hat.get_rows());
+  PLOGI.printf(" cols: ");
+  PLOGI.printf(x_hat.get_cols());
+  PLOGI.printf("");
 
   // Note print for a single column matrix doesn't work for some reason
-  logger->info("State estimate before update");
-  logger->info("[X: ");
-  logger->info(x_hat(0,0), 4);
-  logger->info(", Y: ");
-  logger->info(x_hat(1,0), 4);
-  logger->info(", A: ");
-  logger->info(x_hat(2,0), 4);
-  logger->info("]");
+  PLOGI.printf("State estimate before update");
+  PLOGI.printf("[X: ");
+  PLOGI.printf(x_hat(0,0), 4);
+  PLOGI.printf(", Y: ");
+  PLOGI.printf(x_hat(1,0), 4);
+  PLOGI.printf(", A: ");
+  PLOGI.printf(x_hat(2,0), 4);
+  PLOGI.printf("]");
 #endif
 
   this->R = R;
-  K = P*C.t()*(C*P*C.t() + R).inv();
+  K = P*C.transpose()*(C*P*C.transpose() + R).inverse();
   x_hat_new += K * (y - C*x_hat);
   P = (I - K*C)*P;
   x_hat = x_hat_new;
 
 #ifdef PRINT_DEBUG
-  logger->info("R matrix");
-  logger->info(R);
+  PLOGI.printf("R matrix");
+  PLOGI.printf(R);
 
-  logger->info("P matrix");
-  logger->info(P);
+  PLOGI.printf("P matrix");
+  PLOGI.printf(P);
 
-  logger->info("K matrix");
-  logger->info(K);
+  PLOGI.printf("K matrix");
+  PLOGI.printf(K);
 
-  // logger->info("xhat rows: ");
-  // logger->info(x_hat.get_rows());
-  // logger->info(" cols: ");
-  // logger->info(x_hat.get_cols());
-  // logger->info("");
+  // PLOGI.printf("xhat rows: ");
+  // PLOGI.printf(x_hat.get_rows());
+  // PLOGI.printf(" cols: ");
+  // PLOGI.printf(x_hat.get_cols());
+  // PLOGI.printf("");
   
-  logger->info("State estimate after update");
-  logger->info("[X: ");
-  logger->info(x_hat(0,0));
-  logger->info(", Y: ");
-  logger->info(x_hat(1,0));
-  logger->info(", A: ");
-  logger->info(x_hat(2,0));
-  logger->info("]");
+  PLOGI.printf("State estimate after update");
+  PLOGI.printf("[X: ");
+  PLOGI.printf(x_hat(0,0));
+  PLOGI.printf(", Y: ");
+  PLOGI.printf(x_hat(1,0));
+  PLOGI.printf(", A: ");
+  PLOGI.printf(x_hat(2,0));
+  PLOGI.printf("]");
 #endif
 }
