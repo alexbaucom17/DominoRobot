@@ -1,26 +1,16 @@
-/* Requires libraries:
-*  Encoder: https://github.com/PaulStoffregen/Encoder
-*  Filters: https://github.com/JonHub/Filters
-*  PID: https://playground.arduino.cc/Code/PIDLibrary/
-*  ArduinoJson: https://arduinojson.org
-*  LinAlgebra: https://github.com/dams666/LinAlgebra
-*   (modified to reduce matrix size to 3)
-*  ArduinoSTL: https://www.arduinolibraries.info/libraries/arduino-stl
-*  MemoryFree: https://playground.arduino.cc/Code/AvailableMemory/
-*  AccelStepper: https://www.airspayce.com/mikem/arduino/AccelStepper/
-*/
-
+#include "spdlog/spdlog.h"
 #include "RobotServer.h"
 #include "RobotController.h"
 #include "StatusUpdater.h"
 #include "TrayController.h"
-#include <Filters.h>
 
 // Top level objects 
 StatusUpdater statusUpdater;
 RobotServer server = RobotServer(Serial3, Serial, statusUpdater);
-RobotController controller = RobotController(Serial, statusUpdater);
+RobotController controller = RobotController(statusUpdater);
 TrayController tray_controller = TrayController(Serial);
+
+// TODO: Find new library for these
 RunningStatistics loop_time_averager;        // Handles keeping average of the loop timing
 RunningStatistics position_time_averager;    // Handles keeping average of the position update timing
 
@@ -31,26 +21,40 @@ unsigned long prevLoopMillis = millis();
 unsigned long prevPositionMillis = millis();
 
 
+spdlog::logger configure_logger()
+{
+    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    console_sink->set_level(spdlog::level::info);
+    console_sink->set_pattern("[logging_test] [%^%l%$] %v");
+
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/logging_test.txt", true);
+    file_sink->set_level(spdlog::level::debug);
+
+    spdlog::logger logger("robot_logger", {console_sink, file_sink});
+}
+
+
 void setup()
 {
-    // Communication with the host computer
-    Serial.begin(115200); 
+    configure_logger();
+
+    spdlog::logger* logger = spdlog::get("robot_logger");
     #ifdef PRINT_DEBUG
-    Serial.println("Robot starting");
+    logger->info("Robot starting");
     #endif
 
     // Need this delay for controller to setup correctly for some reason
-    delay(100);
+    usleep(100000);
 
     // Start server and controllers
     controller.begin();
-    delay(100);
+    usleep(100000);
     tray_controller.begin();
-    delay(100);
+    usleep(100000);
     server.begin();
 
     #ifdef PRINT_DEBUG
-    Serial.println("Done with setup, starting loop");
+    logger->info("Done with setup, starting loop");
     #endif
 }
 
@@ -87,7 +91,7 @@ bool tryStartNewCmd(COMMAND cmd)
     if(statusUpdater.getInProgress())
     {
         #ifdef PRINT_DEBUG
-        Serial.println("Command already running, rejecting new command");
+        spdlog::get("robot_logger")->info("Command already running, rejecting new command");
         #endif
         return false;
     }
@@ -132,7 +136,7 @@ bool tryStartNewCmd(COMMAND cmd)
     else
     {
         #ifdef PRINT_DEBUG
-        Serial.println("Unknown command!");
+        spdlog::get("robot_logger")->info("Unknown command!");
         #endif
         return false;
     }
@@ -162,8 +166,7 @@ bool checkForCmdComplete(COMMAND cmd)
     else
     {
         #ifdef PRINT_DEBUG
-        Serial.print("Completion check not implimented for command: ");
-        Serial.println(cmd);
+        spdlog::get("robot_logger")->info(sprintf("Completion check not implimented for command: %i",cmd));
         #endif
         return true;
     }
@@ -200,4 +203,18 @@ void loop()
     prevLoopMillis = millis();
     statusUpdater.updateLoopTimes(static_cast<int>(loop_time_averager.mean()), static_cast<int>(position_time_averager.mean()));
     
+}
+
+
+// For simpler porting
+// TODO: Cleanup
+int main()
+{
+    setup();
+
+    while(true)
+    {
+        loop();
+    }
+    return 0;
 }

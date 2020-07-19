@@ -2,17 +2,16 @@
 #define RobotController_h
 
 #include "TrajectoryGenerator.h"
-#include <HardwareSerial.h>
 #include "StatusUpdater.h"
 #include "KalmanFilter.h"
-#include "Motor.h"
+#include "spdlog/spdlog.h"
 
 class RobotController
 {
   public:
 
     // Constructor
-    RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater);
+    RobotController(StatusUpdater& statusUpdater);
 
     void begin();
 
@@ -73,12 +72,10 @@ class RobotController
     void setFineMotorGains();
 
     // Member variables
-    Motor motors_[4];                      // Motor objects
     unsigned long prevPositionUpdateTime_; // Previous loop millis we were provided a position observation
     unsigned long prevControlLoopTime_;    // Previous loop millis through the cartesian control loop
     unsigned long prevUpdateLoopTime_;     // Previous loop millis through the update loop
     unsigned long prevOdomLoopTime_;       // Previous loop millis through the odom loop
-    HardwareSerial& debug_;                // Serial port to write debug info to
     bool enabled_;                         // Global motor enabled flag
     TrajectoryGenerator trajGen_;          // Trajectory generator object
     Point cartPos_;                        // Current cartesian position
@@ -97,6 +94,8 @@ class RobotController
 
     // Kalman filter stuff
     KalmanFilter kf_;
+
+    spdlog::logger* logger_;
 
 };
 

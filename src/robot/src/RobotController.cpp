@@ -2,21 +2,15 @@
 #include "constants.h"
 #include "utils.h"
 #include <math.h>
-#include <LinearAlgebra.h>
 
 const DynamicLimits FINE_LIMS = {MAX_TRANS_SPEED_FINE, MAX_TRANS_ACC_FINE, MAX_ROT_SPEED_FINE, MAX_ROT_ACC_FINE};
 const DynamicLimits COARSE_LIMS = {MAX_TRANS_SPEED_COARSE, MAX_TRANS_ACC_COARSE, MAX_ROT_SPEED_COARSE, MAX_ROT_ACC_COARSE};
 
-RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpdater)
-: motors_{ Motor(PIN_PWM_0, PIN_DIR_0, PIN_ENC_A_0, PIN_ENC_B_0),
-           Motor(PIN_PWM_1, PIN_DIR_1, PIN_ENC_A_1, PIN_ENC_B_1),
-           Motor(PIN_PWM_2, PIN_DIR_2, PIN_ENC_A_2, PIN_ENC_B_2),
-           Motor(PIN_PWM_3, PIN_DIR_3, PIN_ENC_A_3, PIN_ENC_B_3) },
-  prevPositionUpdateTime_(millis()),
+RobotController::RobotController(StatusUpdater& statusUpdater)
+: prevPositionUpdateTime_(millis()),
   prevControlLoopTime_(millis()),
   prevUpdateLoopTime_(millis()),
   prevOdomLoopTime_(millis()),
-  debug_(debug),
   enabled_(false),
   trajGen_(debug),
   cartPos_(0),
@@ -30,25 +24,18 @@ RobotController::RobotController(HardwareSerial& debug, StatusUpdater& statusUpd
   fineMode_(true),
   velOnlyMode_(false),
   predict_once(false),
-  statusUpdater_(statusUpdater)
+  statusUpdater_(statusUpdater),
+  logger_(spdlog::get("robot_logger"))
 {
     setCoarseMotorGains();
 }
 
 void RobotController::begin()
 {
-    // Setup pins
-    digitalWrite(PIN_ENABLE_0, LOW);
-    digitalWrite(PIN_ENABLE_1, LOW);
-    digitalWrite(PIN_ENABLE_2, LOW);
-    digitalWrite(PIN_ENABLE_3, LOW);
-    pinMode(PIN_ENABLE_0, OUTPUT);
-    pinMode(PIN_ENABLE_1, OUTPUT);
-    pinMode(PIN_ENABLE_2, OUTPUT);
-    pinMode(PIN_ENABLE_3, OUTPUT);
-
     // Setup Kalman filter
     double dt = 0.1;
+
+    // TODO: New linear algerba library
     mat A = mat::identity(3); 
     mat B = mat::identity(3); // Doesn't matter right now since we update this at each time step
     mat C = mat::identity(3);
@@ -113,14 +100,14 @@ void RobotController::startTraj()
 
     enableAllMotors();
     #ifdef PRINT_DEBUG
-    debug_.println("Starting move");
+    logger_->info("Starting move");
     #endif
 }
 
 void RobotController::estop()
 {
     #ifdef PRINT_DEBUG
-    debug_.println("Estopping robot control");
+    logger_->info("Estopping robot control");
     #endif 
     trajRunning_ = false;
     fineMode_ = true;
@@ -161,35 +148,15 @@ void RobotController::update()
     computeControl(cmd);
     computeOdometry();
 
-    // Update the motors
-    for (int i = 0; i < 4; i++)
-    {
-        // Hack
-        bool print = false;
-        if(trajRunning_)
-        {
-            print = true;
-            debug_.print("Motor");
-            debug_.print(i);
-            debug_.print(": ");
-        }
-        motors_[i].runLoop(print);
-
-        if(print)
-        {
-            debug_.println("");
-        }
-    }
-
     #ifdef PRINT_DEBUG
     if (trajRunning_)
     {
-        debug_.print("Est Vel: ");
-        cartVel_.print(debug_);
-        debug_.println("");
-        debug_.print("Est Pos: ");
-        cartPos_.print(debug_);
-        debug_.println("");
+        logger_->info("Est Vel: ");
+        cartVel_.print(logger_);
+        logger_->info("");
+        logger_->info("Est Pos: ");
+        cartPos_.print(logger_);
+        logger_->info("");
     }
     #endif
 
@@ -207,10 +174,10 @@ void RobotController::runTraj(PVTPoint* cmd)
     *cmd = trajGen_.lookup(dt);
 
     #ifdef PRINT_DEBUG
-    debug_.println("");
-    debug_.print("Target: ");
-    cmd->print(debug_);
-    debug_.println("");
+    logger_->info("");
+    logger_->info("Target: ");
+    cmd->print(logger_);
+    logger_->info("");
     #endif
     
     // Stop trajectory
@@ -278,13 +245,13 @@ void RobotController::computeControl(PVTPoint cmd)
     #ifdef PRINT_DEBUG
     if(trajRunning_)
     {
-        debug_.print("CartesianControlX: [PosErr:");
-        debug_.print(posErrX, 4);
-        debug_.print(", VelErr:");
-        debug_.print(velErrX, 4);
-        debug_.print(", ErrSum:");
-        debug_.print(errSumX_, 4);
-        debug_.println("]");
+        logger_->info("CartesianControlX: [PosErr:");
+        logger_->info(sprintf("%.4f", posErrX));
+        logger_->info(", VelErr:");
+        logger_->info(sprintf("%.4f", velErrX));
+        logger_->info(", ErrSum:");
+        logger_->info(sprintf("%.4f", errSumX_));
+        logger_->info("]");
     }
     #endif
 
@@ -314,7 +281,7 @@ bool RobotController::checkForCompletedTrajectory(const PVTPoint cmd)
         fabs(angle_diff(goalPos_.a_, cartPos_.a_)) < ang_pos_err )) )
     {
         #ifdef PRINT_DEBUG
-        debug_.println("Reached goal");
+        logger_->info("Reached goal");
         #endif
         return true;
     } 
@@ -326,25 +293,19 @@ bool RobotController::checkForCompletedTrajectory(const PVTPoint cmd)
 
 void RobotController::enableAllMotors()
 {
-    digitalWrite(PIN_ENABLE_0, HIGH);
-    digitalWrite(PIN_ENABLE_1, HIGH);
-    digitalWrite(PIN_ENABLE_2, HIGH);
-    digitalWrite(PIN_ENABLE_3, HIGH);
+    // TODO: port this
     enabled_ = true;
     #ifdef PRINT_DEBUG
-    debug_.println("Enabling motors");
+    logger_)->info("Enabling motors");
     #endif
 }
 
 void RobotController::disableAllMotors()
 {
-    digitalWrite(PIN_ENABLE_0, LOW);
-    digitalWrite(PIN_ENABLE_1, LOW);
-    digitalWrite(PIN_ENABLE_2, LOW);
-    digitalWrite(PIN_ENABLE_3, LOW);
+    // TODO: port this
     enabled_ = false;
     #ifdef PRINT_DEBUG
-    debug_.println("Disabling motors");
+    spdlog::get("robot_logger")->info("Disabling motors");
     #endif
 }
 
@@ -375,58 +336,9 @@ void RobotController::inputPosition(float x, float y, float a)
 
 void RobotController::computeOdometry()
 {  
-    // Read velocities from the motors
-    float motor_velocities[4];
-    for (int i = 0; i < 4; i++)
-    {
-        motor_velocities[i] = motors_[i].getCurrentVelocity();
-    }
-
-    #ifdef PRINT_DEBUG
-    if (trajRunning_)
-    {
-        debug_.print("MotorMeasured: [");
-        debug_.print(motor_velocities[0], 4);
-        debug_.print(", ");
-        debug_.print(motor_velocities[1], 4);
-        debug_.print(", ");
-        debug_.print(motor_velocities[2], 4);
-        debug_.print(", ");
-        debug_.print(motor_velocities[3], 4);
-        debug_.println("]");
-    }
-    #endif
-
-    // Read encoder counts for debugging
-    long motor_counts[4];
-    for (int i = 0; i < 4; i++)
-    {
-        motor_counts[i] = motors_[i].getCounts();
-    }
-
-    #ifdef PRINT_DEBUG
-    if (trajRunning_)
-    {
-        debug_.print("MotorCounts: [");
-        debug_.print(motor_counts[0]);
-        debug_.print(", ");
-        debug_.print(motor_counts[1]);
-        debug_.print(", ");
-        debug_.print(motor_counts[2]);
-        debug_.print(", ");
-        debug_.print(motor_counts[3]);
-        debug_.println("]");
-    }
-    #endif
-
-    // Do forward kinematics to compute local cartesian velocity
-    float local_cart_vel[3];
-    float s0 = 0.5 * WHEEL_DIAMETER * sin(PI/4.0);
-    float c0 = 0.5 * WHEEL_DIAMETER * cos(PI/4.0);
-    float d0 = WHEEL_DIAMETER / (4.0 * WHEEL_DIST_FROM_CENTER);
-    local_cart_vel[0] = 1/ODOM_SCALE_FACTOR* (-c0 * motor_velocities[MOTOR_IDX_FL] + s0 * motor_velocities[MOTOR_IDX_FR] + c0 * motor_velocities[MOTOR_IDX_BR] - s0 * motor_velocities[MOTOR_IDX_BL]);
-    local_cart_vel[1] = 1/ODOM_SCALE_FACTOR* ( s0 * motor_velocities[MOTOR_IDX_FL] + c0 * motor_velocities[MOTOR_IDX_FR] - s0 * motor_velocities[MOTOR_IDX_BR] - c0 * motor_velocities[MOTOR_IDX_BL]);
-    local_cart_vel[2] = 1/ODOM_SCALE_FACTOR* ( d0 * motor_velocities[MOTOR_IDX_FL] + d0 * motor_velocities[MOTOR_IDX_FR] + d0 * motor_velocities[MOTOR_IDX_BR] + d0 * motor_velocities[MOTOR_IDX_BL]);
+ 
+    // TODO: Get from clearcore
+    float local_cart_vel[3] = {0,0,0}
 
     // Convert local cartesian velocity to global cartesian velocity using the last estimated angle
     float cA = cos(cartPos_.a_);
@@ -465,13 +377,13 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     #ifdef PRINT_DEBUG
     if (trajRunning_) 
     {
-        debug_.print("CartVelCmd: [vx: ");
-        debug_.print(vx, 4);
-        debug_.print(", vy: ");
-        debug_.print(vy, 4);
-        debug_.print(", va: ");
-        debug_.print(va, 4);
-        debug_.println("]");
+        logger_->info("CartVelCmd: [vx: ");
+        logger_->info(sprintf("%.4f", vx));
+        logger_->info(", vy: ");
+        logger_->info(sprintf("%.4f", vy));
+        logger_->info(", va: ");
+        logger_->info(sprintf("%.4f", va));
+        logger_->info("]");
     }
     #endif
 
@@ -487,17 +399,17 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     // is fine for what we are doing now.
     if(fabs(vx) > max_trans_speed)
     {
-//        debug_.println("Capping vx velocity");
+//        spdlog::get("robot_logger")->info("Capping vx velocity");
         vx = sgn(vx) * max_trans_speed;
     }
     if(fabs(vy) > max_trans_speed)
     {
-//        debug_.println("Capping vy velocity");
+//        spdlog::get("robot_logger")->info("Capping vy velocity");
         vy = sgn(vy) * max_trans_speed;
     }
     if(fabs(va) > max_rot_speed)
     {
-//        debug_.println("Capping angular velocity");
+//        spdlog::get("robot_logger")->info("Capping angular velocity");
         va = sgn(va) * max_rot_speed;
     }
 
@@ -509,34 +421,5 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     local_cart_vel[1] = -sA * vx + cA * vy;
     local_cart_vel[2] = va;
 
-    // Convert local velocities to wheel speeds with inverse kinematics
-    float motor_velocities[4];
-    float s0 = sin(PI/4);
-    float c0 = cos(PI/4);
-    motor_velocities[MOTOR_IDX_FL] = ODOM_SCALE_FACTOR * 1/WHEEL_DIAMETER * (-c0*local_cart_vel[0] + s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motor_velocities[MOTOR_IDX_FR] = ODOM_SCALE_FACTOR * 1/WHEEL_DIAMETER * ( s0*local_cart_vel[0] + c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motor_velocities[MOTOR_IDX_BR] = ODOM_SCALE_FACTOR * 1/WHEEL_DIAMETER * ( c0*local_cart_vel[0] - s0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-    motor_velocities[MOTOR_IDX_BL] = ODOM_SCALE_FACTOR * 1/WHEEL_DIAMETER * (-s0*local_cart_vel[0] - c0*local_cart_vel[1] + WHEEL_DIST_FROM_CENTER*local_cart_vel[2]);
-
-    #ifdef PRINT_DEBUG
-    if (trajRunning_)
-    {
-        debug_.print("MotorCommands: [");
-        debug_.print(motor_velocities[0], 4);
-        debug_.print(", ");
-        debug_.print(motor_velocities[1], 4);
-        debug_.print(", ");
-        debug_.print(motor_velocities[2], 4);
-        debug_.print(", ");
-        debug_.print(motor_velocities[3], 4);
-        debug_.println("]");
-    }
-    #endif
-
-    // Send the commanded velocity for each motor
-    for (int i = 0; i < 4; i++)
-    {
-        motors_[i].setCommand(motor_velocities[i]);
-    }
-
+    // TODO: Send to clearcore
 }

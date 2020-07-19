@@ -1,31 +1,7 @@
 #ifndef Constants_h
 #define Constants_h
 
-// Pins
-#define PIN_PWM_0 4   // FL
-#define PIN_PWM_1 3   // FR
-#define PIN_PWM_2 5   // BR
-#define PIN_PWM_3 6   // BL
-
-#define PIN_DIR_0 40
-#define PIN_DIR_1 41
-#define PIN_DIR_2 39
-#define PIN_DIR_3 38
-
-#define PIN_ENABLE_0 48
-#define PIN_ENABLE_1 49
-#define PIN_ENABLE_2 47
-#define PIN_ENABLE_3 46
-
-#define PIN_ENC_A_0 20
-#define PIN_ENC_B_0 23
-#define PIN_ENC_A_1 21
-#define PIN_ENC_B_1 25
-#define PIN_ENC_A_2 19
-#define PIN_ENC_B_2 24
-#define PIN_ENC_A_3 18
-#define PIN_ENC_B_3 22
-
+// TODO fix pins for pi
 #define PIN_LATCH_SERVO_PIN 12
 #define PIN_TRAY_STEPPER_LEFT_PULSE 46
 #define PIN_TRAY_STEPPER_LEFT_DIR 47
@@ -53,30 +29,6 @@
 #define CART_ROT_KI 0.5
 #define CART_ROT_KD 0
 
-// Motor control gains
-#define FRONT_MOTOR_KP_COARSE  10//20
-#define FRONT_MOTOR_KI_COARSE  0.05//0.1
-#define FRONT_MOTOR_KD_COARSE  0.05//0.08
-#define REAR_MOTOR_KP_COARSE   10//14
-#define REAR_MOTOR_KI_COARSE   0.05//0.1
-#define REAR_MOTOR_KD_COARSE   0.05//0.08
-#define FRONT_MOTOR_KP_FINE    14
-#define FRONT_MOTOR_KI_FINE    0.1
-#define FRONT_MOTOR_KD_FINE    0.08
-#define REAR_MOTOR_KP_FINE     14
-#define REAR_MOTOR_KI_FINE     0.1
-#define REAR_MOTOR_KD_FINE     0.08
-
-// Motor indices
-#define MOTOR_IDX_FL  0
-#define MOTOR_IDX_FR  1
-#define MOTOR_IDX_BR  2
-#define MOTOR_IDX_BL  3
-
-// Motor control constants
-#define VEL_FILTER_FREQ 20            // HZ
-#define COUNTS_PER_OUTPUT_SHAFT_REV 36000 // Manually measrued/estimated
-
 // Physical dimensions
 #define WHEEL_DIAMETER 0.152 // meters
 #define WHEEL_DIST_FROM_CENTER 0.4794 // meters
@@ -101,7 +53,7 @@
 #define ANG_VEL_ERR_FINE     0.01 // rad/s
 
 // Set debug printing, comment out to skip debug printing
-#define PRINT_DEBUG true
+#define PRINT_DEBUG false
 
 // Tray stepper control values
 #define TRAY_STEPPER_STEPS_PER_REV 200  // Steps per rev for tray servos
