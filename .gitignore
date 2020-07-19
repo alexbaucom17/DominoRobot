@@ -2,3 +2,4 @@
 beacon_state.txt
 build/
 lib/
+.vscode/
