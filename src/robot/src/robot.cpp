@@ -2,6 +2,7 @@
 #include "RobotController.h"
 #include "StatusUpdater.h"
 #include "TrayController.h"
+#include "utils.h"
 
 #include <plog/Log.h> 
 #include <plog/Init.h>
@@ -11,9 +12,9 @@
 
 // Top level objects 
 StatusUpdater statusUpdater;
-RobotServer server = RobotServer(Serial3, Serial, statusUpdater);
+RobotServer server = RobotServer(statusUpdater);
 RobotController controller = RobotController(statusUpdater);
-TrayController tray_controller = TrayController(Serial);
+TrayController tray_controller = TrayController();
 
 // TODO: Find new library for these
 // RunningStatistics loop_time_averager;        // Handles keeping average of the loop timing
@@ -27,7 +28,6 @@ unsigned long prevPositionMillis = millis();
 
 
 void configure_logger()
-{
 {
     static plog::RollingFileAppender<plog::TxtFormatter> fileAppender("Testlog.txt", 8000, 3); // Create the 1st appender.
     static plog::ConsoleAppender<plog::TxtFormatter> consoleAppender; // Create the 2nd appender.
@@ -45,7 +45,7 @@ void setup()
     configure_logger();
 
     #ifdef PRINT_DEBUG
-    logger->info("Robot starting");
+    PLOGI.printf("Robot starting");
     #endif
 
     // Need this delay for controller to setup correctly for some reason
@@ -59,7 +59,7 @@ void setup()
     server.begin();
 
     #ifdef PRINT_DEBUG
-    logger->info("Done with setup, starting loop");
+    PLOGI.printf("Done with setup, starting loop");
     #endif
 }
 
@@ -96,7 +96,7 @@ bool tryStartNewCmd(COMMAND cmd)
     if(statusUpdater.getInProgress())
     {
         #ifdef PRINT_DEBUG
-        spdlog::get("robot_logger")->info("Command already running, rejecting new command");
+        PLOGI.printf("Command already running, rejecting new command");
         #endif
         return false;
     }
@@ -141,7 +141,7 @@ bool tryStartNewCmd(COMMAND cmd)
     else
     {
         #ifdef PRINT_DEBUG
-        spdlog::get("robot_logger")->info("Unknown command!");
+        PLOGI.printf("Unknown command!");
         #endif
         return false;
     }
@@ -171,7 +171,7 @@ bool checkForCmdComplete(COMMAND cmd)
     else
     {
         #ifdef PRINT_DEBUG
-        spdlog::get("robot_logger")->info(sprintf("Completion check not implimented for command: %i",cmd));
+        PLOGI.printf("Completion check not implimented for command: %i",cmd);
         #endif
         return true;
     }

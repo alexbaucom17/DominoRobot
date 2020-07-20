@@ -29,27 +29,27 @@ COMMAND SimpleServer::oneLoop()
     {    
         bool printDebug = true;    
         bool checkCommand = false;
-        if(newMsg.lastIndexOf("Client connected") >= 0)
+        if(newMsg.find("Client connected") != std::string::npos)
         {
             clientConnected_ = true;
             wifiConnected_ = true;
         }
-        else if(newMsg.lastIndexOf("Client disconnected") >= 0)
+        else if(newMsg.find("Client disconnected") != std::string::npos)
         {
             clientConnected_ = false;
             wifiConnected_ = true;
         }
-        else if(newMsg.lastIndexOf("Connecting..") >= 0)
+        else if(newMsg.find("Connecting..") != std::string::npos)
         {
             wifiConnected_ = false;
             clientConnected_ = false;
         }
-        else if(newMsg.lastIndexOf("Connected to WiFi.") >= 0)
+        else if(newMsg.find("Connected to WiFi.") != std::string::npos)
         {
             clientConnected_ = false;
             wifiConnected_ = true;
         }
-        else if(newMsg.lastIndexOf('*') >= 0)
+        else if(newMsg.find('*') != std::string::npos)
         {
             clientConnected_ = false;
             wifiConnected_ = true;
@@ -80,9 +80,9 @@ COMMAND SimpleServer::oneLoop()
 
 std::string SimpleServer::cleanString(std::string message)
 {
-  int idx_start = message.indexOf("{");
-  int idx_end = message.lastIndexOf("}") + 1;
-  return message.substring(idx_start, idx_end);
+  int idx_start = message.find("{");
+  int idx_end = message.find("}") + 1;
+  return message.substr(idx_start, idx_end);
 }
 
 std::string SimpleServer::getAnyIncomingMessage()
@@ -130,11 +130,11 @@ std::string SimpleServer::getAnyIncomingMessage()
     return new_msg;
 }
 
-void SimpleServer::sendMsg(std::string msg, bool print_debug=true)
+void SimpleServer::sendMsg(std::string msg, bool print_debug)
 {
     if (msg.length() == 0)
     {
-      debug_.println("[SimpleServer] Nothing to send!!!");
+      PLOGI.printf("[SimpleServer] Nothing to send!!!\n");
     }
     else
     {
@@ -147,7 +147,7 @@ void SimpleServer::sendMsg(std::string msg, bool print_debug=true)
 
 void SimpleServer::printIncommingCommand(std::string message)
 {
-    PLOGI.printf(message);
+    PLOGI.printf(message.c_str());
 }
 
 void SimpleServer::sendAck(std::string data)

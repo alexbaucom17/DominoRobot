@@ -70,7 +70,8 @@ void KalmanFilter::update(const Eigen::Vector3f& y, const Eigen::Matrix3f& R)
 #endif
 
   this->R = R;
-  K = P*C.transpose()*(C*P*C.transpose() + R).inverse();
+  Eigen::Matrix3f tmp = C*P*C.transpose() + R;
+  K = P*C.transpose()*(tmp.inverse());
   x_hat_new += K * (y - C*x_hat);
   P = (I - K*C)*P;
   x_hat = x_hat_new;
