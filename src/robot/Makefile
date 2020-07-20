@@ -5,6 +5,7 @@ TARGET_EXEC ?= robot
 
 BUILD_DIR ?= ./build
 SRC_DIRS ?= ./src
+TEST_DIRS ?=  ./test
 
 SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
@@ -16,12 +17,25 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP
 CXXFLAGS ?= -std=c++17 -Wall -Wextra -Wwrite-strings -Wno-parentheses
 
+TEST_SRCS := $(shell find $(TEST_DIRS) -name *.cpp -or -name *.c -or -name *.s)
+TEST_OBJS := $(TEST_SRCS:%=$(BUILD_DIR)/%.o)   #$(filter-out $(BUILD_DIR)/$(TARGET_EXEC).o, $(OBJ)) 
+TEST_EXEC := test-main
+
+TEST_CXXFLAGS ?= -std=c++17
+
 .PHONY: all
 all: $(BUILD_DIR)/$(TARGET_EXEC)
+
+.PHONY: test
+test: $(BUILD_DIR)/$(TEST_EXEC)
 
 # Target file
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(OBJS) -o $@ $(LDFLAGS)
+
+# Test file
+$(BUILD_DIR)/$(TEST_EXEC): $(TEST_OBJS)
+	$(CXX) $(TEST_CXXFLAGS) $(TEST_OBJS) -o $@ $(LDFLAGS)
 
 # Source files
 $(BUILD_DIR)/%.cpp.o: %.cpp
@@ -36,3 +50,5 @@ clean:
 
 -include $(DEPS)
 MKDIR_P ?= mkdir -p
+
+.DELETE_ON_ERROR:
