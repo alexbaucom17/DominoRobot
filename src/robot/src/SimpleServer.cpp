@@ -87,7 +87,7 @@ std::string SimpleServer::cleanString(std::string message)
 
 std::string SimpleServer::getAnyIncomingMessage()
 {
-    bool newData = false;
+    // bool newData = false;
     std::string new_msg = "Test";
 
     //TODO: Change to use sockets
@@ -132,7 +132,7 @@ std::string SimpleServer::getAnyIncomingMessage()
 
 void SimpleServer::sendMsg(std::string msg, bool print_debug)
 {
-    if (msg.length() == 0)
+    if (msg.length() == 0 && print_debug)
     {
       PLOGI.printf("[SimpleServer] Nothing to send!!!\n");
     }

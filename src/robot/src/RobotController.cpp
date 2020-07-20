@@ -382,5 +382,6 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     local_cart_vel[1] = -sA * vx + cA * vy;
     local_cart_vel[2] = va;
 
-    // TODO: Send to clearcore
+    // TODO: Send to clearcore'
+    PLOGI.printf("Sending to motors: [%.4f, %.4f, %.4f]\n", local_cart_vel[0], local_cart_vel[1], local_cart_vel[2]);
 }

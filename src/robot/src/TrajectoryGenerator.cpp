@@ -41,7 +41,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     // Compute X trajectory
     if(fabs(deltaPoint.x_) < 2*posForConstVelTrans)
     {
-        currentTraj_.xtraj_ = generate_triangle_1D(initialPoint.x_, targetPoint.x_, TRAJ_MAX_TRANS_SPEED, TRAJ_MAX_TRANS_ACC);
+        currentTraj_.xtraj_ = generate_triangle_1D(initialPoint.x_, targetPoint.x_, TRAJ_MAX_TRANS_ACC);
     }
     else
     {
@@ -51,7 +51,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     // Compute y trajectory
     if(fabs(deltaPoint.y_) < 2*posForConstVelTrans)
     {
-        currentTraj_.ytraj_ = generate_triangle_1D(initialPoint.y_, targetPoint.y_, TRAJ_MAX_TRANS_SPEED, TRAJ_MAX_TRANS_ACC);
+        currentTraj_.ytraj_ = generate_triangle_1D(initialPoint.y_, targetPoint.y_, TRAJ_MAX_TRANS_ACC);
     }
     else
     {
@@ -61,7 +61,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     // Compute angle trajectory
     if(fabs(deltaPoint.a_) < 2*posForConstVelRot)
     {
-        currentTraj_.atraj_ = generate_triangle_1D(initialPoint.a_, targetPoint.a_, TRAJ_MAX_ROT_SPEED, TRAJ_MAX_ROT_ACC);
+        currentTraj_.atraj_ = generate_triangle_1D(initialPoint.a_, targetPoint.a_,  TRAJ_MAX_ROT_ACC);
     }
     else
     {
@@ -85,14 +85,10 @@ void TrajectoryGenerator::generateConstVel(const Point& initialPoint,
     // Scale max speeds and accelerations for trajectory generation
     float TRAJ_MAX_TRANS_SPEED = (fabs(vx) > fabs(vy)) ? fabs(vx) : fabs(vy);
     float TRAJ_MAX_TRANS_ACC = TRAJ_MAX_FRACTION * limits.max_trans_acc_;
-    float TRAJ_MAX_ROT_SPEED = fabs(va);
     float TRAJ_MAX_ROT_ACC = TRAJ_MAX_FRACTION * limits.max_rot_acc_;
 
     // Pre-compute some useful values
     float timeForConstVelTrans = TRAJ_MAX_TRANS_SPEED / TRAJ_MAX_TRANS_ACC;
-    float posForConstVelTrans = 0.5 * TRAJ_MAX_TRANS_ACC * timeForConstVelTrans * timeForConstVelTrans;
-    float timeForConstVelRot = TRAJ_MAX_ROT_SPEED / TRAJ_MAX_ROT_ACC;
-    float posForConstVelRot = 0.5 * TRAJ_MAX_ROT_ACC * timeForConstVelRot * timeForConstVelRot;
 
     // NOTE: Not checking angular component right now, can add later if needed
     if(t < 2*timeForConstVelTrans)
@@ -131,7 +127,7 @@ void TrajectoryGenerator::generateConstVel(const Point& initialPoint,
 }
 
 
-std::vector<trajParams> TrajectoryGenerator::generate_triangle_1D(float startPos, float endPos, float maxVel, float maxAcc) const
+std::vector<trajParams> TrajectoryGenerator::generate_triangle_1D(float startPos, float endPos, float maxAcc) const
 {
     std::vector<trajParams> outTraj;
 
