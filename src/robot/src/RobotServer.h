@@ -29,7 +29,7 @@ class RobotServer : public SimpleServer
     };
     
     // Constructor
-    RobotServer(const StatusUpdater& statusUpdater);
+    RobotServer(StatusUpdater& statusUpdater);
 
     RobotServer::PositionData getMoveData();
 
@@ -41,9 +41,9 @@ class RobotServer : public SimpleServer
     PositionData moveData_;
     PositionData positionData_;
     VelocityData velocityData_;
-    const StatusUpdater& statusUpdater_;
+    StatusUpdater& statusUpdater_;
 
-    virtual COMMAND getCommand(String message) override;
+    virtual COMMAND getCommand(std::string message) override;
 
     void sendStatus();
 

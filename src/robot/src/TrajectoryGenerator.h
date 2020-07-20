@@ -15,15 +15,16 @@ struct Point
         : x_(x), y_(y), a_(a)
     {}
 
-    void print()
+    void print() const
     {
-      PLOGI.printf("[X: ");
-      PLOGI.printf(x_, 4);
-      PLOGI.printf(", Y: ");
-      PLOGI.printf(y_, 4);
-      PLOGI.printf(", A: ");
-      PLOGI.printf(a_, 4);
-      PLOGI.printf("]");
+      PLOGI.printf("%s\n",this->toString());
+    }
+
+    std::string toString() const
+    {
+      char s[100];
+      sprintf(s, "[X: %.4f, Y: %.4f, A: %.4f]", x_, y_, a_);
+      return static_cast<std::string>(s);
     }
 };
 
@@ -34,15 +35,9 @@ struct PVTPoint
     Point velocity_;
     float time_;
 
-    void print()
+    void print() const
     {
-      PLOGI.printf("[Position: ");
-      position_.print();
-      PLOGI.printf(", Velocity: ");
-      velocity_.print();
-      PLOGI.printf(", T: ");
-      PLOGI.printf(time_, 4);
-      PLOGI.printf("]");
+      PLOGI.printf("[Position: %s, Velocity: %s, T: %.4f]\n",position_.toString(), velocity_.toString(), time_);
     }
 };
 
@@ -63,19 +58,9 @@ struct trajParams
     float a_;     // Const acceleration
     float t_end_; // End time
 
-    void print(HardwareSerial& debug)
+    void print() const
     {
-      PLOGI.printf("[p0: ");
-      PLOGI.printf(p0_, 4);
-      PLOGI.printf(", v0: ");
-      PLOGI.printf(v0_, 4);
-      PLOGI.printf(", t0: ");
-      PLOGI.printf(t0_, 4);
-      PLOGI.printf(", a: ");
-      PLOGI.printf(a_, 4);
-      PLOGI.printf(", tend: ");
-      PLOGI.printf(t_end_, 4);
-      PLOGI.printf("]");
+      PLOGI.printf("[p0: %.4f, v0: %.4f, t0: %.4f, a: %.4f, tend: %.4f]\n",p0_, v0_, t0_, a_, t_end_);
     }
 };
 

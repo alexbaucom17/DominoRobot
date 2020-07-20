@@ -100,10 +100,7 @@ void TrajectoryGenerator::generateConstVel(const Point& initialPoint,
         // If the time given is too short to actually reach constant vel, just estimate a target point so that 
         // we actually do something, and then print out a big warning
         #ifdef PRINT_DEBUG
-        PLOGI.printf("WARNING: SPECIFIED TRAJECTORY TIME ");
-        PLOGI.printf(t);
-        PLOGI.printf(" LESS THAN REQUIRED TIME ");
-        PLOGI.printf(2*timeForConstVelTrans);
+        PLOGI.printf("WARNING: SPECIFIED TRAJECTORY TIME %.4f LESS THAN REQUIRED TIME %.4f\n", t, 2*timeForConstVelTrans);
         #endif
 
         Point targetPoint;
@@ -116,21 +113,9 @@ void TrajectoryGenerator::generateConstVel(const Point& initialPoint,
     else
     {
         #ifdef PRINT_DEBUG
-        PLOGI.printf("Generating const vel trajectory");
-        PLOGI.printf("Starting point:");
-        initialPoint.print();
-        PLOGI.printf("");
-        PLOGI.printf("Target velocity: ");
-        PLOGI.printf("[vx: ");
-        PLOGI.printf(vx);
-        PLOGI.printf(", vy: ");
-        PLOGI.printf(vy);
-        PLOGI.printf(", va: ");
-        PLOGI.printf(va);
-        PLOGI.printf(", t: ");
-        PLOGI.printf(t);
-        PLOGI.printf("]");
-        PLOGI.printf("");
+        PLOGI.printf("Generating const vel trajectory\n");
+        PLOGI.printf("Starting point: %s\n", initialPoint.toString());
+        PLOGI.printf("Target velocity: [vx: %.4f, vy: %.4f, va: %.4f, t: %.4f]\n", vx, vy, va, t);
         #endif
 
         currentTraj_.xtraj_ = generate_vel_for_time_1D(initialPoint.x_, vx, t, TRAJ_MAX_TRANS_ACC);

@@ -1,6 +1,8 @@
 #ifndef SimpleServer_h
 #define SimpleServer_h
 
+#include <string>
+
 #include "constants.h"
 
 #define START_CHAR '<'
@@ -32,7 +34,7 @@ class SimpleServer
     void sendAck(std::string data);
     void sendErr(std::string data);
     std::string getAnyIncomingMessage();
-    std::string cleanstd::string(std::string message);
+    std::string cleanString(std::string message);
     void printIncommingCommand(std::string message);
     
     virtual COMMAND getCommand(std::string message)=0;

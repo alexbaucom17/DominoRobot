@@ -85,17 +85,7 @@ void RobotController::startTraj()
 {
     trajRunning_ = true;
     trajStartTime_ = millis();
-    prevControlLoopTime_ = 0;
-
-    if(fineMode_)
-    {
-        setFineMotorGains();
-    }
-    else
-    {
-        setCoarseMotorGains();
-    }
-    
+    prevControlLoopTime_ = 0;    
 
     enableAllMotors();
     #ifdef PRINT_DEBUG
@@ -135,10 +125,10 @@ void RobotController::update()
     if (trajRunning_)
     {
         PLOGI.printf("Est Vel: ");
-        cartVel_.print(logger_);
+        cartVel_.print();
         PLOGI.printf("");
         PLOGI.printf("Est Pos: ");
-        cartPos_.print(logger_);
+        cartPos_.print();
         PLOGI.printf("");
     }
     #endif
@@ -146,7 +136,7 @@ void RobotController::update()
     // Update status 
     statusUpdater_.updatePosition(cartPos_.x_, cartPos_.y_, cartPos_.a_);
     statusUpdater_.updateVelocity(cartVel_.x_, cartVel_.y_, cartVel_.a_);
-    mat P = kf_.cov();
+    Eigen::Matrix3f P = kf_.cov();
     statusUpdater_.updatePositionConfidence(P(0,0), P(1,1), P(2,2));
 }
 
@@ -159,7 +149,7 @@ void RobotController::runTraj(PVTPoint* cmd)
     #ifdef PRINT_DEBUG
     PLOGI.printf("");
     PLOGI.printf("Target: ");
-    cmd->print(logger_);
+    cmd->print();
     PLOGI.printf("");
     #endif
     
@@ -228,13 +218,7 @@ void RobotController::computeControl(PVTPoint cmd)
     #ifdef PRINT_DEBUG
     if(trajRunning_)
     {
-        PLOGI.printf("CartesianControlX: [PosErr:");
-        PLOGI.printf(sprintf("%.4f", posErrX));
-        PLOGI.printf(", VelErr:");
-        PLOGI.printf(sprintf("%.4f", velErrX));
-        PLOGI.printf(", ErrSum:");
-        PLOGI.printf(sprintf("%.4f", errSumX_));
-        PLOGI.printf("]");
+        PLOGI.printf("CartesianControlX: [PosErr: %.4f, VelErr: %.4f, ErrSum: %.4f]\n", posErrX, velErrX, errSumX_);
     }
     #endif
 
@@ -279,7 +263,7 @@ void RobotController::enableAllMotors()
     // TODO: port this
     enabled_ = true;
     #ifdef PRINT_DEBUG
-    logger_)->info("Enabling motors");
+    PLOGI.printf("Enabling motors");
     #endif
 }
 
@@ -288,7 +272,7 @@ void RobotController::disableAllMotors()
     // TODO: port this
     enabled_ = false;
     #ifdef PRINT_DEBUG
-    spdlog::get("robot_logger")->info("Disabling motors");
+    PLOGI.printf("Disabling motors");
     #endif
 }
 
@@ -303,11 +287,11 @@ void RobotController::inputPosition(float x, float y, float a)
       z(2,0) = a;
 
       // Scale covariance estimate based on velocity due to measurment lag
-      Eigen::Matrix3f R = Eigen::Matrix3f::Zeros(); 
+      Eigen::Matrix3f R = Eigen::Matrix3f::Zero(); 
       R(0,0) = MEAS_NOISE_SCALE + MEAS_NOISE_VEL_SCALE_FACTOR * fabs(cartVel_.x_);
       R(1,1) = MEAS_NOISE_SCALE + MEAS_NOISE_VEL_SCALE_FACTOR * fabs(cartVel_.y_);
       R(2,2) = MEAS_NOISE_SCALE + MEAS_NOISE_VEL_SCALE_FACTOR * fabs(cartVel_.a_);
-      kf_.update(z, R, debug_);
+      kf_.update(z, R);
   
       // Retrieve new state estimate
       Eigen::Vector3f x_hat = kf_.state();
@@ -321,7 +305,7 @@ void RobotController::computeOdometry()
 {  
  
     // TODO: Get from clearcore
-    float local_cart_vel[3] = {0,0,0}
+    float local_cart_vel[3] = {0,0,0};
 
     // Convert local cartesian velocity to global cartesian velocity using the last estimated angle
     float cA = cos(cartPos_.a_);
@@ -339,17 +323,17 @@ void RobotController::computeOdometry()
     // to predict our current position, but only if we are moving
     if( !(cartVel_.x_ == 0 && cartVel_.y_ == 0 && cartVel_.a_ == 0) || !predict_once)
     {
-      mat u = mat::zeros(3,1);
+      Eigen::Vector3f u = Eigen::Vector3f::Zero();
       u(0,0) = cartVel_.x_;
       u(1,0) = cartVel_.y_;
       u(2,0) = cartVel_.a_;
-      mat B = mat::identity(3) * dt;
+      Eigen::Matrix3f B = Eigen::Matrix3f::Identity() * dt;
       kf_.predict(dt, B, u);
       predict_once = true;
     }
 
     // Retrieve new state estimate
-    mat x_hat = kf_.state();
+    Eigen::Vector3f x_hat = kf_.state();
     cartPos_.x_ = x_hat(0,0);
     cartPos_.y_ = x_hat(1,0);
     cartPos_.a_ = x_hat(2,0);
@@ -360,13 +344,7 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     #ifdef PRINT_DEBUG
     if (trajRunning_) 
     {
-        PLOGI.printf("CartVelCmd: [vx: ");
-        PLOGI.printf(sprintf("%.4f", vx));
-        PLOGI.printf(", vy: ");
-        PLOGI.printf(sprintf("%.4f", vy));
-        PLOGI.printf(", va: ");
-        PLOGI.printf(sprintf("%.4f", va));
-        PLOGI.printf("]");
+        PLOGI.printf("CartVelCmd: [vx: %.4f, vy: %.4f, va: %.4f]\n", vx, vy, va);
     }
     #endif
 

@@ -4,7 +4,7 @@
 #include "constants.h"  // FOR PRINT_DEBUG
 #include <plog/Log.h>
 
-RobotServer::RobotServer(const StatusUpdater& statusUpdater)
+RobotServer::RobotServer(StatusUpdater& statusUpdater)
 : SimpleServer(),
   moveData_(),
   positionData_(),
@@ -13,7 +13,7 @@ RobotServer::RobotServer(const StatusUpdater& statusUpdater)
 {
 }
 
-COMMAND RobotServer::getCommand(String message)
+COMMAND RobotServer::getCommand(std::string message)
 {
     COMMAND cmd = COMMAND::NONE;
     StaticJsonDocument<256> doc;
@@ -30,7 +30,7 @@ COMMAND RobotServer::getCommand(String message)
     }
     else
     {
-        String type = doc["type"];
+        std::string type = doc["type"];
         if(type == "move")
         {
             cmd = COMMAND::MOVE;
@@ -151,6 +151,6 @@ RobotServer::VelocityData RobotServer::getVelocityData()
 
 void RobotServer::sendStatus()
 {
-    String msg = statusUpdater_.getStatusJsonString();
+    std::string msg = statusUpdater_.getStatusJsonString();
     sendMsg(msg, false);
 }

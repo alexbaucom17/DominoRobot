@@ -1,3 +1,4 @@
+#include "SimpleServer.h"
 #include "constants.h"  // FOR PRINT_DEBUG
 #include <ArduinoJson/ArduinoJson.h>
 #include <plog/Log.h>
