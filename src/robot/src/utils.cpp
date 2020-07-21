@@ -4,15 +4,20 @@
 #include "utils.h"
 #include <chrono>
 
+#include <iostream>
+
 float wrap_angle(float a)
 {
-  if(a > M_PI)
+  while(std::abs(a) > M_PI)
   {
-    a -= M_2_PI;
-  }
-  else if (a < -1*M_PI)
-  {
-    a += M_2_PI;
+    if(a > M_PI)
+    {
+      a -= 2*M_PI;
+    }
+    else if (a < -1*M_PI)
+    {
+      a += 2*M_PI;
+    }
   }
   return a;
 }
@@ -28,6 +33,7 @@ float angle_diff(float a1, float a2)
 unsigned long millis()
 {
   using namespace std::chrono;
-  milliseconds ms = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
-  return ms.count();
+  auto duration = system_clock::now().time_since_epoch();
+  unsigned long ms = duration_cast<milliseconds>(duration).count();
+  return ms;
 }
