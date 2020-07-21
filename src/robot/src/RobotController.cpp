@@ -33,15 +33,13 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
 void RobotController::begin()
 {
     // Setup Kalman filter
-    double dt = 0.1;
-
     Eigen::Matrix3f A = Eigen::Matrix3f::Identity(); 
     Eigen::Matrix3f B = Eigen::Matrix3f::Identity(); // Doesn't matter right now since we update this at each time step
     Eigen::Matrix3f C = Eigen::Matrix3f::Identity(); 
     Eigen::Matrix3f Q = Eigen::Matrix3f::Identity()  * PROCESS_NOISE_SCALE;
     Eigen::Matrix3f R = Eigen::Matrix3f::Identity()  * MEAS_NOISE_SCALE;
     Eigen::Matrix3f P = Eigen::Matrix3f::Identity(); 
-    kf_ = KalmanFilter(dt, A, B, C, Q, R, P);
+    kf_ = KalmanFilter(A, B, C, Q, R, P);
     kf_.init();
 }
 

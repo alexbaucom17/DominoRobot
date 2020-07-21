@@ -1,27 +1,28 @@
 # Started with https://spin.atomicobject.com/2016/08/26/makefile-c-projects/
 # Additional inspiration from https://codereview.stackexchange.com/questions/157780/generic-makefile-handling-unit-testing-and-folder-structure
 
-TARGET_EXEC ?= robot
+TARGET_EXEC ?= robot-main
+TEST_EXEC ?= test-main
 
-BUILD_DIR ?= ./build
-SRC_DIRS ?= ./src
-TEST_DIRS ?=  ./test
+BUILD_DIR ?= build
+SRC_DIRS ?= src
+TEST_DIRS ?=  test
 
 SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
-INC_DIRS := ./lib
+INC_DIRS := ./lib ./src
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP
 CXXFLAGS ?= -std=c++17 -Wall -Wextra -Wwrite-strings -Wno-parentheses
 
 TEST_SRCS := $(shell find $(TEST_DIRS) -name *.cpp -or -name *.c -or -name *.s)
-TEST_OBJS := $(TEST_SRCS:%=$(BUILD_DIR)/%.o)   #$(filter-out $(BUILD_DIR)/$(TARGET_EXEC).o, $(OBJ)) 
-TEST_EXEC := test-main
-
+TEST_OBJS := $(TEST_SRCS:%=$(BUILD_DIR)/%.o) $(filter-out build/src/robot.cpp.o, $(OBJS))
 TEST_CXXFLAGS ?= -std=c++17
+
+vpath %.cpp $(SRC_DIRS)
 
 .PHONY: all
 all: $(BUILD_DIR)/$(TARGET_EXEC)

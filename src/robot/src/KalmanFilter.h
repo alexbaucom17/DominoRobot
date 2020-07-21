@@ -20,7 +20,6 @@ class KalmanFilter
      *   P - Estimate error covariance
      */
     KalmanFilter(
-        double dt,
         const Eigen::Matrix3f& A,
         const Eigen::Matrix3f& B,
         const Eigen::Matrix3f& C,
@@ -70,9 +69,6 @@ class KalmanFilter
 
     // Initial and current time
     double t0, t;
-
-    // Discrete time step
-    double dt;
 
     // n-size identity
     Eigen::Matrix3f I;

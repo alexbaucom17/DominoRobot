@@ -3,7 +3,6 @@
 #include <plog/Log.h>
 
 KalmanFilter::KalmanFilter(
-    double dt,
     const Eigen::Matrix3f& A,
     const Eigen::Matrix3f& B,
     const Eigen::Matrix3f& C,
@@ -11,7 +10,6 @@ KalmanFilter::KalmanFilter(
     const Eigen::Matrix3f& R,
     const Eigen::Matrix3f& P)
   : A(A), B(B), C(C), Q(Q), R(R), P0(P),
-    dt(dt),
     I(Eigen::Matrix3f::Identity())
 {
 }
@@ -36,8 +34,8 @@ void KalmanFilter::init()
 
 void KalmanFilter::predict(double dt, const Eigen::Matrix3f& B, const Eigen::Vector3f& u)
 {
+  // TODO: Verify if I need to actually use dt here
   this->B = B;
-  this->dt = dt;
   x_hat_new = A * x_hat + B * u;
   P = A*P*A.transpose() + Q;
   t += dt;
