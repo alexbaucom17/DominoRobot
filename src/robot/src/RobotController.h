@@ -1,9 +1,11 @@
 #ifndef RobotController_h
 #define RobotController_h
 
+#include <chrono>
+
 #include "TrajectoryGenerator.h"
 #include "StatusUpdater.h"
-#include "KalmanFilter.h"
+// #include "KalmanFilter.h"
 
 class RobotController
 {
@@ -67,17 +69,15 @@ class RobotController
     void startTraj();
 
     // Member variables
-    unsigned long prevPositionUpdateTime_; // Previous loop millis we were provided a position observation
-    unsigned long prevControlLoopTime_;    // Previous loop millis through the cartesian control loop
-    unsigned long prevUpdateLoopTime_;     // Previous loop millis through the update loop
-    unsigned long prevOdomLoopTime_;       // Previous loop millis through the odom loop
+    std::chrono::time_point<std::chrono::steady_clock> prevControlLoopTime_;    // Previous loop time through the cartesian control loop
+    std::chrono::time_point<std::chrono::steady_clock> prevOdomLoopTime_;       // Previous loop time through the odom loop
+    std::chrono::time_point<std::chrono::steady_clock> trajStartTime_;          // Previous loop time when trajecotry was started
     bool enabled_;                         // Global motor enabled flag
     TrajectoryGenerator trajGen_;          // Trajectory generator object
     Point cartPos_;                        // Current cartesian position
     Point cartVel_;                        // Current cartesian velocity
     Point goalPos_;                        // Desired goal position
     bool trajRunning_;                     // If a trajectory is currently active
-    unsigned long trajStartTime_;          // Holds milliseconds when trajecotry was started
     float errSumX_;                        // Sum of error in X dimension for integral control
     float errSumY_;                        // Sum of error in Y dimension for integral control
     float errSumA_;                        // Sum of error in A dimension for integral control
@@ -88,7 +88,7 @@ class RobotController
     StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
 
     // Kalman filter stuff
-    KalmanFilter kf_;
+    // KalmanFilter kf_;
 
 };
 
