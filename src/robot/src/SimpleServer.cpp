@@ -1,7 +1,10 @@
 #include "SimpleServer.h"
-#include "constants.h"  // FOR PRINT_DEBUG
+
 #include <ArduinoJson/ArduinoJson.h>
 #include <plog/Log.h>
+
+#include "SocketWrapper.h"
+
 
 SimpleServer::SimpleServer()
 : clientConnected_(false),
@@ -10,6 +13,7 @@ SimpleServer::SimpleServer()
   recvIdx_(0),
   buffer_("")
 {
+    SocketWrapper s;
 }
 
 SimpleServer::~SimpleServer()
@@ -63,11 +67,6 @@ COMMAND SimpleServer::oneLoop()
 
         if(printDebug)
         {
-            #ifdef PRINT_DEBUG
-//            debug_.print("[SimpleServer] ");
-//            debug_.print("RX: ");
-//            debug_.println(newMsg);
-            #endif
         }
 
         if(checkCommand)
