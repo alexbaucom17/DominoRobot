@@ -23,7 +23,7 @@ class Robot
 
 
     StatusUpdater statusUpdater;
-    RobotServer server;
+    //RobotServer server;
     RobotController controller;
     // TrayController tray_controller = TrayController();
 

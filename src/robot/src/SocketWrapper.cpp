@@ -44,6 +44,7 @@ void SocketWrapper::socket_loop()
     while(true)
     {
         // Wait for a client to connect
+        PLOGI.printf("Ready for client connection");
         auto client = socket.accept();
         bool keep_connection = true;
         PLOGI.printf("Client connected");
