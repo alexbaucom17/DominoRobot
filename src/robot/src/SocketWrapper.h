@@ -2,8 +2,12 @@
 #define SocketWrapper_h
 
 #include <kissnet/kissnet.hpp>
+#include <queue>
+#include <mutex>
 
 namespace kn = kissnet;
+
+#define BUFFER_SIZE 1024
 
 class SocketWrapper
 {
@@ -20,11 +24,11 @@ class SocketWrapper
 
     kn::tcp_socket socket;
     kn::port_t port = 1234;
-    std::vector<std::byte> data_buffer;
+    std::queue<std::byte> data_buffer;
     std::mutex read_mutex;
     std::mutex send_mutex;
-    kn::buffer<1024> send_buffer;
-    int lentgh_to_send;
+    kn::buffer<BUFFER_SIZE> send_buffer;
+    int length_to_send;
 
 };
 
