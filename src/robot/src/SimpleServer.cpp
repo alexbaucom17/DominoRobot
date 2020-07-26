@@ -3,7 +3,6 @@
 #include <ArduinoJson/ArduinoJson.h>
 #include <plog/Log.h>
 
-#include "SocketWrapper.h"
 
 
 SimpleServer::SimpleServer()
@@ -11,69 +10,24 @@ SimpleServer::SimpleServer()
   wifiConnected_(false),
   recvInProgress_(false),
   recvIdx_(0),
-  buffer_("")
+  buffer_(""),
+  socket_()
 {
-    SocketWrapper s;
 }
 
 SimpleServer::~SimpleServer()
 {
 }
 
-void SimpleServer::begin()
-{
-}
 
 COMMAND SimpleServer::oneLoop()
 {
     COMMAND cmd = COMMAND::NONE;
     std::string newMsg = getAnyIncomingMessage();
-    PLOGI.printf("%s",newMsg);
     
     if(newMsg.length() != 0)
     {    
-        bool printDebug = true;    
-        bool checkCommand = false;
-        if(newMsg.find("Client connected") != std::string::npos)
-        {
-            clientConnected_ = true;
-            wifiConnected_ = true;
-        }
-        else if(newMsg.find("Client disconnected") != std::string::npos)
-        {
-            clientConnected_ = false;
-            wifiConnected_ = true;
-        }
-        else if(newMsg.find("Connecting..") != std::string::npos)
-        {
-            wifiConnected_ = false;
-            clientConnected_ = false;
-        }
-        else if(newMsg.find("Connected to WiFi.") != std::string::npos)
-        {
-            clientConnected_ = false;
-            wifiConnected_ = true;
-        }
-        else if(newMsg.find('*') != std::string::npos)
-        {
-            clientConnected_ = false;
-            wifiConnected_ = true;
-            printDebug = false;
-        }
-        else
-        {
-            checkCommand = true;
-            printDebug = true;
-        }
-
-        if(printDebug)
-        {
-        }
-
-        if(checkCommand)
-        {
-            cmd = getCommand(cleanString(newMsg));
-        }
+        cmd = getCommand(cleanString(newMsg));
     }
     return cmd;
 }
@@ -82,51 +36,49 @@ std::string SimpleServer::cleanString(std::string message)
 {
   int idx_start = message.find("{");
   int idx_end = message.find("}") + 1;
-  return message.substr(idx_start, idx_end);
+  int len = idx_end - idx_start;
+  if(idx_start == -1 || idx_end == 0)
+  {
+      PLOGW.printf("Could not find brackets in message");
+      return message;
+  }
+  return message.substr(idx_start, len);
 }
 
 std::string SimpleServer::getAnyIncomingMessage()
 {
-    // bool newData = false;
-    std::string new_msg = "Test";
+    bool newData = false;
+    std::string new_msg = "";
 
-    //TODO: Change to use sockets
-    // while (serial_.available() > 0 && newData == false) 
-    // {
-    //     char rc = serial_.read();
-    //     //debug_.print(millis());
-    //     //debug_.print(" data: ");
-    //     //debug_.println(rc);
-    //     if (recvInProgress_ == true) 
-    //     {
-    //         if (rc == START_CHAR)
-    //         {
-    //           #ifdef PRINT_DEBUG
-    //           debug_.println("Receive already in progress! Dropping old message");
-    //           debug_.print("Partial message: ");
-    //           debug_.println(buffer_);
-    //           #endif
-    //           buffer_ = "";
-    //         }
-    //         else if (rc != END_CHAR) 
-    //         {
-    //             buffer_ += rc;
-    //         }
-    //         else 
-    //         {
-    //             recvInProgress_ = false;
-    //             newData = true;
-    //             new_msg = buffer_;
-    //             buffer_ = "";
-    //             //debug_.println("Found end char");
-    //         }
-    //     }
-    //     else if (rc == START_CHAR) 
-    //     {
-    //         recvInProgress_ = true;
-    //         //debug_.println("Found start char");
-    //     }
-    // }
+    while (socket_.dataAvailableToRead() && newData == false) 
+    {
+        std::string data = socket_.getData();
+        for (auto c : data)
+        {
+            if (recvInProgress_ == true) 
+            {
+                if (c == START_CHAR)
+                {
+                    buffer_ = "";
+                }
+                else if (c != END_CHAR) 
+                {
+                    buffer_ += c;
+                }
+                else 
+                {
+                    recvInProgress_ = false;
+                    newData = true;
+                    new_msg = buffer_;
+                    buffer_ = "";
+                }
+            }
+            else if (c == START_CHAR) 
+            {
+                recvInProgress_ = true;
+            }
+        }
+    }
     return new_msg;
 }
 
@@ -138,10 +90,8 @@ void SimpleServer::sendMsg(std::string msg, bool print_debug)
     }
     else
     {
-        // TODO: Change to sockets
-    //   serial_.print(START_CHAR);
-    //   serial_.print(msg);
-    //   serial_.print(END_CHAR);
+        std::string send_msg = START_CHAR + msg + END_CHAR;
+        socket_.sendData(send_msg);
     }
 }
 

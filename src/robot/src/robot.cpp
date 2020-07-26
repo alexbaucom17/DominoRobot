@@ -26,8 +26,7 @@ void Robot::run()
     while(true)
     {
         // Check for new command and try to start it
-        //newCmd = server.oneLoop();
-        newCmd = COMMAND::NONE;
+        newCmd = server.oneLoop();
         bool status = tryStartNewCmd(newCmd);
 
         // Update our current command if we successfully started a new command

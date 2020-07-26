@@ -3,7 +3,6 @@
 
 #include <kissnet/kissnet.hpp>
 #include <queue>
-#include <mutex>
 #include <thread>
 
 
@@ -18,6 +17,7 @@ class SocketWrapper
     SocketWrapper();
     std::string getData();
     void sendData(std::string data);
+    bool dataAvailableToRead();
 
   private:
     
@@ -25,8 +25,6 @@ class SocketWrapper
 
     std::queue<std::byte> data_buffer;
     kn::buffer<BUFFER_SIZE> send_buffer;
-    std::mutex read_mutex;
-    std::mutex send_mutex;
     int length_to_send;
     std::thread run_thread;
 

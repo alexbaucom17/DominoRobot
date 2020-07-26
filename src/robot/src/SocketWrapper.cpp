@@ -1,11 +1,22 @@
 #include "SocketWrapper.h"
-#include <plog/Log.h>
 
+#include <plog/Log.h>
+#include <mutex>
+
+std::mutex read_mutex;
+std::mutex send_mutex;
 
 SocketWrapper::SocketWrapper()
+: length_to_send(0)
 {
     run_thread = std::thread(&SocketWrapper::socket_loop, this);
     run_thread.detach();
+}
+
+bool SocketWrapper::dataAvailableToRead()
+{
+    std::lock_guard<std::mutex> read_lock(read_mutex);
+    return data_buffer.size() > 0;
 }
 
 std::string SocketWrapper::getData()
@@ -22,11 +33,10 @@ std::string SocketWrapper::getData()
 
 void SocketWrapper::sendData(std::string data)
 {
-    
     const std::lock_guard<std::mutex> lock(send_mutex);
     if(length_to_send + data.size() >= BUFFER_SIZE)
     {
-        PLOGE.printf("Send buffer overflow, dropping message: %s", data);
+        PLOGE.printf("Send buffer overflow, dropping message: %s", data.c_str());
         return;
     }
     for(const char c : data)
@@ -57,7 +67,7 @@ void SocketWrapper::socket_loop()
             kn::buffer<BUFFER_SIZE> read_buff;
             const auto [read_size, status] = client.recv(read_buff);
 
-            PLOGI.printf("Read size: %i", read_size);
+            PLOGD.printf("Read size: %i", read_size);
 
             // If read fails, disconnect
             if(!status)
@@ -75,31 +85,31 @@ void SocketWrapper::socket_loop()
                 }
                 else
                 {
-                    PLOGI.printf("Tmp");
-                    // Copy data into buffer for output if we got info from the client
-                    // TODO fix mutex
-                    //const std::lock_guard<std::mutex> read_lock(read_mutex);
-                    PLOGI.printf("Tmp1");
-                    if(data_buffer.size() + read_size >= BUFFER_SIZE)
                     {
-                        PLOGE.printf("Data buffer overflow, dropping message");
-                    }
-                    else
-                    {
-                        PLOGI.printf("Tmp2");
-                        for (uint i = 0; i < read_size; i++)
+                        // Copy data into buffer for output if we got info from the client
+                        std::lock_guard<std::mutex> read_lock(read_mutex);
+                        if(data_buffer.size() + read_size >= BUFFER_SIZE)
                         {
-                            PLOGI << std::hex << std::to_integer<int>(read_buff[i]) << std::dec << ' ';
-                            data_buffer.push(read_buff[i]);
+                            PLOGE.printf("Data buffer overflow, dropping message");
+                        }
+                        else
+                        {
+                            for (uint i = 0; i < read_size; i++)
+                            {
+                                PLOGD << std::hex << std::to_integer<int>(read_buff[i]) << std::dec << ' ';
+                                data_buffer.push(read_buff[i]);
+                            }
                         }
                     }
 
-                    // If we have data ready to be sent, send it
-                    //const std::lock_guard<std::mutex> send_lock(send_mutex);
-                    if(length_to_send > 0)
                     {
-                        client.send(send_buffer.data(), length_to_send);
-                        length_to_send = 0;
+                        // If we have data ready to be sent, send it
+                        std::lock_guard<std::mutex> send_lock(send_mutex);
+                        if(length_to_send > 0)
+                        {
+                            client.send(send_buffer.data(), length_to_send);
+                            length_to_send = 0;
+                        }
                     }
                 }
             }

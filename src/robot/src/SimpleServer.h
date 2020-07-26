@@ -4,17 +4,11 @@
 #include <string>
 
 #include "constants.h"
+#include "SocketWrapper.h"
 
 #define START_CHAR '<'
 #define END_CHAR '>'
 
-/*
-This is a base server class to use for the robot and base station
-Due to arduino library funniness, I can't easily re-use the server
-class for separate sketches, so this just puts as much common stuff in one file
-that I will have to manually keep in sync. Then all of the specialized stuff can
-go in the subclassed files
-*/
 class SimpleServer
 {
   public:
@@ -46,6 +40,8 @@ class SimpleServer
     bool recvInProgress_;
     int recvIdx_;
     std::string buffer_;
+
+    SocketWrapper socket_;
 
 
 
