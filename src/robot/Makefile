@@ -16,7 +16,7 @@ INC_DIRS := ./lib ./src
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP
-CXXFLAGS ?= -std=c++17 -Wall -Wextra -Wwrite-strings -Wno-parentheses
+CXXFLAGS ?= -std=c++17 -Wall -Wextra -Wwrite-strings -Wno-parentheses -pthread
 
 TEST_SRCS := $(shell find $(TEST_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 TEST_OBJS := $(TEST_SRCS:%=$(BUILD_DIR)/%.o) $(filter-out build/src/main.cpp.o, $(OBJS))

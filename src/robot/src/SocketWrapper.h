@@ -4,6 +4,8 @@
 #include <kissnet/kissnet.hpp>
 #include <queue>
 #include <mutex>
+#include <thread>
+
 
 namespace kn = kissnet;
 
@@ -29,6 +31,7 @@ class SocketWrapper
     std::mutex send_mutex;
     kn::buffer<BUFFER_SIZE> send_buffer;
     int length_to_send;
+    std::thread run_thread;
 
 };
 

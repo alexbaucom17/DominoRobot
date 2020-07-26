@@ -7,11 +7,8 @@ SocketWrapper::SocketWrapper()
 {
     socket.bind();
     socket.listen();
-}
-
-void SocketWrapper::run()
-{
-
+    run_thread = std::thread(&SocketWrapper::socket_loop, this);
+    run_thread.detach();
 }
 
 std::string SocketWrapper::getData()
