@@ -18,8 +18,6 @@ class SimpleServer
 
     virtual ~SimpleServer();
 
-    void begin();
-
     COMMAND oneLoop();
 
   protected:
@@ -35,8 +33,6 @@ class SimpleServer
 
   private:
 
-    bool clientConnected_;
-    bool wifiConnected_;
     bool recvInProgress_;
     int recvIdx_;
     std::string buffer_;

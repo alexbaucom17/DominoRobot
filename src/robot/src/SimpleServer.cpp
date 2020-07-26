@@ -6,9 +6,7 @@
 
 
 SimpleServer::SimpleServer()
-: clientConnected_(false),
-  wifiConnected_(false),
-  recvInProgress_(false),
+: recvInProgress_(false),
   recvIdx_(0),
   buffer_(""),
   socket_()
@@ -27,6 +25,7 @@ COMMAND SimpleServer::oneLoop()
     
     if(newMsg.length() != 0)
     {    
+        PLOGD.printf("RX: %s", newMsg.c_str());
         cmd = getCommand(cleanString(newMsg));
     }
     return cmd;
@@ -86,10 +85,11 @@ void SimpleServer::sendMsg(std::string msg, bool print_debug)
 {
     if (msg.length() == 0 && print_debug)
     {
-      PLOGI.printf("[SimpleServer] Nothing to send!!!\n");
+      PLOGI.printf("Nothing to send!!!\n");
     }
     else
     {
+        PLOGD.printf("TX: %s", msg.c_str());
         std::string send_msg = START_CHAR + msg + END_CHAR;
         socket_.sendData(send_msg);
     }

@@ -23,7 +23,7 @@ COMMAND RobotServer::getCommand(std::string message)
     {
         #ifdef PRINT_DEBUG
         printIncommingCommand(message);
-        PLOGI.printf("[RobotServer] Error parsing JSON: ");
+        PLOGI.printf("Error parsing JSON: ");
         PLOGI.printf(err.c_str());   
         #endif
         sendErr("bad_json");
@@ -118,7 +118,7 @@ COMMAND RobotServer::getCommand(std::string message)
         {
             #ifdef PRINT_DEBUG
             printIncommingCommand(message);
-            PLOGI.printf("[RobotServer] ERROR: Type field empty or not specified ");
+            PLOGI.printf("ERROR: Type field empty or not specified ");
             #endif
             sendErr("no_type");
         }
@@ -126,7 +126,7 @@ COMMAND RobotServer::getCommand(std::string message)
         {
             #ifdef PRINT_DEBUG
             printIncommingCommand(message);
-            PLOGI.printf("[RobotServer] ERROR: Unkown type field ");
+            PLOGI.printf("ERROR: Unkown type field ");
             #endif
             sendErr("unkown_type");
         }
@@ -152,5 +152,6 @@ RobotServer::VelocityData RobotServer::getVelocityData()
 void RobotServer::sendStatus()
 {
     std::string msg = statusUpdater_.getStatusJsonString();
+    PLOGI.printf("Sending status");
     sendMsg(msg, false);
 }

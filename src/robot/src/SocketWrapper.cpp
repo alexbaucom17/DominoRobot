@@ -44,6 +44,7 @@ void SocketWrapper::sendData(std::string data)
         send_buffer[length_to_send] = static_cast<std::byte>(c);
         length_to_send++;
     }
+    PLOGI.printf("Length to send: %i", length_to_send);
 }
 
 void SocketWrapper::socket_loop()
@@ -96,7 +97,7 @@ void SocketWrapper::socket_loop()
                         {
                             for (uint i = 0; i < read_size; i++)
                             {
-                                PLOGD << std::hex << std::to_integer<int>(read_buff[i]) << std::dec << ' ';
+                                //PLOGD << std::hex << std::to_integer<int>(read_buff[i]) << std::dec << ' ';
                                 data_buffer.push(read_buff[i]);
                             }
                         }
@@ -105,6 +106,7 @@ void SocketWrapper::socket_loop()
                     {
                         // If we have data ready to be sent, send it
                         std::lock_guard<std::mutex> send_lock(send_mutex);
+                        PLOGI.printf("Length to send: %i", length_to_send);
                         if(length_to_send > 0)
                         {
                             client.send(send_buffer.data(), length_to_send);
@@ -116,6 +118,7 @@ void SocketWrapper::socket_loop()
         }
 
         PLOGI.printf("Closing socket connection");
+        length_to_send = 0;
 
     }
 }

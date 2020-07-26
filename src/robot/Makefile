@@ -20,7 +20,7 @@ CXXFLAGS ?= -std=c++17 -Wall -Wextra -Wwrite-strings -Wno-parentheses -pthread
 
 TEST_SRCS := $(shell find $(TEST_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 TEST_OBJS := $(TEST_SRCS:%=$(BUILD_DIR)/%.o) $(filter-out build/src/main.cpp.o, $(OBJS))
-TEST_CXXFLAGS ?= -std=c++17
+TEST_CXXFLAGS ?= -std=c++17 -pthread
 
 vpath %.cpp $(SRC_DIRS)
 

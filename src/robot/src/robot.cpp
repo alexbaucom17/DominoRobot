@@ -62,8 +62,8 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     // Always service it, but don't consider it starting a new command
     if (cmd == COMMAND::POSITION)
     {
-        //RobotServer::PositionData data = server.getPositionData();
-        //controller.inputPosition(data.x, data.y, data.a);
+        RobotServer::PositionData data = server.getPositionData();
+        controller.inputPosition(data.x, data.y, data.a);
 
         // Update the position rate
         // position_time_averager.input(millis() - prevPositionMillis);
@@ -95,23 +95,23 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     // Start new command
     if(cmd == COMMAND::MOVE)
     {
-        //RobotServer::PositionData data = server.getMoveData();
-        //controller.moveToPosition(data.x, data.y, data.a);
+        RobotServer::PositionData data = server.getMoveData();
+        controller.moveToPosition(data.x, data.y, data.a);
     }
     else if(cmd == COMMAND::MOVE_REL)
     {
-        //RobotServer::PositionData data = server.getMoveData();
-        //controller.moveToPositionRelative(data.x, data.y, data.a);
+        RobotServer::PositionData data = server.getMoveData();
+        controller.moveToPositionRelative(data.x, data.y, data.a);
     }
     else if(cmd == COMMAND::MOVE_FINE)
     {
-        //RobotServer::PositionData data = server.getMoveData();
-        //controller.moveToPositionFine(data.x, data.y, data.a);
+        RobotServer::PositionData data = server.getMoveData();
+        controller.moveToPositionFine(data.x, data.y, data.a);
     }
     else if(cmd == COMMAND::MOVE_CONST_VEL)
     {
-        //RobotServer::VelocityData data = server.getVelocityData();
-        //controller.moveConstVel(data.vx, data.vy, data.va, data.t);
+        RobotServer::VelocityData data = server.getVelocityData();
+        controller.moveConstVel(data.vx, data.vy, data.va, data.t);
     }
     else if(cmd == COMMAND::PLACE_TRAY)
     {
