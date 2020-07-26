@@ -31,7 +31,7 @@ Expected rpi hardware connections
     - Marvelmind uses 2X usb
 
 Rpi Refactor:
-- Reduce to simple program - build back up as I get things ported, try to add some tests along the way
+- Keep adding tests
 - Get comms working with CC (need to figure out USB serial comm)
     -https://www.monocilindro.com/2017/02/19/how-to-connect-arduino-and-raspberry-pi-using-usb-and-c/
     -https://github.com/manashmandal/SerialPort
