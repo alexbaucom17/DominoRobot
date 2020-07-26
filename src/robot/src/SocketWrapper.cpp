@@ -1,13 +1,17 @@
 #include "SocketWrapper.h"
 
 #include <plog/Log.h>
+#include "sockets/ServerSocket.h"
+#include "sockets/SocketException.h"
+#include "sockets/SocketTimeoutException.h"
 #include <mutex>
 
 std::mutex read_mutex;
 std::mutex send_mutex;
 
 SocketWrapper::SocketWrapper()
-: length_to_send(0)
+: data_buffer(),
+  send_buffer()
 {
     run_thread = std::thread(&SocketWrapper::socket_loop, this);
     run_thread.detach();
@@ -25,7 +29,7 @@ std::string SocketWrapper::getData()
     const std::lock_guard<std::mutex> lock(read_mutex);
     while(!data_buffer.empty())
     {
-        outstring.push_back(static_cast<char>(data_buffer.front()));
+        outstring.push_back(data_buffer.front());
         data_buffer.pop();
     }
     return outstring;
@@ -34,30 +38,29 @@ std::string SocketWrapper::getData()
 void SocketWrapper::sendData(std::string data)
 {
     const std::lock_guard<std::mutex> lock(send_mutex);
-    if(length_to_send + data.size() >= BUFFER_SIZE)
+    if(send_buffer.size() + data.size() >= BUFFER_SIZE)
     {
         PLOGE.printf("Send buffer overflow, dropping message: %s", data.c_str());
         return;
     }
     for(const char c : data)
     {
-        send_buffer[length_to_send] = static_cast<std::byte>(c);
-        length_to_send++;
+        send_buffer.push(c);
     }
-    PLOGI.printf("Length to send: %i", length_to_send);
+    PLOGI.printf("Length to send: %i", send_buffer.size());
 }
 
 void SocketWrapper::socket_loop()
 {
-    kn::socket<kissnet::protocol::tcp> socket(kn::endpoint("0.0.0.0:8123"));
-    socket.bind();
-    socket.listen();
+    ServerSocket server(8123);
 
     while(true)
     {
         // Wait for a client to connect
         PLOGI.printf("Ready for client connection");
-        auto client = socket.accept();
+        ServerSocket socket;
+        server.accept(socket);
+        socket.set_non_blocking();
         bool keep_connection = true;
         PLOGI.printf("Client connected");
 
@@ -65,60 +68,56 @@ void SocketWrapper::socket_loop()
         while(keep_connection)
         {
             // Try to read data from the client
-            kn::buffer<BUFFER_SIZE> read_buff;
-            const auto [read_size, status] = client.recv(read_buff);
-
-            PLOGD.printf("Read size: %i", read_size);
-
-            // If read fails, disconnect
-            if(!status)
+            std::string read_data;
+            try
             {
-                keep_connection = false;
-                PLOGE.printf("Read error");
+                socket >> read_data;
             }
-            else
+            catch (SocketTimeoutException &e) {}
+            catch (SocketException& e)
             {
-                // If client has disconnected, disconnect
-                if(status.value == kn::socket_status::cleanly_disconnected)
+                //PLOGI.printf("Caught exception while reading: %s", e.description().c_str());
+                // If read fails for something other than timeout, disconnect
+                keep_connection = false;
+                continue;
+            }
+
+            {
+                // Copy data into buffer for output if we got info from the client
+                std::lock_guard<std::mutex> read_lock(read_mutex);
+                if(data_buffer.size() + read_data.size() >= BUFFER_SIZE)
                 {
-                    keep_connection = false;
-                    PLOGI.printf("Client disconnected cleanly");
+                    PLOGE.printf("Data buffer overflow, dropping message");
                 }
                 else
                 {
+                    for (uint i = 0; i < read_data.size(); i++)
                     {
-                        // Copy data into buffer for output if we got info from the client
-                        std::lock_guard<std::mutex> read_lock(read_mutex);
-                        if(data_buffer.size() + read_size >= BUFFER_SIZE)
-                        {
-                            PLOGE.printf("Data buffer overflow, dropping message");
-                        }
-                        else
-                        {
-                            for (uint i = 0; i < read_size; i++)
-                            {
-                                //PLOGD << std::hex << std::to_integer<int>(read_buff[i]) << std::dec << ' ';
-                                data_buffer.push(read_buff[i]);
-                            }
-                        }
-                    }
-
-                    {
-                        // If we have data ready to be sent, send it
-                        std::lock_guard<std::mutex> send_lock(send_mutex);
-                        PLOGI.printf("Length to send: %i", length_to_send);
-                        if(length_to_send > 0)
-                        {
-                            client.send(send_buffer.data(), length_to_send);
-                            length_to_send = 0;
-                        }
+                        //PLOGD << std::hex << std::to_integer<int>(read_buff[i]) << std::dec << ' ';
+                        data_buffer.push(read_data[i]);
                     }
                 }
+            }
+
+            {
+                // If we have data ready to be sent, send it
+                std::lock_guard<std::mutex> send_lock(send_mutex);
+                if(send_buffer.size() > 0)
+                {
+                    PLOGI.printf("Length to send: %i", send_buffer.size());
+                    std::string send_data;
+                    while(!send_buffer.empty())
+                    {
+                        send_data.push_back(send_buffer.front());
+                        send_buffer.pop();
+                    }
+                    socket << send_data;
+                }
+
             }
         }
 
         PLOGI.printf("Closing socket connection");
-        length_to_send = 0;
 
     }
 }

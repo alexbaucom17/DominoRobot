@@ -1,12 +1,8 @@
 #ifndef SocketWrapper_h
 #define SocketWrapper_h
 
-#include <kissnet/kissnet.hpp>
 #include <queue>
 #include <thread>
-
-
-namespace kn = kissnet;
 
 #define BUFFER_SIZE 1024
 
@@ -23,9 +19,8 @@ class SocketWrapper
     
     void socket_loop();
 
-    std::queue<std::byte> data_buffer;
-    kn::buffer<BUFFER_SIZE> send_buffer;
-    int length_to_send;
+    std::queue<char> data_buffer;
+    std::queue<char> send_buffer;
     std::thread run_thread;
 
 };
