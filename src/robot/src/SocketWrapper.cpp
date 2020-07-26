@@ -3,10 +3,7 @@
 
 
 SocketWrapper::SocketWrapper()
-: socket(kn::endpoint("0.0.0.0", port))
 {
-    socket.bind();
-    socket.listen();
     run_thread = std::thread(&SocketWrapper::socket_loop, this);
     run_thread.detach();
 }
@@ -41,6 +38,10 @@ void SocketWrapper::sendData(std::string data)
 
 void SocketWrapper::socket_loop()
 {
+    kn::socket<kissnet::protocol::tcp> socket(kn::endpoint("0.0.0.0:8123"));
+    socket.bind();
+    socket.listen();
+
     while(true)
     {
         // Wait for a client to connect
@@ -56,11 +57,13 @@ void SocketWrapper::socket_loop()
             kn::buffer<BUFFER_SIZE> read_buff;
             const auto [read_size, status] = client.recv(read_buff);
 
+            PLOGI.printf("Read size: %i", read_size);
+
             // If read fails, disconnect
             if(!status)
             {
                 keep_connection = false;
-                PLOGI.printf("Read error");
+                PLOGE.printf("Read error");
             }
             else
             {
@@ -72,22 +75,27 @@ void SocketWrapper::socket_loop()
                 }
                 else
                 {
+                    PLOGI.printf("Tmp");
                     // Copy data into buffer for output if we got info from the client
-                    const std::lock_guard<std::mutex> read_lock(read_mutex);
+                    // TODO fix mutex
+                    //const std::lock_guard<std::mutex> read_lock(read_mutex);
+                    PLOGI.printf("Tmp1");
                     if(data_buffer.size() + read_size >= BUFFER_SIZE)
                     {
                         PLOGE.printf("Data buffer overflow, dropping message");
                     }
                     else
                     {
+                        PLOGI.printf("Tmp2");
                         for (uint i = 0; i < read_size; i++)
                         {
+                            PLOGI << std::hex << std::to_integer<int>(read_buff[i]) << std::dec << ' ';
                             data_buffer.push(read_buff[i]);
                         }
                     }
 
                     // If we have data ready to be sent, send it
-                    const std::lock_guard<std::mutex> send_lock(send_mutex);
+                    //const std::lock_guard<std::mutex> send_lock(send_mutex);
                     if(length_to_send > 0)
                     {
                         client.send(send_buffer.data(), length_to_send);

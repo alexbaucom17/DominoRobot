@@ -28,6 +28,7 @@ COMMAND SimpleServer::oneLoop()
 {
     COMMAND cmd = COMMAND::NONE;
     std::string newMsg = getAnyIncomingMessage();
+    PLOGI.printf("%s",newMsg);
     
     if(newMsg.length() != 0)
     {    

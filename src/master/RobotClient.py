@@ -7,7 +7,7 @@ import json
 import time
 import logging
 
-PORT = 1234
+PORT = 8123
 NET_TIMEOUT = 5 # seconds
 START_CHAR = "<"
 END_CHAR = ">"

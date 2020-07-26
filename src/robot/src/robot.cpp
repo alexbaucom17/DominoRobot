@@ -5,7 +5,7 @@
 
 Robot::Robot()
 : statusUpdater(),
-  //server(statusUpdater),
+  server(statusUpdater),
   controller(statusUpdater),
   newCmd(COMMAND::NONE),
   curCmd(COMMAND::NONE)
@@ -17,8 +17,6 @@ Robot::Robot()
     controller.begin();
     // usleep(100000);
     // tray_controller.begin();
-    // usleep(100000);
-    // server.begin();
 
     PLOGI.printf("Robot initialization complete");
 }
