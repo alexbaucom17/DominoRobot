@@ -1,0 +1,36 @@
+Tentative thoughts on api with clearcore for motor control over serial comms
+
+There's a few options here:
+- Clearcore does all trajectory generation, kalman filtering, kinematics, and control
+    - Central processor sends it marvelmind position data and forwards command from master
+    - This requires a more extensive api to handle forwarding commands
+- Clearcore recieves global velocity command from central processor, handles frame transformation and kinematics only
+    - Sends back computed global velocity
+    - Central processor has to send global angle along with command
+    - Cnetral processor handles kalman filtering and trajectory generation
+    - Relatively simple api
+- Clearcore recieves local velocity command from central processors, handles local kinematics only
+    - Sends back computed local velocity
+    - Central processor handles kf, traj gen, frame conversion
+    - Very simple api - seems like the best starting point
+
+
+Starting with option 3
+
+Send from central controller:
+- Local velocity command [vx, vy, va]
+
+Response from clearcore:
+- Estimated local velocity [vx_est, vy_est, va_est]
+
+Clearcore outline:
+while true:
+    if new command:
+        decode command
+        do IK
+        send new motor commands
+        do FK
+        encode response
+        send response (est vel)
+    else:
+        pass
