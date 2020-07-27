@@ -42,7 +42,6 @@ class TcpClient:
 
         new_msg = ""
         new_msg_ready = False
-        msg_rcv_in_progress = False
         start_time = time.time()
         while not new_msg_ready and time.time() - start_time < timeout:
             # Get new data
@@ -55,19 +54,21 @@ class TcpClient:
 
             # Decode data and parse into message
             new_str = data.decode(encoding='UTF-8',errors='strict')
-            if not msg_rcv_in_progress:
-                start_idx = new_str.find(START_CHAR)
-                if start_idx != -1:
-                    new_msg += new_str[start_idx+1:]
-                    msg_rcv_in_progress = True
+
+            start_idx = new_str.find(START_CHAR)
+            end_idx = new_str.find(END_CHAR)
+
+            if start_idx != -1 and end_idx != -1:
+                new_msg = new_str[start_idx+1:end_idx]
+                new_msg_ready = True
+            elif start_idx != -1:
+                new_msg += new_str[start_idx+1:]
+                msg_rcv_in_progress = True
+            elif end_idx != -1:
+                new_msg += new_str[:end_idx]
+                new_msg_ready = True
             else:
-                end_idx = new_str.find(END_CHAR)
-                if end_idx != -1:
-                    new_msg += new_str[:end_idx]
-                    msg_rcv_in_progress = False
-                    new_msg_ready = True
-                else:
-                    new_msg += new_str
+                new_msg += new_str
 
         if print_debug and new_msg:
             logging.info("RX: " + new_msg)
@@ -99,7 +100,7 @@ class BaseClient:
                 try:
                     return json.loads(incoming_msg)
                 except:
-                    logging.warn("Error decoding json: {}".format(incoming_msg))
+                    logging.warning("Error decoding json: {}".format(incoming_msg))
                     break
 
         # Will get here if timeout is reached or decode error happens
@@ -271,18 +272,28 @@ class MockBaseStationClient:
     
 
 if __name__== '__main__':
-    r = RobotClient(1)
-    time.sleep(2)
+    import config
+    from MasterMain import configure_logging
+    cfg = config.Config()
+    configure_logging(cfg.log_folder)
+    r = RobotClient(cfg, 'robot1')
+    time.sleep(1)
+
+    r.request_status()
+    #r.request_status()
+    time.sleep(1)
+    #r.request_status()
+    #time.sleep(1)
     
-    while(True):
-        speed = input("Input move speed [x,y,a]: ").strip().split(',')
-        if len(speed) != 3:
-            logging.info("Need to provide comma separated values.")
-        else:
-            x = float(speed[0])
-            y = float(speed[1])
-            a = float(speed[2])
-            r.move(x,y,a)
+    # while(True):
+    #     speed = input("Input move speed [x,y,a]: ").strip().split(',')
+    #     if len(speed) != 3:
+    #         logging.info("Need to provide comma separated values.")
+    #     else:
+    #         x = float(speed[0])
+    #         y = float(speed[1])
+    #         a = float(speed[2])
+    #         r.move(x,y,a)
         
 
-        time.sleep(3)
+    #     time.sleep(3)
