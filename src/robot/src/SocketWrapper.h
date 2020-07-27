@@ -6,6 +6,7 @@
 
 #define BUFFER_SIZE 1024
 
+// TODO: Rename this class to SocketMultiThreadWrapper
 class SocketWrapper
 {
 

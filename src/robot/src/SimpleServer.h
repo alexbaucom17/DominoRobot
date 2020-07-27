@@ -9,6 +9,7 @@
 #define START_CHAR '<'
 #define END_CHAR '>'
 
+// TODO: Merge with RobotServer class
 class SimpleServer
 {
   public:

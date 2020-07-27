@@ -1,26 +1,35 @@
 #include "SerialComms.h"
 
-SerialComms::SerialComms(HardwareSerial& serial, HardwareSerial& debug)
-: serial_(serial),
-  debug_(debug),
+SerialComms::SerialComms(std::string portName)
+: serial_(portName),
   recvInProgress_(false),
   recvIdx_(0),
   buffer_("")
 {
-    serial_.begin(115200);
+    serial_.SetBaudRate(SerialPort::BAUD_115200);
 }
 
 SerialComms::~SerialComms()
 {
 }
 
-String SerialComms::rcv()
+std::string SerialComms::rcv()
 {
     bool newData = false;
-    String new_msg;
-    while (serial_.available() > 0 && newData == false) 
+    const int timeout_ms = 50;
+    std::string new_msg;
+    while (serial_.IsDataAvailable() > 0 && newData == false) 
     {
-        char rc = serial_.read();
+        char rc;
+        try
+        {
+            rc = serial_.ReadByte(timeout_ms);
+        }
+        catch (SerialPort::ReadTimeout &e)
+        {
+            break;
+        }
+
         if (recvInProgress_ == true) 
         {
             if (rc == START_CHAR)
@@ -47,12 +56,12 @@ String SerialComms::rcv()
     return new_msg;
 }
 
-void SerialComms::send(String msg)
+void SerialComms::send(std::string msg)
 {
     if (msg.length() > 0)
     {
-      serial_.print(START_CHAR);
-      serial_.print(msg);
-      serial_.print(END_CHAR);
+      serial_.WriteByte(START_CHAR);
+      serial_.Write(msg);
+      serial_.WriteByte(END_CHAR);
     }
 }

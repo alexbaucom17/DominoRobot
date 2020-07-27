@@ -5,6 +5,7 @@
 #include <plog/Log.h>
 #include <vector>
 
+//TODO: Convert this to a 'proper' trajectory with vectors and path scaling
 struct Point
 {
     float x_;
