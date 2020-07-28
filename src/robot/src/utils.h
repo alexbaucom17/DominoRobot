@@ -12,8 +12,4 @@ float wrap_angle(float a);
 
 float angle_diff(float a1, float a2);
 
-// Make it easier to switch from arduino
-// TODO: Remove this
-unsigned long millis();
-
 #endif

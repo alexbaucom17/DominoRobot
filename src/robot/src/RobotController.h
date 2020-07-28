@@ -14,8 +14,6 @@ class RobotController
     // Constructor
     RobotController(StatusUpdater& statusUpdater);
 
-    void begin();
-
     // Command robot to move a specific position with low accuracy
     void moveToPosition(float x, float y, float a);
 

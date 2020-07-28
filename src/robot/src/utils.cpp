@@ -29,11 +29,3 @@ float angle_diff(float a1, float a2)
   outA = wrap_angle(outA);
   return outA;
 }
-
-unsigned long millis()
-{
-  using namespace std::chrono;
-  auto duration = system_clock::now().time_since_epoch();
-  unsigned long ms = duration_cast<milliseconds>(duration).count();
-  return ms;
-}

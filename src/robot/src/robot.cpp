@@ -12,13 +12,6 @@ Robot::Robot()
 {
 
     PLOGI.printf("Robot starting");
-
-    // Start server and controllers
-    controller.begin();
-    // usleep(100000);
-    // tray_controller.begin();
-
-    PLOGI.printf("Robot initialization complete");
 }
 
 void Robot::run()

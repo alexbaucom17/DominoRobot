@@ -4,7 +4,6 @@
 #include "RobotServer.h"
 #include "RobotController.h"
 #include "StatusUpdater.h"
-#include "TrayController.h"
 #include "utils.h"
 
 class Robot
@@ -25,7 +24,6 @@ class Robot
     StatusUpdater statusUpdater;
     RobotServer server;
     RobotController controller;
-    // TrayController tray_controller = TrayController();
 
     
     // Variables used for loop

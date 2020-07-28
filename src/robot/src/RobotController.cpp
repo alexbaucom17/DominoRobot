@@ -31,10 +31,6 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
   predict_once(false),
   statusUpdater_(statusUpdater)
 {
-}
-
-void RobotController::begin()
-{
     // // Setup Kalman filter
     // Eigen::Matrix3f A = Eigen::Matrix3f::Identity(); 
     // Eigen::Matrix3f B = Eigen::Matrix3f::Identity(); // Doesn't matter right now since we update this at each time step

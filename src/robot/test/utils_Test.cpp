@@ -33,18 +33,3 @@ TEST_CASE("Angle diff test", "[utils]")
     REQUIRE(Approx(angle_diff(1.5*M_PI,3*M_PI)) == 0.5*M_PI);
     REQUIRE(Approx(angle_diff(-1.5*M_PI,3*M_PI)) == -0.5*M_PI);
 }
-
-
-// TODO: Fix problem with using unsigned long as time
-// Note - either convert times in code to use chrono and better units, or 
-// change millis to count from program execturion time
-// TEST_CASE("Millis test", "[utils]")
-// {
-//     REQUIRE(millis() > 1595343137519); // current millis when this was written
-//     REQUIRE(millis() < 1732953600000); // millis in 2025
-
-//     unsigned long curMillis = millis();
-//     usleep(10000); // 10 ms
-//     REQUIRE(millis() - curMillis > 9);
-//     REQUIRE(millis() - curMillis < 100);
-// }
