@@ -6,7 +6,7 @@ SerialComms::SerialComms(std::string portName)
   recvIdx_(0),
   buffer_("")
 {
-    serial_.SetBaudRate(SerialPort::BAUD_115200);
+    serial_.SetBaudRate(LibSerial::BaudRate::BAUD_115200);
 }
 
 SerialComms::~SerialComms()
@@ -20,12 +20,12 @@ std::string SerialComms::rcv()
     std::string new_msg;
     while (serial_.IsDataAvailable() > 0 && newData == false) 
     {
-        char rc;
+        char rc = ' ';
         try
         {
-            rc = serial_.ReadByte(timeout_ms);
+            serial_.ReadByte(rc, timeout_ms);
         }
-        catch (SerialPort::ReadTimeout &e)
+        catch (LibSerial::ReadTimeout&)
         {
             break;
         }
