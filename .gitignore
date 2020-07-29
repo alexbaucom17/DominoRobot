@@ -5,3 +5,5 @@ lib/
 .vscode/
 scratch
 log/
+__pycache__
+*.so
