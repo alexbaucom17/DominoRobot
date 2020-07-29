@@ -35,7 +35,7 @@ std::string SimpleServer::cleanString(std::string message)
 {
   int idx_start = message.find("{");
   int idx_end = message.find("}") + 1;
-  int len = idx_end - idx_start;
+  int len = idx_end - idx_start + 1;
   if(idx_start == -1 || idx_end == 0)
   {
       PLOGW.printf("Could not find brackets in message");
@@ -89,7 +89,11 @@ void SimpleServer::sendMsg(std::string msg, bool print_debug)
     }
     else
     {
-        PLOGD.printf("TX: %s", msg.c_str());
+        if(print_debug)
+        {
+            PLOGD.printf("TX: %s", msg.c_str());
+        }
+
         std::string send_msg = START_CHAR + msg + END_CHAR;
         socket_.sendData(send_msg);
     }

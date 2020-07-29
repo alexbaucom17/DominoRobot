@@ -152,6 +152,5 @@ RobotServer::VelocityData RobotServer::getVelocityData()
 void RobotServer::sendStatus()
 {
     std::string msg = statusUpdater_.getStatusJsonString();
-    PLOGI.printf("Sending status");
     sendMsg(msg, false);
 }

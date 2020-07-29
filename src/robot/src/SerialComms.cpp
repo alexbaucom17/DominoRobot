@@ -1,12 +1,25 @@
 #include "SerialComms.h"
 
+#include <plog/Log.h>
+
 SerialComms::SerialComms(std::string portName)
-: serial_(portName),
+: serial_(),
   recvInProgress_(false),
   recvIdx_(0),
-  buffer_("")
+  buffer_(""),
+  connected_(false)
 {
-    serial_.SetBaudRate(LibSerial::BaudRate::BAUD_115200);
+    try
+    {
+        serial_ .Open(portName);
+        connected_ = true;
+        serial_.SetBaudRate(LibSerial::BaudRate::BAUD_115200);
+    }
+    catch (LibSerial::OpenFailed&)
+    {
+        PLOGW.printf("Could not connect to serial port %s", portName.c_str());
+    }
+    
 }
 
 SerialComms::~SerialComms()
@@ -15,15 +28,21 @@ SerialComms::~SerialComms()
 
 std::string SerialComms::rcv()
 {
+    if(!connected_)
+    {
+        PLOGE.printf("Cannot recieve if port isn't connected");
+        return "";
+    }
+    
     bool newData = false;
     const int timeout_ms = 50;
     std::string new_msg;
     while (serial_.IsDataAvailable() > 0 && newData == false) 
     {
-        char rc = ' ';
+        char rc;
         try
         {
-            serial_.ReadByte(rc, timeout_ms);
+            serial_ >> rc;
         }
         catch (LibSerial::ReadTimeout&)
         {
@@ -58,10 +77,15 @@ std::string SerialComms::rcv()
 
 void SerialComms::send(std::string msg)
 {
+    if(!connected_)
+    {
+        PLOGE.printf("Cannot send if port isn't connected");
+        return;
+    }
+    
     if (msg.length() > 0)
     {
-      serial_.WriteByte(START_CHAR);
-      serial_.Write(msg);
-      serial_.WriteByte(END_CHAR);
+      std::string toSend = START_CHAR + msg + END_CHAR;
+      serial_ << toSend;
     }
 }

@@ -1,7 +1,7 @@
 #ifndef SerialComms_h
 #define SerialComms_h
 
-#include <libserial/SerialPort.h>
+#include <libserial/SerialStream.h>
 
 #define START_CHAR '<'
 #define END_CHAR '>'
@@ -19,13 +19,16 @@ class SerialComms
 
     std::string rcv();
 
+    bool isConnected() {return connected_;}
+
   protected:
 
-    LibSerial::SerialPort serial_;;
+    LibSerial::SerialStream serial_;;
 
     bool recvInProgress_;
     int recvIdx_;
     std::string buffer_;
+    bool connected_;
 
 };
 

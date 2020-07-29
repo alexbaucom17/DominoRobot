@@ -16,6 +16,7 @@ struct Point
         : x_(x), y_(y), a_(a)
     {}
 
+    // TODO: fix
     void print() const
     {
       PLOGI.printf("%s\n",this->toString());

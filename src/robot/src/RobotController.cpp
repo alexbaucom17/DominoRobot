@@ -29,7 +29,8 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
   fineMode_(true),
   velOnlyMode_(false),
   predict_once(false),
-  statusUpdater_(statusUpdater)
+  statusUpdater_(statusUpdater),
+  serial_to_motor_driver_(CLEARCORE_USB)
 {
     // // Setup Kalman filter
     // Eigen::Matrix3f A = Eigen::Matrix3f::Identity(); 
@@ -40,6 +41,7 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
     // Eigen::Matrix3f P = Eigen::Matrix3f::Identity(); 
     // kf_ = KalmanFilter(A, B, C, Q, R, P);
     // kf_.init();
+    
 }
 
 void RobotController::moveToPosition(float x, float y, float a)
@@ -116,12 +118,10 @@ void RobotController::update()
 
     if (trajRunning_)
     {
-        PLOGI.printf("Est Vel: ");
-        cartVel_.print();
-        PLOGI.printf("");
-        PLOGI.printf("Est Pos: ");
-        cartPos_.print();
-        PLOGI.printf("");
+        // PLOGI.printf("Est Vel: ");
+        // cartVel_.print();
+        // PLOGI.printf("Est Pos: ");
+        // cartPos_.print();
     }
 
     // Update status 
@@ -366,9 +366,17 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     local_cart_vel[1] = -sA * vx + cA * vy;
     local_cart_vel[2] = va;
 
-    // TODO: Send to clearcore
+    char buff[100];
+    sprintf(buff, "%.3f,%.3f,%.3f",local_cart_vel[0], local_cart_vel[1], local_cart_vel[2]);
+    std::string s = buff;
+
     if (local_cart_vel[0] != 0 || local_cart_vel[1] != 0 || local_cart_vel[2] != 0 )
     {
-        PLOGD.printf("Sending to motors: [%.4f, %.4f, %.4f]\n", local_cart_vel[0], local_cart_vel[1], local_cart_vel[2]);
+        PLOGD.printf("Sending to motors: [%s]", s.c_str());
+    }
+
+    if (serial_to_motor_driver_.isConnected())
+    {
+        serial_to_motor_driver_.send(s);
     }
 }

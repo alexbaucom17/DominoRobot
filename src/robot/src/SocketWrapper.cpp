@@ -47,7 +47,6 @@ void SocketWrapper::sendData(std::string data)
     {
         send_buffer.push(c);
     }
-    PLOGI.printf("Length to send: %i", send_buffer.size());
 }
 
 void SocketWrapper::socket_loop()
@@ -104,7 +103,7 @@ void SocketWrapper::socket_loop()
                 std::lock_guard<std::mutex> send_lock(send_mutex);
                 if(send_buffer.size() > 0)
                 {
-                    PLOGI.printf("Length to send: %i", send_buffer.size());
+                    PLOGD.printf("Length to send: %i", send_buffer.size());
                     std::string send_data;
                     while(!send_buffer.empty())
                     {
