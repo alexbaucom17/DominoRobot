@@ -173,7 +173,6 @@ class CmdGui:
 
     def _update_robot_panel(self, robot_id, status_dict):
         status_str = "Cannot get {} status".format(robot_id)
-        print(status_dict)
         if status_dict:
             try:
                 status_str = ""
