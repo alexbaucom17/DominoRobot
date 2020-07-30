@@ -16,10 +16,9 @@ struct Point
         : x_(x), y_(y), a_(a)
     {}
 
-    // TODO: fix
     void print() const
     {
-      PLOGI.printf("%s\n",this->toString());
+      PLOGI.printf("%s",this->toString().c_str());
     }
 
     std::string toString() const
@@ -28,6 +27,7 @@ struct Point
       sprintf(s, "[X: %.4f, Y: %.4f, A: %.4f]", x_, y_, a_);
       return static_cast<std::string>(s);
     }
+
 };
 
 
@@ -37,9 +37,16 @@ struct PVTPoint
     Point velocity_;
     float time_;
 
+    std::string toString() const
+    {
+      char s[200];
+      sprintf(s, "[Position: %s, Velocity: %s, T: %.4f]",position_.toString().c_str(), velocity_.toString().c_str(), time_);
+      return static_cast<std::string>(s);
+    }
+
     void print() const
     {
-      PLOGI.printf("[Position: %s, Velocity: %s, T: %.4f]\n",position_.toString(), velocity_.toString(), time_);
+      PLOGI.printf("%s",this->toString().c_str());
     }
 };
 
@@ -62,7 +69,7 @@ struct trajParams
 
     void print() const
     {
-      PLOGI.printf("[p0: %.4f, v0: %.4f, t0: %.4f, a: %.4f, tend: %.4f]\n",p0_, v0_, t0_, a_, t_end_);
+      PLOGI.printf("[p0: %.4f, v0: %.4f, t0: %.4f, a: %.4f, tend: %.4f]",p0_, v0_, t0_, a_, t_end_);
     }
 };
 

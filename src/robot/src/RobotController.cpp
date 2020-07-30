@@ -138,11 +138,8 @@ void RobotController::runTraj(PVTPoint* cmd)
     float dt = std::chrono::duration_cast<fsec>(curTime - trajStartTime_).count();
     *cmd = trajGen_.lookup(dt);
 
-    PLOGI.printf("");
-    PLOGI.printf("Target: ");
-    cmd->print();
-    PLOGI.printf("");
-    
+    PLOGI.printf("Target: %s", cmd->toString().c_str());
+
     // Stop trajectory
     if (checkForCompletedTrajectory(*cmd))
     {
@@ -332,7 +329,7 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
 {
     if (trajRunning_) 
     {
-        PLOGI.printf("CartVelCmd: [vx: %.4f, vy: %.4f, va: %.4f]\n", vx, vy, va);
+        PLOGI.printf("CartVelCmd: [vx: %.4f, vy: %.4f, va: %.4f]", vx, vy, va);
     }
 
     float max_trans_speed = COARSE_LIMS.max_trans_vel_;
@@ -367,12 +364,12 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
     local_cart_vel[2] = va;
 
     char buff[100];
-    sprintf(buff, "%.3f,%.3f,%.3f",local_cart_vel[0], local_cart_vel[1], local_cart_vel[2]);
+    sprintf(buff, "%.4f,%.4f,%.4f",local_cart_vel[0], local_cart_vel[1], local_cart_vel[2]);
     std::string s = buff;
 
     if (local_cart_vel[0] != 0 || local_cart_vel[1] != 0 || local_cart_vel[2] != 0 )
     {
-        PLOGD.printf("Sending to motors: [%s]", s.c_str());
+        PLOGI.printf("Sending to motors: [%s]", s.c_str());
     }
 
     if (serial_to_motor_driver_.isConnected())
