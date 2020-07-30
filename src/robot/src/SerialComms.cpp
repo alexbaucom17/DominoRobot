@@ -42,6 +42,7 @@ std::string SerialComms::rcv()
         char rc;
         try
         {
+            // TODO: fix wait - maybe move back to serial port and use a factory class to create serial comms object that can handle the opening exceptions
             serial_ >> rc;
         }
         catch (LibSerial::ReadTimeout&)

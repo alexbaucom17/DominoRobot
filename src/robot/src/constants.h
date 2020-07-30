@@ -75,7 +75,7 @@
 #define TRAY_PLACEMENT_PAUSE_TIME 3000  // How many ms to wait after opening the latch for placement
 
 // USB devices
-#define CLEARCORE_USB "/dev/ttyUSB0"
+#define CLEARCORE_USB "/dev/clearcore"
 #define LIFTER_DRIVER_USB "/dev/ttyUSB1"
 #define MARVELMIND_USB_1 "/dev/ttyUSB2"
 #define MARVELMIN_USB_2 "/dev/ttyUSB3"

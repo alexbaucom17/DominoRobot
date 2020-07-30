@@ -1,0 +1,1 @@
+SUBSYSTEM=="tty", ATTRS{idVendor}=="2890", ATTRS{idProduct}=="8022", SYMLINK+="clearcore"
