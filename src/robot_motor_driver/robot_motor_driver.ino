@@ -7,8 +7,8 @@
 // Serial0 + Serial1 = COM ports
 
 // Globals
-HardwareSerial& debug = Serial;
-SerialComms comm(Serial, debug);
+HardwareSerial& debug = Serial0;
+SerialComms comm(Serial);
 
 // Constants
 #define WHEEL_RADIUS 0.0751
@@ -111,7 +111,7 @@ void SendCommandsToMotors(MotorVelocity motors)
 {
     debug.print("Send to motor: ");
     debug.println(motors.v0 * radsPerSecondToStepsPerSecond);
-    MOTOR_FRONT_LEFT.MoveVelocity(motors.v0 * radsPerSecondToStepsPerSecond);
+    //MOTOR_FRONT_LEFT.MoveVelocity(motors.v0 * radsPerSecondToStepsPerSecond);
     //MOTOR_FRONT_RIGHT.MoveVelocity(motors.v1 * radsPerSecondToStepsPerSecond);
     //MOTOR_REAR_CENTER.MoveVelocity(motors.v2 * radsPerSecondToStepsPerSecond);
 }
@@ -119,9 +119,9 @@ void SendCommandsToMotors(MotorVelocity motors)
 MotorVelocity ReadMotorSpeeds()
 {
     MotorVelocity measured;
-    measured.v0 = MOTOR_FRONT_LEFT.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
-    measured.v1 = 0; //MOTOR_FRONT_RIGHT.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
-    measured.v2 = 0; //MOTOR_REAR_CENTER.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
+    measured.v0 = 1; // MOTOR_FRONT_LEFT.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
+    measured.v1 = 2; //MOTOR_FRONT_RIGHT.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
+    measured.v2 = 3; //MOTOR_REAR_CENTER.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
     
     debug.print("Motor measured: ");
     measured.print(debug);
@@ -152,6 +152,8 @@ void ReportRobotVelocity(CartVelocity robot_v_measured)
 
 void setup()
 {
+    Serial.begin(115200);
+    
     debug.begin(115200);
     debug.println("Clearcore starting");
     

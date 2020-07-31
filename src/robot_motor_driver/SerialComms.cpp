@@ -1,8 +1,7 @@
 #include "SerialComms.h"
 
-SerialComms::SerialComms(HardwareSerial& serial, HardwareSerial& debug)
+SerialComms::SerialComms(HardwareSerial& serial)
 : serial_(serial),
-  debug_(debug),
   recvInProgress_(false),
   recvIdx_(0),
   buffer_("")

@@ -11,7 +11,7 @@ class SerialComms
   public:
     
     // Constructor
-    SerialComms(HardwareSerial& serial, HardwareSerial& debug);
+    SerialComms(HardwareSerial& serial);
 
     virtual ~SerialComms();
 
@@ -22,7 +22,6 @@ class SerialComms
   protected:
 
     HardwareSerial& serial_;
-    HardwareSerial& debug_;
 
     bool recvInProgress_;
     int recvIdx_;
