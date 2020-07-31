@@ -41,6 +41,8 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
     // Eigen::Matrix3f P = Eigen::Matrix3f::Identity(); 
     // kf_ = KalmanFilter(A, B, C, Q, R, P);
     // kf_.init();
+
+    // TODO: setup serial with factory for easier offline testing
     
 }
 
@@ -208,9 +210,9 @@ void RobotController::computeControl(PVTPoint cmd)
     // }
 
     // TODO: Convert back to closed loop
-    float x_cmd = cmd.position_.x_;
-    float y_cmd = cmd.position_.y_;
-    float a_cmd = cmd.position_.a_;
+    float x_cmd = cmd.velocity_.x_;
+    float y_cmd = cmd.velocity_.y_;
+    float a_cmd = cmd.velocity_.a_;
 
     setCartVelCommand(x_cmd, y_cmd, a_cmd);
 }
@@ -288,8 +290,44 @@ void RobotController::inputPosition(float x, float y, float a)
 void RobotController::computeOdometry()
 {  
  
-    // TODO: Get from clearcore
-    float local_cart_vel[3] = {0,0,0};
+    std::string msg = "";
+    float local_cart_vel[3];
+    if (serial_to_motor_driver_.isConnected())
+    {
+         msg = serial_to_motor_driver_.rcv();
+    }
+
+    if (msg.empty())
+    {
+        PLOGW.printf("No message");
+        return;
+    }
+    else
+    {
+        int prev_idx = 0;
+        int j = 0;
+        for(uint i = 0; i < msg.length(); i++)
+        {
+            if(msg[i] == ',')
+            {
+                local_cart_vel[j] = std::stof(msg.substr(prev_idx, i - prev_idx));
+                j++;
+                prev_idx = i+1;
+            }
+
+            if (i == msg.length()-1)
+            {
+                local_cart_vel[j] = std::stof(msg.substr(prev_idx, std::string::npos));
+            }
+        }
+        if(j != 2)
+        {
+            PLOGW.printf("Decode failed");
+            return;
+        }
+    }
+    
+    PLOGD.printf("Decoded velocity: %.3f, %.3f, %.3f", local_cart_vel[0], local_cart_vel[1], local_cart_vel[2]);
 
     // Convert local cartesian velocity to global cartesian velocity using the last estimated angle
     float cA = cos(cartPos_.a_);
@@ -369,7 +407,7 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
 
     if (local_cart_vel[0] != 0 || local_cart_vel[1] != 0 || local_cart_vel[2] != 0 )
     {
-        PLOGI.printf("Sending to motors: [%s]", s.c_str());
+        PLOGD.printf("Sending to motors: [%s]", s.c_str());
     }
 
     if (serial_to_motor_driver_.isConnected())

@@ -40,7 +40,7 @@ struct PVTPoint
     std::string toString() const
     {
       char s[200];
-      sprintf(s, "[Position: %s, Velocity: %s, T: %.4f]",position_.toString().c_str(), velocity_.toString().c_str(), time_);
+      sprintf(s, "[Position: %s, Velocity: %s, T: %.3f]",position_.toString().c_str(), velocity_.toString().c_str(), time_);
       return static_cast<std::string>(s);
     }
 

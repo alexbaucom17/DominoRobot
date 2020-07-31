@@ -32,10 +32,8 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     PLOGI.printf("Generating trajectory");
     PLOGI.printf("Starting point:");
     initialPoint.print();
-    PLOGI.printf("");
     PLOGI.printf("Target point: ");
     targetPoint.print();
-    PLOGI.printf("");
     #endif
 
     // Compute X trajectory

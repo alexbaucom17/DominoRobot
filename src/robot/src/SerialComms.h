@@ -1,7 +1,7 @@
 #ifndef SerialComms_h
 #define SerialComms_h
 
-#include <libserial/SerialStream.h>
+#include <libserial/SerialPort.h>
 
 #define START_CHAR '<'
 #define END_CHAR '>'
@@ -23,7 +23,7 @@ class SerialComms
 
   protected:
 
-    LibSerial::SerialStream serial_;;
+    LibSerial::SerialPort serial_;;
 
     bool recvInProgress_;
     int recvIdx_;

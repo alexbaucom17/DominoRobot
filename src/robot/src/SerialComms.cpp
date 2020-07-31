@@ -3,23 +3,14 @@
 #include <plog/Log.h>
 
 SerialComms::SerialComms(std::string portName)
-: serial_(),
+: serial_(portName),
   recvInProgress_(false),
   recvIdx_(0),
   buffer_(""),
   connected_(false)
 {
-    try
-    {
-        serial_ .Open(portName);
-        connected_ = true;
-        serial_.SetBaudRate(LibSerial::BaudRate::BAUD_115200);
-    }
-    catch (LibSerial::OpenFailed&)
-    {
-        PLOGW.printf("Could not connect to serial port %s", portName.c_str());
-    }
-    
+    connected_ = true;
+    serial_.SetBaudRate(LibSerial::BaudRate::BAUD_115200);    
 }
 
 SerialComms::~SerialComms()
@@ -35,18 +26,18 @@ std::string SerialComms::rcv()
     }
     
     bool newData = false;
-    const int timeout_ms = 50;
+    const int timeout_ms = 5;
     std::string new_msg;
-    while (serial_.IsDataAvailable() > 0 && newData == false) 
+    while (serial_.IsDataAvailable() && newData == false) 
     {
-        char rc;
+        char rc = ' ';
         try
         {
-            // TODO: fix wait - maybe move back to serial port and use a factory class to create serial comms object that can handle the opening exceptions
-            serial_ >> rc;
+            serial_.ReadByte(rc, timeout_ms);
         }
         catch (LibSerial::ReadTimeout&)
         {
+            PLOGI.printf("Serial timeout");
             break;
         }
 
@@ -87,6 +78,7 @@ void SerialComms::send(std::string msg)
     if (msg.length() > 0)
     {
       std::string toSend = START_CHAR + msg + END_CHAR;
-      serial_ << toSend;
+      PLOGD.printf("Serial send: %s",toSend.c_str());
+      serial_.Write(toSend);
     }
 }
