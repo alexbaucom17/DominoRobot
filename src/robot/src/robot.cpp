@@ -7,15 +7,17 @@ Robot::Robot()
 : statusUpdater(),
   server(statusUpdater),
   controller(statusUpdater),
-  newCmd(COMMAND::NONE),
-  curCmd(COMMAND::NONE)
+  loop_time_averager(20),
+  position_time_averager(20)
 {
-
     PLOGI.printf("Robot starting");
 }
 
 void Robot::run()
 {
+    COMMAND newCmd = COMMAND::NONE;
+    COMMAND curCmd = COMMAND::NONE;
+
     while(true)
     {
         // Check for new command and try to start it
@@ -42,9 +44,8 @@ void Robot::run()
         }
 
         // Update loop time and status updater
-        // loop_time_averager.input(static_cast<float>(millis() - prevLoopMillis));
-        // prevLoopMillis = millis();
-        // statusUpdater.updateLoopTimes(static_cast<int>(loop_time_averager.mean()), static_cast<int>(position_time_averager.mean()));
+        loop_time_averager.mark_point();
+        statusUpdater.updateLoopTimes(loop_time_averager.get_ms(), position_time_averager.get_ms());
     }
 }
 
@@ -59,8 +60,7 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
         controller.inputPosition(data.x, data.y, data.a);
 
         // Update the position rate
-        // position_time_averager.input(millis() - prevPositionMillis);
-        // prevPositionMillis = millis();
+        position_time_averager.mark_point();
 
         return false;
     }

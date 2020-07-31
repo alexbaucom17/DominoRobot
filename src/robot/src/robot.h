@@ -1,9 +1,10 @@
 #ifndef Robot_h
 #define Robot_h
 
-#include "RobotServer.h"
 #include "RobotController.h"
+#include "RobotServer.h"
 #include "StatusUpdater.h"
+#include "TimeRunningAverage.h"
 #include "utils.h"
 
 class Robot
@@ -25,14 +26,8 @@ class Robot
     RobotServer server;
     RobotController controller;
 
-    
-    // Variables used for loop
-    COMMAND newCmd;
-    COMMAND curCmd;
-
-    // TODO: Find new library for these
-    // RunningStatistics loop_time_averager;        // Handles keeping average of the loop timing
-    // RunningStatistics position_time_averager;    // Handles keeping average of the position update timing
+    TimeRunningAverage loop_time_averager;        // Handles keeping average of the loop timing
+    TimeRunningAverage position_time_averager;    // Handles keeping average of the position update timing
 };
 
 

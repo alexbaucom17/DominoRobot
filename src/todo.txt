@@ -32,12 +32,9 @@ Expected rpi hardware connections
 
 Rpi Refactor:
 - Keep adding tests
-- Get comms working with CC (need to figure out USB serial comm)
-    -https://www.monocilindro.com/2017/02/19/how-to-connect-arduino-and-raspberry-pi-using-usb-and-c/
-    -https://github.com/manashmandal/SerialPort
-    -https://github.com/wjwwood/serial
+    - Set up factories and/or mocks to allow more thorough unit/integration testing
+- Separate logging for info and for kinematics/plotting
 - Get trajectory generator working with different approach angles
-- Add back in status updater
 - Port Marvelmind to native usb, integrate into robot controller
 - Port lifter controller to use external arduino
 
