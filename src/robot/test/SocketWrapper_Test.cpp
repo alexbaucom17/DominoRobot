@@ -3,7 +3,7 @@
 
 #include "sockets/ClientSocket.h"
 #include "sockets/SocketException.h"
-#include "SocketWrapper.h"
+#include "sockets/SocketMultiThreadWrapper.h"
 
 
 
@@ -23,7 +23,7 @@ void SimpleSocketSend(std::string data_to_send)
 TEST_CASE("Socket send test", "[socket]") 
 {
     
-    SocketWrapper s;
+    SocketMultiThreadWrapper s;
     std::string test_msg = "This is a test";
     for(int i = 0; i < 10; i++)
     {
@@ -37,7 +37,7 @@ TEST_CASE("Socket send test", "[socket]")
 // TEST_CASE("Socket recv test", "[socket]") 
 // {
     
-//     SocketWrapper s;
+//     SocketMultiThreadWrapper s;
 //     std::string test_msg = "This is a test";
 //     for(int i = 0; i < 10; i++)
 //     {

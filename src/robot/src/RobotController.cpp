@@ -41,8 +41,6 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
     // Eigen::Matrix3f P = Eigen::Matrix3f::Identity(); 
     // kf_ = KalmanFilter(A, B, C, Q, R, P);
     // kf_.init();
-
-    // TODO: setup serial with factory for easier offline testing
     
 }
 

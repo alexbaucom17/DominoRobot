@@ -1,7 +1,6 @@
 #ifndef Constants_h
 #define Constants_h
 
-// TODO fix pins for pi
 #define PIN_LATCH_SERVO_PIN 12
 #define PIN_TRAY_STEPPER_LEFT_PULSE 46
 #define PIN_TRAY_STEPPER_LEFT_DIR 47
