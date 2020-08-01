@@ -1,7 +1,6 @@
 
 #include "RobotServer.h"
 #include <ArduinoJson/ArduinoJson.h>
-#include "constants.h"  // FOR PRINT_DEBUG
 #include <plog/Log.h>
 
 RobotServer::RobotServer(StatusUpdater& statusUpdater)
@@ -21,11 +20,9 @@ COMMAND RobotServer::getCommand(std::string message)
 
     if(err)
     {
-        #ifdef PRINT_DEBUG
         printIncommingCommand(message);
         PLOGI.printf("Error parsing JSON: ");
         PLOGI.printf(err.c_str());   
-        #endif
         sendErr("bad_json");
     }
     else
@@ -116,18 +113,14 @@ COMMAND RobotServer::getCommand(std::string message)
         }
         else if(type == "")
         {
-            #ifdef PRINT_DEBUG
             printIncommingCommand(message);
             PLOGI.printf("ERROR: Type field empty or not specified ");
-            #endif
             sendErr("no_type");
         }
         else
         {
-            #ifdef PRINT_DEBUG
             printIncommingCommand(message);
             PLOGI.printf("ERROR: Unkown type field ");
-            #endif
             sendErr("unkown_type");
         }
     }

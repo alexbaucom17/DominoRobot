@@ -52,9 +52,6 @@
 #define TRANS_VEL_ERR_FINE   0.01 // m/s
 #define ANG_VEL_ERR_FINE     0.01 // rad/s
 
-// Set debug printing, comment out to skip debug printing
-#define PRINT_DEBUG false
-
 // Tray stepper control values
 #define TRAY_STEPPER_STEPS_PER_REV 200  // Steps per rev for tray servos
 #define TRAY_DIST_PER_REV 1.8           // mm of linear travel per stepper revolution
@@ -79,6 +76,8 @@
 #define LIFTER_DRIVER_USB "/dev/ttyUSB1"
 #define MARVELMIND_USB_1 "/dev/ttyUSB2"
 #define MARVELMIN_USB_2 "/dev/ttyUSB3"
+
+#define MOTION_LOG_ID 2
 
 enum COMMAND
 {

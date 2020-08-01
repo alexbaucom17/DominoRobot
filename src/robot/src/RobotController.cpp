@@ -120,10 +120,8 @@ void RobotController::update()
 
     if (trajRunning_)
     {
-        // PLOGI.printf("Est Vel: ");
-        // cartVel_.print();
-        // PLOGI.printf("Est Pos: ");
-        // cartPos_.print();
+        PLOGD_(MOTION_LOG_ID) << "Est Vel: " << cartVel_.toString();
+        PLOGD_(MOTION_LOG_ID) << "Est Pos: " << cartPos_.toString();
     }
 
     // Update status 
@@ -140,7 +138,7 @@ void RobotController::runTraj(PVTPoint* cmd)
     float dt = std::chrono::duration_cast<fsec>(curTime - trajStartTime_).count();
     *cmd = trajGen_.lookup(dt);
 
-    PLOGI.printf("Target: %s", cmd->toString().c_str());
+    PLOGD_(MOTION_LOG_ID) << "Target: " << cmd->toString();
 
     // Stop trajectory
     if (checkForCompletedTrajectory(*cmd))
@@ -327,7 +325,7 @@ void RobotController::computeOdometry()
         }
     }
     
-    PLOGD.printf("Decoded velocity: %.3f, %.3f, %.3f", local_cart_vel[0], local_cart_vel[1], local_cart_vel[2]);
+    PLOGD_(MOTION_LOG_ID).printf("Decoded velocity: %.3f, %.3f, %.3f", local_cart_vel[0], local_cart_vel[1], local_cart_vel[2]);
 
     // Convert local cartesian velocity to global cartesian velocity using the last estimated angle
     float cA = cos(cartPos_.a_);
@@ -367,7 +365,7 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
 {
     if (trajRunning_) 
     {
-        PLOGI.printf("CartVelCmd: [vx: %.4f, vy: %.4f, va: %.4f]", vx, vy, va);
+        PLOGD_(MOTION_LOG_ID).printf("CartVelCmd: [vx: %.4f, vy: %.4f, va: %.4f]", vx, vy, va);
     }
 
     float max_trans_speed = COARSE_LIMS.max_trans_vel_;
@@ -407,7 +405,7 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
 
     if (local_cart_vel[0] != 0 || local_cart_vel[1] != 0 || local_cart_vel[2] != 0 )
     {
-        PLOGD.printf("Sending to motors: [%s]", s.c_str());
+        PLOGD_(MOTION_LOG_ID).printf("Sending to motors: [%s]", s.c_str());
     }
 
     if (serial_to_motor_driver_.isConnected())

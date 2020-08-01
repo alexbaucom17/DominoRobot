@@ -16,10 +16,10 @@ struct Point
         : x_(x), y_(y), a_(a)
     {}
 
-    void print() const
-    {
-      PLOGI.printf("%s",this->toString().c_str());
-    }
+    // void print() const
+    // {
+    //   PLOGI.printf("%s",this->toString().c_str());
+    // }
 
     std::string toString() const
     {
@@ -44,10 +44,10 @@ struct PVTPoint
       return static_cast<std::string>(s);
     }
 
-    void print() const
-    {
-      PLOGI.printf("%s",this->toString().c_str());
-    }
+    // void print() const
+    // {
+    //   PLOGI.printf("%s",this->toString().c_str());
+    // }
 };
 
 struct DynamicLimits
@@ -69,7 +69,7 @@ struct trajParams
 
     void print() const
     {
-      PLOGI.printf("[p0: %.4f, v0: %.4f, t0: %.4f, a: %.4f, tend: %.4f]",p0_, v0_, t0_, a_, t_end_);
+      PLOGD_(MOTION_LOG_ID).printf("[p0: %.4f, v0: %.4f, t0: %.4f, a: %.4f, tend: %.4f]",p0_, v0_, t0_, a_, t_end_);
     }
 };
 
@@ -96,17 +96,17 @@ class TrajectoryGenerator
 
             void print()
             {
-              PLOGI.printf("XTRAJ:");
+              PLOGD_(MOTION_LOG_ID).printf("XTRAJ:");
               for(uint i = 0; i < xtraj_.size(); i++)
               {
                 xtraj_[i].print();
               }
-              PLOGI.printf("YTRAJ:");
+              PLOGD_(MOTION_LOG_ID).printf("YTRAJ:");
               for(uint i = 0; i < ytraj_.size(); i++)
               {
                 ytraj_[i].print();
               }
-              PLOGI.printf("ATRAJ:");
+              PLOGD_(MOTION_LOG_ID).printf("ATRAJ:");
               for(uint i = 0; i < atraj_.size(); i++)
               {
                 atraj_[i].print();

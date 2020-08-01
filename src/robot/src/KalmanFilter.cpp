@@ -49,23 +49,21 @@ void KalmanFilter::predict(double dt, const Eigen::Matrix3f& B, const Eigen::Vec
 void KalmanFilter::update(const Eigen::Vector3f& y, const Eigen::Matrix3f& R) 
 {
 
-#ifdef PRINT_DEBUG
-  PLOGI.printf("xhat rows: ");
-  PLOGI.printf(x_hat.get_rows());
-  PLOGI.printf(" cols: ");
-  PLOGI.printf(x_hat.get_cols());
-  PLOGI.printf("");
+  // PLOGI.printf("xhat rows: ");
+  // PLOGI.printf(x_hat.get_rows());
+  // PLOGI.printf(" cols: ");
+  // PLOGI.printf(x_hat.get_cols());
+  // PLOGI.printf("");
 
   // Note print for a single column matrix doesn't work for some reason
-  PLOGI.printf("State estimate before update");
-  PLOGI.printf("[X: ");
-  PLOGI.printf(x_hat(0,0), 4);
-  PLOGI.printf(", Y: ");
-  PLOGI.printf(x_hat(1,0), 4);
-  PLOGI.printf(", A: ");
-  PLOGI.printf(x_hat(2,0), 4);
-  PLOGI.printf("]");
-#endif
+  // PLOGI.printf("State estimate before update");
+  // PLOGI.printf("[X: ");
+  // PLOGI.printf(x_hat(0,0), 4);
+  // PLOGI.printf(", Y: ");
+  // PLOGI.printf(x_hat(1,0), 4);
+  // PLOGI.printf(", A: ");
+  // PLOGI.printf(x_hat(2,0), 4);
+  // PLOGI.printf("]");
 
   this->R = R;
   Eigen::Matrix3f tmp = C*P*C.transpose() + R;
@@ -74,15 +72,14 @@ void KalmanFilter::update(const Eigen::Vector3f& y, const Eigen::Matrix3f& R)
   P = (I - K*C)*P;
   x_hat = x_hat_new;
 
-#ifdef PRINT_DEBUG
-  PLOGI.printf("R matrix");
-  PLOGI.printf(R);
+  // PLOGI.printf("R matrix");
+  // PLOGI.printf(R);
 
-  PLOGI.printf("P matrix");
-  PLOGI.printf(P);
+  // PLOGI.printf("P matrix");
+  // PLOGI.printf(P);
 
-  PLOGI.printf("K matrix");
-  PLOGI.printf(K);
+  // PLOGI.printf("K matrix");
+  // PLOGI.printf(K);
 
   // PLOGI.printf("xhat rows: ");
   // PLOGI.printf(x_hat.get_rows());
@@ -90,13 +87,12 @@ void KalmanFilter::update(const Eigen::Vector3f& y, const Eigen::Matrix3f& R)
   // PLOGI.printf(x_hat.get_cols());
   // PLOGI.printf("");
   
-  PLOGI.printf("State estimate after update");
-  PLOGI.printf("[X: ");
-  PLOGI.printf(x_hat(0,0));
-  PLOGI.printf(", Y: ");
-  PLOGI.printf(x_hat(1,0));
-  PLOGI.printf(", A: ");
-  PLOGI.printf(x_hat(2,0));
-  PLOGI.printf("]");
-#endif
+  // PLOGI.printf("State estimate after update");
+  // PLOGI.printf("[X: ");
+  // PLOGI.printf(x_hat(0,0));
+  // PLOGI.printf(", Y: ");
+  // PLOGI.printf(x_hat(1,0));
+  // PLOGI.printf(", A: ");
+  // PLOGI.printf(x_hat(2,0));
+  // PLOGI.printf("]");
 }

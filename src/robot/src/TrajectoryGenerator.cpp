@@ -28,13 +28,14 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
     float timeForConstVelRot = TRAJ_MAX_ROT_SPEED / TRAJ_MAX_ROT_ACC;
     float posForConstVelRot = 0.5 * TRAJ_MAX_ROT_ACC * timeForConstVelRot * timeForConstVelRot;
 
-    #ifdef PRINT_DEBUG
     PLOGI.printf("Generating trajectory");
-    PLOGI.printf("Starting point:");
-    initialPoint.print();
-    PLOGI.printf("Target point: ");
-    targetPoint.print();
-    #endif
+    PLOGI.printf("Starting point: %s", initialPoint.toString().c_str());
+    PLOGI.printf("Target point: %s", targetPoint.toString().c_str());
+
+    // Also print to motion log
+    PLOGD_(MOTION_LOG_ID).printf("Generating trajectory");
+    PLOGD_(MOTION_LOG_ID).printf("Starting point: %s", initialPoint.toString().c_str());
+    PLOGD_(MOTION_LOG_ID).printf("Target point: %s", targetPoint.toString().c_str());
 
     // Compute X trajectory
     if(fabs(deltaPoint.x_) < 2*posForConstVelTrans)
@@ -66,9 +67,7 @@ void TrajectoryGenerator::generate(const Point& initialPoint, const Point& targe
         currentTraj_.atraj_ = generate_trapazoid_1D(initialPoint.a_, targetPoint.a_, TRAJ_MAX_ROT_SPEED, TRAJ_MAX_ROT_ACC);
     }
 
-    #ifdef PRINT_DEBUG
     currentTraj_.print();
-    #endif
     
 }
 
@@ -93,9 +92,7 @@ void TrajectoryGenerator::generateConstVel(const Point& initialPoint,
     {
         // If the time given is too short to actually reach constant vel, just estimate a target point so that 
         // we actually do something, and then print out a big warning
-        #ifdef PRINT_DEBUG
         PLOGI.printf("WARNING: SPECIFIED TRAJECTORY TIME %.4f LESS THAN REQUIRED TIME %.4f\n", t, 2*timeForConstVelTrans);
-        #endif
 
         Point targetPoint;
         targetPoint.x_ = initialPoint.x_ + vx * t;
@@ -106,19 +103,15 @@ void TrajectoryGenerator::generateConstVel(const Point& initialPoint,
     }
     else
     {
-        #ifdef PRINT_DEBUG
         PLOGI.printf("Generating const vel trajectory\n");
         PLOGI.printf("Starting point: %s\n", initialPoint.toString());
         PLOGI.printf("Target velocity: [vx: %.4f, vy: %.4f, va: %.4f, t: %.4f]\n", vx, vy, va, t);
-        #endif
 
         currentTraj_.xtraj_ = generate_vel_for_time_1D(initialPoint.x_, vx, t, TRAJ_MAX_TRANS_ACC);
         currentTraj_.ytraj_ = generate_vel_for_time_1D(initialPoint.y_, vy, t, TRAJ_MAX_TRANS_ACC);
         currentTraj_.atraj_ = generate_vel_for_time_1D(initialPoint.a_, va, t, TRAJ_MAX_ROT_ACC);
 
-        #ifdef PRINT_DEBUG
         currentTraj_.print();
-        #endif
 
     }
     
