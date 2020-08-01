@@ -3,10 +3,16 @@
 
 #include <libserial/SerialPort.h>
 
+#include "SerialCommsBase.h"
+
 #define START_CHAR '<'
 #define END_CHAR '>'
 
-class SerialComms
+
+// Factory method
+std::unique_ptr<SerialCommsBase> buildSerialComms(std::string portName);
+
+class SerialComms : public SerialCommsBase
 {
   public:
     
@@ -15,11 +21,10 @@ class SerialComms
 
     virtual ~SerialComms();
 
-    void send(std::string msg);
+    void send(std::string msg) override;
 
-    std::string rcv();
+    std::string rcv() override;
 
-    bool isConnected() {return connected_;}
 
   protected:
 
@@ -28,7 +33,7 @@ class SerialComms
     bool recvInProgress_;
     int recvIdx_;
     std::string buffer_;
-    bool connected_;
+    
 
 };
 

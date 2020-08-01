@@ -30,7 +30,7 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
   velOnlyMode_(false),
   predict_once(false),
   statusUpdater_(statusUpdater),
-  serial_to_motor_driver_(CLEARCORE_USB)
+  serial_to_motor_driver_(buildSerialComms(CLEARCORE_USB))
 {
     // // Setup Kalman filter
     // Eigen::Matrix3f A = Eigen::Matrix3f::Identity(); 
@@ -262,6 +262,10 @@ void RobotController::disableAllMotors()
 
 void RobotController::inputPosition(float x, float y, float a)
 {
+    (void) x;
+    (void) y;
+    (void) a;
+    
     if(fineMode_)
     {
       // Update kalman filter for position observation
@@ -290,14 +294,13 @@ void RobotController::computeOdometry()
  
     std::string msg = "";
     float local_cart_vel[3];
-    if (serial_to_motor_driver_.isConnected())
+    if (serial_to_motor_driver_->isConnected())
     {
-         msg = serial_to_motor_driver_.rcv();
+         msg = serial_to_motor_driver_->rcv();
     }
 
     if (msg.empty())
     {
-        PLOGW.printf("No message");
         return;
     }
     else
@@ -408,8 +411,8 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
         PLOGD_(MOTION_LOG_ID).printf("Sending to motors: [%s]", s.c_str());
     }
 
-    if (serial_to_motor_driver_.isConnected())
+    if (serial_to_motor_driver_->isConnected())
     {
-        serial_to_motor_driver_.send(s);
+        serial_to_motor_driver_->send(s);
     }
 }

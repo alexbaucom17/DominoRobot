@@ -2,13 +2,28 @@
 
 #include <plog/Log.h>
 
+std::unique_ptr<SerialCommsBase> buildSerialComms(std::string portName)
+{
+    try
+    {
+        return std::make_unique<SerialComms>(portName);
+    }
+    catch (const LibSerial::OpenFailed&)
+    {
+        PLOGW << "Could not open serial port: " << portName;
+        return std::make_unique<SerialCommsBase>();
+    }
+}
+
 SerialComms::SerialComms(std::string portName)
-: serial_(portName),
+: SerialCommsBase(),
+  serial_(portName),
   recvInProgress_(false),
   recvIdx_(0),
-  buffer_(""),
-  connected_(false)
+  buffer_("")
 {
+    // If we get here, that means serial_ was constructed correctly which means 
+    // we have a valid connection
     connected_ = true;
     serial_.SetBaudRate(LibSerial::BaudRate::BAUD_115200);    
 }

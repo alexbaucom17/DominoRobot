@@ -6,7 +6,7 @@
 #include "TrajectoryGenerator.h"
 #include "StatusUpdater.h"
 // #include "KalmanFilter.h"
-#include "SerialComms.h"
+#include "serial/SerialComms.h"
 
 class RobotController
 {
@@ -85,7 +85,7 @@ class RobotController
     bool predict_once;                     // Bool to make sure kalman filter gets initialized properly
 
     StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
-    SerialComms serial_to_motor_driver_;   // Serial connection to motor driver
+    std::unique_ptr<SerialCommsBase> serial_to_motor_driver_;   // Serial connection to motor driver
 
     // Kalman filter stuff
     // KalmanFilter kf_;
