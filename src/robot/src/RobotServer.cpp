@@ -4,11 +4,14 @@
 #include <plog/Log.h>
 
 RobotServer::RobotServer(StatusUpdater& statusUpdater)
-: SimpleServer(),
-  moveData_(),
+: moveData_(),
   positionData_(),
   velocityData_(),
-  statusUpdater_(statusUpdater)
+  statusUpdater_(statusUpdater),
+  recvInProgress_(false),
+  recvIdx_(0),
+  buffer_(""),
+  socket_()
 {
 }
 
@@ -146,4 +149,110 @@ void RobotServer::sendStatus()
 {
     std::string msg = statusUpdater_.getStatusJsonString();
     sendMsg(msg, false);
+}
+
+COMMAND RobotServer::oneLoop()
+{
+    COMMAND cmd = COMMAND::NONE;
+    std::string newMsg = getAnyIncomingMessage();
+    
+    if(newMsg.length() != 0)
+    {    
+        PLOGD.printf("RX: %s", newMsg.c_str());
+        cmd = getCommand(cleanString(newMsg));
+    }
+    return cmd;
+}
+
+std::string RobotServer::cleanString(std::string message)
+{
+  int idx_start = message.find("{");
+  int idx_end = message.find("}") + 1;
+  int len = idx_end - idx_start + 1;
+  if(idx_start == -1 || idx_end == 0)
+  {
+      PLOGW.printf("Could not find brackets in message");
+      return message;
+  }
+  return message.substr(idx_start, len);
+}
+
+std::string RobotServer::getAnyIncomingMessage()
+{
+    bool newData = false;
+    std::string new_msg = "";
+
+    while (socket_.dataAvailableToRead() && newData == false) 
+    {
+        std::string data = socket_.getData();
+        for (auto c : data)
+        {
+            if (recvInProgress_ == true) 
+            {
+                if (c == START_CHAR)
+                {
+                    buffer_ = "";
+                }
+                else if (c != END_CHAR) 
+                {
+                    buffer_ += c;
+                }
+                else 
+                {
+                    recvInProgress_ = false;
+                    newData = true;
+                    new_msg = buffer_;
+                    buffer_ = "";
+                }
+            }
+            else if (c == START_CHAR) 
+            {
+                recvInProgress_ = true;
+            }
+        }
+    }
+    return new_msg;
+}
+
+void RobotServer::sendMsg(std::string msg, bool print_debug)
+{
+    if (msg.length() == 0 && print_debug)
+    {
+      PLOGI.printf("Nothing to send!!!\n");
+    }
+    else
+    {
+        if(print_debug)
+        {
+            PLOGD.printf("TX: %s", msg.c_str());
+        }
+
+        std::string send_msg = START_CHAR + msg + END_CHAR;
+        socket_.sendData(send_msg);
+    }
+}
+
+void RobotServer::printIncommingCommand(std::string message)
+{
+    PLOGI.printf(message.c_str());
+}
+
+void RobotServer::sendAck(std::string data)
+{
+    StaticJsonDocument<64> doc;
+    doc["type"] = "ack";
+    doc["data"] = data;
+    std::string msg;
+    serializeJson(doc, msg);
+    sendMsg(msg);
+}
+
+void RobotServer::sendErr(std::string data)
+{
+    StaticJsonDocument<64> doc;
+    doc["type"] = "ack";
+    doc["data"] = data;
+    std::string msg;
+    serializeJson(doc, msg);
+    sendMsg(msg);
 }

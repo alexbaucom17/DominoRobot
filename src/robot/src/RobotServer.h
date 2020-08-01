@@ -6,10 +6,16 @@
 #ifndef RobotServer_h
 #define RobotServer_h
 
-#include "SimpleServer.h"
+#include <string>
+
+#include "constants.h"
+#include "sockets/SocketMultiThreadWrapper.h"
 #include "StatusUpdater.h"
 
-class RobotServer : public SimpleServer
+#define START_CHAR '<'
+#define END_CHAR '>'
+
+class RobotServer
 {
   public:
 
@@ -28,8 +34,9 @@ class RobotServer : public SimpleServer
       float t;
     };
     
-    // Constructor
     RobotServer(StatusUpdater& statusUpdater);
+
+    COMMAND oneLoop();
 
     RobotServer::PositionData getMoveData();
 
@@ -43,8 +50,18 @@ class RobotServer : public SimpleServer
     VelocityData velocityData_;
     StatusUpdater& statusUpdater_;
 
-    virtual COMMAND getCommand(std::string message) override;
+    bool recvInProgress_;
+    int recvIdx_;
+    std::string buffer_;
+    SocketMultiThreadWrapper socket_;
 
+    COMMAND getCommand(std::string message);
+    void sendMsg(std::string msg, bool print_debug=true);
+    void sendAck(std::string data);
+    void sendErr(std::string data);
+    std::string getAnyIncomingMessage();
+    std::string cleanString(std::string message);
+    void printIncommingCommand(std::string message);
     void sendStatus();
 
 };
