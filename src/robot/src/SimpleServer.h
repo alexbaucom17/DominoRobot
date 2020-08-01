@@ -4,7 +4,7 @@
 #include <string>
 
 #include "constants.h"
-#include "SocketWrapper.h"
+#include "SocketMultiThreadWrapper.h"
 
 #define START_CHAR '<'
 #define END_CHAR '>'
@@ -38,7 +38,7 @@ class SimpleServer
     int recvIdx_;
     std::string buffer_;
 
-    SocketWrapper socket_;
+    SocketMultiThreadWrapper socket_;
 
 
 

@@ -1,17 +1,16 @@
-#ifndef SocketWrapper_h
-#define SocketWrapper_h
+#ifndef SocketMultiThreadWrapper_h
+#define SocketMultiThreadWrapper_h
 
 #include <queue>
 #include <thread>
 
 #define BUFFER_SIZE 1024
 
-// TODO: Rename this class to SocketMultiThreadWrapper
-class SocketWrapper
+class SocketMultiThreadWrapper
 {
 
   public:
-    SocketWrapper();
+    SocketMultiThreadWrapper();
     std::string getData();
     void sendData(std::string data);
     bool dataAvailableToRead();

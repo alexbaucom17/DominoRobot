@@ -1,4 +1,4 @@
-#include "SocketWrapper.h"
+#include "SocketMultiThreadWrapper.h"
 
 #include <plog/Log.h>
 #include "sockets/ServerSocket.h"
@@ -9,21 +9,21 @@
 std::mutex read_mutex;
 std::mutex send_mutex;
 
-SocketWrapper::SocketWrapper()
+SocketMultiThreadWrapper::SocketMultiThreadWrapper()
 : data_buffer(),
   send_buffer()
 {
-    run_thread = std::thread(&SocketWrapper::socket_loop, this);
+    run_thread = std::thread(&SocketMultiThreadWrapper::socket_loop, this);
     run_thread.detach();
 }
 
-bool SocketWrapper::dataAvailableToRead()
+bool SocketMultiThreadWrapper::dataAvailableToRead()
 {
     std::lock_guard<std::mutex> read_lock(read_mutex);
     return data_buffer.size() > 0;
 }
 
-std::string SocketWrapper::getData()
+std::string SocketMultiThreadWrapper::getData()
 {
     std::string outstring;
     const std::lock_guard<std::mutex> lock(read_mutex);
@@ -35,7 +35,7 @@ std::string SocketWrapper::getData()
     return outstring;
 }
 
-void SocketWrapper::sendData(std::string data)
+void SocketMultiThreadWrapper::sendData(std::string data)
 {
     const std::lock_guard<std::mutex> lock(send_mutex);
     if(send_buffer.size() + data.size() >= BUFFER_SIZE)
@@ -49,7 +49,7 @@ void SocketWrapper::sendData(std::string data)
     }
 }
 
-void SocketWrapper::socket_loop()
+void SocketMultiThreadWrapper::socket_loop()
 {
     ServerSocket server(8123);
 

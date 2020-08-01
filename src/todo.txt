@@ -33,7 +33,7 @@ Expected rpi hardware connections
 Rpi Refactor:
 - Keep adding tests
     - Set up factories and/or mocks to allow more thorough unit/integration testing
-- Separate logging for info and for kinematics/plotting
+- Rename/clean up socket/server stuff
 - Get trajectory generator working with different approach angles
 - Port Marvelmind to native usb, integrate into robot controller
 - Port lifter controller to use external arduino
