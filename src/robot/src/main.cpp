@@ -8,6 +8,7 @@
 
 #include "robot.h"
 #include "constants.h"
+#include "sockets/SocketMultiThreadWrapperFactory.h"
 
 
 void configure_logger()
@@ -33,9 +34,26 @@ void configure_logger()
     PLOGI << "Logger ready";
 }
 
+#define MOCK_SOCKET true
+std::vector<std::string> MOCK_SOCKET_DATA = {"<{'type':'estop'}>",  "<{'type':'estop'}>"};
+void setup_mock_socket()
+{
+    if(MOCK_SOCKET)
+    {
+        auto factory = SocketMultiThreadWrapperFactory::getFactoryInstance();
+        factory->set_mode(SOCKET_FACTORY_MODE::MOCK);
+        factory->build_socket();
+        for (const auto& s : MOCK_SOCKET_DATA)
+        {
+            factory->add_mock_data(s);
+        }
+    }
+}
+
 int main()
 {
     configure_logger();
+    setup_mock_socket();
 
     Robot r;
     r.run(); //Should loop forver until stopped

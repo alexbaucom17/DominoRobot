@@ -3,10 +3,11 @@
 
 #include <queue>
 #include <thread>
+#include "SocketMultiThreadWrapperBase.h"
 
 #define BUFFER_SIZE 1024
 
-class SocketMultiThreadWrapper
+class SocketMultiThreadWrapper : public SocketMultiThreadWrapperBase
 {
 
   public:

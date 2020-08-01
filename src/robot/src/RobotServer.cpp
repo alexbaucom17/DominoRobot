@@ -1,7 +1,10 @@
 
 #include "RobotServer.h"
+
 #include <ArduinoJson/ArduinoJson.h>
 #include <plog/Log.h>
+
+#include "sockets/SocketMultiThreadWrapperFactory.h"
 
 RobotServer::RobotServer(StatusUpdater& statusUpdater)
 : moveData_(),
@@ -11,7 +14,7 @@ RobotServer::RobotServer(StatusUpdater& statusUpdater)
   recvInProgress_(false),
   recvIdx_(0),
   buffer_(""),
-  socket_()
+  socket_(SocketMultiThreadWrapperFactory::getFactoryInstance()->get_socket())
 {
 }
 
@@ -182,9 +185,9 @@ std::string RobotServer::getAnyIncomingMessage()
     bool newData = false;
     std::string new_msg = "";
 
-    while (socket_.dataAvailableToRead() && newData == false) 
+    while (socket_->dataAvailableToRead() && newData == false) 
     {
-        std::string data = socket_.getData();
+        std::string data = socket_->getData();
         for (auto c : data)
         {
             if (recvInProgress_ == true) 
@@ -228,7 +231,7 @@ void RobotServer::sendMsg(std::string msg, bool print_debug)
         }
 
         std::string send_msg = START_CHAR + msg + END_CHAR;
-        socket_.sendData(send_msg);
+        socket_->sendData(send_msg);
     }
 }
 

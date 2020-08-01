@@ -10,7 +10,8 @@ std::mutex read_mutex;
 std::mutex send_mutex;
 
 SocketMultiThreadWrapper::SocketMultiThreadWrapper()
-: data_buffer(),
+: SocketMultiThreadWrapperBase(),
+  data_buffer(),
   send_buffer()
 {
     run_thread = std::thread(&SocketMultiThreadWrapper::socket_loop, this);

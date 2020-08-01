@@ -7,9 +7,10 @@
 #define RobotServer_h
 
 #include <string>
+#include <memory>
 
 #include "constants.h"
-#include "sockets/SocketMultiThreadWrapper.h"
+#include "sockets/SocketMultiThreadWrapperBase.h"
 #include "StatusUpdater.h"
 
 #define START_CHAR '<'
@@ -53,7 +54,7 @@ class RobotServer
     bool recvInProgress_;
     int recvIdx_;
     std::string buffer_;
-    SocketMultiThreadWrapper socket_;
+    std::unique_ptr<SocketMultiThreadWrapperBase> socket_;
 
     COMMAND getCommand(std::string message);
     void sendMsg(std::string msg, bool print_debug=true);
