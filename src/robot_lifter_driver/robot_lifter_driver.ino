@@ -1,5 +1,6 @@
 // Uses stepper driver library from here: https://www.airspayce.com/mikem/arduino/AccelStepper/classAccelStepper.html
 #include <AccelStepper.h>
+#include <Servo.h>
 #include "SerialComms.h"
 
 // LEFT/RIGHT is WRT standing at back of robot looking forward
@@ -9,6 +10,7 @@
 #define DIR_PIN_RIGHT 5
 #define INCREMENTAL_UP_PIN 6
 #define INCREMENTAL_DOWN_PIN 7
+#define LATCH_SERVO_PIN 8
 #define HOMING_SWITCH_PIN 11
 
 #define MAX_VEL 10  // steps/sec
@@ -18,12 +20,19 @@
 #define SAFETY_MAX_POS 1000  // Sanity check on desired position to make sure it isn't larger than this
 #define SAFETY_MIN_POS -1000 // Sanity check on desired position to make sure it isn't less than this
 
-AccelStepper motors[2];
-SerialComms comms(Serial);
-bool move_in_progress = false;
-bool mode_vel_active = false;
-bool mode_pos_active = false;
-bool mode_homing_active = false;
+#define LATCH_ACTIVE_MS 2000
+#define LATCH_OPEN_POS 180
+#define LATCH_CLOSE_POS 0
+
+enum MODE
+{
+    NONE,
+    MANUAL_VEL,
+    AUTO_POS,
+    HOMING,
+    LATCH_OPEN,
+    LATCH_CLOSE,
+};
 
 struct Command
 {
@@ -31,13 +40,24 @@ struct Command
     bool home;
     bool valid;
     bool stop;
+    bool latch_open;
+    bool latch_close;
 };
+
+AccelStepper motors[2];
+Servo latchServo;
+SerialComms comms(Serial);
+
+MODE activeMode = MODE::NONE;
+unsigned long prevLatchMillis = millis();
 
 void setup() 
 {
     pinMode(INCREMENTAL_UP_PIN, INPUT_PULLUP);
     pinMode(INCREMENTAL_DOWN_PIN, INPUT_PULLUP);
     pinMode(HOMING_SWITCH_PIN, INPUT_PULLUP);
+
+    latchServo.attach(LATCH_SERVO_PIN);
     
     motors[0] = AccelStepper(AccelStepper::DRIVER, STEP_PIN_LEFT, DIR_PIN_LEFT);
     motors[1] = AccelStepper(AccelStepper::DRIVER, STEP_PIN_RIGHT, DIR_PIN_RIGHT);
@@ -53,10 +73,11 @@ void setup()
 
 // Possible inputs are
 // "home", "stop", or an integer representing position to move to
+// "open" or "close" controls the latch servo
 Command getAndDecodeMsg()
 {
     String msg = comms.rcv();
-    Command c = {0, false, false, false};
+    Command c = {0, false, false, false, false, false};
     if(msg.length() > 0)
     {
         if(msg == "home")
@@ -67,6 +88,16 @@ Command getAndDecodeMsg()
         else if(msg == "stop")
         {
             c.stop = true;
+            c.valid = true;
+        }
+        else if (msg == "open")
+        {
+            c.latch_open = true;
+            c.valid = true;
+        }
+        else if (msg == "close")
+        { 
+            c.latch_close = true;
             c.valid = true;
         }
         else
@@ -81,95 +112,91 @@ Command getAndDecodeMsg()
 
 void loop()
 {
-
     // Check for an incomming command
     Command inputCommand = getAndDecodeMsg();
     
-    // Read inputs for vel
+    // Read inputs for manual mode
     bool vel_up = !digitalRead(INCREMENTAL_UP_PIN);
     bool vel_down = !digitalRead(INCREMENTAL_DOWN_PIN);
 
     // If we got a stop command, make sure to handle it immediately
     if (inputCommand.valid && inputCommand.stop)
     {
-        mode_pos_active = false;
-        mode_vel_active = false;
-        mode_homing_active = false;
+        activeMode = MODE::NONE;
     }
     // For any other command, we will only handle it when there are no other active commands
-    else if (!(mode_pos_active || mode_vel_active || mode_homing_active))
+    else if (activeMode == MODE::NONE)
     {
         // Figure out what mode we are in
         if(vel_up || vel_down)
         {
-            mode_vel_active = true;
+            activeMode = MODE::MANUAL_VEL;
+            if(vel_up)
+            {
+                motors[0].setSpeed(MAX_VEL);
+                motors[1].setSpeed(MAX_VEL);
+            }
+            else if(vel_down)
+            {
+                motors[0].setSpeed(-1*MAX_VEL);
+                motors[1].setSpeed(-1*MAX_VEL);
+            }   
         }
         else if(inputCommand.valid && inputCommand.home)
         {
-            mode_homing_active = true;
-            
+            activeMode = MODE::HOMING;
+            motors[0].moveTo(HOMING_DIST);
+            motors[1].moveTo(HOMING_DIST);
+        }
+        else if(inputCommand.valid && inputCommand.latch_open)
+        {
+            activeMode = MODE::LATCH_OPEN;
+            servo.write(LATCH_OPEN_POS);
+            prevLatchMillis = millis();
+        }
+        else if(inputCommand.valid && inputCommand.latch_close)
+        {
+            activeMode = MODE::LATCH_CLOSE;
+            servo.write(LATCH_CLOSE_POS);
+            prevLatchMillis = millis();
         }
         else if(inputCommand.valid)
         {
             if(inputCommand.abs_pos < SAFETY_MAX_POS && inputCommand.abs_pos > SAFETY_MIN_POS)
             {
-                mode_pos_active = true;
+                activeMode = MODE::AUTO_POS;
+                int target = inputCommand.abs_pos;
+                motors[0].moveTo(target);
+                motors[1].moveTo(target);
             }
         }
-    }
-
-    
-    // Set motor speeds based on inputs and mode
-    if(mode_vel_active)
-    {
-        if(vel_up)
-        {
-            motors[0].setSpeed(MAX_VEL);
-            motors[1].setSpeed(MAX_VEL);
-        }
-        else if(vel_down)
-        {
-            motors[0].setSpeed(-1*MAX_VEL);
-            motors[1].setSpeed(-1*MAX_VEL);
-        }     
-    }
-    else if(mode_pos_active && !move_in_progress)
-    {
-        int target = inputCommand.abs_pos;
-        motors[0].moveTo(target);
-        motors[1].moveTo(target);
-        move_in_progress = true;
-    }
-    else if(mode_homing_active && !move_in_progress)
-    {
-        motors[0].moveTo(HOMING_DIST);
-        motors[1].moveTo(HOMING_DIST);
-        move_in_progress = true;
-    }
-    else if(!move_in_progress)
-    {
-        // Stop motors if no move is in progress and no buttons are pushed
-        motors[0].stop();
-        motors[1].stop();        
-    }
+    }    
 
 
-    // Call motor update loop
+    // Handle continous updates for each mode
     String status_str = "none";
-    if(mode_vel_active)
+    if(activeMode == MODE::MANUAL_VEL)
     {
         motors[0].runSpeed();
         motors[1].runSpeed();
         status_str = "manaul";
+        if(vel_up || vel_down)
+        {
+            activeMode = MODE::NONE;
+        }
     }
-    else if(mode_pos_active)
+    else if(activeMode == MODE::AUTO_POS)
     {
+        // run() returns a bool indicating if the motors are still moving
         bool tmp1 = motors[0].run();
         bool tmp2 = motors[1].run();
-        move_in_progress = tmp1 || tmp2;
         status_str = "pos";
+        if(!(tmp1 || tmp2))
+        {
+            activeMode = MODE::NONE;
+        }
     }
-    else if(mode_homing_active)
+    else if(activeMode == MODE::HOMING)
     {
         motors[0].run();
         motors[1].run();
@@ -177,12 +204,34 @@ void loop()
         {
             motors[0].stop();
             motors[1].stop();  
-            move_in_progress = false;
             motors[0].setCurrentPosition(0);
             motors[1].setCurrentPosition(0);
+            activeMode = MODE::NONE;
         }
         status_str = "homing";
     }
+    else if (activeMode == MODE::LATCH_CLOSE)
+    {
+        status_str = "close";
+        if(mills() - prevLatchMillis > LATCH_ACTIVE_MS)
+        {
+            activeMode = MODE::NONE;
+        }
+    }
+    else if (activeMode == MODE::LATCH_OPEN)
+    {
+        status_str = "open";
+        if(mills() - prevLatchMillis > LATCH_ACTIVE_MS)
+        {
+            activeMode = MODE::NONE;
+        }
+    }
+    else if (activeMode == MODE::NONE)
+    {
+        motors[0].stop();
+        motors[1].stop();
+    }
 
+    // Will send back one of [none, manual, pos, homing, open, close]
     comms.send(status_str);
 }
