@@ -1,6 +1,6 @@
 // Uses stepper driver library from here: https://www.airspayce.com/mikem/arduino/AccelStepper/classAccelStepper.html
 #include <AccelStepper.h>
-#include <SerialComms.h>
+#include "SerialComms.h"
 
 // LEFT/RIGHT is WRT standing at back of robot looking forward
 #define STEP_PIN_LEFT 2
@@ -39,8 +39,6 @@ void setup()
     pinMode(INCREMENTAL_DOWN_PIN, INPUT_PULLUP);
     pinMode(HOMING_SWITCH_PIN, INPUT_PULLUP);
     
-    prevMillisRead = millis();
-    
     motors[0] = AccelStepper(AccelStepper::DRIVER, STEP_PIN_LEFT, DIR_PIN_LEFT);
     motors[1] = AccelStepper(AccelStepper::DRIVER, STEP_PIN_RIGHT, DIR_PIN_RIGHT);
 
@@ -59,7 +57,7 @@ Command getAndDecodeMsg()
 {
     String msg = comms.rcv();
     Command c = {0, false, false, false};
-    if(!msg.empty())
+    if(msg.length() > 0)
     {
         if(msg == "home")
         {
