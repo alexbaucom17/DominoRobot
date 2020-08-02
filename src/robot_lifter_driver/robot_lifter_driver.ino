@@ -53,6 +53,8 @@ unsigned long prevLatchMillis = millis();
 
 void setup() 
 {
+    Serial.begin(115200);
+    
     pinMode(INCREMENTAL_UP_PIN, INPUT_PULLUP);
     pinMode(INCREMENTAL_DOWN_PIN, INPUT_PULLUP);
     pinMode(HOMING_SWITCH_PIN, INPUT_PULLUP);
@@ -151,13 +153,13 @@ void loop()
         else if(inputCommand.valid && inputCommand.latch_open)
         {
             activeMode = MODE::LATCH_OPEN;
-            servo.write(LATCH_OPEN_POS);
+            latchServo.write(LATCH_OPEN_POS);
             prevLatchMillis = millis();
         }
         else if(inputCommand.valid && inputCommand.latch_close)
         {
             activeMode = MODE::LATCH_CLOSE;
-            servo.write(LATCH_CLOSE_POS);
+            latchServo.write(LATCH_CLOSE_POS);
             prevLatchMillis = millis();
         }
         else if(inputCommand.valid)
@@ -213,7 +215,7 @@ void loop()
     else if (activeMode == MODE::LATCH_CLOSE)
     {
         status_str = "close";
-        if(mills() - prevLatchMillis > LATCH_ACTIVE_MS)
+        if(millis() - prevLatchMillis > LATCH_ACTIVE_MS)
         {
             activeMode = MODE::NONE;
         }
@@ -221,7 +223,7 @@ void loop()
     else if (activeMode == MODE::LATCH_OPEN)
     {
         status_str = "open";
-        if(mills() - prevLatchMillis > LATCH_ACTIVE_MS)
+        if(millis() - prevLatchMillis > LATCH_ACTIVE_MS)
         {
             activeMode = MODE::NONE;
         }
