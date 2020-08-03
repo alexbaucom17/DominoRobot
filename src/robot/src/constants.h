@@ -1,13 +1,6 @@
 #ifndef Constants_h
 #define Constants_h
 
-#define PIN_LATCH_SERVO_PIN 12
-#define PIN_TRAY_STEPPER_LEFT_PULSE 46
-#define PIN_TRAY_STEPPER_LEFT_DIR 47
-#define PIN_TRAY_STEPPER_RIGHT_PULSE 44
-#define PIN_TRAY_STEPPER_RIGHT_DIR 43
-#define PIN_TRAY_HOME_SWITCH 53
-
 // Velocitiy limits
 #define MAX_TRANS_SPEED_FINE   0.08  // m/s
 #define MAX_ROT_SPEED_FINE     0.5   // rad/2
@@ -51,24 +44,11 @@
 #define TRANS_VEL_ERR_FINE   0.01 // m/s
 #define ANG_VEL_ERR_FINE     0.01 // rad/s
 
-// Tray stepper control values
-#define TRAY_STEPPER_STEPS_PER_REV 200  // Steps per rev for tray servos
-#define TRAY_DIST_PER_REV 1.8           // mm of linear travel per stepper revolution
-#define TRAY_MAX_LINEAR_TRAVEL 300      // mm of total linear travel possible
-// Note: all tray positions measured in mm from home pos
-#define TRAY_DEFAULT_POS_MM 100         // Default position for driving in mm
-#define TRAY_LOAD_POS_MM 50             // Loading position in mm
-#define TRAY_PLACE_POS_MM 250           // Placing position in mm
-#define TRAY_MAX_SPEED 1000             // Max tray speed in steps/sec
-#define TRAY_MAX_ACCEL 2000             // Max tray acceleration in steps/sec/sec
+// Tray positions
+#define TRAY_DEFAULT_POS_STEPS 100         // Default position for driving in steps from home
+#define TRAY_LOAD_POS_STEPS 50             // Loading position in steps from home
+#define TRAY_PLACE_POS_STEPS 250           // Placing position in steps from home
 
-// Tray servo control values
-#define LATCH_CLOSE_POS 20              // Latch servo position for close in degrees
-#define LATCH_OPEN_POS 150              // Latch servo position for open in degrees
-#define TRAY_SERVO_MIN_PW 1000          // Min pulse witdh in microseconds corresponding to 0 position
-#define TRAY_SERVO_MAX_PW 2000          // Max pulse witdh in microseconds corresponding to 180 position
-
-#define TRAY_PLACEMENT_PAUSE_TIME 3000  // How many ms to wait after opening the latch for placement
 
 // USB devices
 #define CLEARCORE_USB "/dev/clearcore"

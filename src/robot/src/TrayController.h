@@ -15,13 +15,13 @@ class TrayController
 
     void load();
 
-    bool isActionRunning() {return action_running_;}
+    bool isActionRunning() {return cur_action_ != ACTION::NONE;}
 
     void update();
 
     void estop();
 
-    void setLoadComplete() {loadComplete_ = true;};
+    void setLoadComplete() {load_complete_ = true;};
 
   private:
 
@@ -33,17 +33,16 @@ class TrayController
         LOAD,
     };
 
-    const std::map<ACTION, std::string> EXPECTED_MSG = {
-        {ACTION::NONE, "none"}, 
-        {ACTION::INITIALIZE, "homing"}, 
-        {ACTION::PLACE, "pos"}, 
-        {ACTION::LOAD, "pos"}
-    };
-
     std::unique_ptr<SerialCommsBase> serial_to_lifter_driver_;   // Serial connection to lifter driver
-    bool action_running_;
-    bool loadComplete_;
+    bool action_step_running_;
+    bool load_complete_;
+    int action_step_;
     ACTION cur_action_;
+
+    void runStepAndWaitForCompletion(std::string data, std::string debug_print);
+    void updateInitialize();
+    void updateLoad();
+    void updatePlace();
 
 
 };

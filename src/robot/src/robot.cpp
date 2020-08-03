@@ -33,7 +33,7 @@ void Robot::run()
 
         // Service controllers
         controller.update();
-        // tray_controller.update();
+        tray_controller.update();
 
         // Check if the current command has finished
         bool done = checkForCmdComplete(curCmd);
@@ -68,13 +68,13 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     if (cmd == COMMAND::ESTOP)
     {
         controller.estop();
-        // tray_controller.estop();
+        tray_controller.estop();
         return false;
     }
     // Same with LOAD_COMPLETE
     if (cmd == COMMAND::LOAD_COMPLETE)
     {
-        // tray_controller.setLoadComplete();
+        tray_controller.setLoadComplete();
         return false;
     }
     
@@ -108,15 +108,15 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     }
     else if(cmd == COMMAND::PLACE_TRAY)
     {
-        // tray_controller.place();
+        tray_controller.place();
     }
     else if(cmd == COMMAND::LOAD_TRAY)
     {
-        // tray_controller.load();
+        tray_controller.load();
     }
     else if(cmd == COMMAND::INITIALIZE_TRAY)
     {
-        // tray_controller.initialize();
+        tray_controller.initialize();
     }
     else if (cmd == COMMAND::NONE)
     {
@@ -148,8 +148,7 @@ bool Robot::checkForCmdComplete(COMMAND cmd)
             cmd == COMMAND::LOAD_TRAY ||
             cmd == COMMAND::INITIALIZE_TRAY)
     {
-        // return tray_controller.isActionRunning();
-        return true;
+        return tray_controller.isActionRunning();
     }
     else
     {

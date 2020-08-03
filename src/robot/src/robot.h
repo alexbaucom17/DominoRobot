@@ -5,6 +5,7 @@
 #include "RobotServer.h"
 #include "StatusUpdater.h"
 #include "TimeRunningAverage.h"
+#include "TrayController.h"
 #include "utils.h"
 
 class Robot
@@ -25,6 +26,7 @@ class Robot
     StatusUpdater statusUpdater;
     RobotServer server;
     RobotController controller;
+    TrayController tray_controller;
 
     TimeRunningAverage loop_time_averager;        // Handles keeping average of the loop timing
     TimeRunningAverage position_time_averager;    // Handles keeping average of the position update timing
