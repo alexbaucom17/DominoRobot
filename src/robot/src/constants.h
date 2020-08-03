@@ -52,8 +52,8 @@
 // USB devices
 #define CLEARCORE_USB "/dev/clearcore"
 #define LIFTER_DRIVER_USB "/dev/arduino"
-#define MARVELMIND_USB_1 "/dev/ttyUSB2"
-#define MARVELMIN_USB_2 "/dev/ttyUSB3"
+#define MARVELMIND_USB_1 "/dev/marvelmind0"
+#define MARVELMIND_USB_2 "/dev/marvelmind1"
 
 #define MOTION_LOG_ID 2
 

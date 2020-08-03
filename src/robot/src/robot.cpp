@@ -7,6 +7,8 @@ Robot::Robot()
 : statusUpdater(),
   server(statusUpdater),
   controller(statusUpdater),
+  tray_controller(),
+  mm_wrapper(),
   loop_time_averager(20),
   position_time_averager(20)
 {

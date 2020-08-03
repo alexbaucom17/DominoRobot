@@ -1,6 +1,7 @@
 #ifndef Robot_h
 #define Robot_h
 
+#include "MarvelmindWrapper.h"
 #include "RobotController.h"
 #include "RobotServer.h"
 #include "StatusUpdater.h"
@@ -27,6 +28,7 @@ class Robot
     RobotServer server;
     RobotController controller;
     TrayController tray_controller;
+    MarvelmindWrapper mm_wrapper;
 
     TimeRunningAverage loop_time_averager;        // Handles keeping average of the loop timing
     TimeRunningAverage position_time_averager;    // Handles keeping average of the position update timing
