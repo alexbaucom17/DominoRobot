@@ -21,7 +21,6 @@ Rpi Refactor:
 - Keep adding tests
 - Get trajectory generator working with different approach angles
 - Port Marvelmind to native usb, integrate into robot controller
-- Port lifter controller to use external arduino
 
 Purchase:
 
