@@ -45,14 +45,13 @@
 #define ANG_VEL_ERR_FINE     0.01 // rad/s
 
 // Tray positions
-#define TRAY_DEFAULT_POS_STEPS 100         // Default position for driving in steps from home
-#define TRAY_LOAD_POS_STEPS 50             // Loading position in steps from home
-#define TRAY_PLACE_POS_STEPS 250           // Placing position in steps from home
-
+#define TRAY_DEFAULT_POS_STEPS 10         // Default position for driving in steps from home
+#define TRAY_LOAD_POS_STEPS 5             // Loading position in steps from home
+#define TRAY_PLACE_POS_STEPS 25           // Placing position in steps from home
 
 // USB devices
 #define CLEARCORE_USB "/dev/clearcore"
-#define LIFTER_DRIVER_USB "/dev/ttyUSB1"
+#define LIFTER_DRIVER_USB "/dev/arduino"
 #define MARVELMIND_USB_1 "/dev/ttyUSB2"
 #define MARVELMIN_USB_2 "/dev/ttyUSB3"
 

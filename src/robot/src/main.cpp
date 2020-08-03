@@ -35,7 +35,7 @@ void configure_logger()
 }
 
 #define MOCK_SOCKET true
-std::vector<std::string> MOCK_SOCKET_DATA = {"<{'type':'estop'}>",  "<{'type':'estop'}>"};
+std::vector<std::string> MOCK_SOCKET_DATA = {"<{'type':'init'}>", "8000", "<{'type':'place'}>", "3000", "<{'type':'estop'}>"};
 void setup_mock_socket()
 {
     if(MOCK_SOCKET)

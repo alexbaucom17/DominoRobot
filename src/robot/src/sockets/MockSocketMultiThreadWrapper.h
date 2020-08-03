@@ -3,6 +3,7 @@
 
 #include <string>
 #include <queue>
+#include <chrono>
 
 #include "SocketMultiThreadWrapperBase.h"
 
@@ -19,6 +20,9 @@ class MockSocketMultiThreadWrapper : public SocketMultiThreadWrapperBase
 
   private:
     std::queue<std::string> data_;
+    int ms_until_next_command_;
+    std::chrono::time_point<std::chrono::steady_clock> prev_time_;
+
 };
 
 #endif
