@@ -5,6 +5,7 @@ class MarvelmindWrapper
 {
   public:
     MarvelmindWrapper();
+    ~MarvelmindWrapper();
 
   private:
     

@@ -17,7 +17,8 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP -g
 CXXFLAGS ?= -std=c++17 -Wall -Wextra -Wwrite-strings -Wno-parentheses -pthread 
-LDFLAGS += /usr/local/lib/libserial.a -ldl
+LDFLAGS += -ldl
+LIBS += /usr/local/lib/libserial.a ./lib/marvelmind/marvelmind_api.a
 
 TEST_SRCS := $(shell find $(TEST_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 TEST_OBJS := $(TEST_SRCS:%=$(BUILD_DIR)/%.o) $(filter-out build/src/main.cpp.o, $(OBJS))
@@ -33,11 +34,11 @@ test: $(BUILD_DIR)/$(TEST_EXEC)
 
 # Target file
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(OBJS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) $(CXXFLAGS) $(OBJS) -o $@ $(LIBS)
 
 # Test file
 $(BUILD_DIR)/$(TEST_EXEC): $(TEST_OBJS)
-	$(CXX) $(TEST_CXXFLAGS) $(TEST_OBJS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) $(TEST_CXXFLAGS) $(TEST_OBJS) -o $@ $(LIBS)
 
 # Source files
 $(BUILD_DIR)/%.cpp.o: %.cpp
