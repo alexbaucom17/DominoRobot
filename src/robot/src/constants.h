@@ -56,6 +56,10 @@
 #define MARVELMIND_USB_1 "/dev/marvelmind1"
 #define MARVELMIND_USB_2 "/dev/marvelmind2"
 
+// Expected marvelmind device connections
+#define MARVELMIND_DEVICE_ID0 5
+#define MARVELMIND_DEVICE_ID1 6
+
 #define MOTION_LOG_ID 2
 
 enum COMMAND
