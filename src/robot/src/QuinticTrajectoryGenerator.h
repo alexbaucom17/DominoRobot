@@ -6,7 +6,7 @@
 // Point = [x, y, a] positions
 using Point = Eigen::Vector3f;
 // Velocity = [vx, vy, va] velocities
-using Velocity =Eigen::Vector3f;
+using Velocity = Eigen::Vector3f;
 
 // Helper methods to 'stringify' positions and velocities
 std::string toString(const Point& p)
@@ -39,10 +39,20 @@ struct PVTPoint
 
 struct DynamicLimits
 {
-  float max_trans_vel_;
-  float max_trans_acc_;
-  float max_rot_vel_;
-  float max_rot_acc_;
+    float max_trans_vel_;
+    float max_trans_acc_;
+    float max_rot_vel_;
+    float max_rot_acc_;
+
+    DynamicLimits operator* (const float c)
+    {
+        DynamicLimits rtn;
+        rtn.max_trans_vel_ = c * max_trans_vel_;
+        rtn.max_trans_acc_ = c * max_trans_acc_;
+        rtn.max_rot_vel_ = c * max_rot_vel_;
+        rtn.max_rot_acc_ = c * max_rot_acc_;
+        return rtn;
+    }
 };
 
 class QuinticTrajectoryGenerator
@@ -62,8 +72,8 @@ class QuinticTrajectoryGenerator
         // From http://ttuadvancedrobotics.wikidot.com/trajectory-planning-for-point-to-point-motion
         // q = a0 + a1*t + a2*t^2 + a3*t^3 + a4*t^4 + a5*t^5
         Eigen::Vector6f accel_coefficients_;
-        Velocity const_vel_;
         Eigen::Vector6f decel_coefficients_;
+        Velocity const_vel_;
         // direction = endPoint - startPoint -> super simple "path" to follow
         Eigen::Vector3f direction_;
         PVTPoint initialPoint_;
