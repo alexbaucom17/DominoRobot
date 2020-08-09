@@ -3,7 +3,7 @@
 
 #include <chrono>
 
-#include "TrajectoryGenerator.h"
+#include "SmoothTrajectoryGenerator.h"
 #include "StatusUpdater.h"
 // #include "KalmanFilter.h"
 #include "serial/SerialComms.h"
@@ -72,9 +72,9 @@ class RobotController
     std::chrono::time_point<std::chrono::steady_clock> prevOdomLoopTime_;       // Previous loop time through the odom loop
     std::chrono::time_point<std::chrono::steady_clock> trajStartTime_;          // Previous loop time when trajecotry was started
     bool enabled_;                         // Global motor enabled flag
-    TrajectoryGenerator trajGen_;          // Trajectory generator object
+    SmoothTrajectoryGenerator trajGen_;    // Trajectory generator object
     Point cartPos_;                        // Current cartesian position
-    Point cartVel_;                        // Current cartesian velocity
+    Velocity cartVel_;                     // Current cartesian velocity
     Point goalPos_;                        // Desired goal position
     bool trajRunning_;                     // If a trajectory is currently active
     float errSumX_;                        // Sum of error in X dimension for integral control

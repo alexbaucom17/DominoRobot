@@ -13,6 +13,12 @@
 #define MAX_TRANS_ACC_COARSE 0.5    // m/s^2
 #define MAX_ROT_ACC_COARSE   1.0    // rad/s^2
 
+// Jerk limits
+#define MAX_TRANS_JERK_FINE   0.5    // m/s^3
+#define MAX_ROT_JERK_FINE     1.0    // rad/s^3
+#define MAX_TRANS_JERK_COARSE 1.0    // m/s^3
+#define MAX_ROT_JERK_COARSE   2.0    // rad/s^3
+
 // Cartesian control gains
 #define CART_TRANS_KP 2
 #define CART_TRANS_KI 0.1
@@ -26,7 +32,7 @@
 #define WHEEL_DIST_FROM_CENTER 0.4794 // meters
 
 // Scaling factors
-#define TRAJ_MAX_FRACTION 0.7  // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate
+#define TRAJ_MAX_FRACTION 0.8  // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate
 #define ODOM_SCALE_FACTOR 2.0
 
 // Kalman filter scales
