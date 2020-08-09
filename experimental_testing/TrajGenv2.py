@@ -1,10 +1,10 @@
-import math
 from matplotlib import pyplot as plt
+import numpy as np
 
-p_target = 10.0  # m
-v_max = 1.0  #m/s
-a_max = 5.0  #m/s^2
-j_max = 10.0 #m/s^3
+p_target = 2.0  # m
+v_max = 0.5  #m/s
+a_max = 1.0  #m/s^2
+j_max = 5.0 #m/s^3
 alpha = 0.8 # velocity decay
 beta = 0.8 # acceleation decay
 loop_limit = 10 # max loops for convergence
@@ -18,6 +18,7 @@ def generate(target_position):
     a_lim = a_max
     j_lim = j_max
 
+    output = {}
     output['done'] = False
 
     for i in range(loop_limit):
@@ -44,6 +45,7 @@ def generate(target_position):
 
 def generate_once(p, v_lim, a_lim, j_lim):
 
+    output = {}
     output['done'] = False
     output['v_lim'] = v_lim
     output['a_lim'] = a_lim
@@ -52,20 +54,25 @@ def generate_once(p, v_lim, a_lim, j_lim):
 
     # Constant jerk region
     dt_j = a_lim / j_lim
+    print("dt_j = {}".format(dt_j))
     dv_j = 0.5 * j_lim * dt_j ** 2
     dp_j = 1/6.0 * j_lim * dt_j ** 3
 
     # Constant accel region
     dt_a = (v_lim - 2 * dv_j) / a_lim
+    print("dt_a = {}".format(dt_a))
     if dt_a <= 0:
         output['a_lim'] = a_lim * beta
+        print("New a_lim = {}".format(output['a_lim'] ))
         return output
     dp_a = dv_j * dt_a + 0.5 * a_lim * dt_a ** 2
 
     # Constant vel region
     dt_v = (p - 4 * dp_j - 2 * dp_a) / v_lim
+    print("dt_v = {}".format(dt_v))
     if dt_v <= 0:
         output['v_lim'] = alpha * v_lim
+        print("New v_lim = {}".format(output['v_lim'] ))
         return output
     dp_v = v_lim * dt_v
 
@@ -81,13 +88,16 @@ def generate_once(p, v_lim, a_lim, j_lim):
     t[6] = t[5] + dt_a
     t[7] = t[6] + dt_j
     output['t'] = t
+
+    print("Times: {}".format(t))
     
     return output
 
 
 def generate_profile_from_params(output, timestep):
 
-    T = [x for x in range(0, output['t'][7], timestep)]
+    T = output['t']
+    t_vals = np.arange(0, T[7], timestep)
     p = [0]
     v = [0]
     a = [0]
@@ -97,27 +107,46 @@ def generate_profile_from_params(output, timestep):
     a_lim = output['a_lim']
     v_lim = output['v_lim']
 
-    for t in T:
-        if t >= t[0] and t < t[1]:
-            j.append(j_lim)
-        elif t >= t[1] and t < t[2]:
+    for t in t_vals[1:]:
+        if t >= T[0] and t < T[1]:
+            j.append(j_lim)        
+            a.append(a[-1] + j[-1] * timestep)
+            v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
+            p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
+        elif t >= T[1] and t < T[2]:
             j.append(0)
-        elif t >= t[2] and t < t[3]:
+            a.append(a_lim)
+            v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
+            p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
+        elif t >= T[2] and t < T[3]:
             j.append(-j_lim)
-        elif t >= t[3] and t < t[4]:
+            a.append(a[-1] + j[-1] * timestep)
+            v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
+            p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
+        elif t >= T[3] and t < T[4]:
             j.append(0)
-        elif t >= t[4] and t < t[5]:
+            a.append(0)
+            v.append(v_lim)
+            p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
+        elif t >= T[4] and t < T[5]:
             j.append(-j_lim)
-        elif t >= t[5] and t < t[6]:
+            a.append(a[-1] + j[-1] * timestep)
+            v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
+            p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
+        elif t >= T[5] and t < T[6]:
             j.append(0)
-        elif t >= t[7] and t < t[8]:
+            a.append(-a_lim)
+            v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
+            p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
+        elif t >= T[6] and t < T[7]:
             j.append(j_lim)
+            a.append(a[-1] + j[-1] * timestep)
+            v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
+            p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
 
-        a.append(a[-1] + j[-1] * timestep)
-        v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
-        p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
 
-    return (t, p, v, a, j)
+   
+    return (t_vals, p, v, a, j)
 
 
 def plot_data(t,p,v,a,j):
@@ -132,7 +161,7 @@ def plot_data(t,p,v,a,j):
 
 if __name__ == '__main__':
 
-    output = generate(target_position)
+    output = generate(p_target)
     if output:
         data = generate_profile_from_params(output, plot_timestep)
-        plot_data(**data)
+        plot_data(*data)
