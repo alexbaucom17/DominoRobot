@@ -171,8 +171,6 @@ def generate_profile_from_params(output, timestep):
             a.append(a[-1] + j[-1] * timestep)
             v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
             p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
-
-
    
     return (t_vals, p, v, a, j)
 

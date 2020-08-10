@@ -15,6 +15,7 @@ PVTPoint SmoothTrajectoryGenerator::lookup(float time)
     return PVTPoint();
 }
 
+// TODO: Write some tests for this class
 
 // TODO update to handle incomplete trajectory
 void SmoothTrajectoryGenerator::generatePointToPointTrajectory(Point initialPoint, Point targetPoint, bool fineMode)
@@ -116,12 +117,12 @@ bool SmoothTrajectoryGenerator::generateSCurve(float dist, DynamicLimits limits,
     float a_lim = limits.max_acc_;
     float j_lim = limits.max_jerk_;
 
-
     bool solution_found = false;
     int loop_counter = 0;
     while(!solution_found && loop_counter < SOLVER_MAX_LOOPS)
     {
         loop_counter++;
+        PLOGI << "Trajectory generation loop " << loop_counter;
 
         // Constant jerk region
         float dt_j = a_lim / j_lim;
@@ -135,6 +136,7 @@ bool SmoothTrajectoryGenerator::generateSCurve(float dist, DynamicLimits limits,
             // If dt_a is negative, it means we couldn't find a solution
             // so adjust accel parameter and try loop again
             a_lim *= SOLVER_BETA_DECAY;
+            PLOGI << "dt_a: " << dt_a << ", trying new accel value: " << a_lim;
             continue;
         }
         float dp_a = dv_j * dt_a + 0.5 * a_lim * std::pow(dt_a, 2);
@@ -146,6 +148,7 @@ bool SmoothTrajectoryGenerator::generateSCurve(float dist, DynamicLimits limits,
             // If dt_a is negative, it means we couldn't find a solution
             // so adjust velocity parameter and try loop again
             v_lim *= SOLVER_ALPHA_DECAY;
+            PLOGI << "dt_v: " << dt_v << ", trying new accel value: " << v_lim;
             continue;
         }
 
@@ -155,6 +158,7 @@ bool SmoothTrajectoryGenerator::generateSCurve(float dist, DynamicLimits limits,
         params->v_lim_ = v_lim;
         params->a_lim_ = a_lim;
         params->j_lim_ = j_lim;
+        PLOGI << "Trajectory solution found";
         populateSwitchTimeParameters(params, dt_j, dt_a, dt_v);
     }
 
@@ -208,7 +212,7 @@ void SmoothTrajectoryGenerator::populateSwitchTimeParameters(SCurveParameters* p
     }
 }
 
-bool SmoothTrajectoryGenerator::syncronizeParameters(SCurveParameters* params1, SCurveParameters* params2)
+bool SmoothTrajectoryGenerator::synchronizeParameters(SCurveParameters* params1, SCurveParameters* params2)
 {
     int num_positive_diffs = 0;
     int num_negative_diffs = 0;
@@ -242,17 +246,46 @@ bool SmoothTrajectoryGenerator::syncronizeParameters(SCurveParameters* params1, 
         // params2 is the slower trajectory, so use it as the reference
         mapping_succeeded = mapParameters(params2, params1);
     }
+    else
+    {
+        PLOGW << "Time diffs between trajectories don't lead to feasible synchronization solution";
+    }
 
-    // This returns true for successful syncronization
+    // This returns true for successful synchronization
     // This returns false if neither params1 or params2 was definitively slower
     // or if the mapping function fails to solve for a new trajectory
     return mapping_succeeded;
 }
 
 
-bool SmoothTrajectoryGenerator::mapParameters(SCurveParameters* ref_params, SCurveParameters* map_params)
+bool SmoothTrajectoryGenerator::mapParameters(const SCurveParameters* ref_params, SCurveParameters* map_params)
 {
-    SCurveParameters new_params;
-    new_params.
+    // Gather parameters needed
+    float dt_j = ref_params->switch_points_[1].t_ - ref_params->switch_points_[0].t_;
+    float dt_a = ref_params->switch_points_[2].t_ - ref_params->switch_points_[1].t_;
+    float dt_v = ref_params->switch_points_[5].t_ - ref_params->switch_points_[3].t_;
+    float deltaPosition = map_params->switch_points_[7].p_;
 
+    // Build linear system
+    Eigen::Matrix3f A;
+    Eigen::Vector3f b;
+    A << dt_j,                                                          -1,                 0    ,
+         std::pow(dt_j, 2),                                             dt_a,              -1    ,
+         2/3.0 * std::pow(dt_j, 3) + 0.5 * std::pow(dt_j, 2) * dt_a,   std::pow(dt_a, 2),  dt_v;
+    b << 0, 0, deltaPosition;
+
+    // Solve system and check results
+    Eigen::Vector3f lims = A.colPivHouseholderQr().solve(b);
+    float relative_error = (A*lims - b).norm() / b.norm();
+    if (relative_error > 1e-5)
+    {
+        PLOGW << "Could not find feasible inverse parameter mapping";
+        return false;
+    }
+
+    map_params->j_lim_ = lims(0);
+    map_params->a_lim_ = lims(1);
+    map_params->v_lim_ = lims(2);
+    populateSwitchTimeParameters(map_params, dt_j, dt_a, dt_v);   
+    return true;
 }
