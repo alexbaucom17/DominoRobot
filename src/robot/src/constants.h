@@ -31,9 +31,11 @@
 #define WHEEL_DIAMETER 0.152 // meters
 #define WHEEL_DIST_FROM_CENTER 0.4794 // meters
 
-// Scaling factors
-#define TRAJ_MAX_FRACTION 0.8  // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate
-#define ODOM_SCALE_FACTOR 2.0
+// Trajectory generation
+#define TRAJ_MAX_FRACTION 0.8   // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate
+#define SOLVER_MAX_LOOPS 10     // Only let the solver loop this many times before giving up
+#define SOLVER_ALPHA_DECAY 0.8  // Decay for velocity limit
+#define SOLVER_BETA_DECAY 0.8   // Decay for acceleration limit
 
 // Kalman filter scales
 #define PROCESS_NOISE_SCALE 0.08

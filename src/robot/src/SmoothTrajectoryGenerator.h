@@ -76,8 +76,8 @@ struct DynamicLimits
 // All the pieces needed to define the motion planning problem
 struct MotionPlanningProblem
 {
-    Point initialPoint_;
-    Point targetPoint_;
+    Eigen::Vector3f initialPoint_;
+    Eigen::Vector3f targetPoint_;
     DynamicLimits translationalLimits_;
     DynamicLimits rotationalLimits_;  
 };
@@ -109,6 +109,7 @@ struct Trajectory
     PVTPoint initialPoint_;
     SCurveParameters trans_params_;
     SCurveParameters rot_params_;
+    bool complete_;
 };
 
 
@@ -138,7 +139,9 @@ class SmoothTrajectoryGenerator
 
     // Private helper methods 
     MotionPlanningProblem buildMotionPlanningProblem(Point initialPoint, Point targetPoint, bool fineMode);
-    Trajectory solve(MotionPlanningProblem problem);
+    Trajectory generateTrajectory(MotionPlanningProblem problem);
+    bool generateSCurve(float dist, DynamicLimits limits, SCurveParameters* params);
+    void populateSwitchTimeParameters(SCurveParameters* params, float dt_j, float dt_a, float dt_v);
 
 };
 
