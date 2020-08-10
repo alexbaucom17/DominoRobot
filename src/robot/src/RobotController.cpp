@@ -45,8 +45,8 @@ void RobotController::moveToPosition(float x, float y, float a)
     fineMode_ = false;
     velOnlyMode_ = false;
     goalPos_ = Point(x,y,a);
-    trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
-    startTraj();
+    bool ok = trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
+    if (ok) { startTraj(); }
 }
 
 void RobotController::moveToPositionRelative(float x, float y, float a)
@@ -54,8 +54,8 @@ void RobotController::moveToPositionRelative(float x, float y, float a)
     fineMode_ = false;
     velOnlyMode_ = false;
     goalPos_ = Point(cartPos_.x_ + x, cartPos_.y_ + y, cartPos_.a_ + a);
-    trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
-    startTraj();
+    bool ok = trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
+    if (ok) { startTraj(); }
 }
 
 void RobotController::moveToPositionFine(float x, float y, float a)
@@ -63,16 +63,16 @@ void RobotController::moveToPositionFine(float x, float y, float a)
     fineMode_ = true;
     velOnlyMode_ = false;
     goalPos_ = Point(x,y,a);
-    trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
-    startTraj();
+    bool ok = trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
+    if (ok) { startTraj(); }
 }
 
 void RobotController::moveConstVel(float vx , float vy, float va, float t)
 {
     fineMode_ = false;
     velOnlyMode_ = true;
-    trajGen_.generateConstVelTrajectory(cartPos_, {vx, vy, va}, t, fineMode_);
-    startTraj();
+    bool ok = trajGen_.generateConstVelTrajectory(cartPos_, {vx, vy, va}, t, fineMode_);
+    if (ok) { startTraj(); }
 }
 
 void RobotController::startTraj()

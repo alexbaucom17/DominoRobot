@@ -12,13 +12,52 @@ SmoothTrajectoryGenerator::SmoothTrajectoryGenerator()
 
 PVTPoint SmoothTrajectoryGenerator::lookup(float time)
 {
+
+    std::vector<float> trans_values = lookup_1D(time, currentTrajectory_.trans_params_);
+    std::vector<float> rot_values = lookup_1D(time, currentTrajectory_.rot_params_);
+    // TODO: finish this part
+    // Scale with direction for trans part
+    // Figure out how to ensure accuracy at final positions
+    // Build and return pvtpoint
+
     return PVTPoint();
+}
+
+std::vector<float> SmoothTrajectoryGenerator::lookup_1D(float time, const SCurveParameters& params)
+{
+    // Handle time before start of trajectory
+    if(time <= params.switch_points_[0].t_)
+    {
+        return {params.switch_points_[0].p_, params.switch_points_[0].v_};
+    }
+    // Handle time after the end of the trajectory
+    else if (time > params.switch_points_[7].t_)
+    {
+        return {params.switch_points_[7].p_, params.switch_points_[7].v_};
+    }
+    // Handle times within the trajectory
+    else
+    {
+        // Look for correct region
+        for (int i = 1; i <= 7; i++)
+        {
+            // Once region is found, compute position and velocity from previous switch point
+            if(params.switch_points_[i-1].t_ < time && time <= params.switch_points_[i].t_)
+            {
+                float dt = time - params.switch_points_[i-1].t_;
+                std::vector<float> values = computeKinematicsBasedOnRegion(params, i, dt);
+                return {values[1], values[0]};
+            }
+        }
+    }
+
+    PLOGE << "Should not get to this point in lookup";
+    return {0,0};
 }
 
 // TODO: Write some tests for this class
 
-// TODO update to handle incomplete trajectory
-void SmoothTrajectoryGenerator::generatePointToPointTrajectory(Point initialPoint, Point targetPoint, bool fineMode)
+bool SmoothTrajectoryGenerator::generatePointToPointTrajectory(Point initialPoint, Point targetPoint, bool fineMode)
 {    
     // Print to logs
     PLOGI.printf("Generating trajectory");
@@ -30,11 +69,14 @@ void SmoothTrajectoryGenerator::generatePointToPointTrajectory(Point initialPoin
 
     MotionPlanningProblem mpp = buildMotionPlanningProblem(initialPoint, targetPoint, fineMode);
     currentTrajectory_ = generateTrajectory(mpp);
+
+    return currentTrajectory_.complete_;
 }
 
-void SmoothTrajectoryGenerator::generateConstVelTrajectory(Point initialPoint, Velocity velocity, float moveTime, bool fineMode)
+bool SmoothTrajectoryGenerator::generateConstVelTrajectory(Point initialPoint, Velocity velocity, float moveTime, bool fineMode)
 {
   // TODO - impliment constant velocity version
+  return false;
 }
 
 MotionPlanningProblem SmoothTrajectoryGenerator::buildMotionPlanningProblem(Point initialPoint, Point targetPoint, bool fineMode)
@@ -176,39 +218,27 @@ void SmoothTrajectoryGenerator::populateSwitchTimeParameters(SCurveParameters* p
     for (int i = 1; i < 8; i++)
     {
         float dt;
-        float j;
         // Constant jerk regions
         if (i == 1 || i == 3 || i == 5 || i == 7)
         {
             dt = dt_j;
-            // Positive jerk
-            if (i == 1 || i == 7) { j = params->j_lim_; }
-            // Negative jerk
-            else { j = -1 * params->j_lim_; }
         }
         // Constant acceleration regions
         else if (i == 2 || i == 6)
         {
             dt = dt_a;
-            j = 0;
         }
         // Constant velocity region
         else
         {
             dt = dt_v;
-            j = 0;
         }
 
-        // Handle integration
-        params->switch_points_[i].a_ = params->switch_points_[i-1].a_ + 
-                                       j * dt;
-        params->switch_points_[i].v_ = params->switch_points_[i-1].v_ + 
-                                       params->switch_points_[i].a_ * dt + 
-                                       0.5 * j * std::pow(dt, 2);
-        params->switch_points_[i].p_ = params->switch_points_[i-1].p_ + 
-                                       params->switch_points_[i].v_ * dt + 
-                                       0.5 * params->switch_points_[i].a_ * std::pow(dt, 2) + 
-                                       d6 * j * std::pow(dt, 3);
+        // Populate values
+        std::vector<float> values = computeKinematicsBasedOnRegion(*params, i, dt);
+        params->switch_points_[i].a_ = values[0];
+        params->switch_points_[i].v_ = values[1];
+        params->switch_points_[i].p_ = values[2];
     }
 }
 
@@ -288,4 +318,71 @@ bool SmoothTrajectoryGenerator::mapParameters(const SCurveParameters* ref_params
     map_params->v_lim_ = lims(2);
     populateSwitchTimeParameters(map_params, dt_j, dt_a, dt_v);   
     return true;
+}
+
+std::vector<float> SmoothTrajectoryGenerator::computeKinematicsBasedOnRegion(const SCurveParameters& params, int region, float dt)
+{
+    float j, a, v, p;
+    bool need_a = true;
+    bool need_v = true;
+
+    // Positive jerk
+    if (region == 1 || region == 7) 
+    { 
+        j = params.j_lim_; 
+    }
+    // Negative jerk
+    else if (region == 3 || region == 5) 
+    { 
+        j = -1 * params.j_lim_; 
+    }
+    // Constant positive acceleration
+    else if (region == 2)
+    {
+        j = 0;
+        a = params.a_lim_;
+        need_a = false;        
+    }
+    // Constant negative acceleration
+    else if ( region == 6)
+    {
+        j = 0;
+        a = -1*params.a_lim_;
+        need_a = false; 
+    }
+    // Constant velocity region
+    else if (region == 4)
+    {
+        j = 0;
+        a = 0;
+        v = params.v_lim_;
+        need_a = false; 
+        need_v = false; 
+    }
+    else
+    {
+        // Error
+        PLOGE << "Invalid region value: " << region;
+        return {0,0,0,0};
+    }
+
+    // Compute remaining values
+    if (need_a)
+    {
+        a = params.switch_points_[region-1].a_ + j * dt;
+    }
+
+    if (need_v)
+    {
+        v = params.switch_points_[region-1].v_ + 
+            params.switch_points_[region-1].a_ * dt + 
+            0.5 * j * std::pow(dt, 2);
+    }
+
+    p = params.switch_points_[region-1].p_ + 
+        params.switch_points_[region-1].v_ * dt + 
+        0.5 * params.switch_points_[region-1].a_ * std::pow(dt, 2) + 
+        d6 * j * std::pow(dt, 3);
+
+    return {a,v,p};
 }

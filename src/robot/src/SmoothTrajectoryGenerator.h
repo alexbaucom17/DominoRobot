@@ -120,13 +120,14 @@ class SmoothTrajectoryGenerator
     SmoothTrajectoryGenerator();
 
     // Generates a trajectory that starts at the initial point and ends at the target point. Setting fineMode to true makes the 
-    // adjusts the dynamic limits for a more accurate motion.
-    void generatePointToPointTrajectory(Point initialPoint, Point targetPoint, bool fineMode);
+    // adjusts the dynamic limits for a more accurate motion. Returns a bool indicating if trajectory generation was
+    // successful
+    bool generatePointToPointTrajectory(Point initialPoint, Point targetPoint, bool fineMode);
 
     // Generates a trajectory that attempts to maintain the target velocity for a specified time. Note that the current implimentation
     // of this does not give a guarentee on the accuracy of the velocity if the specified velocity and move time would violate the dynamic 
-    // limits of the fine or coarse movement mode
-    void generateConstVelTrajectory(Point initialPoint, Velocity velocity, float moveTime, bool fineMode);
+    // limits of the fine or coarse movement mode. Returns a bool indicating if trajectory generation was successful
+    bool generateConstVelTrajectory(Point initialPoint, Velocity velocity, float moveTime, bool fineMode);
 
     // Looks up a point in the current trajectory based on the time, in seconds, from the start of the trajectory
     PVTPoint lookup(float time);
@@ -144,6 +145,8 @@ class SmoothTrajectoryGenerator
     void populateSwitchTimeParameters(SCurveParameters* params, float dt_j, float dt_a, float dt_v);
     bool synchronizeParameters(SCurveParameters* params1, SCurveParameters* params2);
     bool mapParameters(const SCurveParameters* ref_traj, SCurveParameters* map_traj);
+    std::vector<float> lookup_1D(float time, const SCurveParameters& params);
+    std::vector<float> computeKinematicsBasedOnRegion(const SCurveParameters& params, int region, float dt);
 };
 
 #endif
