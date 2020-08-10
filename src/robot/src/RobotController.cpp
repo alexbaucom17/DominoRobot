@@ -7,10 +7,6 @@
 #include "constants.h"
 #include "utils.h"
 
-
-const DynamicLimits FINE_LIMS = {MAX_TRANS_SPEED_FINE, MAX_TRANS_ACC_FINE, MAX_ROT_SPEED_FINE, MAX_ROT_ACC_FINE};
-const DynamicLimits COARSE_LIMS = {MAX_TRANS_SPEED_COARSE, MAX_TRANS_ACC_COARSE, MAX_ROT_SPEED_COARSE, MAX_ROT_ACC_COARSE};
-
 typedef std::chrono::duration<float> fsec;
 
 RobotController::RobotController(StatusUpdater& statusUpdater)
@@ -19,9 +15,9 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
   trajStartTime_(std::chrono::steady_clock::now()),
   enabled_(false),
   trajGen_(),
-  cartPos_(0),
-  cartVel_(0),
-  goalPos_(0),
+  cartPos_(),
+  cartVel_(),
+  goalPos_(),
   trajRunning_(false),
   errSumX_(0),
   errSumY_(0),
@@ -46,37 +42,36 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
 
 void RobotController::moveToPosition(float x, float y, float a)
 {
-    goalPos_ = Point(x,y,a);
-    trajGen_.generate(cartPos_, goalPos_, COARSE_LIMS);
     fineMode_ = false;
     velOnlyMode_ = false;
+    goalPos_ = Point(x,y,a);
+    trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
     startTraj();
 }
 
 void RobotController::moveToPositionRelative(float x, float y, float a)
 {
-    goalPos_ = Point(cartPos_.x_ + x, cartPos_.y_ + y, cartPos_.a_ + a);
-    trajGen_.generate(cartPos_, goalPos_, COARSE_LIMS);
     fineMode_ = false;
     velOnlyMode_ = false;
+    goalPos_ = Point(cartPos_.x_ + x, cartPos_.y_ + y, cartPos_.a_ + a);
+    trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
     startTraj();
 }
 
 void RobotController::moveToPositionFine(float x, float y, float a)
 {
-    goalPos_ = Point(x,y,a);
-    trajGen_.generate(cartPos_, goalPos_, FINE_LIMS);
-    fineMode_ = false;
+    fineMode_ = true;
     velOnlyMode_ = false;
+    goalPos_ = Point(x,y,a);
+    trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
     startTraj();
-
 }
 
 void RobotController::moveConstVel(float vx , float vy, float va, float t)
 {
-    trajGen_.generateConstVel(cartPos_, vx, vy, va, t, COARSE_LIMS);
     fineMode_ = false;
     velOnlyMode_ = true;
+    trajGen_.generateConstVelTrajectory(cartPos_, {vx, vy, va}, t, fineMode_);
     startTraj();
 }
 
@@ -124,7 +119,7 @@ void RobotController::update()
 
     // Update status 
     statusUpdater_.updatePosition(cartPos_.x_, cartPos_.y_, cartPos_.a_);
-    statusUpdater_.updateVelocity(cartVel_.x_, cartVel_.y_, cartVel_.a_);
+    statusUpdater_.updateVelocity(cartVel_.vx_, cartVel_.vy_, cartVel_.va_);
     // Eigen::Matrix3f P = kf_.cov();
     // statusUpdater_.updatePositionConfidence(P(0,0), P(1,1), P(2,2));
 }
@@ -151,17 +146,17 @@ void RobotController::runTraj(PVTPoint* cmd)
 void RobotController::resetTraj(PVTPoint* cmd)
 {
     // Force velocity to 0
-    cartVel_.x_ = 0;
-    cartVel_.y_ = 0;
-    cartVel_.a_ = 0;
+    cartVel_.vx_ = 0;
+    cartVel_.vy_ = 0;
+    cartVel_.va_ = 0;
     
     // Force cmd to 0
     cmd->position_.x_ = cartPos_.x_;
     cmd->position_.y_ = cartPos_.y_;
     cmd->position_.a_ = cartPos_.a_;;
-    cmd->velocity_.x_ = 0;
-    cmd->velocity_.y_ = 0;
-    cmd->velocity_.a_ = 0;
+    cmd->velocity_.vx_ = 0;
+    cmd->velocity_.vy_ = 0;
+    cmd->velocity_.va_ = 0;
     cmd->time_ = 0; // Doesn't matter, not used
 
     // Make sure integral terms in controller don't wind up
@@ -206,9 +201,9 @@ void RobotController::computeControl(PVTPoint cmd)
     // }
 
     // TODO: Convert back to closed loop
-    float x_cmd = cmd.velocity_.x_;
-    float y_cmd = cmd.velocity_.y_;
-    float a_cmd = cmd.velocity_.a_;
+    float x_cmd = cmd.velocity_.vx_;
+    float y_cmd = cmd.velocity_.vy_;
+    float a_cmd = cmd.velocity_.va_;
 
     setCartVelCommand(x_cmd, y_cmd, a_cmd);
 }
@@ -226,10 +221,10 @@ bool RobotController::checkForCompletedTrajectory(const PVTPoint cmd)
       trans_vel_err = TRANS_VEL_ERR_FINE;
       ang_vel_err = ANG_VEL_ERR_FINE;
     }
-    if(cmd.velocity_.x_ == 0 && cmd.velocity_.y_ == 0 && cmd.velocity_.a_ == 0 &&
-       fabs(cartVel_.x_) < trans_vel_err && 
-       fabs(cartVel_.y_) < trans_vel_err && 
-       fabs(cartVel_.a_) < ang_vel_err &&
+    if(cmd.velocity_.vx_ == 0 && cmd.velocity_.vy_ == 0 && cmd.velocity_.va_ == 0 &&
+       fabs(cartVel_.vx_) < trans_vel_err && 
+       fabs(cartVel_.vy_) < trans_vel_err && 
+       fabs(cartVel_.va_) < ang_vel_err &&
        (velOnlyMode_ || 
        (fabs(goalPos_.x_ - cartPos_.x_) < trans_pos_err &&
         fabs(goalPos_.y_ - cartPos_.y_) < trans_pos_err &&
@@ -331,9 +326,9 @@ void RobotController::computeOdometry()
     // Convert local cartesian velocity to global cartesian velocity using the last estimated angle
     float cA = cos(cartPos_.a_);
     float sA = sin(cartPos_.a_);
-    cartVel_.x_ = cA * local_cart_vel[0] - sA * local_cart_vel[1];
-    cartVel_.y_ = sA * local_cart_vel[0] + cA * local_cart_vel[1];
-    cartVel_.a_ = local_cart_vel[2];
+    cartVel_.vx_ = cA * local_cart_vel[0] - sA * local_cart_vel[1];
+    cartVel_.vy_ = sA * local_cart_vel[0] + cA * local_cart_vel[1];
+    cartVel_.va_ = local_cart_vel[2];
 
     // Compute time since last odom update
     // std::chrono::time_point<std::chrono::steady_clock> curTime = std::chrono::steady_clock::now();
@@ -369,12 +364,12 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
         PLOGD_(MOTION_LOG_ID).printf("CartVelCmd: [vx: %.4f, vy: %.4f, va: %.4f]", vx, vy, va);
     }
 
-    float max_trans_speed = COARSE_LIMS.max_trans_vel_;
-    float max_rot_speed = COARSE_LIMS.max_rot_vel_;
+    float max_trans_speed = MAX_TRANS_SPEED_COARSE;
+    float max_rot_speed = MAX_ROT_SPEED_COARSE;
     if(fineMode_)
     {
-      max_trans_speed = FINE_LIMS.max_trans_vel_;
-      max_rot_speed = FINE_LIMS.max_rot_vel_;
+      max_trans_speed = MAX_TRANS_SPEED_FINE;
+      max_rot_speed = MAX_ROT_SPEED_FINE;
     }
     
     // Note that this doesn't handle total translational magnitude correctly, that
