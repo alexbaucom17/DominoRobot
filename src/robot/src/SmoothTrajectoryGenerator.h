@@ -142,7 +142,8 @@ class SmoothTrajectoryGenerator
     Trajectory generateTrajectory(MotionPlanningProblem problem);
     bool generateSCurve(float dist, DynamicLimits limits, SCurveParameters* params);
     void populateSwitchTimeParameters(SCurveParameters* params, float dt_j, float dt_a, float dt_v);
-
+    bool syncronizeParameters(SCurveParameters* params1, SCurveParameters* params2);
+    bool mapParameters(SCurveParameters* ref_traj, SCurveParameters* map_traj);
 };
 
 #endif

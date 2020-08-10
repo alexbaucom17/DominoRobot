@@ -1,4 +1,5 @@
 import math
+import numpy as np
 from matplotlib import pyplot as plt
 
 p_target = 10.0  # m
@@ -84,6 +85,31 @@ def generate_once(p, v_lim, a_lim, j_lim):
     
     return output
 
+def generate_inverse(p, dt_j, dt_a, dt_v):
+    output = {}
+    output['done'] = True
+    t = [0,0,0,0,0,0,0,0]
+    t[0] = 0
+    t[1] = t[0] + dt_j   
+    t[2] = t[1] + dt_a
+    t[3] = t[2] + dt_j                
+    t[4] = t[3] + dt_v
+    t[5] = t[4] + dt_j
+    t[6] = t[5] + dt_a
+    t[7] = t[6] + dt_j
+    output['t'] = t
+
+    # Solve system of equations to get kinematic limits
+    A = np.array([
+        [dt_j,                                          -1,         0    ],
+        [dt_j ** 2,                                     dt_a,      -1    ],
+        [2/3.0 * dt_j ** 3 + 0.5 * (dt_j ** 2) * dt_a,  dt_a ** 2,  dt_v ]])
+    b = np.array([0, 0, p])
+    lims = np.linalg.solve(A, b)
+
+    output['v_lim'] = lims[2]
+    output['a_lim'] = lims[1]
+    output['j_lim'] = lims[0]
 
 def generate_profile_from_params(output, timestep):
 
@@ -136,3 +162,27 @@ if __name__ == '__main__':
     if output:
         data = generate_profile_from_params(output, plot_timestep)
         plot_data(**data)
+
+        # Test inverse
+        dt_j = output['t'][1]
+        dt_a = output['t'][2] - output['t'][1]
+        dt_v = output['t'][4] - output['t'][3]
+        output2 = generate_inverse(target_position, dt_j, dt_a, dt_v)
+
+        eps = 0.001
+        all_valid = True
+
+        if abs(output2['v_lim'] - output['v_lim']) > eps:
+            print("v_lim not close")
+            all_valid = False
+        if abs(output2['a_lim'] - output['a_lim']) > eps:
+            print("a_lim not close")
+            all_valid = False
+        if abs(output2['j_lim'] - output['j_lim']) > eps:
+            print("j_lim not close")
+            all_valid = False
+
+        if all_valid:
+            print("All inverse values valid")
+
+        

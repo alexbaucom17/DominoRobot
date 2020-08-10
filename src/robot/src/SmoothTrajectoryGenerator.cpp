@@ -2,7 +2,7 @@
 #include <plog/Log.h>
 #include "constants.h"
 
-constexpr d6 = 1/6.0;
+constexpr float d6 = 1/6.0;
 
 SmoothTrajectoryGenerator::SmoothTrajectoryGenerator()
   : currentTrajectory_()
@@ -71,7 +71,7 @@ Trajectory SmoothTrajectoryGenerator::generateTrajectory(MotionPlanningProblem p
     // Being building trajectory object
     Trajectory traj;
     traj.complete_ = false;
-    traj.initialPoint_ = problem.initialPoint_;
+    traj.initialPoint_ = {problem.initialPoint_(0), problem.initialPoint_(1), problem.initialPoint_(2)};
     traj.direction_ = deltaPosition.normalized();
     
     // Solve translational component
@@ -86,15 +86,25 @@ Trajectory SmoothTrajectoryGenerator::generateTrajectory(MotionPlanningProblem p
 
     // Solve rotational component
     SCurveParameters rot_params;
-    bool ok = generateSCurve(abs(deltaPosition(3)), problem.rotationalLimits_, &rot_params);
+    ok = generateSCurve(abs(deltaPosition(3)), problem.rotationalLimits_, &rot_params);
     if(!ok)
     {
         PLOGW << "Failed to generate rotational trajectory";
         return traj;
     }
 
-    // TODO: Handle syncronizing between translation and rotational parameters (I think should just be 
-    // something like pass in the time steps for the slower one and re-compute the limits)
+    // Handle syncronizing between translation and rotational parameters so that the 
+    // switch points line up with the slower trajectory. This will fail if the difference
+    // between the switch times do not all have the same sign (since that means it isn't
+    // possible to solve for a set of kinematic parameters that work with the )
+    ok = synchronizeParameters(&trans_params, &rot_params);
+    if (!ok)
+    {
+        PLOGW << "Unable to synchronize parameters between translational and rotational trajectories";
+    }
+    traj.trans_params_ = trans_params;
+    traj.rot_params_ = rot_params;
+    traj.complete_ = true;
 
     return traj;
 }
@@ -102,9 +112,9 @@ Trajectory SmoothTrajectoryGenerator::generateTrajectory(MotionPlanningProblem p
 bool SmoothTrajectoryGenerator::generateSCurve(float dist, DynamicLimits limits, SCurveParameters* params)
 {
     // Initialize parameters
-    params->v_lim_ = limits.max_vel_;
-    params->a_lim_ = limits.max_acc_;
-    params->j_lim_ = limits.max_jerk_;
+    float v_lim = limits.max_vel_;
+    float a_lim = limits.max_acc_;
+    float j_lim = limits.max_jerk_;
 
 
     bool solution_found = false;
@@ -114,35 +124,37 @@ bool SmoothTrajectoryGenerator::generateSCurve(float dist, DynamicLimits limits,
         loop_counter++;
 
         // Constant jerk region
-        float dt_j = params->a_lim / params->j_lim;
-        float dv_j = 0.5 * params->j_lim * std::pow(dt_j, 2);
-        float dp_j = d6 * params->j_lim * std::pow(dt_j, 3);
+        float dt_j = a_lim / j_lim;
+        float dv_j = 0.5 * j_lim * std::pow(dt_j, 2);
+        float dp_j = d6 * j_lim * std::pow(dt_j, 3);
 
         // Constant accel region
-        float dt_a = (params->v_lim - 2 * dv_j) / params->a_lim;
+        float dt_a = (v_lim - 2 * dv_j) / a_lim;
         if (dt_a <= 0)
         {
             // If dt_a is negative, it means we couldn't find a solution
             // so adjust accel parameter and try loop again
-            params->a_lim *= SOLVER_BETA_DECAY;
+            a_lim *= SOLVER_BETA_DECAY;
             continue;
         }
-        float dp_a = dv_j * dt_a + 0.5 * params->a_lim * std::pow(dt_a, 2);
+        float dp_a = dv_j * dt_a + 0.5 * a_lim * std::pow(dt_a, 2);
 
         // Constant velocity region
-        float dt_v = (dist - 4 * dp_j - 2 * dp_a) / params->v_lim;
+        float dt_v = (dist - 4 * dp_j - 2 * dp_a) / v_lim;
         if (dt_v <= 0)
         {
             // If dt_a is negative, it means we couldn't find a solution
             // so adjust velocity parameter and try loop again
-            params->v_lim *= SOLVER_ALPHA_DECAY;
+            v_lim *= SOLVER_ALPHA_DECAY;
             continue;
         }
-        float dp_v = params->v_lim * dt_v;
 
         // If we get here, it means we found a valid solution and can populate the rest of the 
         // switch time parameters
         solution_found = true;
+        params->v_lim_ = v_lim;
+        params->a_lim_ = a_lim;
+        params->j_lim_ = j_lim;
         populateSwitchTimeParameters(params, dt_j, dt_a, dt_v);
     }
 
@@ -166,9 +178,9 @@ void SmoothTrajectoryGenerator::populateSwitchTimeParameters(SCurveParameters* p
         {
             dt = dt_j;
             // Positive jerk
-            if (i == 1 || i == 7) { j = params->j_lim; }
+            if (i == 1 || i == 7) { j = params->j_lim_; }
             // Negative jerk
-            else { j = -1 * params->j_lim; }
+            else { j = -1 * params->j_lim_; }
         }
         // Constant acceleration regions
         else if (i == 2 || i == 6)
@@ -196,3 +208,51 @@ void SmoothTrajectoryGenerator::populateSwitchTimeParameters(SCurveParameters* p
     }
 }
 
+bool SmoothTrajectoryGenerator::syncronizeParameters(SCurveParameters* params1, SCurveParameters* params2)
+{
+    int num_positive_diffs = 0;
+    int num_negative_diffs = 0;
+
+    for (int i = 0; i < 8; i++)
+    {
+        float dt = params1->switch_points_[i].t_ - params2[i].switch_points_->t_;
+        if(dt > 0)
+        {
+            num_positive_diffs++;
+        }
+        else if (dt < 0)
+        {
+            num_negative_diffs++;
+        }
+        else
+        {
+            num_positive_diffs++;
+            num_negative_diffs++;
+        }
+    }
+
+    bool mapping_succeeded = false;
+    if(num_positive_diffs == 7)
+    {
+        // params1 is the slower trajectory, so use it as the reference
+        mapping_succeeded = mapParameters(params1, params2);
+    }
+    else if(num_negative_diffs == 7)
+    {
+        // params2 is the slower trajectory, so use it as the reference
+        mapping_succeeded = mapParameters(params2, params1);
+    }
+
+    // This returns true for successful syncronization
+    // This returns false if neither params1 or params2 was definitively slower
+    // or if the mapping function fails to solve for a new trajectory
+    return mapping_succeeded;
+}
+
+
+bool SmoothTrajectoryGenerator::mapParameters(SCurveParameters* ref_params, SCurveParameters* map_params)
+{
+    SCurveParameters new_params;
+    new_params.
+
+}
