@@ -2,7 +2,7 @@ import math
 import numpy as np
 from matplotlib import pyplot as plt
 
-p_target = 2.0  # m
+p_target = 6.0  # m
 v_max = 0.5  #m/s
 a_max = 1.0  #m/s^2
 j_max = 5.0 #m/s^3
@@ -120,6 +120,8 @@ def generate_inverse(p, dt_j, dt_a, dt_v):
     output['a_lim'] = lims[1]
     output['j_lim'] = lims[0]
 
+    return output
+
 def generate_profile_from_params(output, timestep):
 
     T = output['t']
@@ -189,29 +191,33 @@ if __name__ == '__main__':
 
     output = generate(p_target)
     if output:
-        data = generate_profile_from_params(output, plot_timestep)
-        plot_data(*data)
 
         # Test inverse
         dt_j = output['t'][1]
         dt_a = output['t'][2] - output['t'][1]
         dt_v = output['t'][4] - output['t'][3]
-        output2 = generate_inverse(target_position, dt_j, dt_a, dt_v)
+        output2 = generate_inverse(p_target, dt_j, dt_a, dt_v)
 
-        eps = 0.001
+        eps = 0.05
         all_valid = True
+        if output2:
+            if abs(output2['v_lim'] - output['v_lim']) / output['v_lim'] > eps:
+                print("v_lim not close. Expected: {}, Actual: {}, Percent diff: {}".format(output['v_lim'], output2['v_lim'], abs(output2['v_lim'] - output['v_lim']) / output['v_lim'] ))
+                all_valid = False
+            if abs(output2['a_lim'] - output['a_lim']) / output['a_lim'] > eps:
+                print("a_lim not close. Expected: {}, Actual: {}, Percent diff: {}".format(output['a_lim'], output2['a_lim'], abs(output2['a_lim'] - output['a_lim']) / output['a_lim'] ))
+                all_valid = False
+            if abs(output2['j_lim'] - output['j_lim']) / output['j_lim'] > eps:
+                print("j_lim not close. Expected: {}, Actual: {}, Percent diff: {}".format(output['j_lim'], output2['j_lim'], abs(output2['j_lim'] - output['j_lim']) / output['j_lim'] ))
+                all_valid = False
 
-        if abs(output2['v_lim'] - output['v_lim']) > eps:
-            print("v_lim not close")
-            all_valid = False
-        if abs(output2['a_lim'] - output['a_lim']) > eps:
-            print("a_lim not close")
-            all_valid = False
-        if abs(output2['j_lim'] - output['j_lim']) > eps:
-            print("j_lim not close")
-            all_valid = False
+            if all_valid:
+                print("All inverse values valid")
+        else:
+            print("Inverse failed")
 
-        if all_valid:
-            print("All inverse values valid")
+        # Generate plot
+        data = generate_profile_from_params(output, plot_timestep)
+        plot_data(*data)
 
         
