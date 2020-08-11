@@ -1,6 +1,7 @@
 #include "SmoothTrajectoryGenerator.h"
 #include <plog/Log.h>
 #include "constants.h"
+#include "utils.h"
 
 constexpr float d6 = 1/6.0;
 
@@ -10,17 +11,30 @@ SmoothTrajectoryGenerator::SmoothTrajectoryGenerator()
     currentTrajectory_.complete_ = false;
 }
 
+// TODO: Write some tests for this class
+// TODO: Verify accuracy of final position calculation (since we aren't directly providing it) - mabye do this with a test?
+// TODO: Verify that angles work correctly (again maybe a test?) - need to make sure wrapping or unwrapping doesn't get weird
+
 PVTPoint SmoothTrajectoryGenerator::lookup(float time)
 {
-
     std::vector<float> trans_values = lookup_1D(time, currentTrajectory_.trans_params_);
-    std::vector<float> rot_values = lookup_1D(time, currentTrajectory_.rot_params_);
-    // TODO: finish this part
-    // Scale with direction for trans part
-    // Figure out how to ensure accuracy at final positions
-    // Build and return pvtpoint
+    std::vector<float> rot_values = lookup_1D(time, currentTrajectory_.rot_params_);    
 
-    return PVTPoint();
+    // Map translational trajectory into XY space with direction vector
+    Eigen::Vector2f trans_pos_delta = trans_values[0] * currentTrajectory_.trans_direction_;
+    Eigen::Vector2f trans_vel = trans_values[1] * currentTrajectory_.trans_direction_;
+    // Map rotational trajectory into angular space with direction
+    float rot_pos_delta = rot_values[0] * currentTrajectory_.rot_direction_;
+    float rot_vel = rot_values[1] * currentTrajectory_.rot_direction_;
+
+    // Build and return pvtpoint
+    PVTPoint pvt;
+    pvt.position_ = {currentTrajectory_.initialPoint_.x_ + trans_pos_delta(0),
+                     currentTrajectory_.initialPoint_.y_ + trans_pos_delta(1),
+                     currentTrajectory_.initialPoint_.a_ + rot_pos_delta };
+    pvt.velocity_ = {trans_vel(0), trans_vel(1), rot_vel};
+    pvt.time_ = time;
+    return pvt;
 }
 
 std::vector<float> SmoothTrajectoryGenerator::lookup_1D(float time, const SCurveParameters& params)
@@ -55,7 +69,6 @@ std::vector<float> SmoothTrajectoryGenerator::lookup_1D(float time, const SCurve
     return {0,0};
 }
 
-// TODO: Write some tests for this class
 
 bool SmoothTrajectoryGenerator::generatePointToPointTrajectory(Point initialPoint, Point targetPoint, bool fineMode)
 {    
@@ -73,10 +86,31 @@ bool SmoothTrajectoryGenerator::generatePointToPointTrajectory(Point initialPoin
     return currentTrajectory_.complete_;
 }
 
+// TODO Impliment a more accurate version of this if needed
+// Note that this implimentation is a hack and isn't guarneteed to give an accurate constant velocity - so use with caution.
 bool SmoothTrajectoryGenerator::generateConstVelTrajectory(Point initialPoint, Velocity velocity, float moveTime, bool fineMode)
 {
-  // TODO - impliment constant velocity version
-  return false;
+    // Print to logs
+    PLOGI.printf("Generating constVel (sort of) trajectory");
+    PLOGI.printf("Starting point: %s", initialPoint.toString().c_str());
+    PLOGI.printf("Target velocity: %s", velocity.toString().c_str());
+    PLOGI.printf("Move time: %d", moveTime);
+    PLOGD_(MOTION_LOG_ID).printf("Generating constVel (sort of) trajectory");
+    PLOGD_(MOTION_LOG_ID).printf("Starting point: %s", initialPoint.toString().c_str());
+    PLOGD_(MOTION_LOG_ID).printf("Target velocity: %s", velocity.toString().c_str());
+    PLOGD_(MOTION_LOG_ID).printf("Move time: %d", moveTime);
+
+    // This will undershoot the target velocity because we aren't consider accel/jerk here so the 
+    // solver will not quite reach this velocity - especially if the move time specified is small.
+    Point targetPoint;
+    targetPoint.x_ = initialPoint.x_ + velocity.vx_ * moveTime;
+    targetPoint.y_ = initialPoint.y_ + velocity.vy_ * moveTime;
+    targetPoint.a_ = initialPoint.a_ + velocity.va_ * moveTime;
+
+    MotionPlanningProblem mpp = buildMotionPlanningProblem(initialPoint, targetPoint, fineMode);
+    currentTrajectory_ = generateTrajectory(mpp);
+
+    return currentTrajectory_.complete_;
 }
 
 MotionPlanningProblem SmoothTrajectoryGenerator::buildMotionPlanningProblem(Point initialPoint, Point targetPoint, bool fineMode)
@@ -115,7 +149,8 @@ Trajectory SmoothTrajectoryGenerator::generateTrajectory(MotionPlanningProblem p
     Trajectory traj;
     traj.complete_ = false;
     traj.initialPoint_ = {problem.initialPoint_(0), problem.initialPoint_(1), problem.initialPoint_(2)};
-    traj.direction_ = deltaPosition.normalized();
+    traj.trans_direction_ = deltaPosition.head(2).normalized();
+    traj.rot_direction_ = sgn(deltaPosition(2));
     
     // Solve translational component
     float dist = deltaPosition.head(2).norm();

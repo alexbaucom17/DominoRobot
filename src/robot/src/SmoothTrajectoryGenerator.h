@@ -104,9 +104,9 @@ struct SCurveParameters
 // Everything needed to define a point to point s-curve trajectory in X, Y, and angle
 struct Trajectory
 {
-    // direction = endPoint - startPoint -> super simple "path" to follow
-    Eigen::Vector3f direction_;
-    PVTPoint initialPoint_;
+    Eigen::Vector2f trans_direction_;
+    float rot_direction_;
+    Point initialPoint_;
     SCurveParameters trans_params_;
     SCurveParameters rot_params_;
     bool complete_;
