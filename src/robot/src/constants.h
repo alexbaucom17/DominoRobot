@@ -1,6 +1,9 @@
 #ifndef Constants_h
 #define Constants_h
 
+#include <libconfig.h++>
+static libconfig::Config cfg;
+
 // Velocitiy limits
 #define MAX_TRANS_SPEED_FINE   0.08  // m/s
 #define MAX_ROT_SPEED_FINE     0.5   // rad/2
@@ -84,5 +87,16 @@ enum COMMAND
     ESTOP,
     LOAD_COMPLETE,
 };
+
+// extern const ConstantParams CONSTANTS;
+
+
+// struct ConstantParams
+// {
+//     float MAX_TRANS_SPEED_FINE;
+//     float MAX_ROT_SPEED_FINE;
+//     float MAX_TRANS_SPEED_COARSE;
+//     float MAX_ROT_SPEED_COARSE;
+// };
 
 #endif

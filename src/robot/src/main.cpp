@@ -53,6 +53,11 @@ void setup_mock_socket()
 int main()
 {
     configure_logger();
+    
+    cfg.readFile("/home/pi/DominoRobot/src/robot/src/example.cfg");
+    std::string name = cfg.lookup("name");
+    PLOGI << "Store name: " << name;
+
     setup_mock_socket();
 
     Robot r;
