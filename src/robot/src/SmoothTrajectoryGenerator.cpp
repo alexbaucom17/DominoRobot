@@ -164,7 +164,7 @@ Trajectory SmoothTrajectoryGenerator::generateTrajectory(MotionPlanningProblem p
 
     // Solve rotational component
     SCurveParameters rot_params;
-    ok = generateSCurve(abs(deltaPosition(3)), problem.rotationalLimits_, &rot_params);
+    ok = generateSCurve(abs(deltaPosition(2)), problem.rotationalLimits_, &rot_params);
     if(!ok)
     {
         PLOGW << "Failed to generate rotational trajectory";
@@ -274,6 +274,7 @@ void SmoothTrajectoryGenerator::populateSwitchTimeParameters(SCurveParameters* p
         params->switch_points_[i].a_ = values[0];
         params->switch_points_[i].v_ = values[1];
         params->switch_points_[i].p_ = values[2];
+        params->switch_points_[i].t_ = params->switch_points_[i-1].t_ + dt;
     }
 }
 
