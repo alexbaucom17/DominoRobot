@@ -5,7 +5,7 @@
 extern libconfig::Config cfg;
 
 #define CONSTANTS_FILE "/home/pi/DominoRobot/src/robot/src/constants.cfg"
-#define TEST_CONSTANTS_FILE CONSTANTS_FILE // "/home/pi/DominoRobot/src/robot/test/test_constants.cfg"
+#define TEST_CONSTANTS_FILE "/home/pi/DominoRobot/src/robot/test/test_constants.cfg"
 
 // Cartesian control gains
 #define CART_TRANS_KP 2

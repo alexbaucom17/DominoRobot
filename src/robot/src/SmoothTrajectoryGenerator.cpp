@@ -182,6 +182,8 @@ Trajectory SmoothTrajectoryGenerator::generateTrajectory(MotionPlanningProblem p
         return traj;
     }
 
+
+    // TODO: Fix this, I don't think it works
     // Handle syncronizing between translation and rotational parameters so that the 
     // switch points line up with the slower trajectory. This will fail if the difference
     // between the switch times do not all have the same sign (since that means it isn't

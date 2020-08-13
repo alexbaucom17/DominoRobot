@@ -19,6 +19,11 @@ struct Point
         sprintf(s, "[x: %.4f, y: %.4f, a: %.4f]", x_, y_, a_);
         return static_cast<std::string>(s);
     }
+
+    bool operator== (const Point& other) const
+    {
+        return x_ == other.x_ && y_ == other.y_ && a_ == other.a_;
+    }
 };
 
 struct Velocity
@@ -36,6 +41,11 @@ struct Velocity
         char s[100];
         sprintf(s, "[vx: %.4f, vy: %.4f, va: %.4f]", vx_, vy_, va_);
         return static_cast<std::string>(s);
+    }
+
+    bool operator== (const Velocity& other) const 
+    {
+        return vx_ == other.vx_ && vy_ == other.vy_ && va_ == other.va_;
     }
 };
 
