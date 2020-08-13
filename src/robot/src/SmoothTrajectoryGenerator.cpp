@@ -9,6 +9,9 @@ SmoothTrajectoryGenerator::SmoothTrajectoryGenerator()
   : currentTrajectory_()
 {
     currentTrajectory_.complete_ = false;
+    solver_max_loops_ = cfg.lookup("trajectory_generation.solver_max_loops"); 
+    solver_beta_decay_ = cfg.lookup("trajectory_generation.solver_beta_decay");
+    solver_alpha_decay_ = cfg.lookup("trajectory_generation.solver_alpha_decay");
 }
 
 // TODO: Write some tests for this class
@@ -123,19 +126,27 @@ MotionPlanningProblem SmoothTrajectoryGenerator::buildMotionPlanningProblem(Poin
     DynamicLimits rotationalLimits;
     if(fineMode)
     {
-        translationalLimits = {MAX_TRANS_SPEED_FINE, MAX_TRANS_ACC_FINE, MAX_TRANS_JERK_FINE};
-        rotationalLimits = {MAX_ROT_SPEED_FINE, MAX_ROT_ACC_FINE, MAX_ROT_JERK_FINE};
+        translationalLimits = { cfg.lookup("motion.translation.max_vel.fine"), 
+                                cfg.lookup("motion.translation.max_acc.fine"), 
+                                cfg.lookup("motion.translation.max_jerk.fine")};
+        rotationalLimits = {    cfg.lookup("motion.rotation.max_vel.fine"), 
+                                cfg.lookup("motion.rotation.max_acc.fine"), 
+                                cfg.lookup("motion.rotation.max_jerk.fine")};
     }
     else
     {
-        translationalLimits = {MAX_TRANS_SPEED_COARSE, MAX_TRANS_ACC_COARSE, MAX_TRANS_JERK_COARSE};
-        rotationalLimits = {MAX_ROT_SPEED_COARSE, MAX_ROT_ACC_COARSE, MAX_ROT_JERK_COARSE};
+        translationalLimits = { cfg.lookup("motion.translation.max_vel.coarse"), 
+                                cfg.lookup("motion.translation.max_acc.coarse"), 
+                                cfg.lookup("motion.translation.max_jerk.coarse")};
+        rotationalLimits = {    cfg.lookup("motion.rotation.max_vel.coarse"), 
+                                cfg.lookup("motion.rotation.max_acc.coarse"), 
+                                cfg.lookup("motion.rotation.max_jerk.coarse")};
     }
 
     // This scaling makes sure to give some headroom for the controller to go a bit faster than the planned limits 
     // without actually violating any hard constraints
-    mpp.translationalLimits_ = translationalLimits * TRAJ_MAX_FRACTION;
-    mpp.rotationalLimits_ = rotationalLimits * TRAJ_MAX_FRACTION; 
+    mpp.translationalLimits_ = translationalLimits * cfg.lookup("motion.limit_max_fraction");
+    mpp.rotationalLimits_ = rotationalLimits * cfg.lookup("motion.limit_max_fraction");
 
     return mpp;     
 }
@@ -196,7 +207,7 @@ bool SmoothTrajectoryGenerator::generateSCurve(float dist, DynamicLimits limits,
 
     bool solution_found = false;
     int loop_counter = 0;
-    while(!solution_found && loop_counter < SOLVER_MAX_LOOPS)
+    while(!solution_found && loop_counter < solver_max_loops_)
     {
         loop_counter++;
         PLOGI << "Trajectory generation loop " << loop_counter;
@@ -212,7 +223,7 @@ bool SmoothTrajectoryGenerator::generateSCurve(float dist, DynamicLimits limits,
         {
             // If dt_a is negative, it means we couldn't find a solution
             // so adjust accel parameter and try loop again
-            a_lim *= SOLVER_BETA_DECAY;
+            a_lim *= solver_beta_decay_;
             PLOGI << "dt_a: " << dt_a << ", trying new accel value: " << a_lim;
             continue;
         }
@@ -224,7 +235,7 @@ bool SmoothTrajectoryGenerator::generateSCurve(float dist, DynamicLimits limits,
         {
             // If dt_a is negative, it means we couldn't find a solution
             // so adjust velocity parameter and try loop again
-            v_lim *= SOLVER_ALPHA_DECAY;
+            v_lim *= solver_alpha_decay_;
             PLOGI << "dt_v: " << dt_v << ", trying new accel value: " << v_lim;
             continue;
         }

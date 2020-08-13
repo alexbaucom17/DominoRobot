@@ -116,7 +116,8 @@ void TrayController::updateInitialize()
     // 2 - Move to default location
     if(action_step_ == 2)
     {
-        std::string data = std::to_string(TRAY_DEFAULT_POS_STEPS);
+        int pos = cfg.lookup("tray.default_pos_steps");
+        std::string data = std::to_string(pos);
         std::string debug = "Moving tray to default position";
         runStepAndWaitForCompletion(data, debug);
     }
@@ -141,7 +142,8 @@ void TrayController::updatePlace()
     // 0 - Move tray to place
     if(action_step_ == 0)
     {
-        std::string data = std::to_string(TRAY_PLACE_POS_STEPS);
+        int pos = cfg.lookup("tray.place_pos_steps");
+        std::string data = std::to_string(pos);
         std::string debug = "Moving tray to placement position";
         runStepAndWaitForCompletion(data, debug);
     }
@@ -155,7 +157,8 @@ void TrayController::updatePlace()
     // 2 - Move tray to default
     if(action_step_ == 2)
     {
-        std::string data = std::to_string(TRAY_DEFAULT_POS_STEPS);
+        int pos = cfg.lookup("tray.default_pos_steps");
+        std::string data = std::to_string(pos);
         std::string debug = "Moving tray to default position";
         runStepAndWaitForCompletion(data, debug);
     }
@@ -186,7 +189,8 @@ void TrayController::updateLoad()
     // 0 - Move tray to load
     if(action_step_ == 0)
     {
-        std::string data = std::to_string(TRAY_LOAD_POS_STEPS);
+        int pos = cfg.lookup("tray.load_pos_steps");
+        std::string data = std::to_string(pos);
         std::string debug = "Moving tray to load position";
         runStepAndWaitForCompletion(data, debug);
     }
@@ -203,7 +207,8 @@ void TrayController::updateLoad()
     // 2 - Move to default
     if(action_step_ == 2)
     {
-        std::string data = std::to_string(TRAY_DEFAULT_POS_STEPS);
+        int pos = cfg.lookup("tray.default_pos_steps");
+        std::string data = std::to_string(pos);
         std::string debug = "Moving tray to default position";
         runStepAndWaitForCompletion(data, debug);
     }

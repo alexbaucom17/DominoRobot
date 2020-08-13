@@ -364,28 +364,28 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
         PLOGD_(MOTION_LOG_ID).printf("CartVelCmd: [vx: %.4f, vy: %.4f, va: %.4f]", vx, vy, va);
     }
 
-    float max_trans_speed = MAX_TRANS_SPEED_COARSE;
-    float max_rot_speed = MAX_ROT_SPEED_COARSE;
-    if(fineMode_)
-    {
-      max_trans_speed = MAX_TRANS_SPEED_FINE;
-      max_rot_speed = MAX_ROT_SPEED_FINE;
-    }
+    // float max_trans_speed = MAX_TRANS_SPEED_COARSE;
+    // float max_rot_speed = MAX_ROT_SPEED_COARSE;
+    // if(fineMode_)
+    // {
+    //   max_trans_speed = MAX_TRANS_SPEED_FINE;
+    //   max_rot_speed = MAX_ROT_SPEED_FINE;
+    // }
     
     // Note that this doesn't handle total translational magnitude correctly, that
     // is fine for what we are doing now.
-    if(fabs(vx) > max_trans_speed)
-    {
-        vx = sgn(vx) * max_trans_speed;
-    }
-    if(fabs(vy) > max_trans_speed)
-    {
-        vy = sgn(vy) * max_trans_speed;
-    }
-    if(fabs(va) > max_rot_speed)
-    {
-        va = sgn(va) * max_rot_speed;
-    }
+    // if(fabs(vx) > max_trans_speed)
+    // {
+    //     vx = sgn(vx) * max_trans_speed;
+    // }
+    // if(fabs(vy) > max_trans_speed)
+    // {
+    //     vy = sgn(vy) * max_trans_speed;
+    // }
+    // if(fabs(va) > max_rot_speed)
+    // {
+    //     va = sgn(va) * max_rot_speed;
+    // }
 
     // Convert input global velocities to local velocities
     float local_cart_vel[3];

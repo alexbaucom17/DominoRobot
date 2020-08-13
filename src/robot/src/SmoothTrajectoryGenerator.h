@@ -63,7 +63,7 @@ struct DynamicLimits
     float max_acc_;
     float max_jerk_;
 
-    DynamicLimits operator* (double c)
+    DynamicLimits operator* (float c)
     {
         DynamicLimits rtn;
         rtn.max_vel_ = c * max_vel_;
@@ -137,6 +137,13 @@ class SmoothTrajectoryGenerator
     // The current trajectory - this lets the generation class hold onto this and just provide a lookup method
     // since I don't have a need to pass the trajectory around anywhere
     Trajectory currentTrajectory_;
+    
+    // These need to be part of the class because they need to be loaded at construction time, not
+    // program initalization time (i.e. as globals). This is because the config file is not
+    // yet loaded at program start up time.
+    int solver_max_loops_;
+    float solver_beta_decay_;
+    float solver_alpha_decay_;
 
     // Private helper methods 
     MotionPlanningProblem buildMotionPlanningProblem(Point initialPoint, Point targetPoint, bool fineMode);
