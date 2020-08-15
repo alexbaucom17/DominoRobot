@@ -9,9 +9,9 @@ SmoothTrajectoryGenerator::SmoothTrajectoryGenerator()
   : currentTrajectory_()
 {
     currentTrajectory_.complete_ = false;
-    solver_max_loops_ = cfg.lookup("trajectory_generation.solver_max_loops"); 
-    solver_beta_decay_ = cfg.lookup("trajectory_generation.solver_beta_decay");
-    solver_alpha_decay_ = cfg.lookup("trajectory_generation.solver_alpha_decay");
+    solver_params_.num_loops_ = cfg.lookup("trajectory_generation.solver_max_loops"); 
+    solver_params_.beta_decay_ = cfg.lookup("trajectory_generation.solver_beta_decay");
+    solver_params_.alpha_decay_ = cfg.lookup("trajectory_generation.solver_alpha_decay");
 }
 
 // TODO: Write some tests for this class
@@ -40,7 +40,7 @@ PVTPoint SmoothTrajectoryGenerator::lookup(float time)
     return pvt;
 }
 
-std::vector<float> SmoothTrajectoryGenerator::lookup_1D(float time, const SCurveParameters& params)
+std::vector<float> lookup_1D(float time, const SCurveParameters& params)
 {
     // Handle time before start of trajectory
     if(time <= params.switch_points_[0].t_)
@@ -63,7 +63,7 @@ std::vector<float> SmoothTrajectoryGenerator::lookup_1D(float time, const SCurve
             {
                 float dt = time - params.switch_points_[i-1].t_;
                 std::vector<float> values = computeKinematicsBasedOnRegion(params, i, dt);
-                return {values[1], values[0]};
+                return {values[2], values[1]};
             }
         }
     }
@@ -83,7 +83,7 @@ bool SmoothTrajectoryGenerator::generatePointToPointTrajectory(Point initialPoin
     PLOGD_(MOTION_LOG_ID).printf("Starting point: %s", initialPoint.toString().c_str());
     PLOGD_(MOTION_LOG_ID).printf("Target point: %s", targetPoint.toString().c_str());
 
-    MotionPlanningProblem mpp = buildMotionPlanningProblem(initialPoint, targetPoint, fineMode);
+    MotionPlanningProblem mpp = buildMotionPlanningProblem(initialPoint, targetPoint, fineMode, solver_params_);
     currentTrajectory_ = generateTrajectory(mpp);
 
     return currentTrajectory_.complete_;
@@ -110,13 +110,13 @@ bool SmoothTrajectoryGenerator::generateConstVelTrajectory(Point initialPoint, V
     targetPoint.y_ = initialPoint.y_ + velocity.vy_ * moveTime;
     targetPoint.a_ = initialPoint.a_ + velocity.va_ * moveTime;
 
-    MotionPlanningProblem mpp = buildMotionPlanningProblem(initialPoint, targetPoint, fineMode);
+    MotionPlanningProblem mpp = buildMotionPlanningProblem(initialPoint, targetPoint, fineMode, solver_params_);
     currentTrajectory_ = generateTrajectory(mpp);
 
     return currentTrajectory_.complete_;
 }
 
-MotionPlanningProblem SmoothTrajectoryGenerator::buildMotionPlanningProblem(Point initialPoint, Point targetPoint, bool fineMode)
+MotionPlanningProblem buildMotionPlanningProblem(Point initialPoint, Point targetPoint, bool fineMode, const SolverParameters& solver)
 {
     MotionPlanningProblem mpp;
     mpp.initialPoint_ = {initialPoint.x_, initialPoint.y_, initialPoint.a_};
@@ -147,11 +147,12 @@ MotionPlanningProblem SmoothTrajectoryGenerator::buildMotionPlanningProblem(Poin
     // without actually violating any hard constraints
     mpp.translationalLimits_ = translationalLimits * cfg.lookup("motion.limit_max_fraction");
     mpp.rotationalLimits_ = rotationalLimits * cfg.lookup("motion.limit_max_fraction");
+    mpp.solver_params_ = solver;
 
-    return mpp;     
+    return std::move(mpp);     
 }
 
-Trajectory SmoothTrajectoryGenerator::generateTrajectory(MotionPlanningProblem problem)
+Trajectory generateTrajectory(MotionPlanningProblem problem)
 {
     // Figure out delta that the trajectory needs to cover
     Eigen::Vector3f deltaPosition = problem.targetPoint_ - problem.initialPoint_;
@@ -166,7 +167,7 @@ Trajectory SmoothTrajectoryGenerator::generateTrajectory(MotionPlanningProblem p
     // Solve translational component
     float dist = deltaPosition.head(2).norm();
     SCurveParameters trans_params;
-    bool ok = generateSCurve(dist, problem.translationalLimits_, &trans_params);
+    bool ok = generateSCurve(dist, problem.translationalLimits_, problem.solver_params_, &trans_params);
     if(!ok)
     {
         PLOGW << "Failed to generate translational trajectory";
@@ -175,7 +176,7 @@ Trajectory SmoothTrajectoryGenerator::generateTrajectory(MotionPlanningProblem p
 
     // Solve rotational component
     SCurveParameters rot_params;
-    ok = generateSCurve(abs(deltaPosition(2)), problem.rotationalLimits_, &rot_params);
+    ok = generateSCurve(abs(deltaPosition(2)), problem.rotationalLimits_, problem.solver_params_, &rot_params);
     if(!ok)
     {
         PLOGW << "Failed to generate rotational trajectory";
@@ -200,8 +201,24 @@ Trajectory SmoothTrajectoryGenerator::generateTrajectory(MotionPlanningProblem p
     return traj;
 }
 
-bool SmoothTrajectoryGenerator::generateSCurve(float dist, DynamicLimits limits, SCurveParameters* params)
+bool generateSCurve(float dist, DynamicLimits limits, const SolverParameters& solver, SCurveParameters* params)
 {
+    // Handle case where distance is 0
+    if (dist == 0)
+    {
+        params->v_lim_ = 0;
+        params->a_lim_ = 0;
+        params->j_lim_ = 0;
+        for (int i = 0; i < 8; i++)
+        {
+            params->switch_points_[i].t_ = 0;
+            params->switch_points_[i].p_ = 0;
+            params->switch_points_[i].v_ = 0;
+            params->switch_points_[i].a_ = 0;
+        }
+    }
+    
+    
     // Initialize parameters
     float v_lim = limits.max_vel_;
     float a_lim = limits.max_acc_;
@@ -209,7 +226,7 @@ bool SmoothTrajectoryGenerator::generateSCurve(float dist, DynamicLimits limits,
 
     bool solution_found = false;
     int loop_counter = 0;
-    while(!solution_found && loop_counter < solver_max_loops_)
+    while(!solution_found && loop_counter < solver.num_loops_)
     {
         loop_counter++;
         PLOGI << "Trajectory generation loop " << loop_counter;
@@ -225,7 +242,7 @@ bool SmoothTrajectoryGenerator::generateSCurve(float dist, DynamicLimits limits,
         {
             // If dt_a is negative, it means we couldn't find a solution
             // so adjust accel parameter and try loop again
-            a_lim *= solver_beta_decay_;
+            a_lim *= solver.beta_decay_;
             PLOGI << "dt_a: " << dt_a << ", trying new accel value: " << a_lim;
             continue;
         }
@@ -237,7 +254,7 @@ bool SmoothTrajectoryGenerator::generateSCurve(float dist, DynamicLimits limits,
         {
             // If dt_a is negative, it means we couldn't find a solution
             // so adjust velocity parameter and try loop again
-            v_lim *= solver_alpha_decay_;
+            v_lim *= solver.alpha_decay_;
             PLOGI << "dt_v: " << dt_v << ", trying new accel value: " << v_lim;
             continue;
         }
@@ -255,7 +272,7 @@ bool SmoothTrajectoryGenerator::generateSCurve(float dist, DynamicLimits limits,
     return solution_found;
 }
 
-void SmoothTrajectoryGenerator::populateSwitchTimeParameters(SCurveParameters* params, float dt_j, float dt_a, float dt_v)
+void populateSwitchTimeParameters(SCurveParameters* params, float dt_j, float dt_a, float dt_v)
 {
     // Fill first point with all zeros
     params->switch_points_[0].t_ = 0;
@@ -291,7 +308,7 @@ void SmoothTrajectoryGenerator::populateSwitchTimeParameters(SCurveParameters* p
     }
 }
 
-bool SmoothTrajectoryGenerator::synchronizeParameters(SCurveParameters* params1, SCurveParameters* params2)
+bool synchronizeParameters(SCurveParameters* params1, SCurveParameters* params2)
 {
     int num_positive_diffs = 0;
     int num_negative_diffs = 0;
@@ -337,7 +354,7 @@ bool SmoothTrajectoryGenerator::synchronizeParameters(SCurveParameters* params1,
 }
 
 
-bool SmoothTrajectoryGenerator::mapParameters(const SCurveParameters* ref_params, SCurveParameters* map_params)
+bool mapParameters(const SCurveParameters* ref_params, SCurveParameters* map_params)
 {
     // Gather parameters needed
     float dt_j = ref_params->switch_points_[1].t_ - ref_params->switch_points_[0].t_;
@@ -369,7 +386,7 @@ bool SmoothTrajectoryGenerator::mapParameters(const SCurveParameters* ref_params
     return true;
 }
 
-std::vector<float> SmoothTrajectoryGenerator::computeKinematicsBasedOnRegion(const SCurveParameters& params, int region, float dt)
+std::vector<float> computeKinematicsBasedOnRegion(const SCurveParameters& params, int region, float dt)
 {
     float j, a, v, p;
     bool need_a = true;

@@ -60,7 +60,6 @@ int main()
     {
         configure_logger();
         
-        
         cfg.readFile(CONSTANTS_FILE);
         std::string name = cfg.lookup("name");
         PLOGI << "Loaded constants file: " << name;

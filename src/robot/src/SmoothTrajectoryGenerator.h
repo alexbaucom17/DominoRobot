@@ -83,15 +83,6 @@ struct DynamicLimits
     }
 };
 
-// All the pieces needed to define the motion planning problem
-struct MotionPlanningProblem
-{
-    Eigen::Vector3f initialPoint_;
-    Eigen::Vector3f targetPoint_;
-    DynamicLimits translationalLimits_;
-    DynamicLimits rotationalLimits_;  
-};
-
 // A fully defined point for switching from one region of the trajectory
 // to another - needed for efficient lookup without building a huge table
 struct SwitchPoint
@@ -122,6 +113,33 @@ struct Trajectory
     bool complete_;
 };
 
+struct SolverParameters
+{
+    int num_loops_;
+    float alpha_decay_;
+    float beta_decay_;
+};
+
+// All the pieces needed to define the motion planning problem
+struct MotionPlanningProblem
+{
+    Eigen::Vector3f initialPoint_;
+    Eigen::Vector3f targetPoint_;
+    DynamicLimits translationalLimits_;
+    DynamicLimits rotationalLimits_;  
+    SolverParameters solver_params_;
+};
+
+// Helper methods - making public for easier testing
+MotionPlanningProblem buildMotionPlanningProblem(Point initialPoint, Point targetPoint, bool fineMode, const SolverParameters& solver);
+Trajectory generateTrajectory(MotionPlanningProblem problem);
+bool generateSCurve(float dist, DynamicLimits limits, const SolverParameters& solver, SCurveParameters* params);
+void populateSwitchTimeParameters(SCurveParameters* params, float dt_j, float dt_a, float dt_v);
+bool synchronizeParameters(SCurveParameters* params1, SCurveParameters* params2);
+bool mapParameters(const SCurveParameters* ref_traj, SCurveParameters* map_traj);
+std::vector<float> lookup_1D(float time, const SCurveParameters& params);
+std::vector<float> computeKinematicsBasedOnRegion(const SCurveParameters& params, int region, float dt);
+
 
 class SmoothTrajectoryGenerator
 {
@@ -151,19 +169,7 @@ class SmoothTrajectoryGenerator
     // These need to be part of the class because they need to be loaded at construction time, not
     // program initalization time (i.e. as globals). This is because the config file is not
     // yet loaded at program start up time.
-    int solver_max_loops_;
-    float solver_beta_decay_;
-    float solver_alpha_decay_;
-
-    // Private helper methods 
-    MotionPlanningProblem buildMotionPlanningProblem(Point initialPoint, Point targetPoint, bool fineMode);
-    Trajectory generateTrajectory(MotionPlanningProblem problem);
-    bool generateSCurve(float dist, DynamicLimits limits, SCurveParameters* params);
-    void populateSwitchTimeParameters(SCurveParameters* params, float dt_j, float dt_a, float dt_v);
-    bool synchronizeParameters(SCurveParameters* params1, SCurveParameters* params2);
-    bool mapParameters(const SCurveParameters* ref_traj, SCurveParameters* map_traj);
-    std::vector<float> lookup_1D(float time, const SCurveParameters& params);
-    std::vector<float> computeKinematicsBasedOnRegion(const SCurveParameters& params, int region, float dt);
+    SolverParameters solver_params_;
 };
 
 #endif
