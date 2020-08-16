@@ -1,23 +1,11 @@
 #ifndef Constants_h
 #define Constants_h
 
-// Velocitiy limits
-#define MAX_TRANS_SPEED_FINE   0.08  // m/s
-#define MAX_ROT_SPEED_FINE     0.5   // rad/2
-#define MAX_TRANS_SPEED_COARSE 0.2   // m/s
-#define MAX_ROT_SPEED_COARSE   1.0   // rad/2
+#include <libconfig.h++>
+extern libconfig::Config cfg;
 
-// Acceleration limits
-#define MAX_TRANS_ACC_FINE   0.1    // m/s^2
-#define MAX_ROT_ACC_FINE     0.5    // rad/s^2
-#define MAX_TRANS_ACC_COARSE 0.5    // m/s^2
-#define MAX_ROT_ACC_COARSE   1.0    // rad/s^2
-
-// Jerk limits
-#define MAX_TRANS_JERK_FINE   0.5    // m/s^3
-#define MAX_ROT_JERK_FINE     1.0    // rad/s^3
-#define MAX_TRANS_JERK_COARSE 1.0    // m/s^3
-#define MAX_ROT_JERK_COARSE   2.0    // rad/s^3
+#define CONSTANTS_FILE "/home/pi/DominoRobot/src/robot/src/constants.cfg"
+#define TEST_CONSTANTS_FILE "/home/pi/DominoRobot/src/robot/test/test_constants.cfg"
 
 // Cartesian control gains
 #define CART_TRANS_KP 2
@@ -30,12 +18,6 @@
 // Physical dimensions
 #define WHEEL_DIAMETER 0.152 // meters
 #define WHEEL_DIST_FROM_CENTER 0.4794 // meters
-
-// Trajectory generation
-#define TRAJ_MAX_FRACTION 0.8   // Only generate a trajectory to this fraction of max speed to give motors headroom to compensate
-#define SOLVER_MAX_LOOPS 10     // Only let the solver loop this many times before giving up
-#define SOLVER_ALPHA_DECAY 0.8  // Decay for velocity limit
-#define SOLVER_BETA_DECAY 0.8   // Decay for acceleration limit
 
 // Kalman filter scales
 #define PROCESS_NOISE_SCALE 0.08
@@ -51,11 +33,6 @@
 #define ANG_POS_ERR_FINE     0.02 // rad
 #define TRANS_VEL_ERR_FINE   0.01 // m/s
 #define ANG_VEL_ERR_FINE     0.01 // rad/s
-
-// Tray positions
-#define TRAY_DEFAULT_POS_STEPS 10         // Default position for driving in steps from home
-#define TRAY_LOAD_POS_STEPS 5             // Loading position in steps from home
-#define TRAY_PLACE_POS_STEPS 25           // Placing position in steps from home
 
 // USB devices
 #define CLEARCORE_USB "/dev/clearcore"

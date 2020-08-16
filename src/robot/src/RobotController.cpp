@@ -45,8 +45,8 @@ void RobotController::moveToPosition(float x, float y, float a)
     fineMode_ = false;
     velOnlyMode_ = false;
     goalPos_ = Point(x,y,a);
-    trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
-    startTraj();
+    bool ok = trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
+    if (ok) { startTraj(); }
 }
 
 void RobotController::moveToPositionRelative(float x, float y, float a)
@@ -54,8 +54,8 @@ void RobotController::moveToPositionRelative(float x, float y, float a)
     fineMode_ = false;
     velOnlyMode_ = false;
     goalPos_ = Point(cartPos_.x_ + x, cartPos_.y_ + y, cartPos_.a_ + a);
-    trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
-    startTraj();
+    bool ok = trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
+    if (ok) { startTraj(); }
 }
 
 void RobotController::moveToPositionFine(float x, float y, float a)
@@ -63,16 +63,16 @@ void RobotController::moveToPositionFine(float x, float y, float a)
     fineMode_ = true;
     velOnlyMode_ = false;
     goalPos_ = Point(x,y,a);
-    trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
-    startTraj();
+    bool ok = trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
+    if (ok) { startTraj(); }
 }
 
 void RobotController::moveConstVel(float vx , float vy, float va, float t)
 {
     fineMode_ = false;
     velOnlyMode_ = true;
-    trajGen_.generateConstVelTrajectory(cartPos_, {vx, vy, va}, t, fineMode_);
-    startTraj();
+    bool ok = trajGen_.generateConstVelTrajectory(cartPos_, {vx, vy, va}, t, fineMode_);
+    if (ok) { startTraj(); }
 }
 
 void RobotController::startTraj()
@@ -364,28 +364,28 @@ void RobotController::setCartVelCommand(float vx, float vy, float va)
         PLOGD_(MOTION_LOG_ID).printf("CartVelCmd: [vx: %.4f, vy: %.4f, va: %.4f]", vx, vy, va);
     }
 
-    float max_trans_speed = MAX_TRANS_SPEED_COARSE;
-    float max_rot_speed = MAX_ROT_SPEED_COARSE;
-    if(fineMode_)
-    {
-      max_trans_speed = MAX_TRANS_SPEED_FINE;
-      max_rot_speed = MAX_ROT_SPEED_FINE;
-    }
+    // float max_trans_speed = MAX_TRANS_SPEED_COARSE;
+    // float max_rot_speed = MAX_ROT_SPEED_COARSE;
+    // if(fineMode_)
+    // {
+    //   max_trans_speed = MAX_TRANS_SPEED_FINE;
+    //   max_rot_speed = MAX_ROT_SPEED_FINE;
+    // }
     
     // Note that this doesn't handle total translational magnitude correctly, that
     // is fine for what we are doing now.
-    if(fabs(vx) > max_trans_speed)
-    {
-        vx = sgn(vx) * max_trans_speed;
-    }
-    if(fabs(vy) > max_trans_speed)
-    {
-        vy = sgn(vy) * max_trans_speed;
-    }
-    if(fabs(va) > max_rot_speed)
-    {
-        va = sgn(va) * max_rot_speed;
-    }
+    // if(fabs(vx) > max_trans_speed)
+    // {
+    //     vx = sgn(vx) * max_trans_speed;
+    // }
+    // if(fabs(vy) > max_trans_speed)
+    // {
+    //     vy = sgn(vy) * max_trans_speed;
+    // }
+    // if(fabs(va) > max_rot_speed)
+    // {
+    //     va = sgn(va) * max_rot_speed;
+    // }
 
     // Convert input global velocities to local velocities
     float local_cart_vel[3];

@@ -1,2 +1,14 @@
-#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
+#define CATCH_CONFIG_RUNNER
 #include <Catch/catch.hpp>
+#include "constants.h"
+
+libconfig::Config cfg = libconfig::Config();
+
+int main( int argc, char* argv[] ) 
+{
+    cfg.readFile(TEST_CONSTANTS_FILE);
+
+    int result = Catch::Session().run( argc, argv );
+
+    return result;
+}

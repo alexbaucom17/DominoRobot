@@ -5,11 +5,13 @@
 #include <plog/Appenders/ColorConsoleAppender.h>
 #include <plog/Appenders/RollingFileAppender.h>
 #include <chrono>
+#include <iostream>
 
 #include "robot.h"
 #include "constants.h"
 #include "sockets/SocketMultiThreadWrapperFactory.h"
 
+libconfig::Config cfg = libconfig::Config();
 
 void configure_logger()
 {
@@ -34,6 +36,8 @@ void configure_logger()
     PLOGI << "Logger ready";
 }
 
+
+// TODO - move to config file
 #define MOCK_SOCKET true
 std::vector<std::string> MOCK_SOCKET_DATA = {"<{'type':'init'}>", "8000", "<{'type':'place'}>", "3000", "<{'type':'estop'}>"};
 void setup_mock_socket()
@@ -52,11 +56,24 @@ void setup_mock_socket()
 
 int main()
 {
-    configure_logger();
-    setup_mock_socket();
+    try
+    {
+        configure_logger();
+        
+        cfg.readFile(CONSTANTS_FILE);
+        std::string name = cfg.lookup("name");
+        PLOGI << "Loaded constants file: " << name;
 
-    Robot r;
-    r.run(); //Should loop forver until stopped
+        setup_mock_socket();
 
-    return 0;
+        Robot r;
+        r.run(); //Should loop forver until stopped
+    }
+    catch (const libconfig::SettingNotFoundException &e)
+    {
+        std::cerr << "Configuration error with " << e.getPath() << std::endl;
+        return(EXIT_FAILURE);
+    }
+
+    return(EXIT_SUCCESS);
 }

@@ -142,42 +142,40 @@ def generate_profile_from_params(output, timestep):
 
     for t in t_vals[1:]:
         if t >= T[0] and t < T[1]:
+            p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
+            v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
+            a.append(a[-1] + j[-1] * timestep)
             j.append(j_lim)        
-            a.append(a[-1] + j[-1] * timestep)
-            v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
-            p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
         elif t >= T[1] and t < T[2]:
-            j.append(0)
+            p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
+            v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
             a.append(a_lim)
-            v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
-            p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
+            j.append(0)
         elif t >= T[2] and t < T[3]:
-            j.append(-j_lim)
-            a.append(a[-1] + j[-1] * timestep)
-            v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
             p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
+            v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
+            a.append(a[-1] + j[-1] * timestep)
+            j.append(-j_lim)
         elif t >= T[3] and t < T[4]:
-            j.append(0)
-            a.append(0)
+            p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
             v.append(v_lim)
-            p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
-        elif t >= T[4] and t < T[5]:
-            j.append(-j_lim)
-            a.append(a[-1] + j[-1] * timestep)
-            v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
-            p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
-        elif t >= T[5] and t < T[6]:
+            a.append(0)
             j.append(0)
-            a.append(-a_lim)
-            v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
+        elif t >= T[4] and t < T[5]:
             p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
-        elif t >= T[6] and t < T[7]:
-            j.append(j_lim)
+            v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
             a.append(a[-1] + j[-1] * timestep)
-            v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
+            j.append(-j_lim)
+        elif t >= T[5] and t < T[6]:
             p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
-
-
+            v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
+            a.append(-a_lim)
+            j.append(0)
+        elif t >= T[6] and t < T[7]:
+            p.append(p[-1] + v[-1] * timestep + 0.5 * a[-1] * timestep **2 + 1/6.0 * j[-1] * timestep ** 3)
+            v.append(v[-1] + a[-1] * timestep + 0.5* j[-1] * timestep ** 2)
+            a.append(a[-1] + j[-1] * timestep)
+            j.append(j_lim)
    
     return (t_vals, p, v, a, j)
 
