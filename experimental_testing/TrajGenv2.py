@@ -2,10 +2,10 @@ import math
 import numpy as np
 from matplotlib import pyplot as plt
 
-p_target = 6.0  # m
-v_max = 0.5  #m/s
-a_max = 1.0  #m/s^2
-j_max = 5.0 #m/s^3
+p_target = 10  # m
+v_max = 1.0  #m/s
+a_max = 2.0  #m/s^2
+j_max = 8.0 #m/s^3
 alpha = 0.8 # velocity decay
 beta = 0.8 # acceleation decay
 loop_limit = 10 # max loops for convergence
@@ -53,29 +53,34 @@ def generate_once(p, v_lim, a_lim, j_lim):
     output['j_lim'] = j_lim
     output['t'] = []
 
-    # Constant jerk region
+    # Constant jerk regions
     dt_j = a_lim / j_lim
     print("dt_j = {}".format(dt_j))
-    dv_j = 0.5 * j_lim * dt_j ** 2
-    dp_j = 1/6.0 * j_lim * dt_j ** 3
+    dv_j1 = 0.5 * j_lim * dt_j ** 2  # Positive jerk region
+    dv_j2 = a_lim * dt_j - 0.5 * j_lim * dt_j ** 2 # Negative jerk region
+    dp_j1 = 1/6.0 * j_lim * dt_j ** 3 # Positive jerk region
+    dp_j2 = (v_lim - dv_j2) * dt_j + 0.5 * a_lim * dt_j ** 2 - 1/6 * j_lim * dt_j ** 3  # Negative jerk region
+    print("dv_j1: {}, dv_j2: {}, dp_j1: {}, dp_j2: {}".format(dv_j1, dv_j2, dp_j1, dp_j2))
 
     # Constant accel region
-    dt_a = (v_lim - 2 * dv_j) / a_lim
+    dt_a = (v_lim - dv_j1 - dv_j2) / a_lim
     print("dt_a = {}".format(dt_a))
     if dt_a <= 0:
         output['a_lim'] = a_lim * beta
         print("New a_lim = {}".format(output['a_lim'] ))
         return output
-    dp_a = dv_j * dt_a + 0.5 * a_lim * dt_a ** 2
+    dp_a = dv_j1 * dt_a + 0.5 * a_lim * dt_a ** 2
+    print("dp_a: {}".format(dp_a))
 
     # Constant vel region
-    dt_v = (p - 4 * dp_j - 2 * dp_a) / v_lim
+    dt_v = (p - 2 * dp_j1 - 2 * dp_j2 - 2 * dp_a) / v_lim
     print("dt_v = {}".format(dt_v))
     if dt_v <= 0:
         output['v_lim'] = alpha * v_lim
         print("New v_lim = {}".format(output['v_lim'] ))
         return output
     dp_v = v_lim * dt_v
+    print("dp_v: {}".format(dp_v))
 
     # If we get here, the genertation should be correct, so compute time regions and return
     output['done'] = True
@@ -112,7 +117,7 @@ def generate_inverse(p, dt_j, dt_a, dt_v):
     A = np.array([
         [dt_j,                                          -1,         0    ],
         [dt_j ** 2,                                     dt_a,      -1    ],
-        [2/3.0 * dt_j ** 3 + 0.5 * (dt_j ** 2) * dt_a,  dt_a ** 2,  dt_v ]])
+        [(dt_j ** 2) * dt_a,             dt_j ** 2 + dt_a ** 2,     dt_v + 2 * dt_j ]])
     b = np.array([0, 0, p])
     lims = np.linalg.solve(A, b)
 
