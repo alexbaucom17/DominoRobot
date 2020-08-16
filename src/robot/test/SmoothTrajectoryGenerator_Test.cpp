@@ -52,10 +52,12 @@ TEST_CASE("SmoothTrajectoryGenerator class", "[trajectory]")
     // TODO: Verify case where algorithm modifies limits
 
     //Way in the future should return the final point
-    // output = stg.lookup(60);
-    // REQUIRE(output.time_ == 60);
-    // CHECK(output.position_ == p2);
-    // REQUIRE(output.velocity_ == Velocity(0,0,0));
+    output = stg.lookup(60);
+    REQUIRE(output.time_ == 60);
+    CHECK(output.position_.x_ == Approx(p2.x_));
+    CHECK(output.position_.y_ == Approx(p2.y_));
+    CHECK(output.position_.a_ == Approx(p2.a_));
+    CHECK(output.velocity_ == Velocity(0,0,0));
 }
 
 TEST_CASE("BuildMotionPlanningProblem", "[trajectory]")
@@ -121,7 +123,7 @@ TEST_CASE("populateSwitchTimeParameters", "[trajectory]")
     params.v_lim_ = 1.0;
     params.a_lim_ = 2.0;
     params.j_lim_ = 8.0;
-    float dt_v = 10.41 - 0.75;
+    float dt_v = 9.25;
     float dt_a = 0.25;
     float dt_j = 0.25;
 
@@ -132,40 +134,40 @@ TEST_CASE("populateSwitchTimeParameters", "[trajectory]")
     REQUIRE(params.switch_points_[0].v_ == Approx(0));
     REQUIRE(params.switch_points_[0].a_ == Approx(0));
 
-    REQUIRE(params.switch_points_[1].t_ == Approx(0.25));
-    REQUIRE(params.switch_points_[1].p_ == Approx(0.0208));
-    REQUIRE(params.switch_points_[1].v_ == Approx(0.271));
-    REQUIRE(params.switch_points_[1].a_ == Approx(2.0));
+    CHECK(params.switch_points_[1].t_ == Approx(0.25).margin(0.001));
+    CHECK(params.switch_points_[1].p_ == Approx(0.02083).margin(0.001));
+    CHECK(params.switch_points_[1].v_ == Approx(0.25).margin(0.001));
+    CHECK(params.switch_points_[1].a_ == Approx(2.0).margin(0.001));
 
-    REQUIRE(params.switch_points_[2].t_ == Approx(0.5));
-    REQUIRE(params.switch_points_[2].p_ == Approx(0.157));
-    REQUIRE(params.switch_points_[2].v_ == Approx(0.768));
-    REQUIRE(params.switch_points_[2].a_ == Approx(2.0));
+    CHECK(params.switch_points_[2].t_ == Approx(0.5).margin(0.001));
+    CHECK(params.switch_points_[2].p_ == Approx(0.1458).margin(0.001));
+    CHECK(params.switch_points_[2].v_ == Approx(0.75).margin(0.001));
+    CHECK(params.switch_points_[2].a_ == Approx(2.0).margin(0.001));
 
-    REQUIRE(params.switch_points_[3].t_ == Approx(0.75));
-    REQUIRE(params.switch_points_[3].p_ == Approx(0.396));
-    REQUIRE(params.switch_points_[3].v_ == Approx(1.0));
-    REQUIRE(params.switch_points_[3].a_ == Approx(0));
+    CHECK(params.switch_points_[3].t_ == Approx(0.75).margin(0.001));
+    CHECK(params.switch_points_[3].p_ == Approx(0.375).margin(0.001));
+    CHECK(params.switch_points_[3].v_ == Approx(1.0).margin(0.001));
+    CHECK(params.switch_points_[3].a_ == Approx(0).margin(0.001));
 
-    REQUIRE(params.switch_points_[4].t_ == Approx(10.41));
-    REQUIRE(params.switch_points_[4].p_ == Approx(10.05));
-    REQUIRE(params.switch_points_[4].v_ == Approx(1.0));
-    REQUIRE(params.switch_points_[4].a_ == Approx(0));
+    CHECK(params.switch_points_[4].t_ == Approx(10.0).margin(0.001));
+    CHECK(params.switch_points_[4].p_ == Approx(9.625).margin(0.001));
+    CHECK(params.switch_points_[4].v_ == Approx(1.0).margin(0.001));
+    CHECK(params.switch_points_[4].a_ == Approx(0).margin(0.001));
 
-    REQUIRE(params.switch_points_[5].t_ == Approx(10.66));
-    REQUIRE(params.switch_points_[5].p_ == Approx(10.28));
-    REQUIRE(params.switch_points_[5].v_ == Approx(0.66));
-    REQUIRE(params.switch_points_[5].a_ == Approx(-2.0));
+    CHECK(params.switch_points_[5].t_ == Approx(10.25).margin(0.001));
+    CHECK(params.switch_points_[5].p_ == Approx(9.854).margin(0.001));
+    CHECK(params.switch_points_[5].v_ == Approx(0.75).margin(0.001));
+    CHECK(params.switch_points_[5].a_ == Approx(-2.0).margin(0.001));
 
-    REQUIRE(params.switch_points_[6].t_ == Approx(10.91));
-    REQUIRE(params.switch_points_[6].p_ == Approx(10.42));
-    REQUIRE(params.switch_points_[6].v_ == Approx(0.29));
-    REQUIRE(params.switch_points_[6].a_ == Approx(-2.0));
+    CHECK(params.switch_points_[6].t_ == Approx(10.5).margin(0.001));
+    CHECK(params.switch_points_[6].p_ == Approx(9.98).margin(0.001));
+    CHECK(params.switch_points_[6].v_ == Approx(0.25).margin(0.001));
+    CHECK(params.switch_points_[6].a_ == Approx(-2.0).margin(0.001));
 
-    REQUIRE(params.switch_points_[7].t_ == Approx(11.16));
-    REQUIRE(params.switch_points_[7].p_ == Approx(10.50));
-    REQUIRE(params.switch_points_[7].v_ == Approx(0));
-    REQUIRE(params.switch_points_[7].a_ == Approx(0));
+    CHECK(params.switch_points_[7].t_ == Approx(10.75).margin(0.001));
+    CHECK(params.switch_points_[7].p_ == Approx(10).margin(0.001));
+    CHECK(params.switch_points_[7].v_ == Approx(0).margin(0.001));
+    CHECK(params.switch_points_[7].a_ == Approx(0).margin(0.001));
 
 }
 TEST_CASE("synchronizeParameters", "[trajectory]")

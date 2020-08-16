@@ -234,7 +234,8 @@ bool generateSCurve(float dist, DynamicLimits limits, const SolverParameters& so
         // Constant jerk region
         float dt_j = a_lim / j_lim;
         float dv_j = 0.5 * j_lim * std::pow(dt_j, 2);
-        float dp_j = d6 * j_lim * std::pow(dt_j, 3);
+        float dp_j1 = d6 * j_lim * std::pow(dt_j, 3);
+        float dp_j2 = (v_lim - dv_j) * dt_j + 0.5 * a_lim * std::pow(dt_j, 2) - d6 * j_lim * std::pow(dt_j, 3);
 
         // Constant accel region
         float dt_a = (v_lim - 2 * dv_j) / a_lim;
@@ -249,7 +250,7 @@ bool generateSCurve(float dist, DynamicLimits limits, const SolverParameters& so
         float dp_a = dv_j * dt_a + 0.5 * a_lim * std::pow(dt_a, 2);
 
         // Constant velocity region
-        float dt_v = (dist - 4 * dp_j - 2 * dp_a) / v_lim;
+        float dt_v = (dist - 2 * dp_j1 - 2 * dp_j2 - 2 * dp_a) / v_lim;
         if (dt_v <= 0)
         {
             // If dt_a is negative, it means we couldn't find a solution
@@ -365,9 +366,9 @@ bool mapParameters(const SCurveParameters* ref_params, SCurveParameters* map_par
     // Build linear system
     Eigen::Matrix3f A;
     Eigen::Vector3f b;
-    A << dt_j,                                                          -1,                 0    ,
-         std::pow(dt_j, 2),                                             dt_a,              -1    ,
-         2/3.0 * std::pow(dt_j, 3) + 0.5 * std::pow(dt_j, 2) * dt_a,   std::pow(dt_a, 2),  dt_v;
+    A << dt_j,                      -1,                                     0    ,
+         std::pow(dt_j, 2),         dt_a                    ,              -1    ,
+         std::pow(dt_j, 2) * dt_a,  std::pow(dt_j, 2) + std::pow(dt_a, 2),  dt_v + 2* dt_j;
     b << 0, 0, deltaPosition;
 
     // Solve system and check results
