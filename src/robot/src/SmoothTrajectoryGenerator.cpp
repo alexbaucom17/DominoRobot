@@ -216,8 +216,8 @@ bool generateSCurve(float dist, DynamicLimits limits, const SolverParameters& so
             params->switch_points_[i].v_ = 0;
             params->switch_points_[i].a_ = 0;
         }
+        return true;
     }
-    
     
     // Initialize parameters
     float v_lim = limits.max_vel_;
@@ -360,15 +360,15 @@ bool mapParameters(const SCurveParameters* ref_params, SCurveParameters* map_par
     // Gather parameters needed
     float dt_j = ref_params->switch_points_[1].t_ - ref_params->switch_points_[0].t_;
     float dt_a = ref_params->switch_points_[2].t_ - ref_params->switch_points_[1].t_;
-    float dt_v = ref_params->switch_points_[5].t_ - ref_params->switch_points_[3].t_;
+    float dt_v = ref_params->switch_points_[4].t_ - ref_params->switch_points_[3].t_;
     float deltaPosition = map_params->switch_points_[7].p_;
 
     // Build linear system
     Eigen::Matrix3f A;
     Eigen::Vector3f b;
-    A << dt_j,                      -1,                                     0    ,
-         std::pow(dt_j, 2),         dt_a                    ,              -1    ,
-         std::pow(dt_j, 2) * dt_a,  std::pow(dt_j, 2) + std::pow(dt_a, 2),  dt_v + 2* dt_j;
+    A << dt_j,                                     -1,                                     0    ,
+         std::pow(dt_j, 2),                        dt_a                    ,              -1    ,
+         std::pow(dt_j, 2) * (dt_a - 0.5 * dt_j),  std::pow(dt_j, 2) + std::pow(dt_a, 2),  dt_v + 2* dt_j;
     b << 0, 0, deltaPosition;
 
     // Solve system and check results

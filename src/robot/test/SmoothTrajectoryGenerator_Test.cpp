@@ -3,16 +3,7 @@
 #include "SmoothTrajectoryGenerator.h"
 #include "constants.h"
 
-// void overwriteConfig(std::string& key, float value)
-// {
-//     libconfig::Setting root = cfg.getRoot();
-//     if (root.exists(key))
-//     {
-//         root.remove(key);
-//     }
-//     root.add(key, value);
-// }
-
+// This stuff is needed to correctly print a custom type in Catch for debug
 namespace Catch {
 template<>
 struct StringMaker<Point> 
@@ -44,12 +35,6 @@ TEST_CASE("SmoothTrajectoryGenerator class", "[trajectory]")
 
     PVTPoint output = stg.lookup(1.0);
     REQUIRE(output.time_ == 1.0);
-
-    // TODO: Verify final point
-    // TODO: Test zeros
-    // TODO: Verify fine vs coarse
-    // TODO: Verify some different parameter values
-    // TODO: Verify case where algorithm modifies limits
 
     //Way in the future should return the final point
     output = stg.lookup(60);
@@ -111,12 +96,69 @@ TEST_CASE("BuildMotionPlanningProblem", "[trajectory]")
     }
 }
 
+// TODO: Verify fine vs coarse
+// TODO: Verify case where algorithm modifies limits
 TEST_CASE("generateTrajectory", "[trajectory]")
 {
+    Point p1 = {0,0,0};
+    Point p2 = {10,0,-3};
+    bool fineMode = false;
+    SolverParameters solver = {10, 0.8, 0.8};
+    MotionPlanningProblem mpp = buildMotionPlanningProblem(p1, p2, fineMode, solver);
+
+    Trajectory traj = generateTrajectory(mpp);
+
+    REQUIRE(traj.complete_ == true);
+    CHECK(traj.initialPoint_ == p1);
+    CHECK(traj.trans_direction_(0) == 1);
+    CHECK(traj.trans_direction_(1) == 0);
+    CHECK(traj.rot_direction_ == -1);
 }
+
 TEST_CASE("generateSCurve", "[trajectory]")
 {
+    float dist = 10;
+    DynamicLimits limits = {1, 2, 8};
+    SolverParameters solver = {10, 0.8, 0.8};
+    SCurveParameters params;
+    bool ok = generateSCurve(dist, limits, solver, &params);
+    REQUIRE(ok == true);
+    REQUIRE(params.v_lim_ == 1.0);
+    REQUIRE(params.a_lim_ == 2.0);
+    REQUIRE(params.j_lim_ == 8.0);
+    float dt_v = 9.25; // Expected values
+    float dt_a = 0.25;
+    float dt_j = 0.25;
+    CHECK(params.switch_points_[0].t_ == 0);
+    CHECK(params.switch_points_[1].t_ == dt_j);
+    CHECK(params.switch_points_[2].t_ == dt_j + dt_a);
+    CHECK(params.switch_points_[3].t_ == 2*dt_j + dt_a);
+    CHECK(params.switch_points_[4].t_ == 2*dt_j + dt_a + dt_v);
+    CHECK(params.switch_points_[5].t_ == 3*dt_j + dt_a + dt_v);
+    CHECK(params.switch_points_[6].t_ == 3*dt_j + 2*dt_a + dt_v);
+    CHECK(params.switch_points_[7].t_ == 4*dt_j + 2*dt_a + dt_v);
+
+    SECTION("Zero")
+    {
+        float dist = 0;
+        DynamicLimits limits = {1, 2, 8};
+        SolverParameters solver = {10, 0.8, 0.8};
+        SCurveParameters params;
+        bool ok = generateSCurve(dist, limits, solver, &params);
+        REQUIRE(ok == true);
+        REQUIRE(params.v_lim_ == 0);
+        REQUIRE(params.a_lim_ == 0);
+        REQUIRE(params.j_lim_ == 0);
+        for (int i = 0; i < 8; i++)
+        {
+            CHECK(params.switch_points_[i].t_ == 0);
+            CHECK(params.switch_points_[i].p_ == 0);
+            CHECK(params.switch_points_[i].v_ == 0);
+            CHECK(params.switch_points_[i].a_ == 0);
+        }
+    }
 }
+
 TEST_CASE("populateSwitchTimeParameters", "[trajectory]")
 {
     SCurveParameters params;
@@ -170,12 +212,50 @@ TEST_CASE("populateSwitchTimeParameters", "[trajectory]")
     CHECK(params.switch_points_[7].a_ == Approx(0).margin(0.001));
 
 }
+
+// TODO Add this
 TEST_CASE("synchronizeParameters", "[trajectory]")
 {
 }
+
 TEST_CASE("mapParameters", "[trajectory]")
 {
+    // Generate one set of parameters
+    float dist = 10;
+    DynamicLimits limits = {1, 2, 8};
+    SolverParameters solver = {10, 0.8, 0.8};
+    SCurveParameters params1;
+    bool ok = generateSCurve(dist, limits, solver, &params1);
+    REQUIRE(ok == true);
+    CHECK(params1.v_lim_ == limits.max_vel_);
+    CHECK(params1.a_lim_ == limits.max_acc_);
+    CHECK(params1.j_lim_ == limits.max_jerk_);
+
+    // Map parameters
+    SCurveParameters params2;
+    params2.switch_points_[7].p_ = dist;
+    ok = mapParameters(&params1, &params2);
+    REQUIRE(ok == true);
+
+    // Verify times match expectation
+    float dt_v = 9.25;
+    float dt_a = 0.25;
+    float dt_j = 0.25;
+    CHECK(params2.switch_points_[0].t_ == 0);
+    CHECK(params2.switch_points_[1].t_ == dt_j);
+    CHECK(params2.switch_points_[2].t_ == dt_j + dt_a);
+    CHECK(params2.switch_points_[3].t_ == 2*dt_j + dt_a);
+    CHECK(params2.switch_points_[4].t_ == 2*dt_j + dt_a + dt_v);
+    CHECK(params2.switch_points_[5].t_ == 3*dt_j + dt_a + dt_v);
+    CHECK(params2.switch_points_[6].t_ == 3*dt_j + 2*dt_a + dt_v);
+    CHECK(params2.switch_points_[7].t_ == 4*dt_j + 2*dt_a + dt_v);
+
+    // Verify limits match expectation
+    CHECK(params2.v_lim_ == Approx(limits.max_vel_).epsilon(0.01));
+    CHECK(params2.a_lim_ == Approx(limits.max_acc_).epsilon(0.01));
+    CHECK(params2.j_lim_ == Approx(limits.max_jerk_).epsilon(0.01));
 }
+
 TEST_CASE("lookup_1D", "[trajectory]")
 {
     SCurveParameters params;
@@ -263,6 +343,7 @@ TEST_CASE("lookup_1D", "[trajectory]")
         REQUIRE(test_vec[0] == Approx(expected_p).margin(0.001));
     }
 }
+
 TEST_CASE("computeKinematicsBasedOnRegion", "[trajectory]")
 {
     SCurveParameters params;
