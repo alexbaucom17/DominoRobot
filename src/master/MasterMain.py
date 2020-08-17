@@ -183,7 +183,6 @@ class CmdGui:
                 status_str += "Position timing:   {} ms\n".format(status_dict['position_loop_ms'])
                 status_str += "Motion in progress: {}\n".format(status_dict["in_progress"])
                 status_str += "Counter:   {}\n".format(status_dict['counter'])
-                status_str += "Free memory:   {} bytes\n".format(status_dict['free_memory'])
 
                 # Also update the visualization position
                 self._update_robot_viz_position(robot_id, status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
