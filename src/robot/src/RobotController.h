@@ -5,7 +5,6 @@
 
 #include "SmoothTrajectoryGenerator.h"
 #include "StatusUpdater.h"
-// #include "KalmanFilter.h"
 #include "serial/SerialComms.h"
 
 class RobotController
@@ -49,46 +48,36 @@ class RobotController
 
     //Internal methods
     // Set the global cartesian velocity command
-    void setCartVelCommand(float vx, float vy, float va);
+    void setCartVelCommand(Velocity target_vel);
     // Update loop for motor objects
     void updateMotors();
     // Run controller calculations
-    void computeControl(PVTPoint cmd);
+    Velocity computeControl(PVTPoint cmd);
     // Check if the current trajectory is done
     bool checkForCompletedTrajectory(const PVTPoint cmd);
     // Calculate wheel odometry
     void computeOdometry();
-    //Write velocity out to controller
-    void writeVelocity(float speed, int speed_pin, int dir_pin);
-    // Run the trajectory calculations and generate a command signal
-    void runTraj(PVTPoint* cmd);
-    // Reset everything for when a trajectory is not running
-    void resetTraj(PVTPoint* cmd);
+    // Generate a command signal for the current time in the trajectory
+    PVTPoint generateCommandFromTrajectory();
+    // Creates stationary command for when a trajectory is not running
+    PVTPoint generateStationaryCommand();
     // Sets up evertyhing to start the trajectory running
     void startTraj();
 
     // Member variables
+    SmoothTrajectoryGenerator trajGen_;    // Trajectory generator object
+    StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
+    std::unique_ptr<SerialCommsBase> serial_to_motor_driver_;   // Serial connection to motor driver
     std::chrono::time_point<std::chrono::steady_clock> prevControlLoopTime_;    // Previous loop time through the cartesian control loop
     std::chrono::time_point<std::chrono::steady_clock> prevOdomLoopTime_;       // Previous loop time through the odom loop
     std::chrono::time_point<std::chrono::steady_clock> trajStartTime_;          // Previous loop time when trajecotry was started
-    bool enabled_;                         // Global motor enabled flag
-    SmoothTrajectoryGenerator trajGen_;    // Trajectory generator object
     Point cartPos_;                        // Current cartesian position
-    Velocity cartVel_;                     // Current cartesian velocity
     Point goalPos_;                        // Desired goal position
+    Velocity cartVel_;                     // Current cartesian velocity
+    bool enabled_;                         // Global motor enabled flag
     bool trajRunning_;                     // If a trajectory is currently active
-    float errSumX_;                        // Sum of error in X dimension for integral control
-    float errSumY_;                        // Sum of error in Y dimension for integral control
-    float errSumA_;                        // Sum of error in A dimension for integral control
     bool fineMode_;                        // If fine positioning mode is enabled or not.
     bool velOnlyMode_;                     // If we are only interested in velocity and not goal position
-    bool predict_once;                     // Bool to make sure kalman filter gets initialized properly
-
-    StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
-    std::unique_ptr<SerialCommsBase> serial_to_motor_driver_;   // Serial connection to motor driver
-
-    // Kalman filter stuff
-    // KalmanFilter kf_;
 
 };
 
