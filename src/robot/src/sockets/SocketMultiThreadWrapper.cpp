@@ -6,6 +6,8 @@
 #include "sockets/SocketTimeoutException.h"
 #include <mutex>
 
+#define PORT 8123
+
 std::mutex read_mutex;
 std::mutex send_mutex;
 
@@ -52,7 +54,7 @@ void SocketMultiThreadWrapper::sendData(std::string data)
 
 void SocketMultiThreadWrapper::socket_loop()
 {
-    ServerSocket server(8123);
+    ServerSocket server(PORT);
 
     while(true)
     {

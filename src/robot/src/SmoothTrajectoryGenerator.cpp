@@ -14,10 +14,6 @@ SmoothTrajectoryGenerator::SmoothTrajectoryGenerator()
     solver_params_.alpha_decay_ = cfg.lookup("trajectory_generation.solver_alpha_decay");
 }
 
-// TODO: Write some tests for this class
-// TODO: Verify accuracy of final position calculation (since we aren't directly providing it) - mabye do this with a test?
-// TODO: Verify that angles work correctly (again maybe a test?) - need to make sure wrapping or unwrapping doesn't get weird
-
 PVTPoint SmoothTrajectoryGenerator::lookup(float time)
 {
     std::vector<float> trans_values = lookup_1D(time, currentTrajectory_.trans_params_);
@@ -34,7 +30,7 @@ PVTPoint SmoothTrajectoryGenerator::lookup(float time)
     PVTPoint pvt;
     pvt.position_ = {currentTrajectory_.initialPoint_.x_ + trans_pos_delta(0),
                      currentTrajectory_.initialPoint_.y_ + trans_pos_delta(1),
-                     currentTrajectory_.initialPoint_.a_ + rot_pos_delta };
+                     wrap_angle(currentTrajectory_.initialPoint_.a_ + rot_pos_delta) };
     pvt.velocity_ = {trans_vel(0), trans_vel(1), rot_vel};
     pvt.time_ = time;
     return pvt;
@@ -156,6 +152,7 @@ Trajectory generateTrajectory(MotionPlanningProblem problem)
 {
     // Figure out delta that the trajectory needs to cover
     Eigen::Vector3f deltaPosition = problem.targetPoint_ - problem.initialPoint_;
+    deltaPosition(2) = wrap_angle(deltaPosition(2));
 
     // Being building trajectory object
     Trajectory traj;
@@ -176,24 +173,14 @@ Trajectory generateTrajectory(MotionPlanningProblem problem)
 
     // Solve rotational component
     SCurveParameters rot_params;
-    ok = generateSCurve(abs(deltaPosition(2)), problem.rotationalLimits_, problem.solver_params_, &rot_params);
+    dist = fabs(deltaPosition(2));
+    ok = generateSCurve(dist, problem.rotationalLimits_, problem.solver_params_, &rot_params);
     if(!ok)
     {
         PLOGW << "Failed to generate rotational trajectory";
         return traj;
     }
 
-
-    // TODO: Fix this, I don't think it works
-    // Handle syncronizing between translation and rotational parameters so that the 
-    // switch points line up with the slower trajectory. This will fail if the difference
-    // between the switch times do not all have the same sign (since that means it isn't
-    // possible to solve for a set of kinematic parameters that work with the )
-    ok = synchronizeParameters(&trans_params, &rot_params);
-    if (!ok)
-    {
-        PLOGW << "Unable to synchronize parameters between translational and rotational trajectories";
-    }
     traj.trans_params_ = trans_params;
     traj.rot_params_ = rot_params;
     traj.complete_ = true;
@@ -309,83 +296,91 @@ void populateSwitchTimeParameters(SCurveParameters* params, float dt_j, float dt
     }
 }
 
-bool synchronizeParameters(SCurveParameters* params1, SCurveParameters* params2)
-{
-    int num_positive_diffs = 0;
-    int num_negative_diffs = 0;
+// TODO: Figure out if this is actually needed or worth adding back in (or figure out how to make it more than 99% accurate)
+// bool synchronizeParameters(SCurveParameters* params1, SCurveParameters* params2)
+// {
+//     // Make copy so we don't accidentally overwrite anything until we are ready
+//     SCurveParameters params1_copy = *params1;
+//     SCurveParameters params2_copy = *params2;
+    
+//     // Find which sections are slowest in each region
+//     std::vector<float> longest_dts;
+//     for (int i = 1; i < 7; i++)
+//     {
+//         float dt1 = params1_copy.switch_points_[i].t_ - params1_copy.switch_points_[i-1].t_;
+//         float dt2 = params2_copy.switch_points_[i].t_ - params2_copy.switch_points_[i-1].t_;
+//         if(dt1 > dt2)
+//         {
+//             longest_dts.push_back(dt1);
+//         }
+//         else
+//         {
+//             longest_dts.push_back(dt2);
+//         }
+//     }
 
-    for (int i = 0; i < 8; i++)
-    {
-        float dt = params1->switch_points_[i].t_ - params2[i].switch_points_->t_;
-        if(dt > 0)
-        {
-            num_positive_diffs++;
-        }
-        else if (dt < 0)
-        {
-            num_negative_diffs++;
-        }
-        else
-        {
-            num_positive_diffs++;
-            num_negative_diffs++;
-        }
-    }
+//     // Syncronize times to match up
+//     params1_copy.switch_points_[0].t_ = 0;
+//     params2_copy.switch_points_[0].t_ = 0;
+//     for (int i = 1; i < 7; i++)
+//     {
+//         params1_copy.switch_points_[i].t_ = params1_copy.switch_points_[i-1].t_ + longest_dts[i-1];
+//         params2_copy.switch_points_[i].t_ = params2_copy.switch_points_[i-1].t_ + longest_dts[i-1];
+//     }
 
-    bool mapping_succeeded = false;
-    if(num_positive_diffs == 7)
-    {
-        // params1 is the slower trajectory, so use it as the reference
-        mapping_succeeded = mapParameters(params1, params2);
-    }
-    else if(num_negative_diffs == 7)
-    {
-        // params2 is the slower trajectory, so use it as the reference
-        mapping_succeeded = mapParameters(params2, params1);
-    }
-    else
-    {
-        PLOGW << "Time diffs between trajectories don't lead to feasible synchronization solution";
-    }
+//     // Solve inverse problem for new time mapping
+//     bool inverse_ok1 = solveInverse(&params1_copy);
+//     bool inverse_ok2 = solveInverse(&params2_copy);
+//     bool sync_ok = inverse_ok1 && inverse_ok2;
 
-    // This returns true for successful synchronization
-    // This returns false if neither params1 or params2 was definitively slower
-    // or if the mapping function fails to solve for a new trajectory
-    return mapping_succeeded;
-}
+//     // Copy data back if the sync was ok
+//     if(sync_ok)
+//     {
+//         *params1 = params1_copy;
+//         *params2 = params2_copy;
+//     }
+//     else
+//     {
+//         PLOGW << "Time diffs between trajectories don't lead to feasible synchronization solution";
+//     }
+
+//     // This returns true for successful synchronization
+//     // This returns false if the inverse function fails to solve for a new trajectory
+//     return sync_ok;
+// }
 
 
-bool mapParameters(const SCurveParameters* ref_params, SCurveParameters* map_params)
-{
-    // Gather parameters needed
-    float dt_j = ref_params->switch_points_[1].t_ - ref_params->switch_points_[0].t_;
-    float dt_a = ref_params->switch_points_[2].t_ - ref_params->switch_points_[1].t_;
-    float dt_v = ref_params->switch_points_[4].t_ - ref_params->switch_points_[3].t_;
-    float deltaPosition = map_params->switch_points_[7].p_;
+// bool solveInverse(SCurveParameters* params)
+// {
+//     // Gather parameters needed
+//     const float dt_j = params->switch_points_[1].t_ - params->switch_points_[0].t_;
+//     const float dt_a = params->switch_points_[2].t_ - params->switch_points_[1].t_;
+//     const float dt_v = params->switch_points_[4].t_ - params->switch_points_[3].t_;
+//     const float deltaPosition = params->switch_points_[7].p_;
 
-    // Build linear system
-    Eigen::Matrix3f A;
-    Eigen::Vector3f b;
-    A << dt_j,                                     -1,                                     0    ,
-         std::pow(dt_j, 2),                        dt_a                    ,              -1    ,
-         std::pow(dt_j, 2) * (dt_a - 0.5 * dt_j),  std::pow(dt_j, 2) + std::pow(dt_a, 2),  dt_v + 2* dt_j;
-    b << 0, 0, deltaPosition;
+//     // Build linear system
+//     Eigen::Matrix3f A;
+//     Eigen::Vector3f b;
+//     A << dt_j,                                     -1,                                     0    ,
+//          std::pow(dt_j, 2),                        dt_a                    ,              -1    ,
+//          std::pow(dt_j, 2) * (dt_a - 0.5 * dt_j),  std::pow(dt_j, 2) + std::pow(dt_a, 2),  dt_v + 2* dt_j;
+//     b << 0, 0, deltaPosition;
 
-    // Solve system and check results
-    Eigen::Vector3f lims = A.colPivHouseholderQr().solve(b);
-    float relative_error = (A*lims - b).norm() / b.norm();
-    if (relative_error > 1e-5)
-    {
-        PLOGW << "Could not find feasible inverse parameter mapping";
-        return false;
-    }
+//     // Solve system and check results
+//     Eigen::Vector3f lims = A.colPivHouseholderQr().solve(b);
+//     float relative_error = (A*lims - b).norm() / b.norm();
+//     if (relative_error > 1e-5)
+//     {
+//         PLOGW << "Could not find feasible inverse parameter mapping";
+//         return false;
+//     }
 
-    map_params->j_lim_ = lims(0);
-    map_params->a_lim_ = lims(1);
-    map_params->v_lim_ = lims(2);
-    populateSwitchTimeParameters(map_params, dt_j, dt_a, dt_v);   
-    return true;
-}
+//     params->j_lim_ = lims(0);
+//     params->a_lim_ = lims(1);
+//     params->v_lim_ = lims(2);
+//     populateSwitchTimeParameters(params, dt_j, dt_a, dt_v);   
+//     return true;
+// }
 
 std::vector<float> computeKinematicsBasedOnRegion(const SCurveParameters& params, int region, float dt)
 {

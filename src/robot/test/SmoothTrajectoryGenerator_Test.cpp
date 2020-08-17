@@ -25,24 +25,166 @@ struct StringMaker<Velocity>
 
 TEST_CASE("SmoothTrajectoryGenerator class", "[trajectory]")
 {
-    SmoothTrajectoryGenerator stg;
-    Point p1 = {0,0,0};
-    Point p2 = {1,2,3};
-    bool fineMode = false;
+    SECTION("Smoke test - don't crash")
+    {
+        SmoothTrajectoryGenerator stg;
+        Point p1 = {3,4,5};
+        Point p2 = {1,2,3};
+        bool fineMode = false;
 
-    bool ok = stg.generatePointToPointTrajectory(p1, p2, fineMode);
-    REQUIRE(ok == true);
+        bool ok = stg.generatePointToPointTrajectory(p1, p2, fineMode);
+        REQUIRE(ok == true);
 
-    PVTPoint output = stg.lookup(1.0);
-    REQUIRE(output.time_ == 1.0);
+        PVTPoint output = stg.lookup(1.0);
+        REQUIRE(output.time_ == 1.0);
 
-    //Way in the future should return the final point
-    output = stg.lookup(60);
-    REQUIRE(output.time_ == 60);
-    CHECK(output.position_.x_ == Approx(p2.x_));
-    CHECK(output.position_.y_ == Approx(p2.y_));
-    CHECK(output.position_.a_ == Approx(p2.a_));
-    CHECK(output.velocity_ == Velocity(0,0,0));
+        fineMode = true;
+        ok = stg.generatePointToPointTrajectory(p1, p2, fineMode);
+        REQUIRE(ok == true);
+
+        output = stg.lookup(1.0);
+        REQUIRE(output.time_ == 1.0);
+    }
+
+    SECTION("Final position")
+    {
+        SmoothTrajectoryGenerator stg;
+        Point p1 = {0,0,0};
+        Point p2 = {1,2,3};
+        bool fineMode = false;
+
+        bool ok = stg.generatePointToPointTrajectory(p1, p2, fineMode);
+        REQUIRE(ok == true);
+
+        //Way in the future should return the final point
+        PVTPoint output = stg.lookup(60);
+        REQUIRE(output.time_ == 60);
+        CHECK(output.position_.x_ == Approx(p2.x_));
+        CHECK(output.position_.y_ == Approx(p2.y_));
+        CHECK(output.position_.a_ == Approx(p2.a_));
+        CHECK(output.velocity_.vx_ == Approx(0));
+        CHECK(output.velocity_.vy_ == Approx(0));
+        CHECK(output.velocity_.va_ == Approx(0).margin(0.0001));
+
+        fineMode = true;
+        ok = stg.generatePointToPointTrajectory(p1, p2, fineMode);
+        REQUIRE(ok == true);
+
+        //Way in the future should return the final point
+        output = stg.lookup(60);
+        REQUIRE(output.time_ == 60);
+        CHECK(output.position_.x_ == Approx(p2.x_));
+        CHECK(output.position_.y_ == Approx(p2.y_));
+        CHECK(output.position_.a_ == Approx(p2.a_));
+        CHECK(output.velocity_.vx_ == Approx(0));
+        CHECK(output.velocity_.vy_ == Approx(0));
+        CHECK(output.velocity_.va_ == Approx(0).margin(0.0001));
+    }
+
+    SECTION("Zeros")
+    {
+        SmoothTrajectoryGenerator stg;
+        Point p1 = {0,0,0};
+        Point p2 = {10,0,0};
+        bool fineMode = false;
+
+        bool ok = stg.generatePointToPointTrajectory(p1, p2, fineMode);
+        REQUIRE(ok == true);
+
+        //Way in the future should return the final point
+        PVTPoint output = stg.lookup(60);
+        REQUIRE(output.time_ == 60);
+        CHECK(output.position_.x_ == Approx(p2.x_));
+        CHECK(output.position_.y_ == Approx(p2.y_));
+        CHECK(output.position_.a_ == Approx(p2.a_));
+        CHECK(output.velocity_.vx_ == Approx(0));
+        CHECK(output.velocity_.vy_ == Approx(0));
+        CHECK(output.velocity_.va_ == Approx(0).margin(0.0001));
+    }
+
+    SECTION("Lookup too early")
+    {
+        SmoothTrajectoryGenerator stg;
+        Point p1 = {5,4,3};
+        Point p2 = {10,0,0};
+        bool fineMode = false;
+
+        bool ok = stg.generatePointToPointTrajectory(p1, p2, fineMode);
+        REQUIRE(ok == true);
+
+        PVTPoint output = stg.lookup(0);
+        REQUIRE(output.time_ == 0);
+        CHECK(output.position_.x_ == Approx(p1.x_));
+        CHECK(output.position_.y_ == Approx(p1.y_));
+        CHECK(output.position_.a_ == Approx(p1.a_));
+        CHECK(output.velocity_.vx_ == Approx(0));
+        CHECK(output.velocity_.vy_ == Approx(0));
+        CHECK(output.velocity_.va_ == Approx(0).margin(0.0001));
+
+        output = stg.lookup(-1);
+        REQUIRE(output.time_ == -1);
+        CHECK(output.position_.x_ == Approx(p1.x_));
+        CHECK(output.position_.y_ == Approx(p1.y_));
+        CHECK(output.position_.a_ == Approx(p1.a_));
+        CHECK(output.velocity_.vx_ == Approx(0));
+        CHECK(output.velocity_.vy_ == Approx(0));
+        CHECK(output.velocity_.va_ == Approx(0).margin(0.0001));
+    }
+
+    SECTION("Angle wrap")
+    {
+        SmoothTrajectoryGenerator stg;
+        Point p1 = {0,0,3};
+        Point p2 = {0,0,-3};
+        bool fineMode = false;
+
+        bool ok = stg.generatePointToPointTrajectory(p1, p2, fineMode);
+        REQUIRE(ok == true);
+
+        //Way in the future should return the final point
+        PVTPoint output = stg.lookup(60);
+        REQUIRE(output.time_ == 60);
+        CHECK(output.position_.x_ == Approx(p2.x_));
+        CHECK(output.position_.y_ == Approx(p2.y_));
+        CHECK(output.position_.a_ == Approx(p2.a_));
+        CHECK(output.velocity_.vx_ == Approx(0));
+        CHECK(output.velocity_.vy_ == Approx(0));
+        CHECK(output.velocity_.va_ == Approx(0).margin(0.0001));
+
+        for (float t = 0; t < 10; t+=0.1)
+        {
+            PVTPoint output = stg.lookup(t);
+            REQUIRE(fabs(output.position_.a_) < 3.14);
+            REQUIRE(fabs(output.position_.a_) > 2.99);
+        }
+    }
+
+    SECTION("Angle non-wrap")
+    {
+        SmoothTrajectoryGenerator stg;
+        Point p1 = {0,0,-1};
+        Point p2 = {0,0,1};
+        bool fineMode = false;
+
+        bool ok = stg.generatePointToPointTrajectory(p1, p2, fineMode);
+        REQUIRE(ok == true);
+
+        //Way in the future should return the final point
+        PVTPoint output = stg.lookup(60);
+        REQUIRE(output.time_ == 60);
+        CHECK(output.position_.x_ == Approx(p2.x_));
+        CHECK(output.position_.y_ == Approx(p2.y_));
+        CHECK(output.position_.a_ == Approx(p2.a_));
+        CHECK(output.velocity_.vx_ == Approx(0));
+        CHECK(output.velocity_.vy_ == Approx(0));
+        CHECK(output.velocity_.va_ == Approx(0).margin(0.0001));
+
+        for (float t = 0; t < 10; t+=0.1)
+        {
+            PVTPoint output = stg.lookup(t);
+            REQUIRE(fabs(output.position_.a_) < 1.01);
+        }
+    }
 }
 
 TEST_CASE("BuildMotionPlanningProblem", "[trajectory]")
@@ -96,8 +238,6 @@ TEST_CASE("BuildMotionPlanningProblem", "[trajectory]")
     }
 }
 
-// TODO: Verify fine vs coarse
-// TODO: Verify case where algorithm modifies limits
 TEST_CASE("generateTrajectory", "[trajectory]")
 {
     Point p1 = {0,0,0};
@@ -157,6 +297,45 @@ TEST_CASE("generateSCurve", "[trajectory]")
             CHECK(params.switch_points_[i].a_ == 0);
         }
     }
+
+    SECTION("Modified v limit")
+    {
+        float dist = 10;
+        DynamicLimits limits = {3, 1, 1};
+        SolverParameters solver = {10, 0.8, 0.8};
+        SCurveParameters params;
+        bool ok = generateSCurve(dist, limits, solver, &params);
+        REQUIRE(ok == true);
+        REQUIRE(params.v_lim_ < 3);
+        REQUIRE(params.a_lim_ == 1);
+        REQUIRE(params.j_lim_ == 1);
+    }
+
+    SECTION("Modified a limit")
+    {
+        float dist = 10;
+        DynamicLimits limits = {1, 2, 1};
+        SolverParameters solver = {10, 0.8, 0.8};
+        SCurveParameters params;
+        bool ok = generateSCurve(dist, limits, solver, &params);
+        REQUIRE(ok == true);
+        REQUIRE(params.v_lim_ == 1);
+        REQUIRE(params.a_lim_ < 2);
+        REQUIRE(params.j_lim_ == 1);
+    }
+
+    SECTION("Modified both limits")
+    {
+        float dist = 10;
+        DynamicLimits limits = {4, 2, 1};
+        SolverParameters solver = {10, 0.8, 0.8};
+        SCurveParameters params;
+        bool ok = generateSCurve(dist, limits, solver, &params);
+        REQUIRE(ok == true);
+        REQUIRE(params.v_lim_ < 4);
+        REQUIRE(params.a_lim_ < 2);
+        REQUIRE(params.j_lim_ == 1);
+    }
 }
 
 TEST_CASE("populateSwitchTimeParameters", "[trajectory]")
@@ -211,49 +390,6 @@ TEST_CASE("populateSwitchTimeParameters", "[trajectory]")
     CHECK(params.switch_points_[7].v_ == Approx(0).margin(0.001));
     CHECK(params.switch_points_[7].a_ == Approx(0).margin(0.001));
 
-}
-
-// TODO Add this
-TEST_CASE("synchronizeParameters", "[trajectory]")
-{
-}
-
-TEST_CASE("mapParameters", "[trajectory]")
-{
-    // Generate one set of parameters
-    float dist = 10;
-    DynamicLimits limits = {1, 2, 8};
-    SolverParameters solver = {10, 0.8, 0.8};
-    SCurveParameters params1;
-    bool ok = generateSCurve(dist, limits, solver, &params1);
-    REQUIRE(ok == true);
-    CHECK(params1.v_lim_ == limits.max_vel_);
-    CHECK(params1.a_lim_ == limits.max_acc_);
-    CHECK(params1.j_lim_ == limits.max_jerk_);
-
-    // Map parameters
-    SCurveParameters params2;
-    params2.switch_points_[7].p_ = dist;
-    ok = mapParameters(&params1, &params2);
-    REQUIRE(ok == true);
-
-    // Verify times match expectation
-    float dt_v = 9.25;
-    float dt_a = 0.25;
-    float dt_j = 0.25;
-    CHECK(params2.switch_points_[0].t_ == 0);
-    CHECK(params2.switch_points_[1].t_ == dt_j);
-    CHECK(params2.switch_points_[2].t_ == dt_j + dt_a);
-    CHECK(params2.switch_points_[3].t_ == 2*dt_j + dt_a);
-    CHECK(params2.switch_points_[4].t_ == 2*dt_j + dt_a + dt_v);
-    CHECK(params2.switch_points_[5].t_ == 3*dt_j + dt_a + dt_v);
-    CHECK(params2.switch_points_[6].t_ == 3*dt_j + 2*dt_a + dt_v);
-    CHECK(params2.switch_points_[7].t_ == 4*dt_j + 2*dt_a + dt_v);
-
-    // Verify limits match expectation
-    CHECK(params2.v_lim_ == Approx(limits.max_vel_).epsilon(0.01));
-    CHECK(params2.a_lim_ == Approx(limits.max_acc_).epsilon(0.01));
-    CHECK(params2.j_lim_ == Approx(limits.max_jerk_).epsilon(0.01));
 }
 
 TEST_CASE("lookup_1D", "[trajectory]")
@@ -445,3 +581,126 @@ TEST_CASE("computeKinematicsBasedOnRegion", "[trajectory]")
         REQUIRE(test_vec[2] == Approx(expected_p).margin(0.001));
     }
 }
+
+
+// TEST_CASE("synchronizeParameters", "[trajectory]")
+// {
+//     SECTION("Monotonic - First arg")
+//     {
+//         // Generate one set of parameters
+//         float dist = 10;
+//         DynamicLimits limits = {1, 2, 8};
+//         SolverParameters solver = {10, 0.8, 0.8};
+//         SCurveParameters params1;
+//         bool ok = generateSCurve(dist, limits, solver, &params1);
+//         REQUIRE(ok == true);
+//         CHECK(params1.v_lim_ == limits.max_vel_);
+//         CHECK(params1.a_lim_ == limits.max_acc_);
+//         CHECK(params1.j_lim_ == limits.max_jerk_);
+
+//         // Make new set of params - make sure all dt values are smaller than the first one so 
+//         // it maps params1 times to param2 
+//         SCurveParameters params2;
+//         params2.switch_points_[7].p_ = dist;
+//         float dt_v = 9;
+//         float dt_a = 0.05;
+//         float dt_j = 0.05;
+//         params2.switch_points_[0].t_ = 0;
+//         params2.switch_points_[1].t_ = dt_j;
+//         params2.switch_points_[2].t_ = dt_j + dt_a;
+//         params2.switch_points_[3].t_ = 2*dt_j + dt_a;
+//         params2.switch_points_[4].t_ = 2*dt_j + dt_a + dt_v;
+//         params2.switch_points_[5].t_ = 3*dt_j + dt_a + dt_v;
+//         params2.switch_points_[6].t_ = 3*dt_j + 2*dt_a + dt_v;
+//         params2.switch_points_[7].t_ = 4*dt_j + 2*dt_a + dt_v;
+
+//         // Synchronize parameters
+//         ok = synchronizeParameters(&params1, &params2);
+//         REQUIRE(ok == true);
+
+//         // Verify limits match expectation - i.e. params2 got mapped to slower values
+//         CHECK(params2.v_lim_ == Approx(limits.max_vel_).epsilon(0.01));
+//         CHECK(params2.a_lim_ == Approx(limits.max_acc_).epsilon(0.01));
+//         CHECK(params2.j_lim_ == Approx(limits.max_jerk_).epsilon(0.01));
+
+//     }
+//     SECTION("Monotonic - Second arg")
+//     {
+//         // Generate one set of parameters
+//         float dist = 10;
+//         DynamicLimits limits = {1, 2, 8};
+//         SolverParameters solver = {10, 0.8, 0.8};
+//         SCurveParameters params1;
+//         bool ok = generateSCurve(dist, limits, solver, &params1);
+//         REQUIRE(ok == true);
+//         CHECK(params1.v_lim_ == limits.max_vel_);
+//         CHECK(params1.a_lim_ == limits.max_acc_);
+//         CHECK(params1.j_lim_ == limits.max_jerk_);
+
+//         // Make new set of params - make sure all dt values are smaller than the first one so 
+//         // it maps params1 times to param2 
+//         SCurveParameters params2;
+//         params2.switch_points_[7].p_ = dist;
+//         float dt_v = 9;
+//         float dt_a = 0.05;
+//         float dt_j = 0.05;
+//         params2.switch_points_[0].t_ = 0;
+//         params2.switch_points_[1].t_ = dt_j;
+//         params2.switch_points_[2].t_ = dt_j + dt_a;
+//         params2.switch_points_[3].t_ = 2*dt_j + dt_a;
+//         params2.switch_points_[4].t_ = 2*dt_j + dt_a + dt_v;
+//         params2.switch_points_[5].t_ = 3*dt_j + dt_a + dt_v;
+//         params2.switch_points_[6].t_ = 3*dt_j + 2*dt_a + dt_v;
+//         params2.switch_points_[7].t_ = 4*dt_j + 2*dt_a + dt_v;
+
+//         // Synchronize parameters
+//         ok = synchronizeParameters(&params1, &params2);
+//         REQUIRE(ok == true);
+
+//         // Verify limits match expectation - i.e. params2 got mapped to slower values
+//         CHECK(params2.v_lim_ == Approx(limits.max_vel_).epsilon(0.01));
+//         CHECK(params2.a_lim_ == Approx(limits.max_acc_).epsilon(0.01));
+//         CHECK(params2.j_lim_ == Approx(limits.max_jerk_).epsilon(0.01));
+
+//     }
+//     SECTION ("Nonmonotonic")
+//     {
+
+//     }
+// }
+
+// TEST_CASE("mapParameters", "[trajectory]")
+// {
+//     // Generate one set of parameters
+//     float dist = 10;
+//     DynamicLimits limits = {1, 2, 8};
+//     SolverParameters solver = {10, 0.8, 0.8};
+//     SCurveParameters params1;
+//     bool ok = generateSCurve(dist, limits, solver, &params1);
+//     REQUIRE(ok == true);
+//     CHECK(params1.v_lim_ == limits.max_vel_);
+//     CHECK(params1.a_lim_ == limits.max_acc_);
+//     CHECK(params1.j_lim_ == limits.max_jerk_);
+
+//     // Solve the inverse
+//     ok = solveInverse(&params1);
+//     REQUIRE(ok == true);
+
+//     // Verify times match expectation
+//     float dt_v = 9.25;
+//     float dt_a = 0.25;
+//     float dt_j = 0.25;
+//     CHECK(params1.switch_points_[0].t_ == 0);
+//     CHECK(params1.switch_points_[1].t_ == dt_j);
+//     CHECK(params1.switch_points_[2].t_ == dt_j + dt_a);
+//     CHECK(params1.switch_points_[3].t_ == 2*dt_j + dt_a);
+//     CHECK(params1.switch_points_[4].t_ == 2*dt_j + dt_a + dt_v);
+//     CHECK(params1.switch_points_[5].t_ == 3*dt_j + dt_a + dt_v);
+//     CHECK(params1.switch_points_[6].t_ == 3*dt_j + 2*dt_a + dt_v);
+//     CHECK(params1.switch_points_[7].t_ == 4*dt_j + 2*dt_a + dt_v);
+
+//     // Verify limits match expectation
+//     CHECK(params1.v_lim_ == Approx(limits.max_vel_).epsilon(0.01));
+//     CHECK(params1.a_lim_ == Approx(limits.max_acc_).epsilon(0.01));
+//     CHECK(params1.j_lim_ == Approx(limits.max_jerk_).epsilon(0.01));
+// }

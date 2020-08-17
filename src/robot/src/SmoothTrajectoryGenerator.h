@@ -136,7 +136,7 @@ Trajectory generateTrajectory(MotionPlanningProblem problem);
 bool generateSCurve(float dist, DynamicLimits limits, const SolverParameters& solver, SCurveParameters* params);
 void populateSwitchTimeParameters(SCurveParameters* params, float dt_j, float dt_a, float dt_v);
 bool synchronizeParameters(SCurveParameters* params1, SCurveParameters* params2);
-bool mapParameters(const SCurveParameters* ref_traj, SCurveParameters* map_traj);
+bool solveInverse(SCurveParameters* params);
 std::vector<float> lookup_1D(float time, const SCurveParameters& params);
 std::vector<float> computeKinematicsBasedOnRegion(const SCurveParameters& params, int region, float dt);
 

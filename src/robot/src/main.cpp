@@ -36,18 +36,15 @@ void configure_logger()
     PLOGI << "Logger ready";
 }
 
-
-// TODO - move to config file
-#define MOCK_SOCKET true
-std::vector<std::string> MOCK_SOCKET_DATA = {"<{'type':'init'}>", "8000", "<{'type':'place'}>", "3000", "<{'type':'estop'}>"};
 void setup_mock_socket()
 {
-    if(MOCK_SOCKET)
+    bool enabled = cfg.lookup("mock_socket.enabled");
+    if(enabled)
     {
         auto factory = SocketMultiThreadWrapperFactory::getFactoryInstance();
         factory->set_mode(SOCKET_FACTORY_MODE::MOCK);
         factory->build_socket();
-        for (const auto& s : MOCK_SOCKET_DATA)
+        for (const auto& s : cfg.lookup("mock_socket.data"))
         {
             factory->add_mock_data(s);
         }
