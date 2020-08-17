@@ -117,7 +117,7 @@ def generate_inverse(p, dt_j, dt_a, dt_v):
     A = np.array([
         [dt_j,                                          -1,         0    ],
         [dt_j ** 2,                                     dt_a,      -1    ],
-        [(dt_j ** 2) * dt_a,             dt_j ** 2 + dt_a ** 2,     dt_v + 2 * dt_j ]])
+        [(dt_j ** 2) * (dt_a - 0.5 *dt_j),     dt_j ** 2 + dt_a ** 2,     dt_v + 2* dt_j ]])
     b = np.array([0, 0, p])
     lims = np.linalg.solve(A, b)
 
@@ -201,7 +201,7 @@ if __name__ == '__main__':
         dt_v = output['t'][4] - output['t'][3]
         output2 = generate_inverse(p_target, dt_j, dt_a, dt_v)
 
-        eps = 0.05
+        eps = 0.01
         all_valid = True
         if output2:
             if abs(output2['v_lim'] - output['v_lim']) / output['v_lim'] > eps:
