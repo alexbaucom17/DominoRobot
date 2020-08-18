@@ -15,6 +15,7 @@ std::unique_ptr<SerialCommsBase> buildSerialComms(std::string portName)
     }
 }
 
+// TODO: Add system to forward debug messages to the log
 SerialComms::SerialComms(std::string portName)
 : SerialCommsBase(),
   serial_(portName),

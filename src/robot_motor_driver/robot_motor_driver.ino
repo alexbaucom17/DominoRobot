@@ -11,6 +11,7 @@ HardwareSerial& debug = Serial0;
 SerialComms comm(Serial);
 
 // Constants
+// TODO: Add belt reduction
 #define WHEEL_RADIUS 0.0751
 #define WHEEL_DIST_FROM_CENTER 0.4794
 #define STEPS_PER_REV 800
@@ -107,6 +108,7 @@ MotorVelocity doIK(CartVelocity cmd)
     return motors;
 }
 
+// TODO: Setup debug to print to logs
 void SendCommandsToMotors(MotorVelocity motors)
 {
     debug.print("Send to motor: ");

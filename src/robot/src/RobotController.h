@@ -63,6 +63,9 @@ class RobotController
     PVTPoint generateStationaryCommand();
     // Sets up evertyhing to start the trajectory running
     void startTraj();
+    // Reads an incoming message from the motor driver and returns local
+    // velocity if available
+    std::vector<float> readMsgFromMotorDriver();
 
     // Member variables
     SmoothTrajectoryGenerator trajGen_;    // Trajectory generator object

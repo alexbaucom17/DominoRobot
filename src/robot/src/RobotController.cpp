@@ -2,6 +2,7 @@
 
 #include <math.h>
 #include <plog/Log.h>
+#include <Eigen/Dense>
 
 #include "constants.h"
 #include "utils.h"
@@ -97,6 +98,7 @@ void RobotController::update()
         // Check if we are finished with the trajectory
         if (checkForCompletedTrajectory(cmd))
         {
+            PLOGI.printf("Reached goal");
             disableAllMotors();
             trajRunning_ = false;
             // Re-enable fine mode at the end of a trajectory
@@ -189,37 +191,38 @@ Velocity RobotController::computeControl(PVTPoint cmd)
 
 bool RobotController::checkForCompletedTrajectory(const PVTPoint cmd)
 {
-    // TODO: Switch to config
-    float trans_pos_err = TRANS_POS_ERR_COARSE;
-    float ang_pos_err = ANG_POS_ERR_COARSE;
-    float trans_vel_err = TRANS_VEL_ERR_COARSE;
-    float ang_vel_err = ANG_VEL_ERR_COARSE;
+    // TODO: Consider moving these to class members for faster handling if lookup is slow
+    // Get the right threshold values
+    float trans_pos_err = cfg.lookup("motion.translation.position_threshold.coarse");
+    float ang_pos_err = cfg.lookup("motion.rotation.position_threshold.coarse");
+    float trans_vel_err = cfg.lookup("motion.translation.velocity_threshold.coarse");
+    float ang_vel_err = cfg.lookup("motion.rotation.velocity_threshold.coarse");
     if(fineMode_)
     {
-      trans_pos_err = TRANS_POS_ERR_FINE;
-      ang_pos_err = ANG_POS_ERR_FINE;
-      trans_vel_err = TRANS_VEL_ERR_FINE;
-      ang_vel_err = ANG_VEL_ERR_FINE;
+        trans_pos_err = cfg.lookup("motion.translation.position_threshold.fine");
+        ang_pos_err = cfg.lookup("motion.rotation.position_threshold.fine");
+        trans_vel_err = cfg.lookup("motion.translation.velocity_threshold.fine");
+        ang_vel_err = cfg.lookup("motion.rotation.velocity_threshold.fine");
     }
 
+    // Verify our commanded velocity is zero
+    bool zeroCmdVel = cmd.velocity_ == Velocity(0,0,0);
 
-    // TODO: Simplfy this and make it readable
-    if(cmd.velocity_ == Velocity(0,0,0) &&
-       fabs(cartVel_.vx_) < trans_vel_err && 
-       fabs(cartVel_.vy_) < trans_vel_err && 
-       fabs(cartVel_.va_) < ang_vel_err &&
-       (velOnlyMode_ || 
-       (fabs(goalPos_.x_ - cartPos_.x_) < trans_pos_err &&
-        fabs(goalPos_.y_ - cartPos_.y_) < trans_pos_err &&
-        fabs(angle_diff(goalPos_.a_, cartPos_.a_)) < ang_pos_err )) )
-    {
-        PLOGI.printf("Reached goal");
-        return true;
-    } 
-    else
-    {
-        return false;
-    }
+    // Verify translational and rotational positions are within tolerance
+    Eigen::Vector2f dp = {goalPos_.x_ - cartPos_.x_, goalPos_.y_ - cartPos_.y_};
+    bool pos_in_tolerance = dp.norm() < trans_pos_err &&
+                            fabs(angle_diff(goalPos_.a_, cartPos_.a_)) < ang_pos_err; 
+
+    // Verify translational and rotational velocities are within tolerance
+    Eigen::Vector2f dv = {cartVel_.vx_, cartVel_.vy_};
+    bool vel_in_tolerance = dv.norm() < trans_vel_err && fabs(cartVel_.va_) < ang_vel_err;
+
+    // Trajectory is done when we aren't commanding any velocity, our actual velocity is
+    // within the correct tolerance and we are either within position tolerance or in velocity
+    // only mode where we don't care about the final position.
+    bool trajComplete = zeroCmdVel && vel_in_tolerance && (velOnlyMode_ || pos_in_tolerance);
+
+    return trajComplete;   
 }
 
 void RobotController::enableAllMotors()
@@ -253,12 +256,10 @@ void RobotController::inputPosition(float x, float y, float a)
     }
 }
 
-void RobotController::computeOdometry()
-{  
- 
-    // TODO: Move message parsing to a different function
+std::vector<float> RobotController::readMsgFromMotorDriver()
+{
     std::string msg = "";
-    float local_cart_vel[3];
+    std::vector<float> decodedVelocity = {0,0,0};
     if (serial_to_motor_driver_->isConnected())
     {
          msg = serial_to_motor_driver_->rcv();
@@ -266,7 +267,12 @@ void RobotController::computeOdometry()
 
     if (msg.empty())
     {
-        return;
+        return {};
+    }
+    else if (msg.rfind("DEBUG", 0) == 0)
+    {
+        PLOGI << msg;
+        return {};
     }
     else
     {
@@ -276,22 +282,29 @@ void RobotController::computeOdometry()
         {
             if(msg[i] == ',')
             {
-                local_cart_vel[j] = std::stof(msg.substr(prev_idx, i - prev_idx));
+                decodedVelocity[j] = std::stof(msg.substr(prev_idx, i - prev_idx));
                 j++;
                 prev_idx = i+1;
             }
 
             if (i == msg.length()-1)
             {
-                local_cart_vel[j] = std::stof(msg.substr(prev_idx, std::string::npos));
+                decodedVelocity[j] = std::stof(msg.substr(prev_idx, std::string::npos));
             }
         }
         if(j != 2)
         {
             PLOGW.printf("Decode failed");
-            return;
+            return {};
         }
     }
+    return decodedVelocity;
+}
+
+void RobotController::computeOdometry()
+{  
+ 
+    std::vector<float> local_cart_vel = readMsgFromMotorDriver();
     
     PLOGD_(MOTION_LOG_ID).printf("Decoded velocity: %.3f, %.3f, %.3f", local_cart_vel[0], local_cart_vel[1], local_cart_vel[2]);
 
@@ -303,17 +316,15 @@ void RobotController::computeOdometry()
     cartVel_.va_ = local_cart_vel[2];
 
     // Compute time since last odom update
-    // std::chrono::time_point<std::chrono::steady_clock> curTime = std::chrono::steady_clock::now();
-    // float dt = std::chrono::duration_cast<fsec>(curTime - prevOdomLoopTime_).count()
-    // prevOdomLoopTime_ = curTime;
+    std::chrono::time_point<std::chrono::steady_clock> curTime = std::chrono::steady_clock::now();
+    float dt = std::chrono::duration_cast<fsec>(curTime - prevOdomLoopTime_).count();
+    prevOdomLoopTime_ = curTime;
 
-    // Retrieve new state estimate
-    // Eigen::Vector3f x_hat = kf_.state();
-    // cartPos_.x_ = x_hat(0,0);
-    // cartPos_.y_ = x_hat(1,0);
-    // cartPos_.a_ = x_hat(2,0);
+    // Compute new position estimate
+    cartPos_.x_ += cartVel_.vx_ * dt;
+    cartPos_.y_ += cartVel_.vy_ * dt;
+    cartPos_.a_ += cartVel_.va_ * dt;
 
-    // TODO: Integrate velocity to get position
 }
 
 void RobotController::setCartVelCommand(Velocity target_vel)
