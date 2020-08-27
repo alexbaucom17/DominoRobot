@@ -77,7 +77,6 @@ class RobotController
     Point cartPos_;                        // Current cartesian position
     Point goalPos_;                        // Desired goal position
     Velocity cartVel_;                     // Current cartesian velocity
-    bool enabled_;                         // Global motor enabled flag
     bool trajRunning_;                     // If a trajectory is currently active
     bool fineMode_;                        // If fine positioning mode is enabled or not.
     bool velOnlyMode_;                     // If we are only interested in velocity and not goal position

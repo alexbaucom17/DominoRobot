@@ -80,6 +80,14 @@ std::string SerialComms::rcv()
             recvInProgress_ = true;
         }
     }
+
+    // If the client is sending a debug message, just log it
+    if (new_msg.rfind("DEBUG", 0) == 0)
+    {
+        PLOGI << new_msg;
+        return "";
+    }
+
     return new_msg;
 }
 

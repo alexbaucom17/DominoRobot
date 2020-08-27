@@ -7,13 +7,12 @@
 // Serial0 + Serial1 = COM ports
 
 // Globals
-HardwareSerial& debug = Serial0;
 SerialComms comm(Serial);
 
 // Constants
-// TODO: Add belt reduction
 #define WHEEL_RADIUS 0.0751
 #define WHEEL_DIST_FROM_CENTER 0.4794
+#define BELT_RATIO 3
 #define STEPS_PER_REV 800
 #define MOTOR_MAX_VEL_STEPS_PER_SECOND 10000
 #define MOTOR_MAX_ACC_STEPS_PER_SECOND_SQARED 100000
@@ -65,7 +64,7 @@ struct MotorVelocity
 
 CartVelocity decodeMsg(String msg)
 {
-    debug.print("Incoming message: ");
+    debug.print("DEBUG Incoming message: ");
     debug.println(msg);
     float vals[3];
     int prev_idx = 0;
@@ -90,7 +89,7 @@ CartVelocity decodeMsg(String msg)
     cv.vy = vals[1];
     cv.va = vals[2];
 
-    debug.print("Decoded message: ");
+    debug.print("DEBUG Decoded message: ");
     cv.print(debug);
 
     return cv;
@@ -100,18 +99,17 @@ CartVelocity decodeMsg(String msg)
 MotorVelocity doIK(CartVelocity cmd)
 {
     MotorVelocity motors;
-    motors.v0 = 1/WHEEL_RADIUS * (-1 * sq3 / 2 * cmd.vx  + 0.5 * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va);
-    motors.v1 = 1/WHEEL_RADIUS * (     sq3 / 2 * cmd.vx  + 0.5 * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va);
-    motors.v2 = 1/WHEEL_RADIUS * (                       - 1   * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va);
-    debug.print("After IK: ");
+    motors.v0 = 1/WHEEL_RADIUS * (-1 * sq3 / 2 * cmd.vx  + 0.5 * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va) * BELT_REDUCTION;
+    motors.v1 = 1/WHEEL_RADIUS * (     sq3 / 2 * cmd.vx  + 0.5 * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va) * BELT_REDUCTION;
+    motors.v2 = 1/WHEEL_RADIUS * (                       - 1   * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va) * BELT_REDUCTION;
+    debug.print("DEBUG After IK: ");
     motors.print(debug);
     return motors;
 }
 
-// TODO: Setup debug to print to logs
 void SendCommandsToMotors(MotorVelocity motors)
 {
-    debug.print("Send to motor: ");
+    debug.print("DEBUG Send to motor: ");
     debug.println(motors.v0 * radsPerSecondToStepsPerSecond);
     //MOTOR_FRONT_LEFT.MoveVelocity(motors.v0 * radsPerSecondToStepsPerSecond);
     //MOTOR_FRONT_RIGHT.MoveVelocity(motors.v1 * radsPerSecondToStepsPerSecond);
@@ -125,7 +123,7 @@ MotorVelocity ReadMotorSpeeds()
     measured.v1 = 2; //MOTOR_FRONT_RIGHT.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
     measured.v2 = 3; //MOTOR_REAR_CENTER.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
     
-    debug.print("Motor measured: ");
+    debug.print("DEBUG Motor measured: ");
     measured.print(debug);
 
     return measured;
@@ -134,11 +132,16 @@ MotorVelocity ReadMotorSpeeds()
 // https://www.wolframalpha.com/input/?i=inv%28%5B%5B-cosd%2830%29%2C+sind%2830%29%2C+d%5D%2C%5Bcosd%2830%29%2C+sind%2830%29%2C+d%5D%2C%5B0%2C-1%2Cd%5D%5D%29
 CartVelocity doFK(MotorVelocity motor_measured)
 {
+    MotorVelocity wheel_speed;
+    wheel_speed.v0 = motor_measured.v0 / float(BELT_REDUCTION);
+    wheel_speed.v1 = motor_measured.v1 / float(BELT_REDUCTION);
+    wheel_speed.v2 = motor_measured.v2 / float(BELT_REDUCTION);
+    
     CartVelocity robot_measured;
-    robot_measured.vx = rOver3 * (-1 * sq3 * motor_measured.v0 + sq3 * motor_measured.v1);
-    robot_measured.vy = rOver3 * ( motor_measured.v0 + motor_measured.v1 - 2.0 * motor_measured.v2); 
-    robot_measured.va = rOver3 / WHEEL_DIST_FROM_CENTER * (motor_measured.v0 + motor_measured.v1 + motor_measured.v2);
-    debug.print("After FK: ");
+    robot_measured.vx = rOver3 * (-1 * sq3 * wheel_speed.v0 + sq3 * wheel_speed.v1);
+    robot_measured.vy = rOver3 * ( wheel_speed.v0 + wheel_speed.v1 - 2.0 * wheel_speed.v2); 
+    robot_measured.va = rOver3 / WHEEL_DIST_FROM_CENTER * (wheel_speed.v0 + wheel_speed.v1 + wheel_speed.v2);
+    debug.print("DEBUG After FK: ");
     robot_measured.print(debug);
     return robot_measured;
 
@@ -152,12 +155,33 @@ void ReportRobotVelocity(CartVelocity robot_v_measured)
 }
 
 
+// Checks for any motor on/off requests before trying to parse for commanded speeds
+bool handlePowerRequests(String msg)
+{
+    if(msg == "Power:ON")
+    {
+        MOTOR_FRONT_RIGHT.EnableRequest(true);
+        MOTOR_REAR_CENTER.EnableRequest(true);
+        MOTOR_FRONT_LEFT.EnableRequest(true);
+        return true;
+    }
+    else if (msg == "Power:OFF")
+    {
+        MOTOR_FRONT_RIGHT.EnableRequest(false);
+        MOTOR_REAR_CENTER.EnableRequest(false);
+        MOTOR_FRONT_LEFT.EnableRequest(false);
+        return true;
+    }
+    return false;
+}
+
+
 void setup()
 {
     Serial.begin(115200);
     
     debug.begin(115200);
-    debug.println("Clearcore starting");
+    debug.println("DEBUG Clearcore starting");
     
     // Sets the input clocking rate. This normal rate is ideal for ClearPath
     // step and direction applications.
@@ -165,13 +189,13 @@ void setup()
     // Sets all motor connectors into step and direction mode.
     MotorMgr.MotorModeSet(MotorManager::MOTOR_ALL, Connector::CPM_MODE_STEP_AND_DIR);
     // Enable motors
-    MOTOR_FRONT_RIGHT.EnableRequest(true);
+    MOTOR_FRONT_RIGHT.EnableRequest(false);
     MOTOR_FRONT_RIGHT.VelMax(MOTOR_MAX_VEL_STEPS_PER_SECOND);
     MOTOR_FRONT_RIGHT.AccelMax(MOTOR_MAX_ACC_STEPS_PER_SECOND_SQARED);
-    MOTOR_REAR_CENTER.EnableRequest(true);
+    MOTOR_REAR_CENTER.EnableRequest(false);
     MOTOR_REAR_CENTER.VelMax(MOTOR_MAX_VEL_STEPS_PER_SECOND);
     MOTOR_REAR_CENTER.AccelMax(MOTOR_MAX_ACC_STEPS_PER_SECOND_SQARED);
-    MOTOR_FRONT_LEFT.EnableRequest(true);
+    MOTOR_FRONT_LEFT.EnableRequest(false);
     MOTOR_FRONT_LEFT.VelMax(MOTOR_MAX_VEL_STEPS_PER_SECOND);
     MOTOR_FRONT_LEFT.AccelMax(MOTOR_MAX_ACC_STEPS_PER_SECOND_SQARED);
 }
@@ -181,11 +205,14 @@ void loop()
     String msg = comm.rcv();
     if(msg.length() != 0)
     {
-        CartVelocity cmd_v = decodeMsg(msg);
-        MotorVelocity motor_v = doIK(cmd_v);
-        SendCommandsToMotors(motor_v);
-        MotorVelocity motor_v_measured = ReadMotorSpeeds();
-        CartVelocity robot_v_measured = doFK(motor_v_measured);
-        ReportRobotVelocity(robot_v_measured);
+        if (!handlePowerRequests(msg))
+        {
+            CartVelocity cmd_v = decodeMsg(msg);
+            MotorVelocity motor_v = doIK(cmd_v);
+            SendCommandsToMotors(motor_v);
+            MotorVelocity motor_v_measured = ReadMotorSpeeds();
+            CartVelocity robot_v_measured = doFK(motor_v_measured);
+            ReportRobotVelocity(robot_v_measured);
+        }
     }
 }

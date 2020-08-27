@@ -19,7 +19,6 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
   cartPos_(),
   goalPos_(),
   cartVel_(),
-  enabled_(false),
   trajRunning_(false),
   fineMode_(true),
   velOnlyMode_(false)
@@ -227,16 +226,28 @@ bool RobotController::checkForCompletedTrajectory(const PVTPoint cmd)
 
 void RobotController::enableAllMotors()
 {
-    // TODO: port this
-    enabled_ = true;
-    PLOGI.printf("Enabling motors");
+    if (serial_to_motor_driver_->isConnected())
+    {
+        serial_to_motor_driver_->send("Power:ON");
+        PLOGI << "Motors enabled";
+    }
+    else
+    {
+        PLOGW << "No connection: Skipping motor enable";
+    }
 }
 
 void RobotController::disableAllMotors()
 {
-    // TODO: port this
-    enabled_ = false;
-    PLOGI.printf("Disabling motors");
+    if (serial_to_motor_driver_->isConnected())
+    {
+        serial_to_motor_driver_->send("Power:OFF");
+        PLOGI << "Motors disabled";
+    }
+    else
+    {
+        PLOGW << "No connection: Skipping motor enable";
+    }
 }
 
 void RobotController::inputPosition(float x, float y, float a)
@@ -267,11 +278,6 @@ std::vector<float> RobotController::readMsgFromMotorDriver()
 
     if (msg.empty())
     {
-        return {};
-    }
-    else if (msg.rfind("DEBUG", 0) == 0)
-    {
-        PLOGI << msg;
         return {};
     }
     else
