@@ -7,6 +7,7 @@
 // Serial0 + Serial1 = COM ports
 
 // Globals
+HardwareSerial& debug = Serial;
 SerialComms comm(Serial);
 
 // Constants
@@ -99,9 +100,9 @@ CartVelocity decodeMsg(String msg)
 MotorVelocity doIK(CartVelocity cmd)
 {
     MotorVelocity motors;
-    motors.v0 = 1/WHEEL_RADIUS * (-1 * sq3 / 2 * cmd.vx  + 0.5 * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va) * BELT_REDUCTION;
-    motors.v1 = 1/WHEEL_RADIUS * (     sq3 / 2 * cmd.vx  + 0.5 * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va) * BELT_REDUCTION;
-    motors.v2 = 1/WHEEL_RADIUS * (                       - 1   * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va) * BELT_REDUCTION;
+    motors.v0 = 1/WHEEL_RADIUS * (-1 * sq3 / 2 * cmd.vx  + 0.5 * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va) * BELT_RATIO;
+    motors.v1 = 1/WHEEL_RADIUS * (     sq3 / 2 * cmd.vx  + 0.5 * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va) * BELT_RATIO;
+    motors.v2 = 1/WHEEL_RADIUS * (                       - 1   * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va) * BELT_RATIO;
     debug.print("DEBUG After IK: ");
     motors.print(debug);
     return motors;
@@ -133,9 +134,9 @@ MotorVelocity ReadMotorSpeeds()
 CartVelocity doFK(MotorVelocity motor_measured)
 {
     MotorVelocity wheel_speed;
-    wheel_speed.v0 = motor_measured.v0 / float(BELT_REDUCTION);
-    wheel_speed.v1 = motor_measured.v1 / float(BELT_REDUCTION);
-    wheel_speed.v2 = motor_measured.v2 / float(BELT_REDUCTION);
+    wheel_speed.v0 = motor_measured.v0 / float(BELT_RATIO);
+    wheel_speed.v1 = motor_measured.v1 / float(BELT_RATIO);
+    wheel_speed.v2 = motor_measured.v2 / float(BELT_RATIO);
     
     CartVelocity robot_measured;
     robot_measured.vx = rOver3 * (-1 * sq3 * wheel_speed.v0 + sq3 * wheel_speed.v1);
