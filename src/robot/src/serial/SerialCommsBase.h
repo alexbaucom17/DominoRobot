@@ -3,6 +3,9 @@
 
 #include <string>
 
+#define START_CHAR '<'
+#define END_CHAR '>'
+
 class SerialCommsBase
 {
   public:

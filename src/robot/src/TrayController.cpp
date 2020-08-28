@@ -1,10 +1,11 @@
 #include "TrayController.h"
 #include "constants.h"
 #include <plog/Log.h>
+#include "serial/SerialCommsFactory.h"
 
 
 TrayController::TrayController()
-: serial_to_lifter_driver_(buildSerialComms(LIFTER_DRIVER_USB)),
+: serial_to_lifter_driver_(SerialCommsFactory::getFactoryInstance()->build_serial_comms(LIFTER_DRIVER_USB)),
   action_step_running_(false),
   load_complete_(false),
   action_step_(0),

@@ -26,7 +26,7 @@ class SocketMultiThreadWrapperFactory
 
     std::unique_ptr<SocketMultiThreadWrapperBase> get_socket();
 
-    // Delete copy and assigmnet constructors
+    // Delete copy and assignment constructors
     SocketMultiThreadWrapperFactory(SocketMultiThreadWrapperFactory const&) = delete;
     SocketMultiThreadWrapperFactory& operator= (SocketMultiThreadWrapperFactory const&) = delete;
 

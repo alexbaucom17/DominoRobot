@@ -17,8 +17,6 @@ Rpi Refactor:
 - Prep for hardware testing
 
 Purchase:
-- 24V battery + wires for clearcore
-- 5V regulator for raspi (and arduino nano?)
 
 QOL stuff:
 - Try to make it so master doesn't crash when network has trouble (need to handle detecting disconnect and then auto-reconnecting)

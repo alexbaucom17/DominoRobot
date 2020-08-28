@@ -6,13 +6,14 @@
 
 #include "constants.h"
 #include "utils.h"
+#include "serial/SerialCommsFactory.h"
 
 typedef std::chrono::duration<float> fsec;
 
 RobotController::RobotController(StatusUpdater& statusUpdater)
 : trajGen_(),
   statusUpdater_(statusUpdater),
-  serial_to_motor_driver_(buildSerialComms(CLEARCORE_USB)),
+  serial_to_motor_driver_(SerialCommsFactory::getFactoryInstance()->build_serial_comms(CLEARCORE_USB)),
   prevControlLoopTime_(std::chrono::steady_clock::now()),
   prevOdomLoopTime_(std::chrono::steady_clock::now()),
   trajStartTime_(std::chrono::steady_clock::now()),
@@ -24,8 +25,6 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
   velOnlyMode_(false)
 {    
 }
-
-// TODO: Add tests for this class
 
 void RobotController::moveToPosition(float x, float y, float a)
 {
@@ -151,35 +150,6 @@ PVTPoint RobotController::generateStationaryCommand()
 
 Velocity RobotController::computeControl(PVTPoint cmd)
 {
-    
-    // Recompute the loop update time to get better accuracy
-    // std::chrono::time_point<std::chrono::steady_clock> curTime = std::chrono::steady_clock::now();
-    // float dt = std::chrono::duration_cast<fsec>(curTime - prevControlLoopTime_).count()
-    // prevControlLoopTime_ = curTime;
-
-    // // x control 
-    // float posErrX = cmd.position_.x_ - cartPos_.x_;
-    // float velErrX = cmd.velocity_.x_ - cartVel_.x_;
-    // errSumX_ += posErrX * dt;
-    // float x_cmd = cmd.velocity_.x_ + CART_TRANS_KP * posErrX + CART_TRANS_KD * velErrX + CART_TRANS_KI * errSumX_;
-
-    // // y control 
-    // float posErrY = cmd.position_.y_ - cartPos_.y_;
-    // float velErrY = cmd.velocity_.y_ - cartVel_.y_;
-    // errSumY_ += posErrY * dt;
-    // float y_cmd = cmd.velocity_.y_ + CART_TRANS_KP * posErrY + CART_TRANS_KD * velErrY + CART_TRANS_KI * errSumY_;
-
-    // // a control - need to be careful of angle error
-    // float posErrA = angle_diff(cmd.position_.a_, cartPos_.a_);
-    // float velErrA = cmd.velocity_.a_ - cartVel_.a_;
-    // errSumA_ += posErrA * dt;
-    // float a_cmd = cmd.velocity_.a_ + CART_ROT_KP * posErrA + CART_ROT_KD * velErrA + CART_ROT_KI * errSumA_;
-
-    // if(trajRunning_)
-    // {
-    //     PLOGI.printf("CartesianControlX: [PosErr: %.4f, VelErr: %.4f, ErrSum: %.4f]\n", posErrX, velErrX, errSumX_);
-    // }
-
     // TODO: Convert back to closed loop at some point
     float x_cmd = cmd.velocity_.vx_;
     float y_cmd = cmd.velocity_.vy_;
@@ -252,18 +222,12 @@ void RobotController::disableAllMotors()
 
 void RobotController::inputPosition(float x, float y, float a)
 {
-    // TODO: Fix this or scrap it
-    (void) x;
-    (void) y;
-    (void) a;
-    
-    if(fineMode_)
-    {  
-    //   // Retrieve new state estimate
-    //   Eigen::Vector3f x_hat = kf_.state();
-    //   cartPos_.x_ = x_hat(0,0);
-    //   cartPos_.y_ = x_hat(1,0);
-    //   cartPos_.a_ = x_hat(2,0);
+    // TODO: Make this more robust or refactor once local marvelmind works
+    if (fineMode_)
+    {
+        cartPos_.x_ = x;
+        cartPos_.y_ = y;
+        cartPos_.a_ = a;
     }
 }
 
@@ -311,6 +275,8 @@ void RobotController::computeOdometry()
 {  
  
     std::vector<float> local_cart_vel = readMsgFromMotorDriver();
+
+    if(local_cart_vel.size() != 3) {return;}
     
     PLOGD_(MOTION_LOG_ID).printf("Decoded velocity: %.3f, %.3f, %.3f", local_cart_vel[0], local_cart_vel[1], local_cart_vel[2]);
 

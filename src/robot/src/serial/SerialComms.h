@@ -5,10 +5,6 @@
 
 #include "SerialCommsBase.h"
 
-#define START_CHAR '<'
-#define END_CHAR '>'
-
-
 // Factory method
 std::unique_ptr<SerialCommsBase> buildSerialComms(std::string portName);
 
