@@ -13,7 +13,7 @@ typedef std::chrono::duration<float> fsec;
 RobotController::RobotController(StatusUpdater& statusUpdater)
 : trajGen_(),
   statusUpdater_(statusUpdater),
-  serial_to_motor_driver_(SerialCommsFactory::getFactoryInstance()->build_serial_comms(CLEARCORE_USB)),
+  serial_to_motor_driver_(SerialCommsFactory::getFactoryInstance()->get_serial_comms(CLEARCORE_USB)),
   prevControlLoopTime_(std::chrono::steady_clock::now()),
   prevOdomLoopTime_(std::chrono::steady_clock::now()),
   trajStartTime_(std::chrono::steady_clock::now()),

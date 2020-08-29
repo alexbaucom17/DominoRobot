@@ -70,7 +70,7 @@ class RobotController
     // Member variables
     SmoothTrajectoryGenerator trajGen_;    // Trajectory generator object
     StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
-    std::unique_ptr<SerialCommsBase> serial_to_motor_driver_;   // Serial connection to motor driver
+    SerialCommsBase* serial_to_motor_driver_;   // Serial connection to motor driver
     std::chrono::time_point<std::chrono::steady_clock> prevControlLoopTime_;    // Previous loop time through the cartesian control loop
     std::chrono::time_point<std::chrono::steady_clock> prevOdomLoopTime_;       // Previous loop time through the odom loop
     std::chrono::time_point<std::chrono::steady_clock> trajStartTime_;          // Previous loop time when trajecotry was started

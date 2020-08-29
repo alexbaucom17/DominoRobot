@@ -2,6 +2,7 @@
 #define SerialCommsFactory_h
 
 #include <memory>
+#include <map>
 
 #include "SerialCommsBase.h"
 
@@ -20,7 +21,7 @@ class SerialCommsFactory
 
     void set_mode(SERIAL_FACTORY_MODE mode);
 
-    std::unique_ptr<SerialCommsBase> build_serial_comms(std::string portName);
+    SerialCommsBase* get_serial_comms(std::string portName);
 
     // Delete copy and assignment constructors
     SerialCommsFactory(SerialCommsFactory const&) = delete;
@@ -31,9 +32,13 @@ class SerialCommsFactory
     // Make standard constructor private so it can't be created
     SerialCommsFactory();
 
+    void build_serial_comms(std::string portName);
+
     static SerialCommsFactory* instance;
 
     SERIAL_FACTORY_MODE mode_;
+
+    std::map<std::string, std::unique_ptr<SerialCommsBase>> comms_objects_;
 
 };
 

@@ -21,7 +21,17 @@ void SerialCommsFactory::set_mode(SERIAL_FACTORY_MODE mode)
     mode_ = mode;
 }
 
-std::unique_ptr<SerialCommsBase> SerialCommsFactory::build_serial_comms(std::string portName)
+SerialCommsBase* SerialCommsFactory::get_serial_comms(std::string portName)
+{
+    if (comms_objects_.count(portName) == 0)
+    {
+        build_serial_comms(portName);
+    }
+    return comms_objects_[portName].get();
+}
+
+
+void SerialCommsFactory::build_serial_comms(std::string portName)
 {
     std::unique_ptr<SerialCommsBase> serial_comms;
     
@@ -45,12 +55,13 @@ std::unique_ptr<SerialCommsBase> SerialCommsFactory::build_serial_comms(std::str
         PLOGI << "Built MockSerialComms";
     }
 
-    return std::move(serial_comms);
+    comms_objects_[portName] = std::move(serial_comms);
 }
 
 
 // Private constructor
 SerialCommsFactory::SerialCommsFactory()
-: mode_(SERIAL_FACTORY_MODE::STANDARD)
+: mode_(SERIAL_FACTORY_MODE::STANDARD),
+  comms_objects_()
 {}
   

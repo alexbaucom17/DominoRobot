@@ -19,9 +19,16 @@ class MockSerialComms : public SerialCommsBase
 
     std::string rcv() override;
 
+    void mock_send(std::string msg);
+
+    std::string mock_rcv();
+
+    void purge_data();
+
   protected:
 
-    std::queue<std::string> data_;
+    std::queue<std::string> send_data_;
+    std::queue<std::string> rcv_data_;
     std::string port_;
     
 

@@ -33,7 +33,7 @@ class TrayController
         LOAD,
     };
 
-    std::unique_ptr<SerialCommsBase> serial_to_lifter_driver_;   // Serial connection to lifter driver
+    SerialCommsBase* serial_to_lifter_driver_;   // Serial connection to lifter driver
     bool action_step_running_;
     bool load_complete_;
     int action_step_;
