@@ -24,6 +24,15 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
   fineMode_(true),
   velOnlyMode_(false)
 {    
+    coarse_tolerances_.trans_pos_err = cfg.lookup("motion.translation.position_threshold.coarse");
+    coarse_tolerances_.ang_pos_err = cfg.lookup("motion.rotation.position_threshold.coarse");
+    coarse_tolerances_.trans_vel_err = cfg.lookup("motion.translation.velocity_threshold.coarse");
+    coarse_tolerances_.ang_vel_err = cfg.lookup("motion.rotation.velocity_threshold.coarse");
+
+    fine_tolerances_.trans_pos_err = cfg.lookup("motion.translation.position_threshold.fine");
+    fine_tolerances_.ang_pos_err = cfg.lookup("motion.rotation.position_threshold.fine");
+    fine_tolerances_.trans_vel_err = cfg.lookup("motion.translation.velocity_threshold.fine");
+    fine_tolerances_.ang_vel_err = cfg.lookup("motion.rotation.velocity_threshold.fine");
 }
 
 void RobotController::moveToPosition(float x, float y, float a)
@@ -160,31 +169,20 @@ Velocity RobotController::computeControl(PVTPoint cmd)
 
 bool RobotController::checkForCompletedTrajectory(const PVTPoint cmd)
 {
-    // TODO: Consider moving these to class members for faster handling if lookup is slow
     // Get the right threshold values
-    float trans_pos_err = cfg.lookup("motion.translation.position_threshold.coarse");
-    float ang_pos_err = cfg.lookup("motion.rotation.position_threshold.coarse");
-    float trans_vel_err = cfg.lookup("motion.translation.velocity_threshold.coarse");
-    float ang_vel_err = cfg.lookup("motion.rotation.velocity_threshold.coarse");
-    if(fineMode_)
-    {
-        trans_pos_err = cfg.lookup("motion.translation.position_threshold.fine");
-        ang_pos_err = cfg.lookup("motion.rotation.position_threshold.fine");
-        trans_vel_err = cfg.lookup("motion.translation.velocity_threshold.fine");
-        ang_vel_err = cfg.lookup("motion.rotation.velocity_threshold.fine");
-    }
+    TrajectoryTolerances tol = fineMode_ ? fine_tolerances_ : coarse_tolerances_;
 
     // Verify our commanded velocity is zero
-    bool zeroCmdVel = cmd.velocity_ == Velocity(0,0,0);
+    bool zeroCmdVel = cmd.velocity_.nearZero();
 
     // Verify translational and rotational positions are within tolerance
     Eigen::Vector2f dp = {goalPos_.x_ - cartPos_.x_, goalPos_.y_ - cartPos_.y_};
-    bool pos_in_tolerance = dp.norm() < trans_pos_err &&
-                            fabs(angle_diff(goalPos_.a_, cartPos_.a_)) < ang_pos_err; 
+    bool pos_in_tolerance = dp.norm() < tol.trans_pos_err &&
+                            fabs(angle_diff(goalPos_.a_, cartPos_.a_)) < tol.ang_pos_err; 
 
     // Verify translational and rotational velocities are within tolerance
     Eigen::Vector2f dv = {cartVel_.vx_, cartVel_.vy_};
-    bool vel_in_tolerance = dv.norm() < trans_vel_err && fabs(cartVel_.va_) < ang_vel_err;
+    bool vel_in_tolerance = dv.norm() < tol.trans_vel_err && fabs(cartVel_.va_) < tol.ang_vel_err;
 
     // Trajectory is done when we aren't commanding any velocity, our actual velocity is
     // within the correct tolerance and we are either within position tolerance or in velocity

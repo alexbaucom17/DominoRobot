@@ -12,7 +12,6 @@ Base station:
 
 Rpi Refactor:
 - Keep adding tests
-- Tests for controller
 - Revisit marvelmind wrapper
 - Prep for hardware testing
 

@@ -47,6 +47,18 @@ struct Velocity
     {
         return vx_ == other.vx_ && vy_ == other.vy_ && va_ == other.va_;
     }
+
+    bool nearZero(float eps=1e-6) const
+    {
+        if (fabs(vx_) < eps && fabs(vy_) < eps && fabs(va_) < eps)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
 };
 
 // Return structure for a trajectory point lookup that contains all the info about a point in time the controller

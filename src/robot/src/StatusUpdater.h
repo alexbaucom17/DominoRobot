@@ -24,8 +24,6 @@ class StatusUpdater
 
     bool getInProgress() { return currentStatus_.in_progress; };
 
-  private:
-
     struct Status
     {
       // Current position and velocity
@@ -97,6 +95,9 @@ class StatusUpdater
       }
     };
 
+    Status getStatus() { return currentStatus_;};
+
+  private:
     Status currentStatus_;
 
 };

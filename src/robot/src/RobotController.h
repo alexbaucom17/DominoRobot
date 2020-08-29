@@ -81,6 +81,16 @@ class RobotController
     bool fineMode_;                        // If fine positioning mode is enabled or not.
     bool velOnlyMode_;                     // If we are only interested in velocity and not goal position
 
+    struct TrajectoryTolerances
+    {
+        float trans_pos_err;
+        float ang_pos_err;
+        float trans_vel_err;
+        float ang_vel_err;
+    };
+    TrajectoryTolerances coarse_tolerances_;
+    TrajectoryTolerances fine_tolerances_;
+
 };
 
 #endif
