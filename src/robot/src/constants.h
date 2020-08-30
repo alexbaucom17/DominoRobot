@@ -7,32 +7,10 @@ extern libconfig::Config cfg;
 #define CONSTANTS_FILE "/home/pi/DominoRobot/src/robot/src/constants.cfg"
 #define TEST_CONSTANTS_FILE "/home/pi/DominoRobot/src/robot/test/test_constants.cfg"
 
-// Cartesian control gains
-#define CART_TRANS_KP 2
-#define CART_TRANS_KI 0.1
-#define CART_TRANS_KD 0
-#define CART_ROT_KP 3
-#define CART_ROT_KI 0.5
-#define CART_ROT_KD 0
-
-// Physical dimensions
-#define WHEEL_DIAMETER 0.152 // meters
-#define WHEEL_DIST_FROM_CENTER 0.4794 // meters
-
 // Kalman filter scales
 #define PROCESS_NOISE_SCALE 0.08
 #define MEAS_NOISE_SCALE 0.01
 #define MEAS_NOISE_VEL_SCALE_FACTOR 10000
-
-// Possition accuracy targets
-#define TRANS_POS_ERR_COARSE 0.10 // m
-#define ANG_POS_ERR_COARSE   0.08 // rad
-#define TRANS_VEL_ERR_COARSE 0.05 // m/s
-#define ANG_VEL_ERR_COARSE   0.05 // rad/s
-#define TRANS_POS_ERR_FINE   0.01 // m
-#define ANG_POS_ERR_FINE     0.02 // rad
-#define TRANS_VEL_ERR_FINE   0.01 // m/s
-#define ANG_VEL_ERR_FINE     0.01 // rad/s
 
 // USB devices
 #define CLEARCORE_USB "/dev/clearcore"
@@ -45,9 +23,11 @@ extern libconfig::Config cfg;
 #define MARVELMIND_DEVICE_ID0 5
 #define MARVELMIND_DEVICE_ID1 6
 
+// Log file ID for motion specific stuff
 #define MOTION_LOG_ID 2
 
-enum COMMAND
+// Commands use to communicate about behavior specified from master
+enum class COMMAND
 {
     NONE,
     MOVE,

@@ -52,13 +52,13 @@ void SocketMultiThreadWrapperFactory::build_socket()
     }
 }
 
-std::unique_ptr<SocketMultiThreadWrapperBase> SocketMultiThreadWrapperFactory::get_socket()
+SocketMultiThreadWrapperBase* SocketMultiThreadWrapperFactory::get_socket()
 {
     if(!socket_)
     {
         build_socket();
     }
-    return std::move(socket_);
+    return socket_.get();
 }
 
 

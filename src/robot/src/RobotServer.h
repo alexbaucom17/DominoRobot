@@ -54,7 +54,7 @@ class RobotServer
     bool recvInProgress_;
     int recvIdx_;
     std::string buffer_;
-    std::unique_ptr<SocketMultiThreadWrapperBase> socket_;
+    SocketMultiThreadWrapperBase* socket_;
 
     COMMAND getCommand(std::string message);
     void sendMsg(std::string msg, bool print_debug=true);

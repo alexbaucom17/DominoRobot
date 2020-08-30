@@ -1,10 +1,11 @@
-
 #include "RobotServer.h"
 
 #include <ArduinoJson/ArduinoJson.h>
 #include <plog/Log.h>
 
 #include "sockets/SocketMultiThreadWrapperFactory.h"
+
+#include <iostream>
 
 RobotServer::RobotServer(StatusUpdater& statusUpdater)
 : moveData_(),
@@ -158,7 +159,7 @@ COMMAND RobotServer::oneLoop()
 {
     COMMAND cmd = COMMAND::NONE;
     std::string newMsg = getAnyIncomingMessage();
-    
+
     if(newMsg.length() != 0)
     {    
         PLOGD.printf("RX: %s", newMsg.c_str());

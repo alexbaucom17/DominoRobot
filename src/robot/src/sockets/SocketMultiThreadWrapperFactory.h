@@ -5,10 +5,10 @@
 
 #include "SocketMultiThreadWrapperBase.h"
 
-enum SOCKET_FACTORY_MODE
+enum class SOCKET_FACTORY_MODE
 {
-    STANDARD = 0,
-    MOCK = 1,
+    STANDARD,
+    MOCK,
 };
 
 class SocketMultiThreadWrapperFactory
@@ -24,7 +24,7 @@ class SocketMultiThreadWrapperFactory
 
     void build_socket();
 
-    std::unique_ptr<SocketMultiThreadWrapperBase> get_socket();
+    SocketMultiThreadWrapperBase* get_socket();
 
     // Delete copy and assignment constructors
     SocketMultiThreadWrapperFactory(SocketMultiThreadWrapperFactory const&) = delete;

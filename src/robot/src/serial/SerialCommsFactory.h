@@ -6,10 +6,10 @@
 
 #include "SerialCommsBase.h"
 
-enum SERIAL_FACTORY_MODE
+enum class SERIAL_FACTORY_MODE
 {
-    STANDARD = 0,
-    MOCK = 1,
+    STANDARD,
+    MOCK,
 };
 
 class SerialCommsFactory

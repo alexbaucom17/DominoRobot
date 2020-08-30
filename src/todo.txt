@@ -13,8 +13,6 @@ Base station:
 Rpi Refactor:
 - Keep adding tests
     - Tray controller?
-    - Robot server?
-    - Status updater?
 - Revisit marvelmind wrapper
      - Try just reading the positions without enumerating devices
 - Prep for hardware testing
