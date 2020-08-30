@@ -61,7 +61,7 @@ class RobotController
     PVTPoint generateCommandFromTrajectory();
     // Creates stationary command for when a trajectory is not running
     PVTPoint generateStationaryCommand();
-    // Sets up evertyhing to start the trajectory running
+    // Sets up everything to start the trajectory running
     void startTraj();
     // Reads an incoming message from the motor driver and returns local
     // velocity if available
@@ -73,7 +73,7 @@ class RobotController
     SerialCommsBase* serial_to_motor_driver_;   // Serial connection to motor driver
     std::chrono::time_point<std::chrono::steady_clock> prevControlLoopTime_;    // Previous loop time through the cartesian control loop
     std::chrono::time_point<std::chrono::steady_clock> prevOdomLoopTime_;       // Previous loop time through the odom loop
-    std::chrono::time_point<std::chrono::steady_clock> trajStartTime_;          // Previous loop time when trajecotry was started
+    std::chrono::time_point<std::chrono::steady_clock> trajStartTime_;          // Previous loop time when trajectory was started
     Point cartPos_;                        // Current cartesian position
     Point goalPos_;                        // Desired goal position
     Velocity cartVel_;                     // Current cartesian velocity

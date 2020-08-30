@@ -27,7 +27,7 @@ COMMAND RobotServer::getCommand(std::string message)
 
     if(err)
     {
-        printIncommingCommand(message);
+        printIncomingCommand(message);
         PLOGI.printf("Error parsing JSON: ");
         PLOGI.printf(err.c_str());   
         sendErr("bad_json");
@@ -41,7 +41,7 @@ COMMAND RobotServer::getCommand(std::string message)
             moveData_.x = doc["data"]["x"];
             moveData_.y = doc["data"]["y"];
             moveData_.a = doc["data"]["a"];
-            printIncommingCommand(message);
+            printIncomingCommand(message);
             sendAck(type);
         }
         else if(type == "move_rel")
@@ -50,7 +50,7 @@ COMMAND RobotServer::getCommand(std::string message)
             moveData_.x = doc["data"]["x"];
             moveData_.y = doc["data"]["y"];
             moveData_.a = doc["data"]["a"];
-            printIncommingCommand(message);
+            printIncomingCommand(message);
             sendAck(type);
         }
         else if(type == "move_fine")
@@ -59,7 +59,7 @@ COMMAND RobotServer::getCommand(std::string message)
             moveData_.x = doc["data"]["x"];
             moveData_.y = doc["data"]["y"];
             moveData_.a = doc["data"]["a"];
-            printIncommingCommand(message);
+            printIncomingCommand(message);
             sendAck(type);
         }
         else if(type == "move_const_vel")
@@ -69,25 +69,25 @@ COMMAND RobotServer::getCommand(std::string message)
             velocityData_.vy = doc["data"]["vy"];
             velocityData_.va = doc["data"]["va"];
             velocityData_.t = doc["data"]["t"];
-            printIncommingCommand(message);
+            printIncomingCommand(message);
             sendAck(type);
         }
         else if(type == "place")
         {
             cmd = COMMAND::PLACE_TRAY;
-            printIncommingCommand(message);
+            printIncomingCommand(message);
             sendAck(type);
         }
         else if(type == "load")
         {
             cmd = COMMAND::LOAD_TRAY;
-            printIncommingCommand(message);
+            printIncomingCommand(message);
             sendAck(type);
         }
         else if(type == "init")
         {
             cmd = COMMAND::INITIALIZE_TRAY;
-            printIncommingCommand(message);
+            printIncomingCommand(message);
             sendAck(type);
         }
         else if(type == "p")
@@ -101,13 +101,13 @@ COMMAND RobotServer::getCommand(std::string message)
         else if(type == "estop")
         {
             cmd = COMMAND::ESTOP;
-            printIncommingCommand(message);
+            printIncomingCommand(message);
             sendAck(type);
         }
         else if(type == "lc")
         {
             cmd = COMMAND::LOAD_COMPLETE;
-            printIncommingCommand(message);
+            printIncomingCommand(message);
             sendAck(type);
         }
         else if(type == "status")
@@ -120,13 +120,13 @@ COMMAND RobotServer::getCommand(std::string message)
         }
         else if(type == "")
         {
-            printIncommingCommand(message);
+            printIncomingCommand(message);
             PLOGI.printf("ERROR: Type field empty or not specified ");
             sendErr("no_type");
         }
         else
         {
-            printIncommingCommand(message);
+            printIncomingCommand(message);
             PLOGI.printf("ERROR: Unkown type field ");
             sendErr("unkown_type");
         }
@@ -236,7 +236,7 @@ void RobotServer::sendMsg(std::string msg, bool print_debug)
     }
 }
 
-void RobotServer::printIncommingCommand(std::string message)
+void RobotServer::printIncomingCommand(std::string message)
 {
     PLOGI.printf(message.c_str());
 }

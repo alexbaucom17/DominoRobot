@@ -47,7 +47,7 @@ const ServerSocket& ServerSocket::operator >> ( std::string& s ) const
   int status = Socket::recv ( s );
   if ( status == -1 )
   {
-    throw SocketTimeoutException ( "No data avialable in blocking time" );
+    throw SocketTimeoutException ( "No data available in blocking time" );
   }
   else if (status == 0)
   {

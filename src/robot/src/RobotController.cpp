@@ -121,7 +121,7 @@ void RobotController::update()
         cartVel_.vy_ = 0;
         cartVel_.va_ = 0;
 
-        // Force flagst to default values
+        // Force flags to default values
         fineMode_ = true;
         velOnlyMode_ = false;
     }

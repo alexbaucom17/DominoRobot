@@ -62,7 +62,7 @@ class RobotServer
     void sendErr(std::string data);
     std::string getAnyIncomingMessage();
     std::string cleanString(std::string message);
-    void printIncommingCommand(std::string message);
+    void printIncomingCommand(std::string message);
     void sendStatus();
 
 };

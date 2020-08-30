@@ -85,8 +85,8 @@ bool SmoothTrajectoryGenerator::generatePointToPointTrajectory(Point initialPoin
     return currentTrajectory_.complete_;
 }
 
-// TODO Impliment a more accurate version of this if needed
-// Note that this implimentation is a hack and isn't guarneteed to give an accurate constant velocity - so use with caution.
+// TODO Implement a more accurate version of this if needed
+// Note that this implimentation is a hack and isn't guaranteed to give an accurate constant velocity - so use with caution.
 bool SmoothTrajectoryGenerator::generateConstVelTrajectory(Point initialPoint, Velocity velocity, float moveTime, bool fineMode)
 {
     // Print to logs
@@ -319,7 +319,7 @@ void populateSwitchTimeParameters(SCurveParameters* params, float dt_j, float dt
 //         }
 //     }
 
-//     // Syncronize times to match up
+//     // Synchronize times to match up
 //     params1_copy.switch_points_[0].t_ = 0;
 //     params2_copy.switch_points_[0].t_ = 0;
 //     for (int i = 1; i < 7; i++)

@@ -44,7 +44,7 @@ class StatusUpdater
       bool in_progress;
       uint8_t counter; // Just to show that the status is updating. Okay to roll over
 
-      //When adding extra fields, update toJsonString method to serialize and add aditional capacity
+      //When adding extra fields, update toJsonString method to serialize and add additional capacity
 
       Status():
       pos_x(0.0),
@@ -88,7 +88,7 @@ class StatusUpdater
         doc["in_progress"] = in_progress;
         doc["counter"] = counter++;
 
-        // Serialze and return string
+        // Serialize and return string
         std::string msg;
         serializeJson(doc, msg);
         return msg;

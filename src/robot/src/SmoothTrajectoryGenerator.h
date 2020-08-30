@@ -165,7 +165,7 @@ class SmoothTrajectoryGenerator
     bool generatePointToPointTrajectory(Point initialPoint, Point targetPoint, bool fineMode);
 
     // Generates a trajectory that attempts to maintain the target velocity for a specified time. Note that the current implimentation
-    // of this does not give a guarentee on the accuracy of the velocity if the specified velocity and move time would violate the dynamic 
+    // of this does not give a guarantee on the accuracy of the velocity if the specified velocity and move time would violate the dynamic 
     // limits of the fine or coarse movement mode. Returns a bool indicating if trajectory generation was successful
     bool generateConstVelTrajectory(Point initialPoint, Velocity velocity, float moveTime, bool fineMode);
 
@@ -179,7 +179,7 @@ class SmoothTrajectoryGenerator
     Trajectory currentTrajectory_;
     
     // These need to be part of the class because they need to be loaded at construction time, not
-    // program initalization time (i.e. as globals). This is because the config file is not
+    // program initialization time (i.e. as globals). This is because the config file is not
     // yet loaded at program start up time.
     SolverParameters solver_params_;
 };

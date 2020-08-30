@@ -54,7 +54,7 @@ void Robot::run()
 
 bool Robot::tryStartNewCmd(COMMAND cmd)
 {
-    // Position info doesn't cound as a real 'command' since it doesn't interrupt anything
+    // Position info doesn't count as a real 'command' since it doesn't interrupt anything
     // Always service it, but don't consider it starting a new command
     if (cmd == COMMAND::POSITION)
     {

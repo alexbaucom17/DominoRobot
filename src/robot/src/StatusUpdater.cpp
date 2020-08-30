@@ -42,7 +42,7 @@ void StatusUpdater::updateLoopTimes(int controller_loop_ms, int position_loop_ms
 void StatusUpdater::updatePositionConfidence(float cx, float cy, float ca)
 {
   // Inputs are from the covariance matrix, using those values to estimate a fractional 'confidence'
-  // in our positioning relative to some reference amout. This isn't any official measurement, just an estimate to use for debugging
+  // in our positioning relative to some reference amount. This isn't any official measurement, just an estimate to use for debugging
 
   // Compute inverse confidence. As long as the variance isn't larger than the reference values
   // these will be between 0-1 with 0 being more confident in the positioning

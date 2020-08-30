@@ -23,7 +23,7 @@ std::string SerialComms::rcv()
 {
     if(!connected_)
     {
-        PLOGE.printf("Cannot recieve if port isn't connected");
+        PLOGE.printf("Cannot receive if port isn't connected");
         return "";
     }
     
