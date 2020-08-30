@@ -181,7 +181,7 @@ void loop()
     {
         motors[0].runSpeed();
         motors[1].runSpeed();
-        status_str = "manaul";
+        status_str = "manual";
         if(vel_up || vel_down)
         {
             activeMode = MODE::NONE;

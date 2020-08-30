@@ -11,10 +11,9 @@ Base station:
 - Set up electronics
 
 Rpi Refactor:
-- Keep adding tests
-    - Tray controller?
 - Revisit marvelmind wrapper
      - Try just reading the positions without enumerating devices
+     - Improve log messaging around marvelmind initialization time
 - Prep for hardware testing
 
 Purchase:
