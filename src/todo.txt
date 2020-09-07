@@ -6,6 +6,7 @@ Robot controller:
 
 Robot SW::
 - Do full test with all devices attached
+- Figure out how to test position update function
 
 Robot HW:
 - Test powering RPI and Clearcore from 24 V
