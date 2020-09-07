@@ -214,7 +214,7 @@ void RobotController::disableAllMotors()
     }
     else
     {
-        PLOGW << "No connection: Skipping motor enable";
+        PLOGW << "No connection: Skipping motor disable";
     }
 }
 

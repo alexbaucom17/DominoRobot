@@ -1,23 +1,27 @@
-Robot:
 
-Stepper controller
+Stepper controller:
 - Wire up Nano for lifter control (including manual buttons)
-- Test stepper driver code (maybe use a test sketch rather than the full robot code to start)
+
+Robot controller:
+
+Robot SW::
+- Fix position update function
+- Do full test with all devices attached
+
+Robot HW:
+- Test powering RPI and Clearcore from 24 V
+- Prep for hardware testing
 
 Master:
 - Figure out how to sequence loading between base and robot
+- Refactor to remove marvelmind streaming but still handle wake/sleep
 
-Base station:
+Base station HW:
 - Set up electronics
-
-Rpi Refactor:
-- Revisit marvelmind wrapper
-     - Try just reading the positions without enumerating devices
-     - Improve log messaging around marvelmind initialization time
-- Prep for hardware testing
-
-Purchase:
 
 QOL stuff:
 - Try to make it so master doesn't crash when network has trouble (need to handle detecting disconnect and then auto-reconnecting)
 - Add check to master to verify network is correct and print a useful message
+
+
+Purchase:

@@ -3,13 +3,12 @@ Required header libraries at src/robot/lib
 - Catch (for tests)
 - Eigen
 - plog
-- marvelmind_api, compiled as .a - https://marvelmind.com/download/ 
+- marvelmind library, compiled as .a - https://marvelmind.com/download/ I used 2020_04_10_C_example. This required the addition of `#include <pthread.h>` in `marvelmind.h` to compile correctly
 
 Required system libraries at /usr/local/include
 - libSerial: https://github.com/crayzeewulf/libserial (have to build from source due to outdated apt package)
 
-Requred libraries at /usr/local/lib
-- libdashapi.so - https://marvelmind.com/download/ 
+Required libraries at /usr/local/lib
 - libserial.a
 
 Required libraries installed with apt-get

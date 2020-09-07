@@ -33,6 +33,13 @@ void Robot::run()
             statusUpdater.updateInProgress(true);
         }
 
+        // Service marvelmind
+        std::vector<float> positions = mm_wrapper.getPositions();
+        if (positions.size() == 3)
+        {
+            controller.inputPosition(positions[0], positions[1], positions[2]);
+        }
+
         // Service controllers
         controller.update();
         tray_controller.update();
