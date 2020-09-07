@@ -22,7 +22,10 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
   cartVel_(),
   trajRunning_(false),
   fineMode_(true),
-  velOnlyMode_(false)
+  velOnlyMode_(false),
+  mm_update_fraction_(cfg.lookup("localization.mm_update_fraction")),
+  mm_update_vel_fn_slope_(cfg.lookup("localization.mm_update_vel_fn_slope")),
+  mm_update_vel_fn_intercept_(cfg.lookup("localization.mm_update_vel_fn_intercept"))
 {    
     coarse_tolerances_.trans_pos_err = cfg.lookup("motion.translation.position_threshold.coarse");
     coarse_tolerances_.ang_pos_err = cfg.lookup("motion.rotation.position_threshold.coarse");
@@ -159,7 +162,7 @@ PVTPoint RobotController::generateStationaryCommand()
 
 Velocity RobotController::computeControl(PVTPoint cmd)
 {
-    // TODO: Convert back to closed loop at some point
+    // TODO: Convert back to closed loop when ready
     float x_cmd = cmd.velocity_.vx_;
     float y_cmd = cmd.velocity_.vy_;
     float a_cmd = cmd.velocity_.va_;
@@ -220,12 +223,20 @@ void RobotController::disableAllMotors()
 
 void RobotController::inputPosition(float x, float y, float a)
 {
-    // TODO: Make this more robust or refactor once local marvelmind works
     if (fineMode_)
     {
-        cartPos_.x_ = x;
-        cartPos_.y_ = y;
-        cartPos_.a_ = a;
+        Eigen::Vector3f v = {cartVel_.vx_, cartVel_.vy_, cartVel_.va_};
+        float total_v = v.norm();
+        float vel_update_fraction = 1.0;
+        if (total_v > 0)
+        {
+            vel_update_fraction = std::max(mm_update_vel_fn_intercept_ + mm_update_vel_fn_slope_ * total_v, 0.0f);
+        }
+        float update_fraction = mm_update_fraction_ * vel_update_fraction;
+        
+        cartPos_.x_ += update_fraction * (x - cartPos_.x_);
+        cartPos_.y_ += update_fraction * (y - cartPos_.y_);
+        cartPos_.a_ += update_fraction * (a - cartPos_.a_);
     }
 }
 

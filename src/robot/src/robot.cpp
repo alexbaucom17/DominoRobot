@@ -17,13 +17,12 @@ Robot::Robot()
 
 void Robot::run()
 {
-    COMMAND newCmd = COMMAND::NONE;
     COMMAND curCmd = COMMAND::NONE;
 
     while(true)
     {
         // Check for new command and try to start it
-        newCmd = server.oneLoop();
+        COMMAND newCmd = server.oneLoop();
         bool status = tryStartNewCmd(newCmd);
 
         // Update our current command if we successfully started a new command
@@ -37,6 +36,7 @@ void Robot::run()
         std::vector<float> positions = mm_wrapper.getPositions();
         if (positions.size() == 3)
         {
+            position_time_averager.mark_point();
             controller.inputPosition(positions[0], positions[1], positions[2]);
         }
 
@@ -90,7 +90,7 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     // For all other commands, we need to make sure we aren't doing anything else at the moment
     if(statusUpdater.getInProgress())
     {
-        PLOGI.printf("Command already running, rejecting new command");
+        PLOGW.printf("Command already running, rejecting new command");
         return false;
     }
     
@@ -133,7 +133,7 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     }
     else
     {
-        PLOGI.printf("Unknown command!");
+        PLOGW.printf("Unknown command!");
         return false;
     }
 

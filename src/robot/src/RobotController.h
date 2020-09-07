@@ -91,6 +91,10 @@ class RobotController
     TrajectoryTolerances coarse_tolerances_;
     TrajectoryTolerances fine_tolerances_;
 
+    float mm_update_fraction_;
+    float mm_update_vel_fn_slope_;
+    float mm_update_vel_fn_intercept_;
+
 };
 
 #endif

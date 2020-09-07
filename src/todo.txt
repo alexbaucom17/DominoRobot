@@ -5,7 +5,6 @@ Stepper controller:
 Robot controller:
 
 Robot SW::
-- Fix position update function
 - Do full test with all devices attached
 
 Robot HW:
