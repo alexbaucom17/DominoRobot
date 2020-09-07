@@ -1,54 +1,31 @@
 import time
 import logging
 
-from MarvelMindHandler import RobotPositionHandler, MockRobotPositionHandler
+from MarvelMindHandler import MarvelmindWrapper, MockMarvelmindWrapper
 from RobotClient import RobotClient, BaseStationClient, MockRobotClient, MockBaseStationClient
 from FieldPlanner import ActionTypes, Action
+from Utils import write_file, NonBlockingTimer
+import pprint
 
 # Debugging flags
 OFFLINE_TESTING = False
 SKIP_BASE_STATION = True
 SKIP_MARVELMIND = True
 
-class NonBlockingTimer:
-
-    def __init__(self, trigger_time):
-        self.start_time = time.time()
-        self.trigger_time = trigger_time
-
-    def check(self):
-        if time.time() - self.start_time > self.trigger_time:
-            return True 
-        else:
-            return False
-
-def write_file(filename, text):
-    with open(filename, 'w+') as f:
-        f.write(text)
-
 class RobotInterface:
     def __init__(self, config, robot_id):
-        self.pos_handler = None
         self.comms_online = False
-        self.position_online = False
         self.robot_client = None
         self.config = config
         self.robot_id = robot_id
-        self.position_init_timer = None
         self.last_status_time = 0
         self.last_status = None
 
-    def attach_pos_handler(self, pos_handler):
-        self.pos_handler = pos_handler
-        # If we haven't shut down from the previous time, we are ready to stream now
-        self.position_online = self.pos_handler.still_running
-
     def bring_online(self, use_mock=False):
         self._bring_comms_online(use_mock)
-        self._bring_position_online()
 
     def check_online(self):
-        return self.comms_online and self.position_online
+        return self.comms_online
 
     def get_last_status(self):
         return self.last_status
@@ -66,25 +43,8 @@ class RobotInterface:
                 self.comms_online = True
                 logging.info("Connected to {} over wifi".format(self.robot_id))
         except Exception as e:
-            logging.info("Couldn't connect to {} over wifi. Reason: {}".format(self.robot_id , repr(e)))
+            logging.info("Couldn't connect to {} over wifi".format(self.robot_id))
             return 
-
-    def _bring_position_online(self, quick=False):
-        if not self.pos_handler:
-            logging.info("No position handler attached for {}".format(self.robot_id))
-            return
-    
-        if self.position_online:
-            logging.info("Pos handler still running, skipping beacon wake up on {}".format(self.robot_id))
-            return
-
-        try:
-            # Setup marvelmind devices and position handler
-            logging.info("Attempting to enable marvelmind beacons on {} ".format(self.robot_id))
-            self.pos_handler.wake_robot(self.robot_id)
-            self.position_init_timer = NonBlockingTimer(30)
-        except Exception as e:
-            logging.info("Couldn't enable beacons on robot {}. Reason: {}".format(self.robot_id, repr(e)))
 
     def _get_status_from_robot(self):
         self.last_status = self.robot_client.request_status()
@@ -92,16 +52,7 @@ class RobotInterface:
 
     def update(self):
 
-        # Check if position is ready to stream
-        if not self.position_online and self.position_init_timer and self.position_init_timer.check():
-            self.position_online = True
-
         if self.comms_online:
-
-            # Send robot position if available
-            if self.position_online and self.pos_handler.new_data_ready(self.robot_id):
-                pos = self.pos_handler.get_position(self.robot_id)
-                self.robot_client.send_position(pos[0], pos[1], pos[2])
 
             # Request a status update if needed
             if time.time() - self.last_status_time > self.config.robot_status_wait_time:
@@ -202,21 +153,30 @@ class RuntimeManager:
     def __init__(self, config):
 
         self.config = config
-        self.initialization_status = RuntimeManager.STATUS_NOT_INITIALIZED
 
-        self.robots = {n: RobotInterface(config, n) for n in self.config.ip_map.keys()}
+        self.robots = {id: RobotInterface(config, id) for id in self.config.ip_map.keys()}
         self.base_station = BaseStationInterface(config)
 
+        self.initialization_status = RuntimeManager.STATUS_NOT_INITIALIZED
+
+        self.component_initialization_status = {id: False for id in self.config.ip_map.keys()}
+        self.component_initialization_status['mm'] = False
+        self.component_initialization_status['base_station'] = False
+
         if OFFLINE_TESTING or SKIP_MARVELMIND:
-            self.pos_handler = MockRobotPositionHandler(config)
+            self.mm_wrapper = MockMarvelmindWrapper(config)
         else:
-            self.pos_handler = RobotPositionHandler(config)
+            self.mm_wrapper = MarvelmindWrapper(config)
 
         self.last_metrics = {}
         self.cycle_tracker = {n: {'action': None, 'cycle': None, 'step': 0} for n in self.robots.keys()}
         self.idle_bots = set([n for n in self.robots.keys()])
+        self.initialization_timer = None
 
     def initialize(self):
+
+        if self.initialization_timer and not self.initialization_timer.check():
+            return
 
         # Handle testing/mock case
         use_base_station_mock = False
@@ -227,27 +187,33 @@ class RuntimeManager:
         if SKIP_BASE_STATION:
             use_base_station_mock = True
         
-        # Bring everything online
-        self.base_station.bring_online(use_base_station_mock)
-        for robot in self.robots.values():
-            robot.attach_pos_handler(self.pos_handler)
-            robot.bring_online(use_robot_mock)
+        # Bring everything online if needed
+        if not self.component_initialization_status['base_station']:
+            self.base_station.bring_online(use_base_station_mock)
+        if not self.component_initialization_status['mm']:
+            self.mm_wrapper.wake_all_devices_only_if_needed()
+        for id, robot in self.robots.items():
+            if not self.component_initialization_status[id]:
+                robot.bring_online(use_robot_mock)
         
+        # Check the status of initialization
         self._check_initialization_status()
+        if self.initialization_status != RuntimeManager.STATUS_FULLY_INITIALIZED:
+            self.initialization_timer = NonBlockingTimer(10)
+            logging.info("Unable to fully initialize RuntimeManager, will try again in 10 seconds")
+            logging.info("Current componenent initialization status:")
+            logging.info(pprint.pformat(self.component_initialization_status, indent=2, width=10))
+
 
     def shutdown(self, keep_mm_awake):
-
         logging.info("Shutting down")
         if self.initialization_status != RuntimeManager.STATUS_NOT_INITIALIZED:
             if not keep_mm_awake:
-                for robot in self.robots.values():
-                    self.pos_handler.sleep_robot(robot.robot_id)
-                write_file(self.config.mm_beacon_state_file, 'False')
-            self.pos_handler.close()
+                self.mm_wrapper.sleep_all_devices()
+            self.mm_wrapper.close()
 
     def get_initialization_status(self):
         self._check_initialization_status()
-        logging.info("Initialization status: {}".format(self.initialization_status))
         return self.initialization_status
 
     def get_all_metrics(self):
@@ -255,8 +221,6 @@ class RuntimeManager:
 
     def update(self):
         self._check_initialization_status()
-
-        self.pos_handler.service_queues()
 
         self.base_station.update()
         for robot in self.robots.values():
@@ -301,20 +265,20 @@ class RuntimeManager:
             logging.info("Unknown target: {}".format(target))
 
     def _check_initialization_status(self):
-        ready = []
-        ready.append(self.base_station.check_online())
-        for robot in self.robots.values():
-            ready.append(robot.check_online())
+        self.component_initialization_status['base_station'] = self.base_station.check_online()
+        self.component_initialization_status['mm'] = self.mm_wrapper.check_all_devices_status()
+        for id,robot in self.robots.items():
+            self.component_initialization_status[id] = robot.check_online()
         
+        ready = [i for i in self.component_initialization_status.values()]
         if all(ready):
             self.initialization_status = RuntimeManager.STATUS_FULLY_INITIALIZED
-            write_file(self.config.mm_beacon_state_file, 'True')
         elif any(ready):
             self.initialization_status = RuntimeManager.STATUS_PARTIALLY_INITIALIZED
 
     def _update_all_metrics(self):
         self.last_metrics = {}
-        self.last_metrics['pos'] = self.pos_handler.get_metrics()
+        self.last_metrics['mm'] = self.mm_wrapper.get_metrics()
         self.last_metrics['base'] = self.base_station.get_last_status()
         self.last_metrics['plan'] = self._get_plan_metrics()
         for robot in self.robots.values():
@@ -339,7 +303,7 @@ class RuntimeManager:
         # Use metrics to update in progress actions
         for robot_id, metric in self.last_metrics.items():
             # No updates needed for pos tracker, bbse station, or plan
-            if robot_id in ['pos', 'plan', 'base']:
+            if robot_id in ['mm', 'plan', 'base']:
                 continue
 
             # Figure out if we need to do any updates on the running actions

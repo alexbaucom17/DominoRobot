@@ -3,104 +3,25 @@ Python wrapper for Marvelmind C API
 """
 
 import ctypes
-import math
-import time
 import logging
+from collections import defaultdict
+from Utils import NonBlockingTimer
 
-def get_file_bool(filename):
-    try:
-        with open(filename, 'r+') as f:
-            txt = f.readline()
-            if txt == 'True':
-                return True
-            else:
-                return False
-    except FileNotFoundError:
-        return False
 
-class MarvelMindPoint:
-    """
-    Simple class to hold a point structure
-    """
-    def __init__(self):
-        self.address = 0
-        self.x = 0
-        self.y = 0
-        self.z = 0
-        self.t = 0
-
-    def __str__(self):
-        return "Address: {}, Location: [{},{},{}], Time: {}".format(
-            self.address, self.x, self.y, self.z, self.t)
-
-    def __eq__(self, other):
-        # Since Marvelmind doesn't provide timing info, I'm adding the times 
-        # manually after the fact, so don't use them in comparison
-        if self.address == other.address and self.x == other.x and \
-           self.y == other.y and self.z == other.z:
-            return True
-        else:
-            return False
-
-def uint8_to_int32(uint8_arr): # TODO investigate and see if this causes the negative number issue
-    """
-    Converts array of 4 uint8 values to an int32
-    """
-    out_val = ctypes.c_int32()
-    out_val = uint8_arr[0]
-    out_val = (out_val << 8) + uint8_arr[1]
-    out_val = (out_val << 8) + uint8_arr[2]
-    out_val = (out_val << 8) + uint8_arr[3]
-    return out_val
-
-def extract_point_data(ptr, start_idx):
-    """
-    Extracts point from marvelmind location data given a pointer and the starting index
-    """
-    # Data offsets from documentation
-    dev_addr_offset = 0
-    point_offsets = [2,6,10] # for x, y, z
-
-    # Initialize point
-    point = MarvelMindPoint()
-    point.address = ptr[start_idx + dev_addr_offset]
-    point.t = time.time()
-
-    # Extract each point
-    for i in range(3):
-        offset = point_offsets[i]
-
-        # Each point is transmitted as an int32 so we need to convert from the uint8s we currently have
-        tmp_uint8_arr_type = ctypes.c_uint8 * 4
-        tmp_uint8_arr = tmp_uint8_arr_type( ptr[start_idx + offset + 3],
-                                            ptr[start_idx + offset + 2],
-                                            ptr[start_idx + offset + 1],
-                                            ptr[start_idx + offset + 0])
-        new_pt = uint8_to_int32(tmp_uint8_arr)
-        if i == 0:
-            point.x = new_pt
-        elif i == 1:
-            point.y = new_pt
-        else:
-            point.z = new_pt
-
-    return point
-
-class MarvelMindWrapper:
+class MarvelmindWrapper:
 
     def __init__(self, cfg):
         self.lib = ctypes.windll.LoadLibrary(cfg.mm_api_path)
-
-    def __enter__(self):
+        self.devices = defaultdict(dict)
+        self.expected_devices = []
+        self.wake_timer = None
+        for name,beacons in cfg.device_map.items():
+            for b in beacons:
+                self.expected_devices.append(b)
         self._open_serial_port()
-        return self
 
-    def __exit__(self, type, value, traceback):
+    def __del__(self):
         self._close_serial_port()
-        if type is not None:
-            return False
-        else:
-            return True
 
     def _open_serial_port(self):
         """
@@ -123,36 +44,69 @@ class MarvelMindWrapper:
         fn.argtypes = [ctypes.POINTER(ctypes.c_void_p)]
         status = fn(None)
 
-    def get_all_devices(self):
+    def check_all_devices_status(self):
         """
-        Get list of all devices connected to the modem (including sleeping ones).
-        Returns list of beacon addresses
+        Checks to see if all devices are awake and ready
         """
 
         logging.info("Getting device list")
         fn = self.lib.mm_get_devices_list
         fn.restype = ctypes.c_bool
         fn.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
-    
-        buff_size = 20 # TODO: Verify this
+
+        buff_size = 255
         dataptr = (ctypes.c_uint8*buff_size)()
         dataptr = ctypes.cast(dataptr, ctypes.POINTER(ctypes.c_uint8))
         status = fn(dataptr)
 
         num_devices = dataptr[0]
 
-        logging.info("Num devices: " + str(num_devices))
+        logging.info("Num devices found: " + str(num_devices))
         idx = 1
         device_offset = 9
         addr_offset = 0
         sleep_offset = 2
-        device_list = []
         for i in range(num_devices):
             addr = dataptr[idx + addr_offset]
+            sleep = dataptr[idx + sleep_offset]
+
+            self.devices[addr] = {'sleep': bool(sleep)}
+
             idx += device_offset
-            device_list.append(addr)
-    
-        return device_list
+
+        ready = True
+        if self.wake_timer:
+            if not self.wake_timer.check():
+                ready = False
+        else:
+            for d in self.expected_devices:
+                if d not in self.devices.keys():
+                    ready = False
+                    logging.warn("Could not find expected device {}".format(d))
+                    continue
+
+                if self.devices[d]['sleep'] is False:
+                    ready = False
+                    logging.warn("Device {} is not awake".format(d))
+                    continue
+
+
+        return ready
+
+    def wake_all_devices(self):
+        for d in self.expected_devices:
+            self.wake_device(d)
+
+    def wake_all_devices_only_if_needed(self):
+        ok = self.check_all_devices_status()
+        if not ok:
+            logging.info("Triggering marvelmind device wakeup. Will wait for a moment to let them warmup")
+            self.wake_timer = NonBlockingTimer(30)
+            self.wake_all_devices()
+
+    def sleep_all_devices(self):
+        for d in self.expected_devices:
+            self.sleep_device(d)
 
     def wake_device(self, address):
         """
@@ -183,321 +137,24 @@ class MarvelMindWrapper:
         if not status:
             logging.info("Warning: unable to sleep device {}".format(address))
 
-
-
-    def get_latest_location_data(self):
-        """
-        Gets the latest positioning data available for one of the beacons
-        Returns position data
-        """
-
-        fn = self.lib.mm_get_last_locations
-        fn.restype = ctypes.c_bool
-        fn.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
-    
-        buff_size = 255 # TODO: Verify this
-        dataptr = (ctypes.c_uint8*buff_size)()
-        dataptr = ctypes.cast(dataptr, ctypes.POINTER(ctypes.c_uint8))
-        status = fn(dataptr)
-
-        num_points = 6 # Always returns last 6 points
-        point_size = 18
-        new_data_flag_offset = num_points * point_size
-        new_data_ready = dataptr[new_data_flag_offset]
-        points = []
-
-        if new_data_ready:
-            idx = 0
-            for i in range(num_points):
-                points.append(extract_point_data(dataptr, idx))
-                idx += point_size
-
-        return points
-
-
-class MsgMetrics:
-
-    type_ok = 0
-    type_drop_time = 1
-    type_drop_dist = 2
-
-    def __init__(self, max_msgs):
-        self.msgs = []
-        self.max_msgs = max_msgs
-        self.last_sent = 0
-
-    def _add_msg(self, t):
-        self.msgs.insert(0, t)
-        self.last_sent = time.time()
-        #logging.info(self.msgs)
-        if len(self.msgs) > self.max_msgs:
-            self.msgs.pop()
-
-    def add_msg_ok(self):
-        self._add_msg(self.type_ok)
-
-    def drop_msg_time(self):
-        self._add_msg(self.type_drop_time)
-
-    def drop_msg_dist(self):
-        self._add_msg(self.type_drop_dist)
-
-    def get_stats(self):
-        num = len(self.msgs)
-        num_dropped_time = self.msgs.count(self.type_drop_time)
-        num_dropped_dist = self.msgs.count(self.type_drop_dist)
-        num_dropped_total = num_dropped_time + num_dropped_dist
-        
-        frac_dropped_time = 0
-        frac_dropped_dist = 0
-        if num_dropped_total > 0:
-            frac_dropped_time = num_dropped_time / num_dropped_total
-            frac_dropped_dist = num_dropped_dist / num_dropped_total
-        
-        frac_dropped_total = 0
-        if num > 0:
-            frac_dropped_total = num_dropped_total / num
-
-        time_since_last_sent = time.time() - self.last_sent
-        
-        return {'frac_dropped_total':frac_dropped_total, 
-                'frac_dropped_dist':frac_dropped_dist, 
-                'frac_dropped_time': frac_dropped_time,
-                'time_since_last_sent': time_since_last_sent}
-            
-
-
-class RobotPositionHandler():
-
-    def __init__(self, cfg):
-
-        self._mm = MarvelMindWrapper(cfg)
-        self._mm._open_serial_port()
-        self.cfg = cfg
-        self._robots_with_data_ready = set()
-
-        # Check if the marvelmind should be already setup from the last reboot
-        self.previously_running = False
-        if get_file_bool(self.cfg.mm_beacon_state_file):
-            self.previously_running = True
-
-        # Metrics
-        self.metrics = MsgMetrics(20)
-
-        # Wake static beacons
-        if not self.previously_running:
-            static_beacons = self.cfg.device_map["static"]
-            for beacon in static_beacons:
-                self._mm.wake_device(beacon)
-
-        # Initialize position queues
-        self.max_device_queue_size = 15
-        self.device_position_queues = {}
-        for beacon_pairs in self.cfg.device_map.values():
-            for beacon in beacon_pairs:
-                self.device_position_queues[beacon] = []
-
-        self.max_robot_queue_size = 5
-        self.robot_position_queues = {}
-        for robot_name in self.cfg.device_map:
-            if robot_name == 'static':
-                continue
-            self.robot_position_queues[robot_name] = []
-
-
-    def close(self):
-        # Sleep static beacons
-        static_beacons = self.cfg.device_map["static"]
-        for beacon in static_beacons:
-            self._mm.sleep_device(beacon)
-
-        self._mm._close_serial_port()
-
-    def wake_robot(self, robot_number):
-        # Wake up all beacons on the given robot
-        if not self.previously_running:
-            robot_beacons = self.cfg.device_map[str(robot_number)]
-            for beacon in robot_beacons:
-                self._mm.wake_device(beacon)
-
-    def sleep_robot(self, robot_number):
-        # Sleep all beacons on the given robot
-        robot_beacons = self.cfg.device_map[str(robot_number)]
-        for beacon in robot_beacons:
-            self._mm.sleep_device(beacon)
-
-    def get_position(self, robot_number):
-        # Get current position of a specific robot
-        try:
-            data = self.robot_position_queues[str(robot_number)][0]
-            self._robots_with_data_ready.remove(str(robot_number))
-        except IndexError:
-            return []
-
-    def new_data_ready(self, robot_number):
-        # Checks if there is data ready for a specific robot
-        return str(robot_number) in self._robots_with_data_ready
-
     def get_metrics(self):
-        return self.metrics.get_stats()
-
-    def service_queues(self):
-        # Gets data from the marvelmind system and makes sense of it. Needs to be called
-        # regularly to make sure all data is collected
-        
-        new_data = self._mm.get_latest_location_data()
-        self._update_device_positions(new_data)
-        self._update_robot_positions()
-
-    def _get_device_position(self, device_addr):
-        # Returns device position
-        try:
-            return self.device_position_queues[device_addr][0]
-        except IndexError:
-            return []
-
-    def _update_device_positions(self, new_position_data):
-        # Distribute position data to queues and do any post processing as needed
-        if new_position_data:
-            for point in new_position_data:
-                addr = point.address
-                cur_queue = self.device_position_queues[addr]
-
-                # Marvelmind doesn't send any timing information about the measurments and it will
-                # gladly send repeat data, so this is just a simple way to only update the position
-                # if it has changed. Thankfully, the devices are quite sensitive and even sitting very still
-                # will trigger very small fluctuations in the position. So this should continue
-                # to update the queues pretty regularly. If it isn't regular or accurate enough, I may need
-                # to look into other ways to handle this
-                if not cur_queue or point != cur_queue[0]:
-                    #logging.info(str(point))
-                    cur_queue.insert(0,point) # Add new element to front of queue
-                    if len(cur_queue) > self.max_device_queue_size:
-                        cur_queue.pop() # remove element from end of list
-        #else:
-        #    logging.info("No new data")
+        return self.devices
 
 
-    def _update_robot_positions(self):
-        # Handle the math of transforming device positions into robot positions and angles
-
-        for robot_name in self.cfg.device_map:
-            if robot_name == 'static':
-                continue
-
-            # Get position data from the robot beacons
-            beacons = self.cfg.device_map[robot_name]
-            p0 = self._get_device_position(beacons[0])
-            p1 = self._get_device_position(beacons[1])
-
-            # Make sure that array are not empty
-            if not p0 or not p1:
-                continue
-
-            # Check for distance between both beacons since this should be a fixed amount - can throw out potentially bogus values here
-            # Calculation here is in mm
-            beacon_dist_mm = math.sqrt((p0.x - p1.x)**2 + (p0.y-p1.y)**2)
-            expected_beacon_dist_mm = 1000*self.cfg.mm_beacon_sep
-            if abs(beacon_dist_mm - expected_beacon_dist_mm) > 40:
-                logging.info("Thowing out beacon values due to failing distance check")
-                logging.info("Becon dist: {}, expected: {}, delta: {}".format(beacon_dist_mm, expected_beacon_dist_mm, abs(beacon_dist_mm - expected_beacon_dist_mm)))
-                self.metrics.drop_msg_dist()
-                continue
-
-            # Compute position as the average
-            x = (p0.x + p1.x)/2.0 / 1000.0
-            y = (p0.y + p1.y)/2.0 / 1000.0
-
-            # Angle is defined as the angle of the vector from p0 (left of robot)
-            # to p1 (right of robot) + 90 degrees so angle vector points towards front of robot
-            xdiff = p1.x - p0.x
-            ydiff = p1.y - p0.y
-            angle = math.atan2(ydiff, xdiff) + math.pi/2.0
-
-            # Keep angle between +/- pi. Since we are doing a 90 degree manual rotation, the wrap around point
-            # from atan2 happens at -pi/2
-            if angle > math.pi:
-                angle -= 2*math.pi
-            elif angle < -math.pi:
-                angle += 2*math.pi
-
-
-            # Adjust position to align with center of the robot based on offset
-            x = x - self.cfg.mm_forward_offset * math.cos(angle)
-            y = y - self.cfg.mm_forward_offset * math.sin(angle)
-
-            # Timing is a bit tricky. This assumes that the devices are both getting updated
-            # regularly enough to consider them updated simulatneously relative to motion
-            # TODO: Figure out how much error this introduces and if it is a problem
-            max_time_delta = 0.3 #seconds
-            #if abs(p0.t - p1.t) > max_time_delta:
-                #self.metrics.drop_msg_time()
-                # logging.info("WARNING: Max time delta exceeded between {} and {}".format(str(p0), str(p1))) 
-
-            t = (p0.t + p1.t)/2.0 # Just take average time
-
-            # Similar note to above - only updating robot position if it has changed
-            cur_queue = self.robot_position_queues[robot_name]
-            prev_point = []
-            if cur_queue:
-                prev_point = cur_queue[0]
-            if not prev_point or x != prev_point[0] or y != prev_point[1] or angle != prev_point[2]:
-                #logging.info("Robot {}: {},{},{}, {}".format(robot_name, x, y, angle, t))
-                self._robots_with_data_ready.add(robot_name)
-                # TODO: Add metrics for each robot ?
-                self.metrics.add_msg_ok()
-
-                # Insert the new position, angle, and time into the queue
-                cur_queue.insert(0,(x,y,angle, t)) # Add new element to front of queue
-                if len(cur_queue) > self.max_robot_queue_size:
-                    cur_queue.pop() # remove element from end of list
-
-
-
-# Hacky mock for testing
-class MockRobotPositionHandler:
-
-    def __init__(self, cfg):
-        self.still_running = True
+class MockMarvelmindWrapper:
+    def __init__(self, cfg):    
         pass
-
-    def close(self):
+    def check_all_devices_status(self):
+        return True
+    def wake_all_devices_only_if_needed(self):
         pass
-
-    def wake_robot(self, robot_number):
+    def wake_all_devices(self):
         pass
-
-    def sleep_robot(self, robot_number):
+    def sleep_all_devices(self):
         pass
-
-    def get_position(self, robot_number):
-        return [1,1,1]
-
-    def new_data_ready(self, robot_number):
-        return False
-
+    def wake_device(self, address):
+        pass
+    def sleep_device(self, address):
+        pass
     def get_metrics(self):
         return {}
-
-    def service_queues(self):
-        pass
-
-
-if __name__ == '__main__':
-    
-    r = RobotPositionHandler()
-    r.wake_robot(1)
-
-    # Wait for devices to fully wake up and give good data
-    sleep_time = 30
-    logging.info('Waiting {} seconds for beacons to fully wake up'.format(sleep_time))
-    time.sleep(sleep_time)
-
-    t_start = time.time()
-    t_total = 15
-    while time.time() - t_start < t_total:
-        r.service_queues()
-        time.sleep(0.05)
-    
-    r.sleep_robot(1)
-    r.close()
