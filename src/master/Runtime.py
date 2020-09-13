@@ -210,7 +210,6 @@ class RuntimeManager:
         if self.initialization_status != RuntimeManager.STATUS_NOT_INITIALIZED:
             if not keep_mm_awake:
                 self.mm_wrapper.sleep_all_devices()
-            self.mm_wrapper.close()
 
     def get_initialization_status(self):
         self._check_initialization_status()

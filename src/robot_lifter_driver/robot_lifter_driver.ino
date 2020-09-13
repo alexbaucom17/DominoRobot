@@ -244,8 +244,9 @@ void loop()
         motors[1].stop();
     }
 
+    comms.send("DEBUG test");
     // Will send back one of [none, manual, pos, homing, open, close]
     comms.send(status_str);
     // For debugging
-    Serial.println("");
+    //Serial.println("");
 }

@@ -4,8 +4,8 @@ import os
 class Config:
 
     # ====== PATHS ========
-
-    root_path = "C:\\Users\\alexb\\Data\\Github\\DominoRobot\\"   # DONT COMMIT
+    
+    root_path = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\"
     mm_api_relative_path = "marvelmind_SW_20202_04_19\\API\\api_windows_64bit\\dashapi.dll"
     config_dir_path = os.path.dirname(os.path.realpath(__file__))
     plan_file = os.path.join(config_dir_path, 'plan.p')

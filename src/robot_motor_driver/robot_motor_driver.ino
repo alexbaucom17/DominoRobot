@@ -6,8 +6,9 @@
 // Serial = USB
 // Serial0 + Serial1 = COM ports
 
+#define PRINT_DEBUG false
+
 // Globals
-HardwareSerial& debug = Serial;
 SerialComms comm(Serial);
 
 // Constants
@@ -26,21 +27,21 @@ const float radsPerSecondToStepsPerSecond = STEPS_PER_REV / (2 * PI);
 #define MOTOR_FRONT_RIGHT ConnectorM1
 #define MOTOR_REAR_CENTER ConnectorM2
 
+float MOTOR_FRONT_LEFT_FAKE = 0;
+float MOTOR_FRONT_RIGHT_FAKE = 0;
+float MOTOR_REAR_CENTER_FAKE = 0;
+
 struct CartVelocity
 {
     float vx;
     float vy;
     float va;
 
-    void print(HardwareSerial& serial)
+    String toString() const
     {
-        serial.print("CartVelocity: [");
-        serial.print(vx);
-        serial.print(",");
-        serial.print(vy);
-        serial.print(",");
-        serial.print(va);
-        serial.println("]");
+        char s[100];
+        sprintf(s, "[vx: %.4f, vy: %.4f, va: %.4f]", vx, vy, va);
+        return static_cast<String>(s);
     }
 };
 
@@ -50,23 +51,20 @@ struct MotorVelocity
     float v1;
     float v2;
 
-    void print(HardwareSerial& serial)
+    String toString() const
     {
-        serial.print("MotorVelocity: [");
-        serial.print(v0);
-        serial.print(",");
-        serial.print(v1);
-        serial.print(",");
-        serial.print(v2);
-        serial.println("]");
+        char s[100];
+        sprintf(s, "[v0: %.4f, v1: %.4f, v2: %.4f]", v0, v1, v2);
+        return static_cast<String>(s);
     }
 };
 
 
 CartVelocity decodeMsg(String msg)
 {
-    debug.print("DEBUG Incoming message: ");
-    debug.println(msg);
+#if PRINT_DEBUG
+    comm.send("DEBUG Incoming message: " + msg);
+#endif
     float vals[3];
     int prev_idx = 0;
     int j = 0;
@@ -89,9 +87,10 @@ CartVelocity decodeMsg(String msg)
     cv.vx = vals[0];
     cv.vy = vals[1];
     cv.va = vals[2];
-
-    debug.print("DEBUG Decoded message: ");
-    cv.print(debug);
+    
+#if PRINT_DEBUG
+    comm.send("DEBUG Decoded message: " + cv.toString());
+#endif
 
     return cv;
 }
@@ -103,29 +102,38 @@ MotorVelocity doIK(CartVelocity cmd)
     motors.v0 = 1/WHEEL_RADIUS * (-1 * sq3 / 2 * cmd.vx  + 0.5 * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va) * BELT_RATIO;
     motors.v1 = 1/WHEEL_RADIUS * (     sq3 / 2 * cmd.vx  + 0.5 * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va) * BELT_RATIO;
     motors.v2 = 1/WHEEL_RADIUS * (                       - 1   * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va) * BELT_RATIO;
-    debug.print("DEBUG After IK: ");
-    motors.print(debug);
+#if PRINT_DEBUG
+    comm.send("DEBUG After IK: " + motors.toString());
+#endif
     return motors;
 }
 
 void SendCommandsToMotors(MotorVelocity motors)
 {
-    debug.print("DEBUG Send to motor: ");
-    debug.println(motors.v0 * radsPerSecondToStepsPerSecond);
+#if PRINT_DEBUG
+    comm.send("DEBUG Send to motor: " + String(motors.v0 * radsPerSecondToStepsPerSecond));
+#endif
     //MOTOR_FRONT_LEFT.MoveVelocity(motors.v0 * radsPerSecondToStepsPerSecond);
     //MOTOR_FRONT_RIGHT.MoveVelocity(motors.v1 * radsPerSecondToStepsPerSecond);
     //MOTOR_REAR_CENTER.MoveVelocity(motors.v2 * radsPerSecondToStepsPerSecond);
+    MOTOR_FRONT_LEFT_FAKE  = motors.v0 * radsPerSecondToStepsPerSecond;
+    MOTOR_FRONT_RIGHT_FAKE = motors.v1 * radsPerSecondToStepsPerSecond;
+    MOTOR_REAR_CENTER_FAKE = motors.v2 * radsPerSecondToStepsPerSecond;
 }
 
 MotorVelocity ReadMotorSpeeds()
 {
     MotorVelocity measured;
-    measured.v0 = 1; // MOTOR_FRONT_LEFT.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
-    measured.v1 = 2; //MOTOR_FRONT_RIGHT.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
-    measured.v2 = 3; //MOTOR_REAR_CENTER.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
-    
-    debug.print("DEBUG Motor measured: ");
-    measured.print(debug);
+//    measured.v0 = MOTOR_FRONT_LEFT.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
+//    measured.v1 = MOTOR_FRONT_RIGHT.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
+//    measured.v2 = MOTOR_REAR_CENTER.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
+    measured.v0 = MOTOR_FRONT_LEFT_FAKE / radsPerSecondToStepsPerSecond;
+    measured.v1 = MOTOR_FRONT_RIGHT_FAKE / radsPerSecondToStepsPerSecond;
+    measured.v2 = MOTOR_REAR_CENTER_FAKE / radsPerSecondToStepsPerSecond;
+
+#if PRINT_DEBUG
+    comm.send("DEBUG Motor measured: " + measured.toString());
+#endif
 
     return measured;
 }
@@ -142,8 +150,9 @@ CartVelocity doFK(MotorVelocity motor_measured)
     robot_measured.vx = rOver3 * (-1 * sq3 * wheel_speed.v0 + sq3 * wheel_speed.v1);
     robot_measured.vy = rOver3 * ( wheel_speed.v0 + wheel_speed.v1 - 2.0 * wheel_speed.v2); 
     robot_measured.va = rOver3 / WHEEL_DIST_FROM_CENTER * (wheel_speed.v0 + wheel_speed.v1 + wheel_speed.v2);
-    debug.print("DEBUG After FK: ");
-    robot_measured.print(debug);
+#if PRINT_DEBUG
+    comm.send("DEBUG After FK: " + robot_measured.toString());
+#endif
     return robot_measured;
 
 }
@@ -164,6 +173,9 @@ bool handlePowerRequests(String msg)
         MOTOR_FRONT_RIGHT.EnableRequest(true);
         MOTOR_REAR_CENTER.EnableRequest(true);
         MOTOR_FRONT_LEFT.EnableRequest(true);
+#if PRINT_DEBUG
+        comm.send("DEBUG Motors enabled");
+#endif
         return true;
     }
     else if (msg == "Power:OFF")
@@ -171,6 +183,9 @@ bool handlePowerRequests(String msg)
         MOTOR_FRONT_RIGHT.EnableRequest(false);
         MOTOR_REAR_CENTER.EnableRequest(false);
         MOTOR_FRONT_LEFT.EnableRequest(false);
+#if PRINT_DEBUG
+        comm.send("DEBUG Motors disabled");
+#endif
         return true;
     }
     return false;
@@ -180,9 +195,6 @@ bool handlePowerRequests(String msg)
 void setup()
 {
     Serial.begin(115200);
-    
-    debug.begin(115200);
-    debug.println("DEBUG Clearcore starting");
     
     // Sets the input clocking rate. This normal rate is ideal for ClearPath
     // step and direction applications.
@@ -199,10 +211,18 @@ void setup()
     MOTOR_FRONT_LEFT.EnableRequest(false);
     MOTOR_FRONT_LEFT.VelMax(MOTOR_MAX_VEL_STEPS_PER_SECOND);
     MOTOR_FRONT_LEFT.AccelMax(MOTOR_MAX_ACC_STEPS_PER_SECOND_SQARED);
+
 }
 
+unsigned long prevLoopMillis = 0;
 void loop()
 {
+    if (millis() - prevLoopMillis > 5000)
+    {
+      comm.send("DEBUG Motor driver connected");
+      prevLoopMillis = millis();
+    }
+    
     String msg = comm.rcv();
     if(msg.length() != 0)
     {
