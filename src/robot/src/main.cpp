@@ -30,7 +30,7 @@ void configure_logger()
     plog::init(plog::info, &fileAppender).addAppender(&consoleAppender); 
 
     // Initialize motion logs to go to file
-    static plog::RollingFileAppender<plog::MessageOnlyFormatter> motionFileAppender(motion_log_file_name.c_str(), 0, 0);
+    static plog::RollingFileAppender<plog::MessageOnlyFormatter> motionFileAppender(motion_log_file_name.c_str(), 100000, 0);
     plog::init<MOTION_LOG_ID>(plog::debug, &motionFileAppender);
 
     PLOGI << "Logger ready";

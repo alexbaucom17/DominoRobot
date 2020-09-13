@@ -246,7 +246,11 @@ std::vector<float> RobotController::readMsgFromMotorDriver()
     std::vector<float> decodedVelocity = {0,0,0};
     if (serial_to_motor_driver_->isConnected())
     {
-         msg = serial_to_motor_driver_->rcv();
+        int count = 0;
+        while(msg.empty() && count++ < 10)
+        {
+            msg = serial_to_motor_driver_->rcv();
+        }
     }
 
     if (msg.empty())

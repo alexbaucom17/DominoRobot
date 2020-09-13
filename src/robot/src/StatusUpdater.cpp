@@ -56,3 +56,13 @@ void StatusUpdater::updatePositionConfidence(float cx, float cy, float ca)
   currentStatus_.confidence_a = static_cast<uint8_t>((1-ica)*255);
   
 }
+
+void StatusUpdater::update_motor_driver_connected(bool connected)
+{
+  currentStatus_.motor_driver_connected = connected;
+}
+
+void StatusUpdater::update_lifter_driver_connected(bool connected)
+{
+  currentStatus_.lifter_driver_connected = connected;
+}
