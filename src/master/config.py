@@ -5,11 +5,10 @@ class Config:
 
     # ====== PATHS ========
 
-    root_path = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\"
-    mm_api_relative_path = "marvelmind_SW_2019_08_25\\API\\api_windows_64bit\\dashapi.dll"
+    root_path = "C:\\Users\\alexb\\Data\\Github\\DominoRobot\\"   # DONT COMMIT
+    mm_api_relative_path = "marvelmind_SW_20202_04_19\\API\\api_windows_64bit\\dashapi.dll"
     config_dir_path = os.path.dirname(os.path.realpath(__file__))
     plan_file = os.path.join(config_dir_path, 'plan.p')
-    mm_beacon_state_file = os.path.join(config_dir_path, 'beacon_state.txt')
     mm_api_path = os.path.join(root_path, mm_api_relative_path)
     log_folder = os.path.join(root_path, 'log')
 
@@ -17,20 +16,14 @@ class Config:
     # ====== ROBOT CONFIG ========
 
     # Maps robot (or static) to sets of marvel mind beacons
-    # Defining first device in list as the one on the left side of the robot
     device_map = {
     "static": (1, 2),
-    "robot1": (6, 5)
+    "robot1": (12, 13)
     }
 
     # Specifies which IP address each robot has
     ip_map = {'robot1': '192.168.1.5'}
     base_station_ip = '192.168.1.100'
-
-    mm_forward_offset = 0.2969 # Meters from center of robot to center point of MM beacons
-    mm_beacon_sep = 0.5715 # Meters between beacons on the robot
-    frame_to_robot_offset = np.array([0.5, 0]) # Offset from tile position to robot position
-
 
     # ====== PLAN GENERATION ========
 
@@ -44,7 +37,7 @@ class Config:
                 ('blue',  (0,0,1)),
                 ('green', (0,1,0)),
                 ('white', (1,1,1))
-                ])
+                ], dtype=object)
 
     # To get image to look right, need spacing to create square pixels for now
     # could fix this later by making image field creation take into account non-square pixels
@@ -88,5 +81,5 @@ class Config:
     domino_field_boundaries = np.array([domino_field_origin,domino_field_origin + np.array([field_width,field_height])])
 
     # ====== RUNTIME CONFIGURATION ========
-    robot_status_wait_time = 0.5    # How many seconds to wait between status requests for each robot
+    robot_status_wait_time = 0.2    # How many seconds to wait between status requests for each robot
     base_station_status_wait_time = 1 # How many seconds to wait between status requests for the base station

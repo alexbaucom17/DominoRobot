@@ -7,6 +7,7 @@ import sys
 import pickle
 import logging
 import PySimpleGUI as sg
+import traceback
 
 from FieldPlanner import Plan, ActionTypes, Action, MoveAction, TestPlan, MoveConstVelAction
 from Runtime import RuntimeManager, OFFLINE_TESTING, SKIP_MARVELMIND
@@ -40,7 +41,7 @@ def setup_gui_layout(panel_names, target_names):
             [sg.Column(run_button), sg.Column(estop_button), sg.Column(manual_button)]  ]
 
     # Right hand column with text ouput
-    col3 = [[sg.Output(size=(50, 50))]]
+    col3 = [[sg.Output(size=(70, 50))]]
     
     return [[ sg.Column(col1), sg.Column(col2), sg.Column(col3)]]
 
@@ -54,7 +55,7 @@ class CmdGui:
         sg.change_look_and_feel('DarkBlack')
 
         panel_names = ["{}".format(n) for n in self.config.ip_map]
-        panel_names += ['base', 'plan', 'pos']
+        panel_names += ['base', 'plan', 'mm']
         target_names = copy.deepcopy(panel_names)
         target_names.remove('plan')
         layout = setup_gui_layout(panel_names, target_names)
@@ -120,8 +121,8 @@ class CmdGui:
 
     def update_status_panels(self, metrics):
         for key, metric in metrics.items():
-            if key == 'pos':
-                self._update_pos_panel(metric)
+            if key == 'mm':
+                self._update_marvelmind_panel(metric)
             elif key == 'plan':
                 self._update_plan_panel(metric)
             elif key == 'base':
@@ -130,18 +131,18 @@ class CmdGui:
                 self._update_robot_panel(key, metric) 
 
 
-    def _update_pos_panel(self, status_dict):
+    def _update_marvelmind_panel(self, status_dict):
         status_str = "Cannot get marvelmind status"
         if status_dict:
             try:
                 status_str = ""
-                status_str += "Marvelmind message stats:\n  Dropped: {0:.1f}%\n  Dropped dist: {1:.1f}%\n  Dropped time {2:.1f}%\n  Last sent: {3:.2f}s".format(
-                    status_dict['frac_dropped_total']*100, status_dict['frac_dropped_dist']*100,
-                    status_dict['frac_dropped_time']*100, status_dict['time_since_last_sent'])
+                status_str = "Connected devices:\n"
+                for addr, data in status_dict:
+                    status_str += "  Address: {} | Sleep: {}\n".format(addr, data['sleep'])
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
 
-        self.window['_POS_STATUS_'].update(status_str)
+        self.window['_MM_STATUS_'].update(status_str)
 
     def _update_plan_panel(self, status_dict):
         status_str = "Plan is not running"
@@ -178,7 +179,6 @@ class CmdGui:
                 status_str = ""
                 status_str += "Position: [{0:.3f} m, {1:.3f} m, {2:.3f} rad]\n".format(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
                 status_str += "Velocity: [{0:.3f} m/s, {1:.3f} m/s, {2:.3f} rad/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], status_dict['vel_a'])
-                status_str += "Confidence: [{0:.2f} %, {1:.2f} %, {2:.2f} %]\n".format(status_dict['confidence_x']/2.55,status_dict['confidence_y']/2.55, status_dict['confidence_a']/2.55)
                 status_str += "Controller timing: {} ms\n".format(status_dict['controller_loop_ms'])
                 status_str += "Position timing:   {} ms\n".format(status_dict['position_loop_ms'])
                 status_str += "Motion in progress: {}\n".format(status_dict["in_progress"])
@@ -257,7 +257,7 @@ class Master:
             # Only do some stuff once we are initialized
             if not self.initialized:
                 if self.runtime_manager.get_initialization_status() != RuntimeManager.STATUS_FULLY_INITIALIZED:
-                    pass
+                    self.runtime_manager.initialize()
                 else:
                     self.initialized = True
                     logging.info("Init completed, starting main loop")
@@ -310,6 +310,9 @@ def configure_logging(path):
     rootLogger = logging.getLogger()
     rootLogger.setLevel(logging.INFO)
 
+    if not os.path.isdir(path):
+        os.mkdir(path)
+
     fileHandler = logging.FileHandler(os.path.join(path,"master.log"), 'w+')
     fileFormatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
     fileHandler.setFormatter(fileFormatter)
@@ -322,12 +325,16 @@ def configure_logging(path):
 
 
 if __name__ == '__main__':
-    # Setup config and gui
-    cfg = config.Config()
-    gui = CmdGui(cfg)
-    # Need to setup gui before logging to ensure that output pane captures logs correctly
-    configure_logging(cfg.log_folder)
-    # Startup master and loop forever
-    m = Master(cfg, gui)
-    m.loop()
+    try:
+        # Setup config and gui
+        cfg = config.Config()
+        gui = CmdGui(cfg)
+        # Need to setup gui before logging to ensure that output pane captures logs correctly
+        configure_logging(cfg.log_folder)
+        # Startup master and loop forever
+        m = Master(cfg, gui)
+        m.loop()
+    except Exception:
+        logging.exception("Unhandled exception")
+
 

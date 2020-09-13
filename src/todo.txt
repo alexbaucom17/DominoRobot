@@ -7,6 +7,7 @@ Robot controller:
 Robot SW::
 - Do full test with all devices attached
 - Figure out how to test position update function
+- Figure out how to make log sizes managable - especially position log
 
 Robot HW:
 - Test powering RPI and Clearcore from 24 V
@@ -14,14 +15,15 @@ Robot HW:
 
 Master:
 - Figure out how to sequence loading between base and robot
-- Refactor to remove marvelmind streaming but still handle wake/sleep
+- Add a stop sequence and pause button
+- Add a confirmation dialog before starting sequence
 
 Base station HW:
 - Set up electronics
 
 QOL stuff:
 - Try to make it so master doesn't crash when network has trouble (need to handle detecting disconnect and then auto-reconnecting)
-- Add check to master to verify network is correct and print a useful message
+- Add check to master to verify network is correct and print a useful message (and simply fail more gracefully)
 
 
 Purchase:

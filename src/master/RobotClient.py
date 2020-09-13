@@ -78,7 +78,7 @@ class TcpClient:
 
         return new_msg
 
-class BaseClient:
+class ClientBase:
 
     def __init__(self, ip): 
         self.client = TcpClient(ip, PORT, NET_TIMEOUT)
@@ -149,7 +149,7 @@ class BaseClient:
         self.send_msg_and_wait_for_ack(msg)
 
 
-class RobotClient(BaseClient):
+class RobotClient(ClientBase):
 
     def __init__(self, cfg, robot_id):
         super().__init__(cfg.ip_map[robot_id])
@@ -197,14 +197,8 @@ class RobotClient(BaseClient):
         msg = {'type': 'lc'}
         self.send_msg_and_wait_for_ack(msg)
 
-    def send_position(self, x, y, a):
-        """ Send robot coordinates from marvelmind sensors """
-        msg = {'type': 'p', 'data': {'x': round(x, 5), 'y': round(y, 5), 'a': round(a,4)}} # Try to reduce message size 
-        self.send_msg_and_wait_for_ack(msg, print_debug=False)
 
-
-
-class BaseStationClient(BaseClient):
+class BaseStationClient(ClientBase):
     
     def __init__(self, cfg):
         super().__init__(cfg.base_station_ip)
@@ -216,9 +210,7 @@ class BaseStationClient(BaseClient):
         self.send_msg_and_wait_for_ack(msg)
 
 
-
-
-# Hacky Mocks to use for testings
+# Hacky Mocks to use for testing
 class MockRobotClient:
     def __init__(self, cfg, robot_id):
         super().__init__()
@@ -235,9 +227,6 @@ class MockRobotClient:
         pass
 
     def place(self):
-        pass
-
-    def send_position(self, x, y, a):
         pass
 
     def net_status(self):
