@@ -231,7 +231,7 @@ bool generateSCurve(float dist, DynamicLimits limits, const SolverParameters& so
             // If dt_a is negative, it means we couldn't find a solution
             // so adjust accel parameter and try loop again
             a_lim *= solver.beta_decay_;
-            PLOGI << "dt_a: " << dt_a << ", trying new accel value: " << a_lim;
+            PLOGI << "dt_a: " << dt_a << ", trying new accel limit: " << a_lim;
             continue;
         }
         float dp_a = dv_j * dt_a + 0.5 * a_lim * std::pow(dt_a, 2);
@@ -243,7 +243,7 @@ bool generateSCurve(float dist, DynamicLimits limits, const SolverParameters& so
             // If dt_a is negative, it means we couldn't find a solution
             // so adjust velocity parameter and try loop again
             v_lim *= solver.alpha_decay_;
-            PLOGI << "dt_v: " << dt_v << ", trying new accel value: " << v_lim;
+            PLOGI << "dt_v: " << dt_v << ", trying new velocity limit: " << v_lim;
             continue;
         }
 

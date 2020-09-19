@@ -52,7 +52,7 @@ std::vector<float> MarvelmindWrapper::getPositions()
 
     if (ok)
     {
-        PLOGI.printf("Position data - ready: %i, addr: %i, ts: %i, x: %i, y: %i, a:%f", position_data.ready, position_data.address, position_data.timestamp, position_data.x, position_data.y, position_data.angle);
+        //PLOGI.printf("Position data - ready: %i, addr: %i, ts: %i, x: %i, y: %i, a:%f", position_data.ready, position_data.address, position_data.timestamp, position_data.x, position_data.y, position_data.angle);
 
         if (position_data.ready)
         {

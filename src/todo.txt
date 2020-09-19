@@ -5,13 +5,15 @@ Stepper controller:
 Robot controller:
 
 Robot SW::
-- Do full test with all devices attached
 - Figure out how to test position update function
 - Figure out how to make log sizes managable - especially position log
+    Some sort of filtering/subsampling for the log (maybe write my own logger function?)
+- Put together simple script for testing motors (simple straight back and forth)
+    - Probalby just a small python script that sends commands over serial to clearcore
 
 Robot HW:
-- Test powering RPI and Clearcore from 24 V
-- Prep for hardware testing
+- Get electronics on the robot and fully wired
+- Do clearcore calibration for one motor with full load
 
 Master:
 - Figure out how to sequence loading between base and robot
