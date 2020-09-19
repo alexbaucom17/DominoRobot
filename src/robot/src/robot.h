@@ -5,7 +5,6 @@
 #include "RobotController.h"
 #include "RobotServer.h"
 #include "StatusUpdater.h"
-#include "TimeRunningAverage.h"
 #include "TrayController.h"
 #include "utils.h"
 

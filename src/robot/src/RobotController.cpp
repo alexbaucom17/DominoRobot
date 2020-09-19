@@ -5,7 +5,6 @@
 #include <Eigen/Dense>
 
 #include "constants.h"
-#include "utils.h"
 #include "serial/SerialCommsFactory.h"
 
 typedef std::chrono::duration<float> fsec;
@@ -23,6 +22,9 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
   trajRunning_(false),
   fineMode_(true),
   velOnlyMode_(false),
+  controller_rate_(cfg.lookup("motion.controller_frequency")),
+  logging_rate_(cfg.lookup("motion.log_frequency")),
+  log_this_cycle_(false),
   mm_update_fraction_(cfg.lookup("localization.mm_update_fraction")),
   mm_update_vel_fn_slope_(cfg.lookup("localization.mm_update_vel_fn_slope")),
   mm_update_vel_fn_intercept_(cfg.lookup("localization.mm_update_vel_fn_intercept"))
@@ -94,6 +96,11 @@ void RobotController::estop()
 
 void RobotController::update()
 {    
+    // Ensures controller runs at approximately constant rate
+    if (!controller_rate_.ready()) { return; }
+    // Ensures logging doesn't get out of hand
+    log_this_cycle_ = logging_rate_.ready();
+    
     // Create a command based on the trajectory or not moving
     PVTPoint cmd;
     if(trajRunning_)
@@ -101,9 +108,9 @@ void RobotController::update()
         cmd = generateCommandFromTrajectory();
         
         // Print motion estimates to log
-        PLOGD_(MOTION_LOG_ID) << "Target: " << cmd.toString();
-        PLOGD_(MOTION_LOG_ID) << "Est Vel: " << cartVel_.toString();
-        PLOGD_(MOTION_LOG_ID) << "Est Pos: " << cartPos_.toString();
+        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_) << "Target: " << cmd.toString();
+        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_) << "Est Vel: " << cartVel_.toString();
+        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_) << "Est Pos: " << cartPos_.toString();
 
         // Check if we are finished with the trajectory
         if (checkForCompletedTrajectory(cmd))
@@ -291,7 +298,11 @@ void RobotController::computeOdometry()
 
     if(local_cart_vel.size() != 3) {return;}
     
-    PLOGD_(MOTION_LOG_ID).printf("Decoded velocity: %.3f, %.3f, %.3f", local_cart_vel[0], local_cart_vel[1], local_cart_vel[2]);
+    std::vector<float> zero = {0,0,0};
+    if(trajRunning_ || local_cart_vel != zero)
+    {
+        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_).printf("Decoded velocity: %.3f, %.3f, %.3f", local_cart_vel[0], local_cart_vel[1], local_cart_vel[2]);
+    }
 
     // Convert local cartesian velocity to global cartesian velocity using the last estimated angle
     float cA = cos(cartPos_.a_);
@@ -316,7 +327,7 @@ void RobotController::setCartVelCommand(Velocity target_vel)
 {
     if (trajRunning_) 
     {
-        PLOGD_(MOTION_LOG_ID).printf("CartVelCmd: [vx: %.4f, vy: %.4f, va: %.4f]", target_vel.vx_, target_vel.vy_, target_vel.va_);
+        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_).printf("CartVelCmd: [vx: %.4f, vy: %.4f, va: %.4f]", target_vel.vx_, target_vel.vy_, target_vel.va_);
     }
 
     // Convert input global velocities to local velocities
@@ -333,7 +344,7 @@ void RobotController::setCartVelCommand(Velocity target_vel)
 
     if (local_cart_vel[0] != 0 || local_cart_vel[1] != 0 || local_cart_vel[2] != 0 )
     {
-        PLOGD_(MOTION_LOG_ID).printf("Sending to motors: [%s]", s.c_str());
+        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_).printf("Sending to motors: [%s]", s.c_str());
     }
 
     if (serial_to_motor_driver_->isConnected())

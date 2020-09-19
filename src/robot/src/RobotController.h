@@ -6,6 +6,7 @@
 #include "SmoothTrajectoryGenerator.h"
 #include "StatusUpdater.h"
 #include "serial/SerialComms.h"
+#include "utils.h"
 
 class RobotController
 {
@@ -80,6 +81,9 @@ class RobotController
     bool trajRunning_;                     // If a trajectory is currently active
     bool fineMode_;                        // If fine positioning mode is enabled or not.
     bool velOnlyMode_;                     // If we are only interested in velocity and not goal position
+    RateController controller_rate_;       // Rate limit controller loops
+    RateController logging_rate_ ;         // Rate limit logging to file
+    bool log_this_cycle_;                  // Trigger for logging this cycle
 
     struct TrajectoryTolerances
     {
