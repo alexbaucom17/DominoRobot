@@ -6,8 +6,6 @@ Robot controller:
 
 Robot SW::
 - Figure out how to test position update function
-- Figure out how to make log sizes managable - especially position log
-    Some sort of filtering/subsampling for the log (maybe write my own logger function?)
 - Put together simple script for testing motors (simple straight back and forth)
     - Probalby just a small python script that sends commands over serial to clearcore
 

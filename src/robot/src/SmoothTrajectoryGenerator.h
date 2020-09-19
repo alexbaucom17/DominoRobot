@@ -112,17 +112,32 @@ struct SCurveParameters
     float a_lim_;
     float j_lim_;
     SwitchPoint switch_points_[8];
+
+    std::string toString() const
+    {
+      char s[100];
+      sprintf(s, " Limits: [v: %.3f, a:%.3f, j:%.3f]", v_lim_, a_lim_, j_lim_);
+      return static_cast<std::string>(s);
+    }
 };
 
 // Everything needed to define a point to point s-curve trajectory in X, Y, and angle
 struct Trajectory
 {
     Eigen::Vector2f trans_direction_;
-    float rot_direction_;
+    int rot_direction_;
     Point initialPoint_;
     SCurveParameters trans_params_;
     SCurveParameters rot_params_;
     bool complete_;
+
+    std::string toString() const
+    {
+      char s[1000];
+      sprintf(s, "Trajectory Parameters:\nTranslation:\n  Direction:[%.2f, %.2f]\n  S-Curve:%s\nRotation:\n  Direction:%i\n  S-Curve:%s\n\n", 
+        trans_direction_[0], trans_direction_[1], trans_params_.toString().c_str(), rot_direction_, rot_params_.toString().c_str());
+      return static_cast<std::string>(s);
+    }
 };
 
 struct SolverParameters

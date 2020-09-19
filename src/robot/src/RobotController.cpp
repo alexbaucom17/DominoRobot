@@ -108,7 +108,7 @@ void RobotController::update()
         cmd = generateCommandFromTrajectory();
         
         // Print motion estimates to log
-        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_) << "Target: " << cmd.toString();
+        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_) << "\nTarget: " << cmd.toString();
         PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_) << "Est Vel: " << cartVel_.toString();
         PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_) << "Est Pos: " << cartPos_.toString();
 

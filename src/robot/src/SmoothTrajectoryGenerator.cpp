@@ -82,6 +82,9 @@ bool SmoothTrajectoryGenerator::generatePointToPointTrajectory(Point initialPoin
     MotionPlanningProblem mpp = buildMotionPlanningProblem(initialPoint, targetPoint, fineMode, solver_params_);
     currentTrajectory_ = generateTrajectory(mpp);
 
+    PLOGI << currentTrajectory_.toString();
+    PLOGD_(MOTION_LOG_ID) << currentTrajectory_.toString();
+
     return currentTrajectory_.complete_;
 }
 
@@ -108,6 +111,9 @@ bool SmoothTrajectoryGenerator::generateConstVelTrajectory(Point initialPoint, V
 
     MotionPlanningProblem mpp = buildMotionPlanningProblem(initialPoint, targetPoint, fineMode, solver_params_);
     currentTrajectory_ = generateTrajectory(mpp);
+
+    PLOGI << currentTrajectory_.toString();
+    PLOGD_(MOTION_LOG_ID) << currentTrajectory_.toString();
 
     return currentTrajectory_.complete_;
 }
