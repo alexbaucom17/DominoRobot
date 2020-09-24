@@ -217,11 +217,11 @@ void setup()
 unsigned long prevLoopMillis = 0;
 void loop()
 {
-    if (millis() - prevLoopMillis > 5000)
-    {
-      comm.send("DEBUG Motor driver connected");
-      prevLoopMillis = millis();
-    }
+//    if (millis() - prevLoopMillis > 5000)
+//    {
+//      comm.send("DEBUG Motor driver connected");
+//      prevLoopMillis = millis();
+//    }
     
     String msg = comm.rcv();
     if(msg.length() != 0)
