@@ -9,7 +9,7 @@ START_CHAR = "<"
 END_CHAR = ">"
 
 
-# Copied from RobotClient.TcpClient
+# Copied and modified from RobotClient.TcpClient
 class SerialClient:
 
     def __init__(self, port, baud, timeout):
