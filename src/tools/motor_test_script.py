@@ -107,12 +107,14 @@ if __name__ == '__main__':
         sys.exit(0)
     signal.signal(signal.SIGINT, signal_handler)
 
-    fwd_vel =  [ 0.1, 0, 0]
-    bkwd_vel = [-0.1, 0, 0]
-    left_vel = [0, 0.1, 0]
-    right_vel = [0, -0.1, 0]
-    ccw_spin_vel = [0, 0, 0.1]
-    cw_spin_vel = [0, 0, -0.1]
+    fwd_vel =  [ 0.2, 0, 0]
+    bkwd_vel = [-0.2, 0, 0]
+    left_vel = [0, 0.2, 0]
+    right_vel = [0, -0.2, 0]
+    ccw_spin_vel = [0, 0, 0.2]
+    cw_spin_vel = [0, 0, -0.2]
+    diag_fwd_vel = [0.1, 0.173, 0]
+    diag_rev_vel = [-0.1, -0.173, 0]
     move_time = 3
     pause_time = 2
 
@@ -130,6 +132,10 @@ if __name__ == '__main__':
     timed_move(ser, ccw_spin_vel, move_time, pause_time)
     print("Move CW")
     timed_move(ser, cw_spin_vel, move_time, pause_time)
+    print("Move Diag Fwd")
+    timed_move(ser, diag_fwd_vel, move_time, pause_time)
+    print("Move Diag Rev")
+    timed_move(ser, diag_rev_vel, move_time, pause_time)
     print("Motors off")
     power_off(ser)
 

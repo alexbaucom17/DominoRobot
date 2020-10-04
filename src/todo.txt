@@ -20,7 +20,7 @@ Ask josh:
 - Confirm gear ratio
 - Get cover for belts
 - One belt is tight but others aren't
-- One of the motors looks like it is rubbing on the stand quite a bit (makes a pretty bad squealing too)
+- Ask josh about better shaft attaching system
 
 Master:
 - Figure out how to sequence loading between base and robot
