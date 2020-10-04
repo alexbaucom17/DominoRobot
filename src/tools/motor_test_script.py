@@ -113,7 +113,7 @@ if __name__ == '__main__':
     right_vel = [0, -0.1, 0]
     ccw_spin_vel = [0, 0, 0.1]
     cw_spin_vel = [0, 0, -0.1]
-    move_time = 5
+    move_time = 3
     pause_time = 2
 
     print("Motors on")

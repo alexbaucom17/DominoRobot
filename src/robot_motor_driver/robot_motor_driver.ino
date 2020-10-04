@@ -29,9 +29,9 @@ float MOTOR_FRONT_RIGHT_FAKE = 0;
 float MOTOR_REAR_CENTER_FAKE = 0;
 #else
 // Motor mapping
-#define MOTOR_FRONT_LEFT ConnectorM2
-#define MOTOR_FRONT_RIGHT ConnectorM0
-#define MOTOR_REAR_CENTER ConnectorM1
+#define MOTOR_FRONT_LEFT ConnectorM1
+#define MOTOR_FRONT_RIGHT ConnectorM2
+#define MOTOR_REAR_CENTER ConnectorM0
 #endif
 
 struct CartVelocity
