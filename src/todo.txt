@@ -6,12 +6,21 @@ Robot controller:
 
 Robot SW::
 - Figure out how to test position update function
-- Put together simple script for testing motors (simple straight back and forth)
-    - Probalby just a small python script that sends commands over serial to clearcore
+- Configure raspi for dominonet network
 
 Robot HW:
-- Get electronics on the robot and fully wired
 - Do clearcore calibration for one motor with full load
+- Get a power switch for control electronics (maybe one for clearcore and one for raspi?)
+- Ping josh about getting covers for the belts
+- Figure out how I want to hook up servo for lifter
+- Hook the battery monitor up again
+- Try to estimate how long the controller batteries will last fully loaded
+
+Ask josh:
+- Confirm gear ratio
+- Get cover for belts
+- One belt is tight but others aren't
+- Ask josh about better shaft attaching system
 
 Master:
 - Figure out how to sequence loading between base and robot

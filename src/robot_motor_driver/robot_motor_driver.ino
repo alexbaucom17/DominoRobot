@@ -7,6 +7,7 @@
 // Serial0 + Serial1 = COM ports
 
 #define PRINT_DEBUG false
+#define USE_FAKE_MOTOR false
 
 // Globals
 SerialComms comm(Serial);
@@ -22,14 +23,16 @@ const float sq3 = sqrt(3.0);
 const float rOver3 = WHEEL_RADIUS / 3.0;
 const float radsPerSecondToStepsPerSecond = STEPS_PER_REV / (2 * PI);
 
-// Motor mapping
-#define MOTOR_FRONT_LEFT ConnectorM0 
-#define MOTOR_FRONT_RIGHT ConnectorM1
-#define MOTOR_REAR_CENTER ConnectorM2
-
+#if USE_FAKE_MOTOR
 float MOTOR_FRONT_LEFT_FAKE = 0;
 float MOTOR_FRONT_RIGHT_FAKE = 0;
 float MOTOR_REAR_CENTER_FAKE = 0;
+#else
+// Motor mapping
+#define MOTOR_FRONT_LEFT ConnectorM1
+#define MOTOR_FRONT_RIGHT ConnectorM2
+#define MOTOR_REAR_CENTER ConnectorM0
+#endif
 
 struct CartVelocity
 {
@@ -99,9 +102,9 @@ CartVelocity decodeMsg(String msg)
 MotorVelocity doIK(CartVelocity cmd)
 {
     MotorVelocity motors;
-    motors.v0 = 1/WHEEL_RADIUS * (-1 * sq3 / 2 * cmd.vx  + 0.5 * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va) * BELT_RATIO;
-    motors.v1 = 1/WHEEL_RADIUS * (     sq3 / 2 * cmd.vx  + 0.5 * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va) * BELT_RATIO;
-    motors.v2 = 1/WHEEL_RADIUS * (                       - 1   * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va) * BELT_RATIO;
+    motors.v0 = -1/WHEEL_RADIUS * (-1 * sq3 / 2 * cmd.vx  + 0.5 * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va) * BELT_RATIO;
+    motors.v1 = -1/WHEEL_RADIUS * (     sq3 / 2 * cmd.vx  + 0.5 * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va) * BELT_RATIO;
+    motors.v2 = -1/WHEEL_RADIUS * (                       - 1   * cmd.vy + WHEEL_DIST_FROM_CENTER * cmd.va) * BELT_RATIO;
 #if PRINT_DEBUG
     comm.send("DEBUG After IK: " + motors.toString());
 #endif
@@ -113,23 +116,31 @@ void SendCommandsToMotors(MotorVelocity motors)
 #if PRINT_DEBUG
     comm.send("DEBUG Send to motor: " + String(motors.v0 * radsPerSecondToStepsPerSecond));
 #endif
-    //MOTOR_FRONT_LEFT.MoveVelocity(motors.v0 * radsPerSecondToStepsPerSecond);
-    //MOTOR_FRONT_RIGHT.MoveVelocity(motors.v1 * radsPerSecondToStepsPerSecond);
-    //MOTOR_REAR_CENTER.MoveVelocity(motors.v2 * radsPerSecondToStepsPerSecond);
+
+#if USE_FAKE_MOTOR
     MOTOR_FRONT_LEFT_FAKE  = motors.v0 * radsPerSecondToStepsPerSecond;
     MOTOR_FRONT_RIGHT_FAKE = motors.v1 * radsPerSecondToStepsPerSecond;
     MOTOR_REAR_CENTER_FAKE = motors.v2 * radsPerSecondToStepsPerSecond;
+#else
+    MOTOR_FRONT_LEFT.MoveVelocity(motors.v0 * radsPerSecondToStepsPerSecond);
+    MOTOR_FRONT_RIGHT.MoveVelocity(motors.v1 * radsPerSecondToStepsPerSecond);
+    MOTOR_REAR_CENTER.MoveVelocity(motors.v2 * radsPerSecondToStepsPerSecond);
+#endif
 }
 
 MotorVelocity ReadMotorSpeeds()
 {
     MotorVelocity measured;
-//    measured.v0 = MOTOR_FRONT_LEFT.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
-//    measured.v1 = MOTOR_FRONT_RIGHT.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
-//    measured.v2 = MOTOR_REAR_CENTER.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
-    measured.v0 = MOTOR_FRONT_LEFT_FAKE / radsPerSecondToStepsPerSecond;
-    measured.v1 = MOTOR_FRONT_RIGHT_FAKE / radsPerSecondToStepsPerSecond;
-    measured.v2 = MOTOR_REAR_CENTER_FAKE / radsPerSecondToStepsPerSecond;
+
+#if USE_FAKE_MOTOR
+     measured.v0 = MOTOR_FRONT_LEFT_FAKE / radsPerSecondToStepsPerSecond;
+     measured.v1 = MOTOR_FRONT_RIGHT_FAKE / radsPerSecondToStepsPerSecond;
+     measured.v2 = MOTOR_REAR_CENTER_FAKE / radsPerSecondToStepsPerSecond;
+#else
+    measured.v0 = MOTOR_FRONT_LEFT.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
+    measured.v1 = MOTOR_FRONT_RIGHT.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
+    measured.v2 = MOTOR_REAR_CENTER.VelocityRefCommanded() / radsPerSecondToStepsPerSecond;
+#endif
 
 #if PRINT_DEBUG
     comm.send("DEBUG Motor measured: " + measured.toString());
@@ -147,9 +158,9 @@ CartVelocity doFK(MotorVelocity motor_measured)
     wheel_speed.v2 = motor_measured.v2 / float(BELT_RATIO);
     
     CartVelocity robot_measured;
-    robot_measured.vx = rOver3 * (-1 * sq3 * wheel_speed.v0 + sq3 * wheel_speed.v1);
-    robot_measured.vy = rOver3 * ( wheel_speed.v0 + wheel_speed.v1 - 2.0 * wheel_speed.v2); 
-    robot_measured.va = rOver3 / WHEEL_DIST_FROM_CENTER * (wheel_speed.v0 + wheel_speed.v1 + wheel_speed.v2);
+    robot_measured.vx = -rOver3 * (-1 * sq3 * wheel_speed.v0 + sq3 * wheel_speed.v1);
+    robot_measured.vy = -rOver3 * ( wheel_speed.v0 + wheel_speed.v1 - 2.0 * wheel_speed.v2); 
+    robot_measured.va = -rOver3 / WHEEL_DIST_FROM_CENTER * (wheel_speed.v0 + wheel_speed.v1 + wheel_speed.v2);
 #if PRINT_DEBUG
     comm.send("DEBUG After FK: " + robot_measured.toString());
 #endif
@@ -217,11 +228,11 @@ void setup()
 unsigned long prevLoopMillis = 0;
 void loop()
 {
-    if (millis() - prevLoopMillis > 5000)
-    {
-      comm.send("DEBUG Motor driver connected");
-      prevLoopMillis = millis();
-    }
+//    if (millis() - prevLoopMillis > 5000)
+//    {
+//      comm.send("DEBUG Motor driver connected");
+//      prevLoopMillis = millis();
+//    }
     
     String msg = comm.rcv();
     if(msg.length() != 0)
