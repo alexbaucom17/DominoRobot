@@ -22,8 +22,8 @@ class Config:
     }
 
     # Specifies which IP address each robot has
-    ip_map = {'robot1': '192.168.1.5'}
-    base_station_ip = '192.168.1.100'
+    ip_map = {'robot1': '10.0.0.3'}
+    base_station_ip = '10.0.0.100'
 
     # ====== PLAN GENERATION ========
 
