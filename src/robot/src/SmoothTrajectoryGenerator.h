@@ -116,7 +116,7 @@ struct SCurveParameters
     std::string toString() const
     {
       char s[100];
-      sprintf(s, " Limits: [v: %.3f, a:%.3f, j:%.3f]", v_lim_, a_lim_, j_lim_);
+      sprintf(s, " Limits: [v: %.3f, a: %.3f, j: %.3f]", v_lim_, a_lim_, j_lim_);
       return static_cast<std::string>(s);
     }
 };
