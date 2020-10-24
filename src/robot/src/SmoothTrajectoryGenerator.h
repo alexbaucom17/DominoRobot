@@ -16,7 +16,7 @@ struct Point
     std::string toString() const
     {
         char s[100];
-        sprintf(s, "[x: %.4f, y: %.4f, a: %.4f]", x_, y_, a_);
+        sprintf(s, "[x: %.3f, y: %.3f, a: %.3f]", x_, y_, a_);
         return static_cast<std::string>(s);
     }
 
@@ -39,7 +39,7 @@ struct Velocity
     std::string toString() const
     {
         char s[100];
-        sprintf(s, "[vx: %.4f, vy: %.4f, va: %.4f]", vx_, vy_, va_);
+        sprintf(s, "[vx: %.3f, vy: %.3f, va: %.3f]", vx_, vy_, va_);
         return static_cast<std::string>(s);
     }
 
@@ -134,7 +134,7 @@ struct Trajectory
     std::string toString() const
     {
       char s[1000];
-      sprintf(s, "Trajectory Parameters:\nTranslation:\n  Direction:[%.2f, %.2f]\n  S-Curve:%s\nRotation:\n  Direction:%i\n  S-Curve:%s\n\n", 
+      sprintf(s, "Trajectory Parameters:\nTranslation:\n  Direction:[%.2f, %.2f]\n  S-Curve:%s\nRotation:\n  Direction:%i\n  S-Curve:%s\n", 
         trans_direction_[0], trans_direction_[1], trans_params_.toString().c_str(), rot_direction_, rot_params_.toString().c_str());
       return static_cast<std::string>(s);
     }
@@ -145,6 +145,7 @@ struct SolverParameters
     int num_loops_;
     float alpha_decay_;
     float beta_decay_;
+    float exponent_decay_;
 };
 
 // All the pieces needed to define the motion planning problem

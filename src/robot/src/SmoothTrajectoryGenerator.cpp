@@ -12,6 +12,7 @@ SmoothTrajectoryGenerator::SmoothTrajectoryGenerator()
     solver_params_.num_loops_ = cfg.lookup("trajectory_generation.solver_max_loops"); 
     solver_params_.beta_decay_ = cfg.lookup("trajectory_generation.solver_beta_decay");
     solver_params_.alpha_decay_ = cfg.lookup("trajectory_generation.solver_alpha_decay");
+    solver_params_.exponent_decay_ = cfg.lookup("trajectory_generation.solver_exponent_decay");
 }
 
 PVTPoint SmoothTrajectoryGenerator::lookup(float time)
@@ -75,7 +76,7 @@ bool SmoothTrajectoryGenerator::generatePointToPointTrajectory(Point initialPoin
     PLOGI.printf("Generating trajectory");
     PLOGI.printf("Starting point: %s", initialPoint.toString().c_str());
     PLOGI.printf("Target point: %s", targetPoint.toString().c_str());
-    PLOGD_(MOTION_LOG_ID).printf("Generating trajectory");
+    PLOGD_(MOTION_LOG_ID).printf("\nGenerating trajectory");
     PLOGD_(MOTION_LOG_ID).printf("Starting point: %s", initialPoint.toString().c_str());
     PLOGD_(MOTION_LOG_ID).printf("Target point: %s", targetPoint.toString().c_str());
 
@@ -236,7 +237,7 @@ bool generateSCurve(float dist, DynamicLimits limits, const SolverParameters& so
         {
             // If dt_a is negative, it means we couldn't find a solution
             // so adjust accel parameter and try loop again
-            a_lim *= solver.beta_decay_;
+            a_lim *= std::pow(solver.beta_decay_, 1 + solver.exponent_decay_ * loop_counter);
             PLOGI << "dt_a: " << dt_a << ", trying new accel limit: " << a_lim;
             continue;
         }
@@ -248,7 +249,7 @@ bool generateSCurve(float dist, DynamicLimits limits, const SolverParameters& so
         {
             // If dt_a is negative, it means we couldn't find a solution
             // so adjust velocity parameter and try loop again
-            v_lim *= solver.alpha_decay_;
+            v_lim *= std::pow(solver.alpha_decay_, 1 + solver.exponent_decay_ * loop_counter);
             PLOGI << "dt_v: " << dt_v << ", trying new velocity limit: " << v_lim;
             continue;
         }

@@ -208,6 +208,7 @@ void RobotController::enableAllMotors()
     {
         serial_to_motor_driver_->send("Power:ON");
         PLOGI << "Motors enabled";
+        PLOGD_(MOTION_LOG_ID) << "Motors enabled";
     }
     else
     {
@@ -221,6 +222,7 @@ void RobotController::disableAllMotors()
     {
         serial_to_motor_driver_->send("Power:OFF");
         PLOGI << "Motors disabled";
+        PLOGD_(MOTION_LOG_ID) << "Motors disabled";
     }
     else
     {

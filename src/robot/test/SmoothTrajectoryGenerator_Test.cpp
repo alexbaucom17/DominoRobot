@@ -196,6 +196,7 @@ TEST_CASE("BuildMotionPlanningProblem", "[trajectory]")
     solver.num_loops_ = 10;
     solver.alpha_decay_ = 0.8;
     solver.beta_decay_ = 0.8;
+    solver.exponent_decay_ = 0.1;
 
     Eigen::Vector3f expected_p1 = {0,0,0};
     Eigen::Vector3f expected_p2 = {10,0,-3};
@@ -218,6 +219,7 @@ TEST_CASE("BuildMotionPlanningProblem", "[trajectory]")
         REQUIRE(mpp.solver_params_.num_loops_ == solver.num_loops_);
         REQUIRE(mpp.solver_params_.alpha_decay_ == solver.alpha_decay_);
         REQUIRE(mpp.solver_params_.beta_decay_ == solver.beta_decay_);
+        REQUIRE(mpp.solver_params_.exponent_decay_ == solver.exponent_decay_);
     }
 
     SECTION ("Fine mode")
@@ -235,6 +237,7 @@ TEST_CASE("BuildMotionPlanningProblem", "[trajectory]")
         REQUIRE(mpp.solver_params_.num_loops_ == solver.num_loops_);
         REQUIRE(mpp.solver_params_.alpha_decay_ == solver.alpha_decay_);
         REQUIRE(mpp.solver_params_.beta_decay_ == solver.beta_decay_);
+        REQUIRE(mpp.solver_params_.exponent_decay_ == solver.exponent_decay_);
     }
 }
 
@@ -243,7 +246,7 @@ TEST_CASE("generateTrajectory", "[trajectory]")
     Point p1 = {0,0,0};
     Point p2 = {10,0,-3};
     bool fineMode = false;
-    SolverParameters solver = {10, 0.8, 0.8};
+    SolverParameters solver = {25, 0.8, 0.8, 0.1};
     MotionPlanningProblem mpp = buildMotionPlanningProblem(p1, p2, fineMode, solver);
 
     Trajectory traj = generateTrajectory(mpp);
@@ -259,7 +262,7 @@ TEST_CASE("generateSCurve", "[trajectory]")
 {
     float dist = 10;
     DynamicLimits limits = {1, 2, 8};
-    SolverParameters solver = {10, 0.8, 0.8};
+    SolverParameters solver = {25, 0.8, 0.8, 0.1};
     SCurveParameters params;
     bool ok = generateSCurve(dist, limits, solver, &params);
     REQUIRE(ok == true);
@@ -282,7 +285,7 @@ TEST_CASE("generateSCurve", "[trajectory]")
     {
         float dist = 0;
         DynamicLimits limits = {1, 2, 8};
-        SolverParameters solver = {10, 0.8, 0.8};
+        SolverParameters solver = {25, 0.8, 0.8, 0.1};
         SCurveParameters params;
         bool ok = generateSCurve(dist, limits, solver, &params);
         REQUIRE(ok == true);
@@ -302,7 +305,7 @@ TEST_CASE("generateSCurve", "[trajectory]")
     {
         float dist = 10;
         DynamicLimits limits = {3, 1, 1};
-        SolverParameters solver = {10, 0.8, 0.8};
+        SolverParameters solver = {25, 0.8, 0.8, 0.1};
         SCurveParameters params;
         bool ok = generateSCurve(dist, limits, solver, &params);
         REQUIRE(ok == true);
@@ -315,7 +318,7 @@ TEST_CASE("generateSCurve", "[trajectory]")
     {
         float dist = 10;
         DynamicLimits limits = {1, 2, 1};
-        SolverParameters solver = {10, 0.8, 0.8};
+        SolverParameters solver = {25, 0.8, 0.8, 0.1};
         SCurveParameters params;
         bool ok = generateSCurve(dist, limits, solver, &params);
         REQUIRE(ok == true);
@@ -328,13 +331,23 @@ TEST_CASE("generateSCurve", "[trajectory]")
     {
         float dist = 10;
         DynamicLimits limits = {4, 2, 1};
-        SolverParameters solver = {10, 0.8, 0.8};
+        SolverParameters solver = {25, 0.8, 0.8, 0.1};
         SCurveParameters params;
         bool ok = generateSCurve(dist, limits, solver, &params);
         REQUIRE(ok == true);
         REQUIRE(params.v_lim_ < 4);
         REQUIRE(params.a_lim_ < 2);
         REQUIRE(params.j_lim_ == 1);
+    }
+
+    SECTION("Very small dist")
+    {
+        float dist = 0.001;
+        DynamicLimits limits = {4, 2, 1};
+        SolverParameters solver = {25, 0.8, 0.8, 0.1};
+        SCurveParameters params;
+        bool ok = generateSCurve(dist, limits, solver, &params);
+        REQUIRE(ok == true);
     }
 }
 
@@ -590,7 +603,7 @@ TEST_CASE("computeKinematicsBasedOnRegion", "[trajectory]")
 //         // Generate one set of parameters
 //         float dist = 10;
 //         DynamicLimits limits = {1, 2, 8};
-//         SolverParameters solver = {10, 0.8, 0.8};
+//         SolverParameters solver = {25, 0.8, 0.8, 0.1};
 //         SCurveParameters params1;
 //         bool ok = generateSCurve(dist, limits, solver, &params1);
 //         REQUIRE(ok == true);
@@ -629,7 +642,7 @@ TEST_CASE("computeKinematicsBasedOnRegion", "[trajectory]")
 //         // Generate one set of parameters
 //         float dist = 10;
 //         DynamicLimits limits = {1, 2, 8};
-//         SolverParameters solver = {10, 0.8, 0.8};
+//         SolverParameters solver = {25, 0.8, 0.8, 0.1};
 //         SCurveParameters params1;
 //         bool ok = generateSCurve(dist, limits, solver, &params1);
 //         REQUIRE(ok == true);
@@ -674,7 +687,7 @@ TEST_CASE("computeKinematicsBasedOnRegion", "[trajectory]")
 //     // Generate one set of parameters
 //     float dist = 10;
 //     DynamicLimits limits = {1, 2, 8};
-//     SolverParameters solver = {10, 0.8, 0.8};
+//     SolverParameters solver = {25, 0.8, 0.8, 0.1};
 //     SCurveParameters params1;
 //     bool ok = generateSCurve(dist, limits, solver, &params1);
 //     REQUIRE(ok == true);
