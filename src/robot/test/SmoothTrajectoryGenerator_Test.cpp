@@ -348,6 +348,9 @@ TEST_CASE("generateSCurve", "[trajectory]")
         SCurveParameters params;
         bool ok = generateSCurve(dist, limits, solver, &params);
         REQUIRE(ok == true);
+        REQUIRE(params.v_lim_ < 4);
+        REQUIRE(params.a_lim_ < 2);
+        REQUIRE(params.j_lim_ == 1);
     }
 }
 
