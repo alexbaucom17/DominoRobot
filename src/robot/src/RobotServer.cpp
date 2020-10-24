@@ -118,6 +118,11 @@ COMMAND RobotServer::getCommand(std::string message)
         {
             sendAck(type);
         }
+        else if (type == "clear_error")
+        {
+            statusUpdater_.clearErrorStatus();
+            sendAck(type);
+        }
         else if(type == "")
         {
             printIncomingCommand(message);

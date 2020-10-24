@@ -40,6 +40,7 @@ enum class COMMAND
     POSITION,
     ESTOP,
     LOAD_COMPLETE,
+    CLEAR_ERROR,
 };
 
 #endif

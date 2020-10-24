@@ -93,6 +93,10 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
         PLOGW.printf("Command already running, rejecting new command");
         return false;
     }
+    else if (statusUpdater.getErrorStatus())
+    {
+        return false;
+    }
     
     // Start new command
     if(cmd == COMMAND::MOVE)

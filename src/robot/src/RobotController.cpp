@@ -47,6 +47,7 @@ void RobotController::moveToPosition(float x, float y, float a)
     goalPos_ = Point(x,y,a);
     bool ok = trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
     if (ok) { startTraj(); }
+    else { statusUpdater_.setErrorStatus(); }
 }
 
 void RobotController::moveToPositionRelative(float x, float y, float a)
@@ -56,6 +57,7 @@ void RobotController::moveToPositionRelative(float x, float y, float a)
     goalPos_ = Point(cartPos_.x_ + x, cartPos_.y_ + y, cartPos_.a_ + a);
     bool ok = trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
     if (ok) { startTraj(); }
+    else { statusUpdater_.setErrorStatus(); }
 }
 
 void RobotController::moveToPositionFine(float x, float y, float a)
@@ -65,6 +67,7 @@ void RobotController::moveToPositionFine(float x, float y, float a)
     goalPos_ = Point(x,y,a);
     bool ok = trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
     if (ok) { startTraj(); }
+    else { statusUpdater_.setErrorStatus(); }
 }
 
 void RobotController::moveConstVel(float vx , float vy, float va, float t)
@@ -73,6 +76,7 @@ void RobotController::moveConstVel(float vx , float vy, float va, float t)
     velOnlyMode_ = true;
     bool ok = trajGen_.generateConstVelTrajectory(cartPos_, {vx, vy, va}, t, fineMode_);
     if (ok) { startTraj(); }
+    else { statusUpdater_.setErrorStatus(); }
 }
 
 void RobotController::startTraj()

@@ -6,9 +6,7 @@ Robot controller:
 
 Robot SW::
 - Figure out how to test position update function
-- Fix failed traj gen not reporting up correctly and giving bogus values
-- Fix failed traj gen not ending current command
-- Fix blocked current command spamming command rejection message
+- Add top level robot tests
 - Debug why rotation motion didn't track correctly
     - Looks like clearcore wasn't tracking correctly? Some sort of error in the kinematics is my guess
     - Maybe not - looks like decoded velocity just lags by one iteration, maybe try to fix how that prints?

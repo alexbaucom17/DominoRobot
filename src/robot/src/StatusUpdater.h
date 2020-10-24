@@ -23,6 +23,12 @@ class StatusUpdater
     void updateInProgress(bool in_progress);
 
     bool getInProgress() { return currentStatus_.in_progress; };
+    
+    void setErrorStatus() { currentStatus_.error_status = true;}
+
+    void clearErrorStatus() {currentStatus_.error_status = false;};
+
+    bool getErrorStatus() {return currentStatus_.error_status;}
 
     void update_motor_driver_connected(bool connected);
 
@@ -46,6 +52,7 @@ class StatusUpdater
       int position_loop_ms;
 
       bool in_progress;
+      bool error_status;
       uint8_t counter; // Just to show that the status is updating. Okay to roll over
 
       bool motor_driver_connected;
@@ -66,6 +73,7 @@ class StatusUpdater
       controller_loop_ms(999),
       position_loop_ms(999),
       in_progress(false),
+      error_status(false),
       counter(0),
       motor_driver_connected(false),
       lifter_driver_connected(false)
@@ -75,7 +83,7 @@ class StatusUpdater
       std::string toJsonString()
       {
         // Size the object correctly
-        const size_t capacity = JSON_OBJECT_SIZE(18); // Update when adding new fields
+        const size_t capacity = JSON_OBJECT_SIZE(20); // Update when adding new fields
         DynamicJsonDocument root(capacity);
 
         // Format to match messages sent by server
@@ -95,6 +103,7 @@ class StatusUpdater
         doc["controller_loop_ms"] = controller_loop_ms;
         doc["position_loop_ms"] = position_loop_ms;
         doc["in_progress"] = in_progress;
+        doc["error_status"] = error_status;
         doc["counter"] = counter++;
         doc["motor_driver_connected"] = motor_driver_connected;
         doc["lifter_driver_connected"] = lifter_driver_connected;

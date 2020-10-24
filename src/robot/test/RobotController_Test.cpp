@@ -98,6 +98,24 @@ TEST_CASE("Simple coarse motion", "[RobotController]")
     }
 }
 
+TEST_CASE("Block on error", "[RobotController]")
+{
+    MockSerialComms* mock_serial = build_and_get_mock_serial();
+    StatusUpdater s;
+    RobotController r = RobotController(s);
+
+    mock_serial->purge_data();
+    r.moveToPosition(0.00001,10000,0.0000001);
+    REQUIRE(s.getErrorStatus() == true);
+    REQUIRE(s.getInProgress() == false);
+    REQUIRE(r.isTrajectoryRunning() == false); 
+    r.update();
+    REQUIRE(mock_serial->mock_rcv() != "Power:ON");
+    REQUIRE(s.getErrorStatus() == true);
+    REQUIRE(s.getInProgress() == false);
+    REQUIRE(r.isTrajectoryRunning() == false); 
+}
+
 // TEST_CASE("Benchmarking motion", "[RobotController]")
 // {
 //     MockSerialComms* mock_serial = build_and_get_mock_serial();
