@@ -7,11 +7,11 @@ Robot controller:
 Robot SW::
 - Figure out how to test position update function
 - Add top level robot tests
+- Consider adding param/flag for perfect robot motion so that I can actually simulating completeing moves
 - Debug why rotation motion didn't track correctly
     - Looks like clearcore wasn't tracking correctly? Some sort of error in the kinematics is my guess
     - Maybe not - looks like decoded velocity just lags by one iteration, maybe try to fix how that prints?
     - Might take some more digging/testing - robot thought it was at 1.57 (pi/2), but actual robot was at like 1/3 rotation (so just past 90) whereas robot on gui showed like half rotation (pi) 
-- Add extra debug for trajectory parameters into motion log - time steps for transitions would be useful
 
 Robot HW:
 - Do clearcore calibration for one motor with full load

@@ -115,8 +115,9 @@ struct SCurveParameters
 
     std::string toString() const
     {
-      char s[100];
-      sprintf(s, " Limits: [v: %.3f, a: %.3f, j: %.3f]", v_lim_, a_lim_, j_lim_);
+      char s[256];
+      sprintf(s, "    Limits: [v: %.3f, a: %.3f, j: %.3f]\n    Switch times: [%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f]", v_lim_, a_lim_, j_lim_,
+      switch_points_[0].t_,switch_points_[1].t_,switch_points_[2].t_,switch_points_[3].t_,switch_points_[4].t_,switch_points_[5].t_,switch_points_[6].t_,switch_points_[7].t_);
       return static_cast<std::string>(s);
     }
 };
@@ -134,7 +135,7 @@ struct Trajectory
     std::string toString() const
     {
       char s[1000];
-      sprintf(s, "Trajectory Parameters:\nTranslation:\n  Direction:[%.2f, %.2f]\n  S-Curve:%s\nRotation:\n  Direction:%i\n  S-Curve:%s\n", 
+      sprintf(s, "Trajectory Parameters:\nTranslation:\n  Direction: [%.2f, %.2f]\n  S-Curve:\n%s\nRotation:\n  Direction: %i\n  S-Curve:\n%s\n", 
         trans_direction_[0], trans_direction_[1], trans_params_.toString().c_str(), rot_direction_, rot_params_.toString().c_str());
       return static_cast<std::string>(s);
     }

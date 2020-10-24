@@ -92,6 +92,7 @@ void RobotController::startTraj()
 void RobotController::estop()
 {
     PLOGI.printf("Estopping robot control");
+    PLOGD_(MOTION_LOG_ID) << "\n====ESTOP====\n";
     trajRunning_ = false;
     fineMode_ = true;
     velOnlyMode_ = false;
@@ -120,6 +121,7 @@ void RobotController::update()
         if (checkForCompletedTrajectory(cmd))
         {
             PLOGI.printf("Reached goal");
+            PLOGD_(MOTION_LOG_ID) << "Trajectory complete";
             disableAllMotors();
             trajRunning_ = false;
             // Re-enable fine mode at the end of a trajectory
