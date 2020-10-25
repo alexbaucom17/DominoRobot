@@ -12,6 +12,10 @@
 // Globals
 SerialComms comm(Serial);
 
+// --------------------------------------------------
+//                Base parameters
+// --------------------------------------------------
+
 // Constants
 #define WHEEL_RADIUS 0.0751
 #define WHEEL_DIST_FROM_CENTER 0.4794
@@ -33,6 +37,235 @@ float MOTOR_REAR_CENTER_FAKE = 0;
 #define MOTOR_FRONT_RIGHT ConnectorM2
 #define MOTOR_REAR_CENTER ConnectorM0
 #endif
+
+// --------------------------------------------------
+//                Lifter parameters
+// --------------------------------------------------
+
+#define LIFTER_MOTOR ConnectorM3
+#define INCREMENTAL_UP_PIN ConnectorIO1
+#define INCREMENTAL_DOWN_PIN ConnectorIO2
+#define LATCH_SERVO_PIN ConnectorIO0 // Only IO0 does pwm
+#define HOMING_SWITCH_PIN ConnectorIO3
+
+#define LIFTER_STEPS_PER_REV 800
+
+#define LIFTER_MAX_VEL 2  // revs/sec
+#define LIFTER_MAX_ACC 10  // rev/sec^2
+
+#define SAFETY_MAX_POS 120  // Revs, Sanity check on desired position to make sure it isn't larger than this
+#define SAFETY_MIN_POS 0 // Revs, Sanity check on desired position to make sure it isn't less than this
+
+#define LATCH_ACTIVE_MS 2000
+#define LATCH_OPEN_DUTY_CYCLE 200
+#define LATCH_CLOSE_DUTY_CYCLE 10
+
+// --------------------------------------------------
+//                Lifter control functions
+// --------------------------------------------------
+
+enum MODE
+{
+    NONE,
+    MANUAL_VEL,
+    AUTO_POS,
+    HOMING,
+    LATCH_OPEN,
+    LATCH_CLOSE,
+};
+
+struct Command
+{
+    int abs_pos;
+    bool home;
+    bool valid;
+    bool stop;
+    bool latch_open;
+    bool latch_close;
+};
+
+MODE activeMode = MODE::NONE;
+unsigned long prevLatchMillis = millis();
+
+void lifter_setup() 
+{
+    
+    pinMode(INCREMENTAL_UP_PIN, INPUT_);
+    pinMode(INCREMENTAL_DOWN_PIN, INPUT);
+    pinMode(HOMING_SWITCH_PIN, INPUT);
+    pinMode(LATCH_SERVO_PIN, OUTPUT);
+
+    LIFTER_MOTOR.EnableRequest(false);
+    LIFTER_MOTOR.VelMax(LIFTER_MAX_VEL*LIFTER_STEPS_PER_REV);
+    LIFTER_MOTOR.AccelMax(LIFTER_MAX_ACC*LIFTER_STEPS_PER_REV);
+}
+
+
+// Possible inputs are
+// "home", "stop", or an integer representing position to move to
+// "open" or "close" controls the latch servo
+Command decodeLifterMsg(String msg)
+{
+    Command c = {0, false, false, false, false, false};
+    if(msg.length() > 0)
+    {
+        if(msg == "home")
+        {
+            c.home = true;
+            c.valid = true;
+        }
+        else if(msg == "stop")
+        {
+            c.stop = true;
+            c.valid = true;
+        }
+        else if (msg == "open")
+        {
+            c.latch_open = true;
+            c.valid = true;
+        }
+        else if (msg == "close")
+        { 
+            c.latch_close = true;
+            c.valid = true;
+        }
+        else
+        {
+            c.abs_pos = msg.toInt();
+            c.valid = true;
+        }
+    }
+
+    return c;
+}
+
+void lifter_update(String msg)
+{
+    // Check for an incomming command
+    Command inputCommand = decodeLifterMsg(msg);
+    
+    // Read inputs for manual mode
+    bool vel_up = !digitalRead(INCREMENTAL_UP_PIN);
+    bool vel_down = !digitalRead(INCREMENTAL_DOWN_PIN);
+
+    // For debugging only
+    // Serial.print("Vel up: ");
+    // Serial.print(vel_up);
+    // Serial.print(" Vel dn: ");
+    // Serial.println(vel_down);
+
+    // If we got a stop command, make sure to handle it immediately
+    if (inputCommand.valid && inputCommand.stop)
+    {
+        activeMode = MODE::NONE;
+    }
+    // For any other command, we will only handle it when there are no other active commands
+    else if (activeMode == MODE::NONE)
+    {
+        // Figure out what mode we are in
+        if(vel_up || vel_down)
+        {
+            activeMode = MODE::MANUAL_VEL;
+            if(vel_up)
+            {
+                LIFTER_MOTOR.MoveVelocity(-1*MAX_VEL*STEPS_PER_REV);
+            }
+            else if(vel_down)
+            {
+                LIFTER_MOTOR.MoveVelocity(MAX_VEL*STEPS_PER_REV);
+            }   
+        }
+        else if(inputCommand.valid && inputCommand.home)
+        {
+            activeMode = MODE::HOMING;
+            LIFTER_MOTOR.MoveVelocity(-1*MAX_VEL*STEPS_PER_REV);
+        }
+        else if(inputCommand.valid && inputCommand.latch_open)
+        {
+            activeMode = MODE::LATCH_OPEN;
+            analogWrite(LATCH_SERVO_PIN, LATCH_OPEN_DUTY_CYCLE);
+            prevLatchMillis = millis();
+        }
+        else if(inputCommand.valid && inputCommand.latch_close)
+        {
+            activeMode = MODE::LATCH_CLOSE;
+            analogWrite(LATCH_SERVO_PIN, LATCH_CLOSE_DUTY_CYCLE);
+            prevLatchMillis = millis();
+        }
+        else if(inputCommand.valid)
+        {
+            if(inputCommand.abs_pos <= SAFETY_MAX_POS && inputCommand.abs_pos >= SAFETY_MIN_POS)
+            {
+                activeMode = MODE::AUTO_POS;
+                long target = inputCommand.abs_pos;
+                LIFTER_MOTOR.Move(target*STEPS_PER_REV, StepGenerator::MOVE_TARGET_ABSOLUTE);
+            }
+        }
+    }    
+
+
+    // Handle continous updates for each mode
+    String status_str = "none";
+    if(activeMode == MODE::MANUAL_VEL)
+    {
+        status_str = "manual";
+        if(!(vel_up || vel_down))
+        {
+            activeMode = MODE::NONE;
+        }
+    }
+    else if(activeMode == MODE::AUTO_POS)
+    {
+        // run() returns a bool indicating if the motors are still moving
+        status_str = "pos";
+        if(LIFTER_MOTOR.StepsComplete())
+        {
+            activeMode = MODE::NONE;
+        }
+    }
+    else if(activeMode == MODE::HOMING)
+    {
+        if(digitalRead(HOMING_SWITCH_PIN))
+        {
+            LIFTER_MOTOR.MoveStopAbrupt();
+            LIFTER_MOTOR.PositionRefSet(0);
+            activeMode = MODE::NONE;
+        }
+        status_str = "homing";
+    }
+    else if (activeMode == MODE::LATCH_CLOSE)
+    {
+        status_str = "close";
+        if(millis() - prevLatchMillis > LATCH_ACTIVE_MS)
+        {
+            activeMode = MODE::NONE;
+        }
+    }
+    else if (activeMode == MODE::LATCH_OPEN)
+    {
+        status_str = "open";
+        if(millis() - prevLatchMillis > LATCH_ACTIVE_MS)
+        {
+            activeMode = MODE::NONE;
+        }
+    }
+    else if (activeMode == MODE::NONE)
+    {
+        LIFTER_MOTOR.MoveStopAbrupt();
+    }
+
+    // Will send back one of [none, manual, pos, homing, open, close]
+    comms.send(status_str);
+    // For debugging only
+    // Serial.println("");
+}
+
+
+
+// --------------------------------------------------
+//                Base control functions
+// --------------------------------------------------
+
 
 struct CartVelocity
 {
@@ -63,7 +296,7 @@ struct MotorVelocity
 };
 
 
-CartVelocity decodeMsg(String msg)
+CartVelocity decodeBaseMsg(String msg)
 {
 #if PRINT_DEBUG
     comm.send("DEBUG Incoming message: " + msg);
@@ -202,17 +435,8 @@ bool handlePowerRequests(String msg)
     return false;
 }
 
-
-void setup()
-{
-    Serial.begin(115200);
-    
-    // Sets the input clocking rate. This normal rate is ideal for ClearPath
-    // step and direction applications.
-    MotorMgr.MotorInputClocking(MotorManager::CLOCK_RATE_NORMAL);
-    // Sets all motor connectors into step and direction mode.
-    MotorMgr.MotorModeSet(MotorManager::MOTOR_ALL, Connector::CPM_MODE_STEP_AND_DIR);
-    // Enable motors
+void base_setup()
+{    
     MOTOR_FRONT_RIGHT.EnableRequest(false);
     MOTOR_FRONT_RIGHT.VelMax(MOTOR_MAX_VEL_STEPS_PER_SECOND);
     MOTOR_FRONT_RIGHT.AccelMax(MOTOR_MAX_ACC_STEPS_PER_SECOND_SQUARED);
@@ -222,29 +446,53 @@ void setup()
     MOTOR_FRONT_LEFT.EnableRequest(false);
     MOTOR_FRONT_LEFT.VelMax(MOTOR_MAX_VEL_STEPS_PER_SECOND);
     MOTOR_FRONT_LEFT.AccelMax(MOTOR_MAX_ACC_STEPS_PER_SECOND_SQUARED);
-
 }
 
-unsigned long prevLoopMillis = 0;
+void base_update(String msg)
+{    
+    if (!handlePowerRequests(msg))
+    {
+        CartVelocity cmd_v = decodeBaseMsg(msg);
+        MotorVelocity motor_v = doIK(cmd_v);
+        SendCommandsToMotors(motor_v);
+        MotorVelocity motor_v_measured = ReadMotorSpeeds();
+        CartVelocity robot_v_measured = doFK(motor_v_measured);
+        ReportRobotVelocity(robot_v_measured);
+    }
+}
+
+
+// --------------------------------------------------
+//                Top level functions
+// --------------------------------------------------
+
+void setup()
+{
+    Serial.begin(115200);
+
+    // Sets the input clocking rate. This normal rate is ideal for ClearPath
+    // step and direction applications.
+    MotorMgr.MotorInputClocking(MotorManager::CLOCK_RATE_NORMAL);
+    // Sets all motor connectors into step and direction mode.
+    MotorMgr.MotorModeSet(MotorManager::MOTOR_ALL, Connector::CPM_MODE_STEP_AND_DIR);
+
+    base_setup();
+    lifter_setup();
+}
+
 void loop()
 {
-//    if (millis() - prevLoopMillis > 5000)
-//    {
-//      comm.send("DEBUG Motor driver connected");
-//      prevLoopMillis = millis();
-//    }
-    
+    // TODO: handle communication better here
     String msg = comm.rcv();
     if(msg.length() != 0)
     {
-        if (!handlePowerRequests(msg))
+        if(isBaseMessage(msg))
         {
-            CartVelocity cmd_v = decodeMsg(msg);
-            MotorVelocity motor_v = doIK(cmd_v);
-            SendCommandsToMotors(motor_v);
-            MotorVelocity motor_v_measured = ReadMotorSpeeds();
-            CartVelocity robot_v_measured = doFK(motor_v_measured);
-            ReportRobotVelocity(robot_v_measured);
+            base_update(msg);
+        }
+        else
+        {
+            lifter_update(msg);
         }
     }
 }
