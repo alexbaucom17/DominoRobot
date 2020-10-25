@@ -1,6 +1,6 @@
 
 Stepper controller:
-- Wire up Nano for lifter control (including manual buttons)
+- Update clearcore code to handle lifter
 
 Robot controller:
 
@@ -15,7 +15,6 @@ Robot SW::
 
 Robot HW:
 - Do clearcore calibration for one motor with full load
-- Figure out how I want to hook up servo for lifter
 - Hook the battery monitor up again
 - Try to estimate how long the controller batteries will last fully loaded
 
