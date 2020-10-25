@@ -3,16 +3,13 @@
 #include <Servo.h>
 #include "SerialComms.h"
 
-// LEFT/RIGHT is WRT standing at back of robot looking forward
-#define STEP_PIN_LEFT 9
-#define STEP_PIN_RIGHT 7
-#define DIR_PIN_LEFT 8
-#define DIR_PIN_RIGHT 6
-#define INCREMENTAL_UP_PIN 11
-#define INCREMENTAL_DOWN_PIN 12
-#define ENABLE_PIN 13
-#define LATCH_SERVO_PIN 2
-#define HOMING_SWITCH_PIN 10
+#define STEP_PIN 3
+#define DIR_PIN 4
+#define INCREMENTAL_UP_PIN 8
+#define INCREMENTAL_DOWN_PIN 7
+#define ENABLE_PIN 2
+#define LATCH_SERVO_PIN 10
+#define HOMING_SWITCH_PIN 11
 
 #define STEPS_PER_REV 800
 
@@ -46,7 +43,7 @@ struct Command
     bool latch_close;
 };
 
-AccelStepper motors[2];
+AccelStepper motor;
 Servo latchServo;
 SerialComms comms(Serial);
 
@@ -60,20 +57,15 @@ void setup()
     pinMode(INCREMENTAL_UP_PIN, INPUT_PULLUP);
     pinMode(INCREMENTAL_DOWN_PIN, INPUT_PULLUP);
     pinMode(HOMING_SWITCH_PIN, INPUT_PULLUP);
-    pinMode(ENABLE_PIN, INPUT);
+    pinMode(ENABLE_PIN, OUTPUT);
     digitalWrite(ENABLE_PIN, HIGH);
 
     latchServo.attach(LATCH_SERVO_PIN);
     
-    motors[0] = AccelStepper(AccelStepper::DRIVER, STEP_PIN_LEFT, DIR_PIN_LEFT);
-    motors[1] = AccelStepper(AccelStepper::DRIVER, STEP_PIN_RIGHT, DIR_PIN_RIGHT);
-
-    for(int i = 0; i < 2; i++)
-    {
-      motors[i].setMaxSpeed(MAX_VEL*STEPS_PER_REV);
-      motors[i].setAcceleration(MAX_ACC*STEPS_PER_REV);
-      motors[i].setMinPulseWidth(10); // Min from docs is 2.5 microseconds
-    }
+    motor = AccelStepper(AccelStepper::DRIVER, STEP_PIN, DIR_PIN);
+    motor.setMaxSpeed(MAX_VEL*STEPS_PER_REV);
+    motor.setAcceleration(MAX_ACC*STEPS_PER_REV);
+    motor.setMinPulseWidth(10); // Min from docs is 2.5 microseconds
 }
 
 
@@ -122,14 +114,14 @@ void loop()
     Command inputCommand = getAndDecodeMsg();
     
     // Read inputs for manual mode
-    bool vel_up = digitalRead(INCREMENTAL_UP_PIN);
-    bool vel_down = digitalRead(INCREMENTAL_DOWN_PIN);
+    bool vel_up = !digitalRead(INCREMENTAL_UP_PIN);
+    bool vel_down = !digitalRead(INCREMENTAL_DOWN_PIN);
 
     // For debugging
-//    Serial.print("Vel up: ");
-//    Serial.print(vel_up);
-//    Serial.print(" Vel dn: ");
-//    Serial.println(vel_down);
+    Serial.print("Vel up: ");
+    Serial.print(vel_up);
+    Serial.print(" Vel dn: ");
+    Serial.println(vel_down);
 
     // If we got a stop command, make sure to handle it immediately
     if (inputCommand.valid && inputCommand.stop)
@@ -145,20 +137,17 @@ void loop()
             activeMode = MODE::MANUAL_VEL;
             if(vel_up)
             {
-                motors[0].setSpeed(-1*MAX_VEL*STEPS_PER_REV);
-                motors[1].setSpeed(-1*MAX_VEL*STEPS_PER_REV);
+                motor.setSpeed(-1*MAX_VEL*STEPS_PER_REV);
             }
             else if(vel_down)
             {
-                motors[0].setSpeed(MAX_VEL*STEPS_PER_REV);
-                motors[1].setSpeed(MAX_VEL*STEPS_PER_REV);
+                motor.setSpeed(MAX_VEL*STEPS_PER_REV);
             }   
         }
         else if(inputCommand.valid && inputCommand.home)
         {
             activeMode = MODE::HOMING;
-            motors[0].setSpeed(-1*MAX_VEL*STEPS_PER_REV);
-            motors[1].setSpeed(-1*MAX_VEL*STEPS_PER_REV);
+            motor.setSpeed(-1*MAX_VEL*STEPS_PER_REV);
         }
         else if(inputCommand.valid && inputCommand.latch_open)
         {
@@ -178,8 +167,7 @@ void loop()
             {
                 activeMode = MODE::AUTO_POS;
                 long target = inputCommand.abs_pos;
-                motors[0].moveTo(target*STEPS_PER_REV);
-                motors[1].moveTo(target*STEPS_PER_REV);
+                motor.moveTo(target*STEPS_PER_REV);
             }
         }
     }    
@@ -189,8 +177,7 @@ void loop()
     String status_str = "none";
     if(activeMode == MODE::MANUAL_VEL)
     {
-        motors[0].runSpeed();
-        motors[1].runSpeed();
+        motor.runSpeed();
         status_str = "manual";
         if(!(vel_up || vel_down))
         {
@@ -200,24 +187,19 @@ void loop()
     else if(activeMode == MODE::AUTO_POS)
     {
         // run() returns a bool indicating if the motors are still moving
-        bool tmp1 = motors[0].run();
-        bool tmp2 = motors[1].run();
         status_str = "pos";
-        if(!(tmp1 || tmp2))
+        if(!motor.run())
         {
             activeMode = MODE::NONE;
         }
     }
     else if(activeMode == MODE::HOMING)
     {
-        motors[0].runSpeed();
-        motors[1].runSpeed();
+        motor.runSpeed();
         if(digitalRead(HOMING_SWITCH_PIN))
         {
-            motors[0].stop();
-            motors[1].stop();  
-            motors[0].setCurrentPosition(0);
-            motors[1].setCurrentPosition(0);
+            motor.stop();
+            motor.setCurrentPosition(0);
             activeMode = MODE::NONE;
         }
         status_str = "homing";
@@ -240,12 +222,11 @@ void loop()
     }
     else if (activeMode == MODE::NONE)
     {
-        motors[0].stop();
-        motors[1].stop();
+        motor.stop();
     }
 
     // Will send back one of [none, manual, pos, homing, open, close]
     comms.send(status_str);
     // For debugging
-    //Serial.println("");
+    Serial.println("");
 }
