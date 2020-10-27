@@ -43,10 +43,10 @@ float MOTOR_REAR_CENTER_FAKE = 0;
 // --------------------------------------------------
 
 #define LIFTER_MOTOR ConnectorM3
-#define INCREMENTAL_UP_PIN ConnectorIO1
-#define INCREMENTAL_DOWN_PIN ConnectorIO2
-#define LATCH_SERVO_PIN ConnectorIO0 // Only IO0 does pwm
-#define HOMING_SWITCH_PIN ConnectorIO3
+#define INCREMENTAL_UP_PIN IO1
+#define INCREMENTAL_DOWN_PIN IO2
+#define LATCH_SERVO_PIN IO0 // Only IO0 does pwm
+#define HOMING_SWITCH_PIN IO3
 
 #define LIFTER_STEPS_PER_REV 800
 
@@ -61,7 +61,7 @@ float MOTOR_REAR_CENTER_FAKE = 0;
 #define LATCH_CLOSE_DUTY_CYCLE 10
 
 // --------------------------------------------------
-//                Lifter control functions
+//                Helper structs
 // --------------------------------------------------
 
 enum MODE
@@ -84,13 +84,46 @@ struct Command
     bool latch_close;
 };
 
+struct CartVelocity
+{
+    float vx;
+    float vy;
+    float va;
+
+    String toString() const
+    {
+        char s[100];
+        sprintf(s, "[vx: %.4f, vy: %.4f, va: %.4f]", vx, vy, va);
+        return static_cast<String>(s);
+    }
+};
+
+struct MotorVelocity
+{
+    float v0;
+    float v1;
+    float v2;
+
+    String toString() const
+    {
+        char s[100];
+        sprintf(s, "[v0: %.4f, v1: %.4f, v2: %.4f]", v0, v1, v2);
+        return static_cast<String>(s);
+    }
+};
+
+
+// --------------------------------------------------
+//                Lifter control functions
+// --------------------------------------------------
+
 MODE activeMode = MODE::NONE;
 unsigned long prevLatchMillis = millis();
 
 void lifter_setup() 
 {
     
-    pinMode(INCREMENTAL_UP_PIN, INPUT_);
+    pinMode(INCREMENTAL_UP_PIN, INPUT);
     pinMode(INCREMENTAL_DOWN_PIN, INPUT);
     pinMode(HOMING_SWITCH_PIN, INPUT);
     pinMode(LATCH_SERVO_PIN, OUTPUT);
@@ -180,17 +213,17 @@ void lifter_update(String msg)
             activeMode = MODE::MANUAL_VEL;
             if(vel_up)
             {
-                LIFTER_MOTOR.MoveVelocity(-1*MAX_VEL*STEPS_PER_REV);
+                LIFTER_MOTOR.MoveVelocity(-1*LIFTER_MAX_VEL*STEPS_PER_REV);
             }
             else if(vel_down)
             {
-                LIFTER_MOTOR.MoveVelocity(MAX_VEL*STEPS_PER_REV);
+                LIFTER_MOTOR.MoveVelocity(LIFTER_MAX_VEL*STEPS_PER_REV);
             }   
         }
         else if(inputCommand.valid && inputCommand.home)
         {
             activeMode = MODE::HOMING;
-            LIFTER_MOTOR.MoveVelocity(-1*MAX_VEL*STEPS_PER_REV);
+            LIFTER_MOTOR.MoveVelocity(-1*LIFTER_MAX_VEL*STEPS_PER_REV);
         }
         else if(inputCommand.valid && inputCommand.latch_open)
         {
@@ -268,7 +301,7 @@ void lifter_update(String msg)
     // Will send back one of [none, manual, pos, homing, open, close]
     if (valid_msg) 
     {
-        comms.send(status_str);
+        comm.send(status_str);
     }
     // For debugging only
     // Serial.println("");
@@ -279,35 +312,6 @@ void lifter_update(String msg)
 // --------------------------------------------------
 //                Base control functions
 // --------------------------------------------------
-
-
-struct CartVelocity
-{
-    float vx;
-    float vy;
-    float va;
-
-    String toString() const
-    {
-        char s[100];
-        sprintf(s, "[vx: %.4f, vy: %.4f, va: %.4f]", vx, vy, va);
-        return static_cast<String>(s);
-    }
-};
-
-struct MotorVelocity
-{
-    float v0;
-    float v1;
-    float v2;
-
-    String toString() const
-    {
-        char s[100];
-        sprintf(s, "[v0: %.4f, v1: %.4f, v2: %.4f]", v0, v1, v2);
-        return static_cast<String>(s);
-    }
-};
 
 
 CartVelocity decodeBaseMsg(String msg)
