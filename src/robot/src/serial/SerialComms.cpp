@@ -9,7 +9,7 @@ SerialComms::SerialComms(std::string portName)
   recvIdx_(0),
   buffer_(""),
   base_data_(),
-  lift_data()
+  lift_data_()
 {
     // If we get here, that means serial_ was constructed correctly which means 
     // we have a valid connection
@@ -49,7 +49,7 @@ void SerialComms::rcv()
     if(!connected_)
     {
         PLOGE.printf("Cannot receive if port isn't connected");
-        return "";
+        return;
     }
     
     bool newData = false;
@@ -99,11 +99,11 @@ void SerialComms::rcv()
     }
     else if (new_msg.rfind("base:", 0) == 0)
     {
-        base_data_.push(new_msg.substr(5, string::npos));
+        base_data_.push(new_msg.substr(5, std::string::npos));
     }
     else if (new_msg.rfind("lift:", 0) == 0)
     {
-        lift_data_.push(new_msg.substr(5, string::npos));
+        lift_data_.push(new_msg.substr(5, std::string::npos));
     }
     else
     {

@@ -1,5 +1,7 @@
 #include "MockSerialComms.h"
 
+#include <plog/Log.h> 
+
 
 MockSerialComms::MockSerialComms(std::string portName)
 : SerialCommsBase(),
@@ -20,15 +22,15 @@ void MockSerialComms::send(std::string msg)
 {
     if (msg.rfind("base:", 0) == 0)
     {
-        send_base_data_.push(msg.substr(5, string::npos));
+        send_base_data_.push(msg.substr(5, std::string::npos));
     }
     else if (msg.rfind("lift:", 0) == 0)
     {
-        send_lift_data_.push(msg.substr(5, string::npos));
+        send_lift_data_.push(msg.substr(5, std::string::npos));
     }
     else
     {
-        PLOGE << "Unknown message type, skipping: " << new_msg;
+        PLOGE << "Unknown message type, skipping: " << msg;
     }
 }
 
@@ -58,15 +60,15 @@ void MockSerialComms::mock_send(std::string msg)
 {
     if (msg.rfind("base:", 0) == 0)
     {
-        rcv_base_data_.push(msg.substr(5, string::npos));
+        rcv_base_data_.push(msg.substr(5, std::string::npos));
     }
     else if (msg.rfind("lift:", 0) == 0)
     {
-        rcv_lift_data_.push(msg.substr(5, string::npos));
+        rcv_lift_data_.push(msg.substr(5, std::string::npos));
     }
     else
     {
-        PLOGE << "Unknown message type, skipping: " << new_msg;
+        PLOGE << "Unknown message type, skipping: " << msg;
     }
 }
 

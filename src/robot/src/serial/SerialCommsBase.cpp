@@ -5,7 +5,12 @@ SerialCommsBase::SerialCommsBase() : connected_(false) {}
 
 SerialCommsBase::~SerialCommsBase() {}
 
-std::string SerialCommsBase::rcv()
+std::string SerialCommsBase::rcv_base()
+{
+    return "";
+} 
+
+std::string SerialCommsBase::rcv_lift()
 {
     return "";
 } 

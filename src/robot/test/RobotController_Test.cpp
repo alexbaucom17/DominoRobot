@@ -32,8 +32,8 @@ void coarsePositionTest(float x, float y, float a, int max_loops)
 
         r.update();
         // Report back the exact velocity commanded
-        std::string cmd_vel = mock_serial->mock_rcv();
-        mock_serial->mock_send("base" + cmd_vel);
+        std::string cmd_vel = mock_serial->mock_rcv_base();
+        mock_serial->mock_send("base:" + cmd_vel);
 
         usleep(100);
     }
@@ -66,11 +66,11 @@ TEST_CASE("Motor enable and disable", "[RobotController]")
 
     mock_serial->purge_data();
     r.enableAllMotors();
-    REQUIRE(mock_serial->mock_rcv() == "Power:ON");
+    REQUIRE(mock_serial->mock_rcv_base() == "Power:ON");
 
     mock_serial->purge_data();
     r.disableAllMotors();
-    REQUIRE(mock_serial->mock_rcv() == "Power:OFF");
+    REQUIRE(mock_serial->mock_rcv_base() == "Power:OFF");
 }
 
 TEST_CASE("Simple coarse motion", "[RobotController]")
@@ -110,7 +110,7 @@ TEST_CASE("Block on error", "[RobotController]")
     REQUIRE(s.getInProgress() == false);
     REQUIRE(r.isTrajectoryRunning() == false); 
     r.update();
-    REQUIRE(mock_serial->mock_rcv() != "Power:ON");
+    REQUIRE(mock_serial->mock_rcv_base() != "Power:ON");
     REQUIRE(s.getErrorStatus() == true);
     REQUIRE(s.getInProgress() == false);
     REQUIRE(r.isTrajectoryRunning() == false); 
@@ -124,13 +124,13 @@ TEST_CASE("Block on error", "[RobotController]")
 
 //     mock_serial->purge_data();
 //     r.moveToPosition(10,0,0);
-//     REQUIRE(mock_serial->mock_rcv() == "Power:ON");
+//     REQUIRE(mock_serial->mock_rcv_base() == "Power:ON");
 
 //     BENCHMARK("RobotController benchmark")
 //     {
 //         r.update();
 //         // Report back the exact velocity commanded
-//         std::string cmd_vel = mock_serial->mock_rcv();
+//         std::string cmd_vel = mock_serial->mock_rcv_base();
 //         mock_serial->mock_send(cmd_vel);
 //     };
 // }

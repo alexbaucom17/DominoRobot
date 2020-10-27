@@ -24,20 +24,20 @@ TEST_CASE("Send and waiting", "[TrayController]")
 
     // Expect to receive close command once
     t.update();
-    REQUIRE(mock_serial->mock_rcv() == "close");
+    REQUIRE(mock_serial->mock_rcv_lift() == "close");
     
     // Expect to receive empty command while lifter reports closing
     for (int i = 0; i < 5; i ++)
     {
         mock_serial->mock_send("lift:close");
         t.update();
-        REQUIRE(mock_serial->mock_rcv() == "");
+        REQUIRE(mock_serial->mock_rcv_lift() == "");
     }
 
     // Expect to receive none response once lifter reports no action
     mock_serial->mock_send("lift:none");
     t.update();
-    REQUIRE(mock_serial->mock_rcv() == "home");
+    REQUIRE(mock_serial->mock_rcv_lift() == "home");
 }
 
 TEST_CASE("Initialize tray", "[TrayController]")
@@ -46,20 +46,20 @@ TEST_CASE("Initialize tray", "[TrayController]")
     TrayController t;
 
     t.initialize();
-    REQUIRE(mock_serial->mock_rcv() == "");
+    REQUIRE(mock_serial->mock_rcv_lift() == "");
     REQUIRE(t.isActionRunning() == true);
 
     t.update();
-    REQUIRE(mock_serial->mock_rcv() == "close");
+    REQUIRE(mock_serial->mock_rcv_lift() == "close");
     mock_serial->mock_send("lift:none");
 
     t.update();
-    REQUIRE(mock_serial->mock_rcv() == "home");
+    REQUIRE(mock_serial->mock_rcv_lift() == "home");
     mock_serial->mock_send("lift:none");
 
     t.update();
     int p = cfg.lookup("tray.default_pos_steps");
-    REQUIRE(mock_serial->mock_rcv() == std::to_string(p));
+    REQUIRE(mock_serial->mock_rcv_lift() == std::to_string(p));
     mock_serial->mock_send("lift:none");
 
     t.update();
@@ -72,25 +72,25 @@ TEST_CASE("Place tray", "[TrayController]")
     TrayController t;
 
     t.place();
-    REQUIRE(mock_serial->mock_rcv() == "");
+    REQUIRE(mock_serial->mock_rcv_lift() == "");
     REQUIRE(t.isActionRunning() == true);
 
     t.update();
     int p = cfg.lookup("tray.place_pos_steps");
-    REQUIRE(mock_serial->mock_rcv() == std::to_string(p));
+    REQUIRE(mock_serial->mock_rcv_lift() == std::to_string(p));
     mock_serial->mock_send("lift:none");
 
     t.update();
-    REQUIRE(mock_serial->mock_rcv() == "open");
+    REQUIRE(mock_serial->mock_rcv_lift() == "open");
     mock_serial->mock_send("lift:none");
 
     t.update();
     p = cfg.lookup("tray.default_pos_steps");
-    REQUIRE(mock_serial->mock_rcv() == std::to_string(p));
+    REQUIRE(mock_serial->mock_rcv_lift() == std::to_string(p));
     mock_serial->mock_send("lift:none");
 
     t.update();
-    REQUIRE(mock_serial->mock_rcv() == "close");
+    REQUIRE(mock_serial->mock_rcv_lift() == "close");
     mock_serial->mock_send("lift:none");
 
     t.update();
@@ -103,21 +103,21 @@ TEST_CASE("Load tray", "[TrayController]")
     TrayController t;
 
     t.load();
-    REQUIRE(mock_serial->mock_rcv() == "");
+    REQUIRE(mock_serial->mock_rcv_lift() == "");
     REQUIRE(t.isActionRunning() == true);
 
     t.update();
     int p = cfg.lookup("tray.load_pos_steps");
-    REQUIRE(mock_serial->mock_rcv() == std::to_string(p));
+    REQUIRE(mock_serial->mock_rcv_lift() == std::to_string(p));
     mock_serial->mock_send("lift:none");
 
     t.update();
-    REQUIRE(mock_serial->mock_rcv() == "");
+    REQUIRE(mock_serial->mock_rcv_lift() == "");
     t.setLoadComplete();
 
     t.update();
     p = cfg.lookup("tray.default_pos_steps");
-    REQUIRE(mock_serial->mock_rcv() == std::to_string(p));
+    REQUIRE(mock_serial->mock_rcv_lift() == std::to_string(p));
     mock_serial->mock_send("lift:none");
 
     t.update();
