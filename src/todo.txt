@@ -1,13 +1,12 @@
 
 Stepper controller:
-- Update clearcore code to handle lifter
+- Test updated clearcore lift/controller code
 
 Robot controller:
 
 Robot SW::
 - Figure out how to test position update function
-- Add top level robot tests
-- Consider adding param/flag for perfect robot motion so that I can actually simulating completeing moves
+- Add top level robot tests - make use of fake motion setting
 - Debug why rotation motion didn't track correctly
     - Looks like clearcore wasn't tracking correctly? Some sort of error in the kinematics is my guess
     - Maybe not - looks like decoded velocity just lags by one iteration, maybe try to fix how that prints?

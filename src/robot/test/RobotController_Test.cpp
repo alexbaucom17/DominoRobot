@@ -116,6 +116,55 @@ TEST_CASE("Block on error", "[RobotController]")
     REQUIRE(r.isTrajectoryRunning() == false); 
 }
 
+
+void fakeMotionHelper(float x, float y, float a, int max_loops, StatusUpdater& s)
+{
+    RobotController r = RobotController(s);
+    r.moveToPosition(x,y,a);
+
+    int count = 0;
+    while(r.isTrajectoryRunning() && count < max_loops)
+    {
+        count++;
+        r.update();
+        usleep(100);
+    }
+}
+
+TEST_CASE("Validate fake_perfect_motion option", "[RobotController]")
+{
+    StatusUpdater s;
+    float x = 0.5;
+    float y = 0.5;
+    float a = 0.5;
+    int test_counts = 10000;
+
+    // Prior to fake motion enabled, the robot should not move
+    fakeMotionHelper(x,y,a,test_counts,s);
+    StatusUpdater::Status status = s.getStatus();
+    REQUIRE(status.pos_x != Approx(x).margin(0.0005));
+    REQUIRE(status.pos_y != Approx(y).margin(0.0005));
+    REQUIRE(status.pos_a != Approx(a).margin(0.0005));
+
+    // Enable fake_perfect_motion
+    libconfig::Setting& fake_perfect_motion = cfg.lookup("motion.fake_perfect_motion");
+    fake_perfect_motion = true;
+    // Now this should work
+    fakeMotionHelper(x,y,a,test_counts,s);
+    status = s.getStatus();
+    REQUIRE(status.pos_x == Approx(x).margin(0.0005));
+    REQUIRE(status.pos_y == Approx(y).margin(0.0005));
+    REQUIRE(status.pos_a == Approx(a).margin(0.0005));
+
+    // Disable fake perfect motion, now it shouldn't move again
+    fake_perfect_motion = false;
+    fakeMotionHelper(x,y,a,test_counts,s);
+    status = s.getStatus();
+    REQUIRE(status.pos_x != Approx(x).margin(0.0005));
+    REQUIRE(status.pos_y != Approx(y).margin(0.0005));
+    REQUIRE(status.pos_a != Approx(a).margin(0.0005));
+}
+
 // TEST_CASE("Benchmarking motion", "[RobotController]")
 // {
 //     MockSerialComms* mock_serial = build_and_get_mock_serial();

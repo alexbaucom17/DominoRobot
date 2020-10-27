@@ -25,6 +25,8 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
   controller_rate_(cfg.lookup("motion.controller_frequency")),
   logging_rate_(cfg.lookup("motion.log_frequency")),
   log_this_cycle_(false),
+  fake_perfect_motion_(cfg.lookup("motion.fake_perfect_motion")),
+  fake_local_cart_vel_(0,0,0),
   mm_update_fraction_(cfg.lookup("localization.mm_update_fraction")),
   mm_update_vel_fn_slope_(cfg.lookup("localization.mm_update_vel_fn_slope")),
   mm_update_vel_fn_intercept_(cfg.lookup("localization.mm_update_vel_fn_intercept"))
@@ -301,10 +303,15 @@ std::vector<float> RobotController::readMsgFromMotorDriver()
 
 void RobotController::computeOdometry()
 {  
- 
     std::vector<float> local_cart_vel = readMsgFromMotorDriver();
-
-    if(local_cart_vel.size() != 3) {return;}
+    if(fake_perfect_motion_)
+    {
+        if(local_cart_vel.size() != 3) {local_cart_vel.reserve(3);}
+        local_cart_vel[0] = fake_local_cart_vel_.vx_;
+        local_cart_vel[1] = fake_local_cart_vel_.vy_;
+        local_cart_vel[2] = fake_local_cart_vel_.va_;
+    }
+    else if(local_cart_vel.size() != 3) { return; }
     
     std::vector<float> zero = {0,0,0};
     if(trajRunning_ || local_cart_vel != zero)
@@ -339,23 +346,27 @@ void RobotController::setCartVelCommand(Velocity target_vel)
     }
 
     // Convert input global velocities to local velocities
-    float local_cart_vel[3];
+    Velocity local_cart_vel;
     float cA = cos(cartPos_.a_);
     float sA = sin(cartPos_.a_);
-    local_cart_vel[0] =  cA * target_vel.vx_ + sA * target_vel.vy_;
-    local_cart_vel[1] = -sA * target_vel.vx_ + cA * target_vel.vy_;
-    local_cart_vel[2] = target_vel.va_;
+    local_cart_vel.vx_ =  cA * target_vel.vx_ + sA * target_vel.vy_;
+    local_cart_vel.vy_ = -sA * target_vel.vx_ + cA * target_vel.vy_;
+    local_cart_vel.va_ = target_vel.va_;
 
     char buff[100];
-    sprintf(buff, "base:%.4f,%.4f,%.4f",local_cart_vel[0], local_cart_vel[1], local_cart_vel[2]);
+    sprintf(buff, "base:%.4f,%.4f,%.4f",local_cart_vel.vx_, local_cart_vel.vy_, local_cart_vel.va_);
     std::string s = buff;
 
-    if (local_cart_vel[0] != 0 || local_cart_vel[1] != 0 || local_cart_vel[2] != 0 )
+    if (local_cart_vel.vx_ != 0 || local_cart_vel.vy_ != 0 || local_cart_vel.va_ != 0 )
     {
         PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_).printf("Sending to motors: [%s]", s.c_str());
     }
 
-    if (serial_to_motor_driver_->isConnected())
+    if(fake_perfect_motion_)
+    {
+        fake_local_cart_vel_ = local_cart_vel;
+    }
+    else if (serial_to_motor_driver_->isConnected())
     {
         serial_to_motor_driver_->send(s);
     }

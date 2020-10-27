@@ -84,6 +84,8 @@ class RobotController
     RateController controller_rate_;       // Rate limit controller loops
     RateController logging_rate_ ;         // Rate limit logging to file
     bool log_this_cycle_;                  // Trigger for logging this cycle
+    bool fake_perfect_motion_;             // Flag used for testing to enable perfect motion without clearcore
+    Velocity fake_local_cart_vel_;         // Commanded local cartesian velocity used to fake perfect motion
 
     struct TrajectoryTolerances
     {
