@@ -23,7 +23,7 @@ void coarsePositionTest(float x, float y, float a, int max_loops)
 
     mock_serial->purge_data();
     r.moveToPosition(x,y,a);
-    REQUIRE(mock_serial->mock_rcv() == "Power:ON");
+    REQUIRE(mock_serial->mock_rcv_base() == "Power:ON");
 
     int count = 0;
     while(r.isTrajectoryRunning() && count < max_loops)
@@ -33,7 +33,7 @@ void coarsePositionTest(float x, float y, float a, int max_loops)
         r.update();
         // Report back the exact velocity commanded
         std::string cmd_vel = mock_serial->mock_rcv();
-        mock_serial->mock_send(cmd_vel);
+        mock_serial->mock_send("base" + cmd_vel);
 
         usleep(100);
     }

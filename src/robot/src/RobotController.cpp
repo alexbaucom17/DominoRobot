@@ -212,7 +212,7 @@ void RobotController::enableAllMotors()
 {
     if (serial_to_motor_driver_->isConnected())
     {
-        serial_to_motor_driver_->send("Power:ON");
+        serial_to_motor_driver_->send("base:Power:ON");
         PLOGI << "Motors enabled";
         PLOGD_(MOTION_LOG_ID) << "Motors enabled";
     }
@@ -226,7 +226,7 @@ void RobotController::disableAllMotors()
 {
     if (serial_to_motor_driver_->isConnected())
     {
-        serial_to_motor_driver_->send("Power:OFF");
+        serial_to_motor_driver_->send("base:Power:OFF");
         PLOGI << "Motors disabled";
         PLOGD_(MOTION_LOG_ID) << "Motors disabled";
     }
@@ -264,7 +264,7 @@ std::vector<float> RobotController::readMsgFromMotorDriver()
         int count = 0;
         while(msg.empty() && count++ < 10)
         {
-            msg = serial_to_motor_driver_->rcv();
+            msg = serial_to_motor_driver_->rcv_base();
         }
     }
 
@@ -347,7 +347,7 @@ void RobotController::setCartVelCommand(Velocity target_vel)
     local_cart_vel[2] = target_vel.va_;
 
     char buff[100];
-    sprintf(buff, "%.4f,%.4f,%.4f",local_cart_vel[0], local_cart_vel[1], local_cart_vel[2]);
+    sprintf(buff, "base:%.4f,%.4f,%.4f",local_cart_vel[0], local_cart_vel[1], local_cart_vel[2]);
     std::string s = buff;
 
     if (local_cart_vel[0] != 0 || local_cart_vel[1] != 0 || local_cart_vel[2] != 0 )

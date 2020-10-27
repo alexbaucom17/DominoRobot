@@ -104,36 +104,37 @@ void lifter_setup()
 // Possible inputs are
 // "home", "stop", or an integer representing position to move to
 // "open" or "close" controls the latch servo
-Command decodeLifterMsg(String msg)
+// Note that this assumes the message has already been validated
+Command decodeLifterMsg(String msg_in)
 {
+    // Strip identifier
+    String msg = msg_in.substring(4);
     Command c = {0, false, false, false, false, false};
-    if(msg.length() > 0)
+
+    if(msg == "home")
     {
-        if(msg == "home")
-        {
-            c.home = true;
-            c.valid = true;
-        }
-        else if(msg == "stop")
-        {
-            c.stop = true;
-            c.valid = true;
-        }
-        else if (msg == "open")
-        {
-            c.latch_open = true;
-            c.valid = true;
-        }
-        else if (msg == "close")
-        { 
-            c.latch_close = true;
-            c.valid = true;
-        }
-        else
-        {
-            c.abs_pos = msg.toInt();
-            c.valid = true;
-        }
+        c.home = true;
+        c.valid = true;
+    }
+    else if(msg == "stop")
+    {
+        c.stop = true;
+        c.valid = true;
+    }
+    else if (msg == "open")
+    {
+        c.latch_open = true;
+        c.valid = true;
+    }
+    else if (msg == "close")
+    { 
+        c.latch_close = true;
+        c.valid = true;
+    }
+    else
+    {
+        c.abs_pos = msg.toInt();
+        c.valid = true;
     }
 
     return c;
@@ -141,8 +142,19 @@ Command decodeLifterMsg(String msg)
 
 void lifter_update(String msg)
 {
-    // Check for an incomming command
-    Command inputCommand = decodeLifterMsg(msg);
+    // Verify if incoming message is for lifter
+    Command inputCommand = {0, false, false, false, false, false};
+    bool valid_msg = false;
+    if(msg.length() > 0 && msg.startsWith("lift:")) 
+    { 
+        valid_msg = true; 
+    }
+
+    // Parse command if it was valid
+    if(valid_msg) 
+    {
+        inputCommand = decodeLifterMsg(msg);
+    }
     
     // Read inputs for manual mode
     bool vel_up = !digitalRead(INCREMENTAL_UP_PIN);
@@ -205,10 +217,10 @@ void lifter_update(String msg)
 
 
     // Handle continous updates for each mode
-    String status_str = "none";
+    String status_str = "lift:none";
     if(activeMode == MODE::MANUAL_VEL)
     {
-        status_str = "manual";
+        status_str = "lift:manual";
         if(!(vel_up || vel_down))
         {
             activeMode = MODE::NONE;
@@ -216,8 +228,7 @@ void lifter_update(String msg)
     }
     else if(activeMode == MODE::AUTO_POS)
     {
-        // run() returns a bool indicating if the motors are still moving
-        status_str = "pos";
+        status_str = "lift:pos";
         if(LIFTER_MOTOR.StepsComplete())
         {
             activeMode = MODE::NONE;
@@ -231,7 +242,7 @@ void lifter_update(String msg)
             LIFTER_MOTOR.PositionRefSet(0);
             activeMode = MODE::NONE;
         }
-        status_str = "homing";
+        status_str = "lift:homing";
     }
     else if (activeMode == MODE::LATCH_CLOSE)
     {
@@ -243,7 +254,7 @@ void lifter_update(String msg)
     }
     else if (activeMode == MODE::LATCH_OPEN)
     {
-        status_str = "open";
+        status_str = "lift:open";
         if(millis() - prevLatchMillis > LATCH_ACTIVE_MS)
         {
             activeMode = MODE::NONE;
@@ -255,7 +266,10 @@ void lifter_update(String msg)
     }
 
     // Will send back one of [none, manual, pos, homing, open, close]
-    comms.send(status_str);
+    if (valid_msg) 
+    {
+        comms.send(status_str);
+    }
     // For debugging only
     // Serial.println("");
 }
@@ -404,7 +418,7 @@ CartVelocity doFK(MotorVelocity motor_measured)
 void ReportRobotVelocity(CartVelocity robot_v_measured)
 {
     char msg[32];
-    sprintf(msg, "%.3f,%.3f,%.3f",robot_v_measured.vx, robot_v_measured.vy, robot_v_measured.va);
+    sprintf(msg, "base:%.3f,%.3f,%.3f",robot_v_measured.vx, robot_v_measured.vy, robot_v_measured.va);
     comm.send(msg);
 }
 
@@ -448,11 +462,27 @@ void base_setup()
     MOTOR_FRONT_LEFT.AccelMax(MOTOR_MAX_ACC_STEPS_PER_SECOND_SQUARED);
 }
 
+bool isValidBaseMessage(String msg)
+{
+    bool result = false;
+    if(msg.length() > 0 && msg.startsWith("base:")) 
+    { 
+        result = true; 
+    }
+    return result;
+}
+
+
 void base_update(String msg)
 {    
-    if (!handlePowerRequests(msg))
+    if(!isValidBaseMessage(msg)) { return; }
+
+    // Strip base identifier
+    String new_msg = msg.substring(4);
+    
+    if(!handlePowerRequests(new_msg))
     {
-        CartVelocity cmd_v = decodeBaseMsg(msg);
+        CartVelocity cmd_v = decodeBaseMsg(new_msg);
         MotorVelocity motor_v = doIK(cmd_v);
         SendCommandsToMotors(motor_v);
         MotorVelocity motor_v_measured = ReadMotorSpeeds();
@@ -482,17 +512,7 @@ void setup()
 
 void loop()
 {
-    // TODO: handle communication better here
     String msg = comm.rcv();
-    if(msg.length() != 0)
-    {
-        if(isBaseMessage(msg))
-        {
-            base_update(msg);
-        }
-        else
-        {
-            lifter_update(msg);
-        }
-    }
+    base_update(msg);
+    lifter_update(msg);
 }
