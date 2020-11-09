@@ -1,21 +1,11 @@
 #include <Catch/catch.hpp>
 
 #include "TrayController.h"
-#include "serial/MockSerialComms.h"
-#include "serial/SerialCommsFactory.h"
-#include "constants.h"
-
-MockSerialComms* build_and_get_mock_serial_tray()
-{
-    SerialCommsBase* base_serial = SerialCommsFactory::getFactoryInstance()->get_serial_comms(CLEARCORE_USB);
-    MockSerialComms* mock_serial = dynamic_cast<MockSerialComms*>(base_serial);
-    mock_serial->purge_data();
-    return mock_serial;
-}
+#include "test-utils.h"
 
 TEST_CASE("Send and waiting", "[TrayController]")
 {
-    MockSerialComms* mock_serial = build_and_get_mock_serial_tray();
+    MockSerialComms* mock_serial = build_and_get_mock_serial();
     TrayController t;
 
     t.initialize();
@@ -42,7 +32,7 @@ TEST_CASE("Send and waiting", "[TrayController]")
 
 TEST_CASE("Initialize tray", "[TrayController]")
 {
-    MockSerialComms* mock_serial = build_and_get_mock_serial_tray();
+    MockSerialComms* mock_serial = build_and_get_mock_serial();
     TrayController t;
 
     t.initialize();
@@ -68,7 +58,7 @@ TEST_CASE("Initialize tray", "[TrayController]")
 
 TEST_CASE("Place tray", "[TrayController]")
 {
-    MockSerialComms* mock_serial = build_and_get_mock_serial_tray();
+    MockSerialComms* mock_serial = build_and_get_mock_serial();
     TrayController t;
 
     t.place();
@@ -99,7 +89,7 @@ TEST_CASE("Place tray", "[TrayController]")
 
 TEST_CASE("Load tray", "[TrayController]")
 {
-    MockSerialComms* mock_serial = build_and_get_mock_serial_tray();
+    MockSerialComms* mock_serial = build_and_get_mock_serial();
     TrayController t;
 
     t.load();

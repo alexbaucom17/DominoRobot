@@ -2,15 +2,13 @@
 
 #include "RobotServer.h"
 #include "StatusUpdater.h"
-#include "sockets/SocketMultiThreadWrapperFactory.h"
+#include "test-utils.h"
 #include "sockets/MockSocketMultiThreadWrapper.h"
 
 
 void testSimpleCommand(RobotServer& r, std::string msg, std::string expected_resp, COMMAND expected_command)
 {
-    SocketMultiThreadWrapperBase* base_socket = SocketMultiThreadWrapperFactory::getFactoryInstance()->get_socket();
-    MockSocketMultiThreadWrapper* mock_socket = dynamic_cast<MockSocketMultiThreadWrapper*>(base_socket);
-    mock_socket->purge_data();
+    MockSocketMultiThreadWrapper* mock_socket = build_and_get_mock_socket();
     mock_socket->sendMockData(msg);
     
     COMMAND c = r.oneLoop();

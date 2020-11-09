@@ -2,18 +2,8 @@
 
 #include "RobotController.h"
 #include "StatusUpdater.h"
-#include "serial/MockSerialComms.h"
-#include "serial/SerialCommsFactory.h"
-#include "constants.h"
+#include "test-utils.h"
 #include <unistd.h>
-
-MockSerialComms* build_and_get_mock_serial()
-{
-    SerialCommsBase* base_serial = SerialCommsFactory::getFactoryInstance()->get_serial_comms(CLEARCORE_USB);
-    // Slightly dangerous....
-    MockSerialComms* mock_serial = dynamic_cast<MockSerialComms*>(base_serial);
-    return mock_serial;
-}
 
 void coarsePositionTest(float x, float y, float a, int max_loops)
 {

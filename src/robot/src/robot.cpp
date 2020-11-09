@@ -4,58 +4,63 @@
 
 
 Robot::Robot()
-: statusUpdater(),
-  server(statusUpdater),
-  controller(statusUpdater),
-  tray_controller(),
-  mm_wrapper(),
-  loop_time_averager(20),
-  position_time_averager(20)
+: statusUpdater_(),
+  server_(statusUpdater_),
+  controller_(statusUpdater_),
+  tray_controller_(),
+  mm_wrapper_(),
+  loop_time_averager_(20),
+  position_time_averager_(20),
+  curCmd_(COMMAND::NONE)
 {
     PLOGI.printf("Robot starting");
 }
 
 void Robot::run()
 {
-    COMMAND curCmd = COMMAND::NONE;
-
     while(true)
     {
-        // Check for new command and try to start it
-        COMMAND newCmd = server.oneLoop();
-        bool status = tryStartNewCmd(newCmd);
-
-        // Update our current command if we successfully started a new command
-        if(status)
-        {
-            curCmd = newCmd;
-            statusUpdater.updateInProgress(true);
-        }
-
-        // Service marvelmind
-        std::vector<float> positions = mm_wrapper.getPositions();
-        if (positions.size() == 3)
-        {
-            position_time_averager.mark_point();
-            controller.inputPosition(positions[0], positions[1], positions[2]);
-        }
-
-        // Service controllers
-        controller.update();
-        tray_controller.update();
-
-        // Check if the current command has finished
-        bool done = checkForCmdComplete(curCmd);
-        if(done)
-        {
-            curCmd = COMMAND::NONE;
-            statusUpdater.updateInProgress(false);
-        }
-
-        // Update loop time and status updater
-        loop_time_averager.mark_point();
-        statusUpdater.updateLoopTimes(loop_time_averager.get_ms(), position_time_averager.get_ms());
+        runOnce();
     }
+}
+
+
+void Robot::runOnce() 
+{
+    // Check for new command and try to start it
+    COMMAND newCmd = server_.oneLoop();
+    bool status = tryStartNewCmd(newCmd);
+
+    // Update our current command if we successfully started a new command
+    if(status)
+    {
+        curCmd_ = newCmd;
+        statusUpdater_.updateInProgress(true);
+    }
+
+    // Service marvelmind
+    std::vector<float> positions = mm_wrapper_.getPositions();
+    if (positions.size() == 3)
+    {
+        position_time_averager_.mark_point();
+        controller_.inputPosition(positions[0], positions[1], positions[2]);
+    }
+
+    // Service controllers
+    controller_.update();
+    tray_controller_.update();
+
+    // Check if the current command has finished
+    bool done = checkForCmdComplete(curCmd_);
+    if(done)
+    {
+        curCmd_ = COMMAND::NONE;
+        statusUpdater_.updateInProgress(false);
+    }
+
+    // Update loop time and status updater
+    loop_time_averager_.mark_point();
+    statusUpdater_.updateLoopTimes(loop_time_averager_.get_ms(), position_time_averager_.get_ms());
 }
 
 
@@ -65,35 +70,35 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     // Always service it, but don't consider it starting a new command
     if (cmd == COMMAND::POSITION)
     {
-        RobotServer::PositionData data = server.getPositionData();
-        controller.inputPosition(data.x, data.y, data.a);
+        RobotServer::PositionData data = server_.getPositionData();
+        controller_.inputPosition(data.x, data.y, data.a);
 
         // Update the position rate
-        position_time_averager.mark_point();
+        position_time_averager_.mark_point();
 
         return false;
     }
     // Same with ESTOP
     if (cmd == COMMAND::ESTOP)
     {
-        controller.estop();
-        tray_controller.estop();
+        controller_.estop();
+        tray_controller_.estop();
         return false;
     }
     // Same with LOAD_COMPLETE
     if (cmd == COMMAND::LOAD_COMPLETE)
     {
-        tray_controller.setLoadComplete();
+        tray_controller_.setLoadComplete();
         return false;
     }
     
     // For all other commands, we need to make sure we aren't doing anything else at the moment
-    if(statusUpdater.getInProgress())
+    if(statusUpdater_.getInProgress())
     {
         PLOGW.printf("Command already running, rejecting new command");
         return false;
     }
-    else if (statusUpdater.getErrorStatus())
+    else if (statusUpdater_.getErrorStatus())
     {
         return false;
     }
@@ -101,35 +106,35 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     // Start new command
     if(cmd == COMMAND::MOVE)
     {
-        RobotServer::PositionData data = server.getMoveData();
-        controller.moveToPosition(data.x, data.y, data.a);
+        RobotServer::PositionData data = server_.getMoveData();
+        controller_.moveToPosition(data.x, data.y, data.a);
     }
     else if(cmd == COMMAND::MOVE_REL)
     {
-        RobotServer::PositionData data = server.getMoveData();
-        controller.moveToPositionRelative(data.x, data.y, data.a);
+        RobotServer::PositionData data = server_.getMoveData();
+        controller_.moveToPositionRelative(data.x, data.y, data.a);
     }
     else if(cmd == COMMAND::MOVE_FINE)
     {
-        RobotServer::PositionData data = server.getMoveData();
-        controller.moveToPositionFine(data.x, data.y, data.a);
+        RobotServer::PositionData data = server_.getMoveData();
+        controller_.moveToPositionFine(data.x, data.y, data.a);
     }
     else if(cmd == COMMAND::MOVE_CONST_VEL)
     {
-        RobotServer::VelocityData data = server.getVelocityData();
-        controller.moveConstVel(data.vx, data.vy, data.va, data.t);
+        RobotServer::VelocityData data = server_.getVelocityData();
+        controller_.moveConstVel(data.vx, data.vy, data.va, data.t);
     }
     else if(cmd == COMMAND::PLACE_TRAY)
     {
-        tray_controller.place();
+        tray_controller_.place();
     }
     else if(cmd == COMMAND::LOAD_TRAY)
     {
-        tray_controller.load();
+        tray_controller_.load();
     }
     else if(cmd == COMMAND::INITIALIZE_TRAY)
     {
-        tray_controller.initialize();
+        tray_controller_.initialize();
     }
     else if (cmd == COMMAND::NONE)
     {
@@ -155,13 +160,13 @@ bool Robot::checkForCmdComplete(COMMAND cmd)
             cmd == COMMAND::MOVE_FINE ||
             cmd == COMMAND::MOVE_CONST_VEL)
     {
-        return controller.isTrajectoryRunning();
+        return controller_.isTrajectoryRunning();
     }
     else if(cmd == COMMAND::PLACE_TRAY ||
             cmd == COMMAND::LOAD_TRAY ||
             cmd == COMMAND::INITIALIZE_TRAY)
     {
-        return tray_controller.isActionRunning();
+        return tray_controller_.isActionRunning();
     }
     else
     {
