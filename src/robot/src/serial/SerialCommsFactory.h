@@ -8,8 +8,8 @@
 
 enum class SERIAL_FACTORY_MODE
 {
-    STANDARD,
-    MOCK,
+  STANDARD,
+  MOCK,
 };
 
 class SerialCommsFactory

@@ -3,9 +3,9 @@
 
 #include <string>
 #include <queue>
-#include <chrono>
 
 #include "SocketMultiThreadWrapperBase.h"
+#include "utils.h"
 
 class MockSocketMultiThreadWrapper : public SocketMultiThreadWrapperBase
 {
@@ -26,7 +26,7 @@ class MockSocketMultiThreadWrapper : public SocketMultiThreadWrapperBase
     std::queue<std::string> send_data_;
     std::queue<std::string> rcv_data_;
     int ms_until_next_command_;
-    std::chrono::time_point<std::chrono::steady_clock> prev_time_;
+    Timer timer_;
 
 };
 

@@ -6,6 +6,7 @@
 #include "constants.h"
 #include "sockets/SocketMultiThreadWrapperFactory.h"
 #include "sockets/MockSocketMultiThreadWrapper.h"
+#include "utils.h"
 
 inline MockSocketMultiThreadWrapper* build_and_get_mock_socket() 
 {
@@ -23,6 +24,14 @@ inline MockSerialComms* build_and_get_mock_serial()
     MockSerialComms* mock_serial = dynamic_cast<MockSerialComms*>(base_serial);
     mock_serial->purge_data();
     return mock_serial;
+}
+
+inline MockClockWrapper* get_mock_clock()
+{
+    ClockWrapperBase* base_clock = ClockFactory::getFactoryInstance()->get_clock();
+    MockClockWrapper* mock_clock = dynamic_cast<MockClockWrapper*>(base_clock);
+    mock_clock->set_now();
+    return mock_clock;
 }
 
 #endif

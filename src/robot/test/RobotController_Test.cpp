@@ -8,6 +8,7 @@
 void coarsePositionTest(float x, float y, float a, int max_loops)
 {
     MockSerialComms* mock_serial = build_and_get_mock_serial();
+    MockClockWrapper* mock_clock = get_mock_clock();
     StatusUpdater s;
     RobotController r = RobotController(s);
 
@@ -25,7 +26,7 @@ void coarsePositionTest(float x, float y, float a, int max_loops)
         std::string cmd_vel = mock_serial->mock_rcv_base();
         mock_serial->mock_send("base:" + cmd_vel);
 
-        usleep(100);
+        mock_clock->advance_us(100);
     }
 
     CHECK(count != max_loops);
@@ -65,7 +66,7 @@ TEST_CASE("Motor enable and disable", "[RobotController]")
 
 TEST_CASE("Simple coarse motion", "[RobotController]")
 {
-    int test_counts =  10000;
+    int test_counts =  100000;
     SECTION("Straight forward")
     {
         coarsePositionTest(0.5,0,0, test_counts);
@@ -109,6 +110,7 @@ TEST_CASE("Block on error", "[RobotController]")
 
 void fakeMotionHelper(float x, float y, float a, int max_loops, StatusUpdater& s)
 {
+    MockClockWrapper* mock_clock = get_mock_clock();
     RobotController r = RobotController(s);
     r.moveToPosition(x,y,a);
 
@@ -117,7 +119,7 @@ void fakeMotionHelper(float x, float y, float a, int max_loops, StatusUpdater& s
     {
         count++;
         r.update();
-        usleep(100);
+        mock_clock->advance_us(1000);
     }
 }
 

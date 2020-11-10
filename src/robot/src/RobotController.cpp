@@ -7,15 +7,14 @@
 #include "constants.h"
 #include "serial/SerialCommsFactory.h"
 
-typedef std::chrono::duration<float> fsec;
 
 RobotController::RobotController(StatusUpdater& statusUpdater)
 : trajGen_(),
   statusUpdater_(statusUpdater),
   serial_to_motor_driver_(SerialCommsFactory::getFactoryInstance()->get_serial_comms(CLEARCORE_USB)),
-  prevControlLoopTime_(std::chrono::steady_clock::now()),
-  prevOdomLoopTime_(std::chrono::steady_clock::now()),
-  trajStartTime_(std::chrono::steady_clock::now()),
+  prevControlLoopTimer_(),
+  prevOdomLoopTimer_(),
+  trajStartTimer_(),
   cartPos_(),
   goalPos_(),
   cartVel_(),
@@ -84,8 +83,8 @@ void RobotController::moveConstVel(float vx , float vy, float va, float t)
 void RobotController::startTraj()
 {
     trajRunning_ = true;
-    trajStartTime_ = std::chrono::steady_clock::now();
-    prevControlLoopTime_ = std::chrono::steady_clock::now();    
+    trajStartTimer_.reset();
+    prevControlLoopTimer_.reset();    
 
     enableAllMotors();
     PLOGI.printf("Starting move");
@@ -157,8 +156,7 @@ void RobotController::update()
 
 PVTPoint RobotController::generateCommandFromTrajectory()
 {
-    std::chrono::time_point<std::chrono::steady_clock> curTime = std::chrono::steady_clock::now();
-    float dt = std::chrono::duration_cast<fsec>(curTime - trajStartTime_).count();
+    float dt = trajStartTimer_.dt_s();
     return trajGen_.lookup(dt);
 }
 
@@ -327,9 +325,8 @@ void RobotController::computeOdometry()
     cartVel_.va_ = local_cart_vel[2];
 
     // Compute time since last odom update
-    std::chrono::time_point<std::chrono::steady_clock> curTime = std::chrono::steady_clock::now();
-    float dt = std::chrono::duration_cast<fsec>(curTime - prevOdomLoopTime_).count();
-    prevOdomLoopTime_ = curTime;
+    float dt = prevOdomLoopTimer_.dt_s();
+    prevOdomLoopTimer_.reset();
 
     // Compute new position estimate
     cartPos_.x_ += cartVel_.vx_ * dt;

@@ -31,17 +31,16 @@ float angle_diff(float a1, float a2)
 }
 
 RateController::RateController(int hz)
-: prev_time_(std::chrono::steady_clock::now())
+: timer_(),
+  dt_us_(1000000 / hz)
 {
-  std::chrono::seconds sec(1);
-  dt_ = std::chrono::microseconds(sec) / hz;
 }
 
 bool RateController::ready()
 {
-  if(std::chrono::steady_clock::now() - prev_time_ > dt_)
+  if(timer_.dt_us() > dt_us_)
   {
-    prev_time_ = std::chrono::steady_clock::now();
+    timer_.reset();
     return true;
   }
   return false;
@@ -54,7 +53,7 @@ TimeRunningAverage::TimeRunningAverage(int window_size)
   window_size_(window_size),
   filled_(false),
   started_(false),
-  prev_time_(std::chrono::steady_clock::now())
+  timer_()
 {
     buf_.reserve(window_size_);
 }
@@ -88,16 +87,14 @@ float TimeRunningAverage::get_sec()
 
 void TimeRunningAverage::mark_point()
 {
-
     if(!started_)
     {
-        prev_time_ = std::chrono::steady_clock::now();
+        timer_.reset();
         started_ = true;
     }
 
-    std::chrono::time_point<std::chrono::steady_clock> curTime = std::chrono::steady_clock::now();
-    buf_[buf_idx_] = std::chrono::duration_cast<std::chrono::milliseconds>(curTime - prev_time_).count();
-    prev_time_ = std::chrono::steady_clock::now();
+    buf_[buf_idx_] = timer_.dt_ms();
+    timer_.reset();
 
     buf_idx_++;
     if (buf_idx_ >= window_size_)
@@ -106,3 +103,117 @@ void TimeRunningAverage::mark_point()
         buf_idx_ = 0;
     }
 }
+
+
+Timer::Timer() 
+: clock_(ClockFactory::getFactoryInstance()->get_clock()),
+  prev_time_(clock_->now())
+{ }
+
+void Timer::reset()
+{
+    prev_time_ = clock_->now();
+}
+
+int Timer::dt_us()
+{
+    return std::chrono::duration_cast<std::chrono::microseconds>(clock_->now() - prev_time_).count();
+}
+
+int Timer::dt_ms()
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(clock_->now() - prev_time_).count();
+}
+
+float Timer::dt_s() 
+{
+    return std::chrono::duration_cast<FpSeconds>(clock_->now() - prev_time_).count();
+}
+
+
+ClockTimePoint ClockWrapper::now()
+{
+    return std::chrono::steady_clock::now();
+}
+
+
+MockClockWrapper::MockClockWrapper()
+: ClockWrapperBase(),
+  internal_time_(std::chrono::steady_clock::now())
+{}
+
+ClockTimePoint MockClockWrapper::now()
+{
+    return internal_time_;
+}
+
+void MockClockWrapper::set_now()
+{
+    set(std::chrono::steady_clock::now());
+}
+
+void MockClockWrapper::set(ClockTimePoint time_point)
+{
+    internal_time_ = time_point;
+}
+
+void MockClockWrapper::advance_us(int us)
+{
+    internal_time_ += std::chrono::microseconds(us);
+}
+
+void MockClockWrapper::advance_ms(int ms)
+{
+    internal_time_ += std::chrono::milliseconds(ms);
+}
+
+void MockClockWrapper::advance_sec(float sec)
+{
+    internal_time_ += std::chrono::duration_cast<std::chrono::microseconds>(FpSeconds(sec));
+}
+
+
+
+ClockFactory* ClockFactory::factory_instance_ = NULL;
+
+ClockFactory* ClockFactory::getFactoryInstance()
+{
+    if(!factory_instance_)
+    {
+        factory_instance_ = new ClockFactory;
+    }
+    return factory_instance_;
+}
+
+void ClockFactory::set_mode(CLOCK_FACTORY_MODE mode)
+{
+    mode_ = mode;
+}
+
+ClockWrapperBase* ClockFactory::get_clock()
+{
+    if (!clock_instance_)
+    {
+        build_clock_instance();
+    }
+    return clock_instance_.get();
+}
+
+
+void ClockFactory::build_clock_instance()
+{
+    if(mode_ == CLOCK_FACTORY_MODE::STANDARD)
+    {
+        clock_instance_ = std::make_unique<ClockWrapper>();
+    }
+    else if (mode_ == CLOCK_FACTORY_MODE::MOCK)
+    {
+        clock_instance_ = std::make_unique<MockClockWrapper>();
+    }
+}
+
+// Private constructor
+ClockFactory::ClockFactory()
+: mode_(CLOCK_FACTORY_MODE::STANDARD),
+  clock_instance_()
+{}

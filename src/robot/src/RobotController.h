@@ -1,8 +1,6 @@
 #ifndef RobotController_h
 #define RobotController_h
 
-#include <chrono>
-
 #include "SmoothTrajectoryGenerator.h"
 #include "StatusUpdater.h"
 #include "serial/SerialComms.h"
@@ -72,9 +70,9 @@ class RobotController
     SmoothTrajectoryGenerator trajGen_;    // Trajectory generator object
     StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
     SerialCommsBase* serial_to_motor_driver_;   // Serial connection to motor driver
-    std::chrono::time_point<std::chrono::steady_clock> prevControlLoopTime_;    // Previous loop time through the cartesian control loop
-    std::chrono::time_point<std::chrono::steady_clock> prevOdomLoopTime_;       // Previous loop time through the odom loop
-    std::chrono::time_point<std::chrono::steady_clock> trajStartTime_;          // Previous loop time when trajectory was started
+    Timer prevControlLoopTimer_;           // Timer for cartesian control loop
+    Timer prevOdomLoopTimer_;              // Timer for odom loop
+    Timer trajStartTimer_;                 // Timer for trajectory
     Point cartPos_;                        // Current cartesian position
     Point goalPos_;                        // Desired goal position
     Velocity cartVel_;                     // Current cartesian velocity
