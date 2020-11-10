@@ -160,13 +160,13 @@ bool Robot::checkForCmdComplete(COMMAND cmd)
             cmd == COMMAND::MOVE_FINE ||
             cmd == COMMAND::MOVE_CONST_VEL)
     {
-        return controller_.isTrajectoryRunning();
+        return !controller_.isTrajectoryRunning();
     }
     else if(cmd == COMMAND::PLACE_TRAY ||
             cmd == COMMAND::LOAD_TRAY ||
             cmd == COMMAND::INITIALIZE_TRAY)
     {
-        return tray_controller_.isActionRunning();
+        return !tray_controller_.isActionRunning();
     }
     else
     {

@@ -7,6 +7,7 @@ MockSocketMultiThreadWrapper::MockSocketMultiThreadWrapper()
   send_data_(),
   rcv_data_(),
   ms_until_next_command_(-1),
+  send_immediate_(true),
   timer_()
 {
 }
@@ -32,6 +33,7 @@ std::string MockSocketMultiThreadWrapper::getData()
         ms_until_next_command_ = stoi(outdata);
         timer_.reset();
         PLOGI << "Waiting " << ms_until_next_command_ << " ms to send next command";
+        send_immediate_ = false;
     }
 
     return outdata;
@@ -44,7 +46,7 @@ void MockSocketMultiThreadWrapper::sendData(std::string data)
 
 bool MockSocketMultiThreadWrapper::dataAvailableToRead()
 {
-    if(timer_.dt_ms() > ms_until_next_command_)
+    if(send_immediate_ || timer_.dt_ms() > ms_until_next_command_)
     {
         return !rcv_data_.empty();
     }

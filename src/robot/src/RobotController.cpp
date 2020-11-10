@@ -255,10 +255,10 @@ void RobotController::inputPosition(float x, float y, float a)
     }
 }
 
-std::vector<float> RobotController::readMsgFromMotorDriver()
+bool RobotController::readMsgFromMotorDriver(Velocity* decodedVelocity)
 {
     std::string msg = "";
-    std::vector<float> decodedVelocity = {0,0,0};
+    std::vector<float> tmpVelocity = {0,0,0};
     if (serial_to_motor_driver_->isConnected())
     {
         int count = 0;
@@ -270,7 +270,7 @@ std::vector<float> RobotController::readMsgFromMotorDriver()
 
     if (msg.empty())
     {
-        return {};
+        return false;
     }
     else
     {
@@ -280,49 +280,49 @@ std::vector<float> RobotController::readMsgFromMotorDriver()
         {
             if(msg[i] == ',')
             {
-                decodedVelocity[j] = std::stof(msg.substr(prev_idx, i - prev_idx));
+                tmpVelocity[j] = std::stof(msg.substr(prev_idx, i - prev_idx));
                 j++;
                 prev_idx = i+1;
             }
 
             if (i == msg.length()-1)
             {
-                decodedVelocity[j] = std::stof(msg.substr(prev_idx, std::string::npos));
+                tmpVelocity[j] = std::stof(msg.substr(prev_idx, std::string::npos));
             }
         }
         if(j != 2)
         {
             PLOGW.printf("Decode failed");
-            return {};
+            return false;
         }
     }
-    return decodedVelocity;
+    decodedVelocity->vx_ = tmpVelocity[0];
+    decodedVelocity->vy_ = tmpVelocity[1];
+    decodedVelocity->va_ = tmpVelocity[2];
+    return true;
 }
 
 void RobotController::computeOdometry()
 {  
-    std::vector<float> local_cart_vel = readMsgFromMotorDriver();
+    Velocity local_cart_vel = {0,0,0};
     if(fake_perfect_motion_)
     {
-        if(local_cart_vel.size() != 3) {local_cart_vel.reserve(3);}
-        local_cart_vel[0] = fake_local_cart_vel_.vx_;
-        local_cart_vel[1] = fake_local_cart_vel_.vy_;
-        local_cart_vel[2] = fake_local_cart_vel_.va_;
+        local_cart_vel = fake_local_cart_vel_;
     }
-    else if(local_cart_vel.size() != 3) { return; }
+    else if(!readMsgFromMotorDriver(&local_cart_vel)) { return; }
     
-    std::vector<float> zero = {0,0,0};
-    if(trajRunning_ || local_cart_vel != zero)
+    Velocity zero = {0,0,0};
+    if(trajRunning_ || !(local_cart_vel == zero))
     {
-        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_).printf("Decoded velocity: %.3f, %.3f, %.3f", local_cart_vel[0], local_cart_vel[1], local_cart_vel[2]);
+        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_).printf("Decoded velocity: %.3f, %.3f, %.3f", local_cart_vel.vx_, local_cart_vel.vy_, local_cart_vel.va_);
     }
 
     // Convert local cartesian velocity to global cartesian velocity using the last estimated angle
     float cA = cos(cartPos_.a_);
     float sA = sin(cartPos_.a_);
-    cartVel_.vx_ = cA * local_cart_vel[0] - sA * local_cart_vel[1];
-    cartVel_.vy_ = sA * local_cart_vel[0] + cA * local_cart_vel[1];
-    cartVel_.va_ = local_cart_vel[2];
+    cartVel_.vx_ = cA * local_cart_vel.vx_ - sA * local_cart_vel.vy_;
+    cartVel_.vy_ = sA * local_cart_vel.vx_ + cA * local_cart_vel.vy_;
+    cartVel_.va_ = local_cart_vel.va_;
 
     // Compute time since last odom update
     float dt = prevOdomLoopTimer_.dt_s();

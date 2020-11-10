@@ -3,7 +3,6 @@
 #include "RobotController.h"
 #include "StatusUpdater.h"
 #include "test-utils.h"
-#include <unistd.h>
 
 void coarsePositionTest(float x, float y, float a, int max_loops)
 {
@@ -26,7 +25,7 @@ void coarsePositionTest(float x, float y, float a, int max_loops)
         std::string cmd_vel = mock_serial->mock_rcv_base();
         mock_serial->mock_send("base:" + cmd_vel);
 
-        mock_clock->advance_us(100);
+        mock_clock->advance_ms(1);
     }
 
     CHECK(count != max_loops);
