@@ -213,17 +213,17 @@ void lifter_update(String msg)
             activeMode = MODE::MANUAL_VEL;
             if(vel_up)
             {
-                LIFTER_MOTOR.MoveVelocity(-1*LIFTER_MAX_VEL*STEPS_PER_REV);
+                LIFTER_MOTOR.MoveVelocity(-1*LIFTER_MAX_VEL*LIFTER_STEPS_PER_REV);
             }
             else if(vel_down)
             {
-                LIFTER_MOTOR.MoveVelocity(LIFTER_MAX_VEL*STEPS_PER_REV);
+                LIFTER_MOTOR.MoveVelocity(LIFTER_MAX_VEL*LIFTER_STEPS_PER_REV);
             }   
         }
         else if(inputCommand.valid && inputCommand.home)
         {
             activeMode = MODE::HOMING;
-            LIFTER_MOTOR.MoveVelocity(-1*LIFTER_MAX_VEL*STEPS_PER_REV);
+            LIFTER_MOTOR.MoveVelocity(-1*LIFTER_MAX_VEL*LIFTER_STEPS_PER_REV);
         }
         else if(inputCommand.valid && inputCommand.latch_open)
         {
@@ -243,7 +243,7 @@ void lifter_update(String msg)
             {
                 activeMode = MODE::AUTO_POS;
                 long target = inputCommand.abs_pos;
-                LIFTER_MOTOR.Move(target*STEPS_PER_REV, StepGenerator::MOVE_TARGET_ABSOLUTE);
+                LIFTER_MOTOR.Move(target*LIFTER_STEPS_PER_REV, StepGenerator::MOVE_TARGET_ABSOLUTE);
             }
         }
     }    
