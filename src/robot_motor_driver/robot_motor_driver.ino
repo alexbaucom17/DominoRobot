@@ -43,10 +43,10 @@ float MOTOR_REAR_CENTER_FAKE = 0;
 // --------------------------------------------------
 
 #define LIFTER_MOTOR ConnectorM3
-#define INCREMENTAL_UP_PIN IO1
-#define INCREMENTAL_DOWN_PIN IO2
+#define INCREMENTAL_UP_PIN DI7
+#define INCREMENTAL_DOWN_PIN DI6
 #define LATCH_SERVO_PIN IO0 // Only IO0 does pwm
-#define HOMING_SWITCH_PIN IO3
+#define HOMING_SWITCH_PIN IO4
 
 #define LIFTER_STEPS_PER_REV 800
 
@@ -57,8 +57,8 @@ float MOTOR_REAR_CENTER_FAKE = 0;
 #define SAFETY_MIN_POS 0 // Revs, Sanity check on desired position to make sure it isn't less than this
 
 #define LATCH_ACTIVE_MS 2000
-#define LATCH_OPEN_DUTY_CYCLE 200
-#define LATCH_CLOSE_DUTY_CYCLE 10
+#define LATCH_OPEN_DUTY_CYCLE 50
+#define LATCH_CLOSE_DUTY_CYCLE 200
 
 // --------------------------------------------------
 //                Helper structs
@@ -190,8 +190,8 @@ void lifter_update(String msg)
     }
     
     // Read inputs for manual mode
-    bool vel_up = !digitalRead(INCREMENTAL_UP_PIN);
-    bool vel_down = !digitalRead(INCREMENTAL_DOWN_PIN);
+    bool vel_up = digitalRead(INCREMENTAL_UP_PIN);
+    bool vel_down = digitalRead(INCREMENTAL_DOWN_PIN);
 
     // For debugging only
     // Serial.print("Vel up: ");
@@ -269,7 +269,7 @@ void lifter_update(String msg)
     }
     else if(activeMode == MODE::HOMING)
     {
-        if(digitalRead(HOMING_SWITCH_PIN))
+        if(!digitalRead(HOMING_SWITCH_PIN))
         {
             LIFTER_MOTOR.MoveStopAbrupt();
             LIFTER_MOTOR.PositionRefSet(0);
