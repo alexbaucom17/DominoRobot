@@ -38,6 +38,7 @@ class TrayController
     bool load_complete_;
     int action_step_;
     ACTION cur_action_;
+    RateController controller_rate_;       // Rate limit controller loop
 
     void runStepAndWaitForCompletion(std::string data, std::string debug_print);
     void updateInitialize();

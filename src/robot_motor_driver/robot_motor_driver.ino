@@ -56,7 +56,7 @@ float MOTOR_REAR_CENTER_FAKE = 0;
 #define SAFETY_MAX_POS 120  // Revs, Sanity check on desired position to make sure it isn't larger than this
 #define SAFETY_MIN_POS 0 // Revs, Sanity check on desired position to make sure it isn't less than this
 
-#define LATCH_ACTIVE_MS 2000
+#define LATCH_ACTIVE_MS 1000
 #define LATCH_OPEN_DUTY_CYCLE 50
 #define LATCH_CLOSE_DUTY_CYCLE 200
 
@@ -82,6 +82,7 @@ struct Command
     bool stop;
     bool latch_open;
     bool latch_close;
+    bool status_req;
 };
 
 struct CartVelocity
@@ -137,12 +138,17 @@ void lifter_setup()
 // Possible inputs are
 // "home", "stop", or an integer representing position to move to
 // "open" or "close" controls the latch servo
+// "status_req" will request a status of the mode
 // Note that this assumes the message has already been validated
 Command decodeLifterMsg(String msg_in)
 {
     // Strip identifier
-    String msg = msg_in.substring(4);
-    Command c = {0, false, false, false, false, false};
+    String msg = msg_in.substring(5);
+    Command c = {0, false, false, false, false, false, false};
+
+#if PRINT_DEBUG
+    comm.send("DEBUG Incoming lifter message: " + msg);
+#endif
 
     if(msg == "home")
     {
@@ -164,9 +170,15 @@ Command decodeLifterMsg(String msg_in)
         c.latch_close = true;
         c.valid = true;
     }
-    else
+    else if (msg == "status_req")
     {
-        c.abs_pos = msg.toInt();
+      c.valid = true;
+      c.status_req = true;
+    }
+    else if (msg.startsWith("pos:"))
+    {
+        String pos_msg = msg.substring(4);
+        c.abs_pos = pos_msg.toInt();
         c.valid = true;
     }
 
@@ -237,6 +249,10 @@ void lifter_update(String msg)
             analogWrite(LATCH_SERVO_PIN, LATCH_CLOSE_DUTY_CYCLE);
             prevLatchMillis = millis();
         }
+        else if (inputCommand.valid && inputCommand.status_req)
+        {
+          // Nothing to do here
+        }
         else if(inputCommand.valid)
         {
             if(inputCommand.abs_pos <= SAFETY_MAX_POS && inputCommand.abs_pos >= SAFETY_MIN_POS)
@@ -279,7 +295,7 @@ void lifter_update(String msg)
     }
     else if (activeMode == MODE::LATCH_CLOSE)
     {
-        status_str = "close";
+        status_str = "lift:close";
         if(millis() - prevLatchMillis > LATCH_ACTIVE_MS)
         {
             activeMode = MODE::NONE;
@@ -317,7 +333,7 @@ void lifter_update(String msg)
 CartVelocity decodeBaseMsg(String msg)
 {
 #if PRINT_DEBUG
-    comm.send("DEBUG Incoming message: " + msg);
+    comm.send("DEBUG Incoming base message: " + msg);
 #endif
     float vals[3];
     int prev_idx = 0;
@@ -482,7 +498,7 @@ void base_update(String msg)
     if(!isValidBaseMessage(msg)) { return; }
 
     // Strip base identifier
-    String new_msg = msg.substring(4);
+    String new_msg = msg.substring(5);
     
     if(!handlePowerRequests(new_msg))
     {

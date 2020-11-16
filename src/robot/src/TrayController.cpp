@@ -9,7 +9,8 @@ TrayController::TrayController()
   action_step_running_(false),
   load_complete_(false),
   action_step_(0),
-  cur_action_(ACTION::NONE)
+  cur_action_(ACTION::NONE),
+  controller_rate_(cfg.lookup("tray.controller_frequency")),
 {
 }
 
@@ -45,6 +46,7 @@ void TrayController::estop()
 
 void TrayController::update()
 {
+    if (!controller_rate_.ready()) { return; }
     switch (cur_action_)
     {
         case ACTION::INITIALIZE:
@@ -78,9 +80,11 @@ void TrayController::runStepAndWaitForCompletion(std::string data, std::string d
     }
     else
     {
+        // Request status and wait for command to complete
         std::string msg = "";
         if (serial_to_lifter_driver_->isConnected())
         {
+            serial_to_lifter_driver_->send("lift:status_req");
             msg = serial_to_lifter_driver_->rcv_lift();
         }
         if(msg == "none")
@@ -118,7 +122,7 @@ void TrayController::updateInitialize()
     if(action_step_ == 2)
     {
         int pos = cfg.lookup("tray.default_pos_steps");
-        std::string data = "lift:" + std::to_string(pos);
+        std::string data = "lift:pos:" + std::to_string(pos);
         std::string debug = "Moving tray to default position";
         runStepAndWaitForCompletion(data, debug);
     }
@@ -144,7 +148,7 @@ void TrayController::updatePlace()
     if(action_step_ == 0)
     {
         int pos = cfg.lookup("tray.place_pos_steps");
-        std::string data = "lift:" + std::to_string(pos);
+        std::string data = "lift:pos:" + std::to_string(pos);
         std::string debug = "Moving tray to placement position";
         runStepAndWaitForCompletion(data, debug);
     }
@@ -159,7 +163,7 @@ void TrayController::updatePlace()
     if(action_step_ == 2)
     {
         int pos = cfg.lookup("tray.default_pos_steps");
-        std::string data = "lift:" + std::to_string(pos);
+        std::string data = "lift:pos:" + std::to_string(pos);
         std::string debug = "Moving tray to default position";
         runStepAndWaitForCompletion(data, debug);
     }
@@ -191,7 +195,7 @@ void TrayController::updateLoad()
     if(action_step_ == 0)
     {
         int pos = cfg.lookup("tray.load_pos_steps");
-        std::string data = "lift:" + std::to_string(pos);
+        std::string data = "lift:pos:" + std::to_string(pos);
         std::string debug = "Moving tray to load position";
         runStepAndWaitForCompletion(data, debug);
     }
@@ -209,7 +213,7 @@ void TrayController::updateLoad()
     if(action_step_ == 2)
     {
         int pos = cfg.lookup("tray.default_pos_steps");
-        std::string data = "lift:" + std::to_string(pos);
+        std::string data = "lift:pos:" + std::to_string(pos);
         std::string debug = "Moving tray to default position";
         runStepAndWaitForCompletion(data, debug);
     }
