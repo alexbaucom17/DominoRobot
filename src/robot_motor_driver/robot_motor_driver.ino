@@ -130,6 +130,7 @@ void lifter_setup()
     pinMode(LATCH_SERVO_PIN, OUTPUT);
 
     LIFTER_MOTOR.EnableRequest(false);
+    LIFTER_MOTOR.HlfbMode(MotorDriver::HLFB_MODE_STATIC);
     LIFTER_MOTOR.VelMax(LIFTER_MAX_VEL*LIFTER_STEPS_PER_REV);
     LIFTER_MOTOR.AccelMax(LIFTER_MAX_ACC*LIFTER_STEPS_PER_REV);
 }
@@ -215,6 +216,7 @@ void lifter_update(String msg)
     if (inputCommand.valid && inputCommand.stop)
     {
         activeMode = MODE::NONE;
+        LIFTER_MOTOR.EnableRequest(false);
     }
     // For any other command, we will only handle it when there are no other active commands
     else if (activeMode == MODE::NONE)
@@ -223,6 +225,7 @@ void lifter_update(String msg)
         if(vel_up || vel_down)
         {
             activeMode = MODE::MANUAL_VEL;
+            LIFTER_MOTOR.EnableRequest(true);
             if(vel_up)
             {
                 LIFTER_MOTOR.MoveVelocity(-1*LIFTER_MAX_VEL*LIFTER_STEPS_PER_REV);
@@ -235,6 +238,7 @@ void lifter_update(String msg)
         else if(inputCommand.valid && inputCommand.home)
         {
             activeMode = MODE::HOMING;
+            LIFTER_MOTOR.EnableRequest(true);
             LIFTER_MOTOR.MoveVelocity(-1*LIFTER_MAX_VEL*LIFTER_STEPS_PER_REV);
         }
         else if(inputCommand.valid && inputCommand.latch_open)
@@ -259,6 +263,7 @@ void lifter_update(String msg)
             {
                 activeMode = MODE::AUTO_POS;
                 long target = inputCommand.abs_pos;
+                LIFTER_MOTOR.EnableRequest(true);
                 LIFTER_MOTOR.Move(target*LIFTER_STEPS_PER_REV, StepGenerator::MOVE_TARGET_ABSOLUTE);
             }
         }

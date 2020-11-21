@@ -1,7 +1,7 @@
 #include "ClearCore.h"
 
 
-#define LIFTER_MOTOR ConnectorM3
+#define LIFTER_MOTOR ConnectorM2
 #define INCREMENTAL_UP_PIN DI7
 #define INCREMENTAL_DOWN_PIN DI6
 #define LATCH_SERVO_PIN IO0 // Only IO0 does pwm
@@ -28,9 +28,17 @@ void setup()
     pinMode(HOMING_SWITCH_PIN, INPUT);
     pinMode(LATCH_SERVO_PIN, OUTPUT);
 
-    LIFTER_MOTOR.EnableRequest(false);
+    // Sets the input clocking rate. This normal rate is ideal for ClearPath
+    // step and direction applications.
+    MotorMgr.MotorInputClocking(MotorManager::CLOCK_RATE_NORMAL);
+    // Sets all motor connectors into step and direction mode.
+    MotorMgr.MotorModeSet(MotorManager::MOTOR_ALL, Connector::CPM_MODE_STEP_AND_DIR);
+
+    
     LIFTER_MOTOR.VelMax(LIFTER_MAX_VEL*LIFTER_STEPS_PER_REV);
     LIFTER_MOTOR.AccelMax(LIFTER_MAX_ACC*LIFTER_STEPS_PER_REV);
+    LIFTER_MOTOR.HlfbMode(MotorDriver::HLFB_MODE_STATIC);
+    LIFTER_MOTOR.EnableRequest(true);
 
     Serial.begin(115200);
     Serial.println("Test script starting");
@@ -48,15 +56,20 @@ void test_motor()
 
     if(vel_up)
     {
+        LIFTER_MOTOR.EnableRequest(true);
         LIFTER_MOTOR.MoveVelocity(-1*LIFTER_MAX_VEL*LIFTER_STEPS_PER_REV);
+        Serial.println(LIFTER_MOTOR.VelocityRefCommanded());
     }
     else if(vel_down)
     {
+        LIFTER_MOTOR.EnableRequest(true);
         LIFTER_MOTOR.MoveVelocity(LIFTER_MAX_VEL*LIFTER_STEPS_PER_REV);
+        Serial.println(LIFTER_MOTOR.VelocityRefCommanded());
     }  
     else 
     {
         LIFTER_MOTOR.MoveStopAbrupt();
+        LIFTER_MOTOR.EnableRequest(false);
     }
 }
 
@@ -79,8 +92,8 @@ void test_servo()
 
 void loop()
 {
-    //test_motor();
+    test_motor();
     //test_homing_switch();
-    test_servo();
+    //test_servo();
     delay(100);
 }
