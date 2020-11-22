@@ -91,11 +91,14 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
         tray_controller_.setLoadComplete();
         return false;
     }
+
+    // Just do nothing for NONE
+    if (cmd == COMMAND::NONE) { return false;}
     
     // For all other commands, we need to make sure we aren't doing anything else at the moment
     if(statusUpdater_.getInProgress())
     {
-        PLOGW.printf("Command already running, rejecting new command");
+        PLOGW << "Command " << static_cast<int>(curCmd_) << " already running, rejecting new command: " << static_cast<int>(cmd);
         return false;
     }
     else if (statusUpdater_.getErrorStatus())
@@ -135,10 +138,6 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     else if(cmd == COMMAND::INITIALIZE_TRAY)
     {
         tray_controller_.initialize();
-    }
-    else if (cmd == COMMAND::NONE)
-    {
-      // do nothing...
     }
     else
     {

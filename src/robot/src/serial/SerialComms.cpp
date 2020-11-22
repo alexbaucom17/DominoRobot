@@ -107,6 +107,10 @@ void SerialComms::rcv()
     {
         lift_data_.push(new_msg.substr(5, std::string::npos));
     }
+    else if (new_msg.empty())
+    {
+        // Do nothing
+    }
     else
     {
         PLOGE << "Unknown message type, skipping: " << new_msg;
