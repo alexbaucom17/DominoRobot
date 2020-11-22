@@ -10,7 +10,7 @@ TrayController::TrayController()
   load_complete_(false),
   action_step_(0),
   cur_action_(ACTION::NONE),
-  controller_rate_(cfg.lookup("tray.controller_frequency")),
+  controller_rate_(cfg.lookup("tray.controller_frequency"))
 {
 }
 

@@ -3,6 +3,7 @@
 #include <cmath>
 #include "utils.h"
 #include <chrono>
+#include <plog/Log.h>
 
 #include <iostream>
 
@@ -204,10 +205,12 @@ void ClockFactory::build_clock_instance()
 {
     if(mode_ == CLOCK_FACTORY_MODE::STANDARD)
     {
+        PLOGI << "Building STANDARD clock wrapper";
         clock_instance_ = std::make_unique<ClockWrapper>();
     }
     else if (mode_ == CLOCK_FACTORY_MODE::MOCK)
     {
+        PLOGI << "Building MOCK clock wrapper";
         clock_instance_ = std::make_unique<MockClockWrapper>();
     }
 }

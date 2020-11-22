@@ -34,6 +34,7 @@ std::string MockSocketMultiThreadWrapper::getData()
         timer_.reset();
         PLOGI << "Waiting " << ms_until_next_command_ << " ms to send next command";
         send_immediate_ = false;
+        outdata = "";
     }
 
     return outdata;

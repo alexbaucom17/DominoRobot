@@ -23,6 +23,7 @@ SerialComms::~SerialComms()
 
 std::string SerialComms::rcv_base()
 {
+    rcv();
     if(base_data_.empty())
     {
         return "";
@@ -34,6 +35,7 @@ std::string SerialComms::rcv_base()
 
 std::string SerialComms::rcv_lift()
 {
+    rcv();
     if(lift_data_.empty())
     {
         return "";

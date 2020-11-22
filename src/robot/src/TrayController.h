@@ -2,6 +2,7 @@
 #define TrayController_h
 
 #include "serial/SerialComms.h"
+#include "utils.h"
 
 class TrayController
 {

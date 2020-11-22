@@ -6,8 +6,7 @@ Robot controller:
 
 Robot SW::
 - Figure out how to test position update function
-- Add top level robot tests - make use of fake motion setting
-- Consider adding abstraction layer for clock so that I can more easily control unit tests - probably needed to get top level robot tests working
+- Figure out why clock goes bad during test
 - Debug why rotation motion didn't track correctly
     - Looks like clearcore wasn't tracking correctly? Some sort of error in the kinematics is my guess
     - Maybe not - looks like decoded velocity just lags by one iteration, maybe try to fix how that prints?
@@ -15,12 +14,11 @@ Robot SW::
 
 Robot HW:
 - Do clearcore calibration for one motor with full load
-- Hook the battery monitor up again
 - Try to estimate how long the controller batteries will last fully loaded
 
 Master:
 - Figure out how to sequence loading between base and robot
-- Add error handleing for robot status
+- Add error handling for robot status
 - Add a stop sequence and pause button
 - Add a confirmation dialog before starting sequence
 - Try to make it so master doesn't crash when network has trouble (need to handle detecting disconnect and then auto-reconnecting)
