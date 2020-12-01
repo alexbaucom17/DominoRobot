@@ -59,12 +59,12 @@ class SerialClient:
         return new_msg
 
 def power_on(s):
-    msg = "Power:ON"
+    msg = "base:Power:ON"
     s.send(msg)
     check_response(s)
 
 def power_off(s):
-    msg = "Power:OFF"
+    msg = "base:Power:OFF"
     s.send(msg)
     check_response(s)
 
@@ -72,7 +72,7 @@ def send_vel(s, vel):
     if len(vel) != 3:
         raise ValueError("Velocity should be 3 elements long")
 
-    msg = "{:.3f},{:.3f},{:.3f}".format(vel[0], vel[1], vel[2])
+    msg = "base:{:.3f},{:.3f},{:.3f}".format(vel[0], vel[1], vel[2])
     print("SND: {}".format(msg))
     s.send(msg)
 
