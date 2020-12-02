@@ -22,7 +22,7 @@ SerialComms comm(Serial);
 #define BELT_RATIO 4
 #define STEPS_PER_REV 800
 #define MOTOR_MAX_VEL_STEPS_PER_SECOND 10000
-#define MOTOR_MAX_ACC_STEPS_PER_SECOND_SQUARED 100000
+#define MOTOR_MAX_ACC_STEPS_PER_SECOND_SQUARED 2600
 const float sq3 = sqrt(3.0);
 const float rOver3 = WHEEL_RADIUS / 3.0;
 const float radsPerSecondToStepsPerSecond = STEPS_PER_REV / (2 * PI);

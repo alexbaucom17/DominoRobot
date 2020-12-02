@@ -1,7 +1,7 @@
 #include "ClearCore.h"
 
 
-#define LIFTER_MOTOR ConnectorM2
+#define LIFTER_MOTOR ConnectorM3
 #define INCREMENTAL_UP_PIN DI7
 #define INCREMENTAL_DOWN_PIN DI6
 #define LATCH_SERVO_PIN IO0 // Only IO0 does pwm
@@ -30,7 +30,7 @@ void setup()
 
     // Sets the input clocking rate. This normal rate is ideal for ClearPath
     // step and direction applications.
-    MotorMgr.MotorInputClocking(MotorManager::CLOCK_RATE_NORMAL);
+    MotorMgr.MotorInputClocking(MotorManager::CLOCK_RATE_LOW);
     // Sets all motor connectors into step and direction mode.
     MotorMgr.MotorModeSet(MotorManager::MOTOR_ALL, Connector::CPM_MODE_STEP_AND_DIR);
 
@@ -38,6 +38,7 @@ void setup()
     LIFTER_MOTOR.VelMax(LIFTER_MAX_VEL*LIFTER_STEPS_PER_REV);
     LIFTER_MOTOR.AccelMax(LIFTER_MAX_ACC*LIFTER_STEPS_PER_REV);
     LIFTER_MOTOR.HlfbMode(MotorDriver::HLFB_MODE_STATIC);
+    LIFTER_MOTOR.PolarityInvertSDEnable(true);
     LIFTER_MOTOR.EnableRequest(true);
 
     Serial.begin(115200);
