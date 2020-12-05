@@ -9,8 +9,10 @@
 
 #define LIFTER_STEPS_PER_REV 800
 
-#define LIFTER_MAX_VEL 2  // revs/sec
+#define LIFTER_MAX_VEL 7  // revs/sec
 #define LIFTER_MAX_ACC 10  // rev/sec^2
+
+// Max num steps ~51000
 
 #define SAFETY_MAX_POS 120  // Revs, Sanity check on desired position to make sure it isn't larger than this
 #define SAFETY_MIN_POS 0 // Revs, Sanity check on desired position to make sure it isn't less than this
@@ -57,28 +59,29 @@ void test_motor()
 
     if(vel_up)
     {
-        LIFTER_MOTOR.EnableRequest(true);
-        LIFTER_MOTOR.MoveVelocity(-1*LIFTER_MAX_VEL*LIFTER_STEPS_PER_REV);
-        Serial.println(LIFTER_MOTOR.VelocityRefCommanded());
+        LIFTER_MOTOR.MoveVelocity(LIFTER_MAX_VEL*LIFTER_STEPS_PER_REV);
+        Serial.println(LIFTER_MOTOR.PositionRefCommanded());
     }
     else if(vel_down)
     {
-        LIFTER_MOTOR.EnableRequest(true);
-        LIFTER_MOTOR.MoveVelocity(LIFTER_MAX_VEL*LIFTER_STEPS_PER_REV);
-        Serial.println(LIFTER_MOTOR.VelocityRefCommanded());
+        LIFTER_MOTOR.MoveVelocity(-1*LIFTER_MAX_VEL*LIFTER_STEPS_PER_REV);
+        Serial.println(LIFTER_MOTOR.PositionRefCommanded());
     }  
     else 
     {
         LIFTER_MOTOR.MoveStopAbrupt();
-        LIFTER_MOTOR.EnableRequest(false);
     }
 }
 
 void test_homing_switch()
 {
     bool switch_active = !digitalRead(HOMING_SWITCH_PIN);
-    Serial.print("Homing switch: ");
-    Serial.println(switch_active);
+
+    if(switch_active) {
+      Serial.print("Homing switch: ");
+     Serial.println(switch_active);
+      LIFTER_MOTOR.PositionRefSet(0);
+    }
 }
 
 void test_servo()
@@ -94,7 +97,7 @@ void test_servo()
 void loop()
 {
     test_motor();
-    //test_homing_switch();
+    test_homing_switch();
     //test_servo();
     delay(100);
 }

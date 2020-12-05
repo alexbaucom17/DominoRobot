@@ -6,7 +6,7 @@
 // Serial = USB
 // Serial0 + Serial1 = COM ports
 
-#define PRINT_DEBUG false
+#define PRINT_DEBUG true
 #define USE_FAKE_MOTOR false
 
 // Globals
@@ -50,10 +50,12 @@ float MOTOR_REAR_CENTER_FAKE = 0;
 
 #define LIFTER_STEPS_PER_REV 800
 
-#define LIFTER_MAX_VEL 2  // revs/sec
+#define LIFTER_MAX_VEL 7  // revs/sec
 #define LIFTER_MAX_ACC 10  // rev/sec^2
 
-#define SAFETY_MAX_POS 120  // Revs, Sanity check on desired position to make sure it isn't larger than this
+#define LIFTER_HOMING_VEL 3 // revs/sec
+
+#define SAFETY_MAX_POS 70  // Revs, Sanity check on desired position to make sure it isn't larger than this
 #define SAFETY_MIN_POS 0 // Revs, Sanity check on desired position to make sure it isn't less than this
 
 #define LATCH_ACTIVE_MS 1000
@@ -129,10 +131,12 @@ void lifter_setup()
     pinMode(HOMING_SWITCH_PIN, INPUT);
     pinMode(LATCH_SERVO_PIN, OUTPUT);
 
-    LIFTER_MOTOR.EnableRequest(false);
     LIFTER_MOTOR.HlfbMode(MotorDriver::HLFB_MODE_STATIC);
+    LIFTER_MOTOR.PolarityInvertSDEnable(true);
+    LIFTER_MOTOR.PolarityInvertSDDirection(true);
     LIFTER_MOTOR.VelMax(LIFTER_MAX_VEL*LIFTER_STEPS_PER_REV);
     LIFTER_MOTOR.AccelMax(LIFTER_MAX_ACC*LIFTER_STEPS_PER_REV);
+    LIFTER_MOTOR.EnableRequest(false);
 }
 
 
@@ -239,7 +243,7 @@ void lifter_update(String msg)
         {
             activeMode = MODE::HOMING;
             LIFTER_MOTOR.EnableRequest(true);
-            LIFTER_MOTOR.MoveVelocity(-1*LIFTER_MAX_VEL*LIFTER_STEPS_PER_REV);
+            LIFTER_MOTOR.MoveVelocity(-1*LIFTER_HOMING_VEL*LIFTER_STEPS_PER_REV);
         }
         else if(inputCommand.valid && inputCommand.latch_open)
         {
@@ -255,7 +259,9 @@ void lifter_update(String msg)
         }
         else if (inputCommand.valid && inputCommand.status_req)
         {
-          // Nothing to do here
+          #if PRINT_DEBUG
+            comm.send("DEBUG Lifter position: " + String(LIFTER_MOTOR.PositionRefCommanded()));
+          #endif
         }
         else if(inputCommand.valid)
         {
@@ -525,9 +531,8 @@ void setup()
 {
     Serial.begin(115200);
 
-    // Sets the input clocking rate. This normal rate is ideal for ClearPath
-    // step and direction applications.
-    MotorMgr.MotorInputClocking(MotorManager::CLOCK_RATE_NORMAL);
+    // Sets the input clocking rate.
+    MotorMgr.MotorInputClocking(MotorManager::CLOCK_RATE_LOW);
     // Sets all motor connectors into step and direction mode.
     MotorMgr.MotorModeSet(MotorManager::MOTOR_ALL, Connector::CPM_MODE_STEP_AND_DIR);
 
