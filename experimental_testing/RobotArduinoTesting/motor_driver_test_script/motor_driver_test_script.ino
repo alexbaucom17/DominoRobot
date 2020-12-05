@@ -9,7 +9,7 @@
 
 #define LIFTER_STEPS_PER_REV 800
 
-#define LIFTER_MAX_VEL 7  // revs/sec
+#define LIFTER_MAX_VEL 7    // revs/sec
 #define LIFTER_MAX_ACC 10  // rev/sec^2
 
 // Max num steps ~51000

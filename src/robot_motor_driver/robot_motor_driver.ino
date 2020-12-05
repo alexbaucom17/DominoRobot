@@ -6,7 +6,7 @@
 // Serial = USB
 // Serial0 + Serial1 = COM ports
 
-#define PRINT_DEBUG true
+#define PRINT_DEBUG false
 #define USE_FAKE_MOTOR false
 
 // Globals
@@ -323,6 +323,7 @@ void lifter_update(String msg)
     else if (activeMode == MODE::NONE)
     {
         LIFTER_MOTOR.MoveStopAbrupt();
+        LIFTER_MOTOR.EnableRequest(false);
     }
 
     // Will send back one of [none, manual, pos, homing, open, close]
