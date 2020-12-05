@@ -59,12 +59,12 @@ class SerialClient:
         return new_msg
 
 def power_on(s):
-    msg = "Power:ON"
+    msg = "base:Power:ON"
     s.send(msg)
     check_response(s)
 
 def power_off(s):
-    msg = "Power:OFF"
+    msg = "base:Power:OFF"
     s.send(msg)
     check_response(s)
 
@@ -72,7 +72,7 @@ def send_vel(s, vel):
     if len(vel) != 3:
         raise ValueError("Velocity should be 3 elements long")
 
-    msg = "{:.3f},{:.3f},{:.3f}".format(vel[0], vel[1], vel[2])
+    msg = "base:{:.3f},{:.3f},{:.3f}".format(vel[0], vel[1], vel[2])
     print("SND: {}".format(msg))
     s.send(msg)
 
@@ -103,6 +103,7 @@ if __name__ == '__main__':
 
     def signal_handler(sig, frame):
         print('Gracefully powering down motors and exiting')
+        send_vel(ser, [0,0,0])
         power_off(ser)
         sys.exit(0)
     signal.signal(signal.SIGINT, signal_handler)
@@ -115,27 +116,30 @@ if __name__ == '__main__':
     cw_spin_vel = [0, 0, -0.2]
     diag_fwd_vel = [0.1, 0.173, 0]
     diag_rev_vel = [-0.1, -0.173, 0]
-    move_time = 3
-    pause_time = 2
+    move_time = 2
+    pause_time = 1
 
     print("Motors on")
     power_on(ser)
-    print("Move forward")
-    timed_move(ser, fwd_vel, move_time, pause_time)
-    print("Move backward")
-    timed_move(ser, bkwd_vel, move_time, pause_time)
-    print("Move left")
-    timed_move(ser, left_vel, move_time, pause_time)
-    print("Move right")
-    timed_move(ser, right_vel, move_time, pause_time)
-    print("Move CCW")
-    timed_move(ser, ccw_spin_vel, move_time, pause_time)
-    print("Move CW")
-    timed_move(ser, cw_spin_vel, move_time, pause_time)
-    print("Move Diag Fwd")
-    timed_move(ser, diag_fwd_vel, move_time, pause_time)
-    print("Move Diag Rev")
-    timed_move(ser, diag_rev_vel, move_time, pause_time)
+    while(True):
+
+        print("Move forward")
+        timed_move(ser, fwd_vel, move_time, pause_time)
+        print("Move backward")
+        timed_move(ser, bkwd_vel, move_time, pause_time)
+        # print("Move left")
+        # timed_move(ser, left_vel, move_time, pause_time)
+        # print("Move right")
+        # timed_move(ser, right_vel, move_time, pause_time)
+        # print("Move CCW")
+        # timed_move(ser, ccw_spin_vel, move_time, pause_time)
+        # print("Move CW")
+        # timed_move(ser, cw_spin_vel, move_time, pause_time)
+        # print("Move Diag Fwd")
+        # timed_move(ser, diag_fwd_vel, move_time, pause_time)
+        # print("Move Diag Rev")
+        # timed_move(ser, diag_rev_vel, move_time, pause_time)
+
     print("Motors off")
     power_off(ser)
 

@@ -16,21 +16,27 @@ class Robot
     Robot();
 
     void run();
+    void runOnce();
+
+    // Used for tests only
+    COMMAND getCurrentCommand() { return curCmd_; };
+    StatusUpdater::Status getStatus() { return statusUpdater_.getStatus(); };
 
   private:
 
     bool checkForCmdComplete(COMMAND cmd);
     bool tryStartNewCmd(COMMAND cmd);
 
+    StatusUpdater statusUpdater_;
+    RobotServer server_;
+    RobotController controller_;
+    TrayController tray_controller_;
+    MarvelmindWrapper mm_wrapper_;
 
-    StatusUpdater statusUpdater;
-    RobotServer server;
-    RobotController controller;
-    TrayController tray_controller;
-    MarvelmindWrapper mm_wrapper;
+    TimeRunningAverage loop_time_averager_;        // Handles keeping average of the loop timing
+    TimeRunningAverage position_time_averager_;    // Handles keeping average of the position update timing
 
-    TimeRunningAverage loop_time_averager;        // Handles keeping average of the loop timing
-    TimeRunningAverage position_time_averager;    // Handles keeping average of the position update timing
+    COMMAND curCmd_;
 };
 
 

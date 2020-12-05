@@ -7,7 +7,9 @@ SerialComms::SerialComms(std::string portName)
   serial_(portName),
   recvInProgress_(false),
   recvIdx_(0),
-  buffer_("")
+  buffer_(""),
+  base_data_(),
+  lift_data_()
 {
     // If we get here, that means serial_ was constructed correctly which means 
     // we have a valid connection
@@ -19,12 +21,37 @@ SerialComms::~SerialComms()
 {
 }
 
-std::string SerialComms::rcv()
+std::string SerialComms::rcv_base()
+{
+    rcv();
+    if(base_data_.empty())
+    {
+        return "";
+    }
+    std::string outdata = base_data_.front();
+    base_data_.pop();
+    return outdata;
+}
+
+std::string SerialComms::rcv_lift()
+{
+    rcv();
+    if(lift_data_.empty())
+    {
+        return "";
+    }
+    std::string outdata = lift_data_.front();
+    lift_data_.pop();
+    return outdata;
+}
+
+
+void SerialComms::rcv()
 {
     if(!connected_)
     {
         PLOGE.printf("Cannot receive if port isn't connected");
-        return "";
+        return;
     }
     
     bool newData = false;
@@ -67,14 +94,27 @@ std::string SerialComms::rcv()
         }
     }
 
-    // If the client is sending a debug message, just log it
+    // Figure out what to do with the message based on the identifier
     if (new_msg.rfind("DEBUG", 0) == 0)
     {
         PLOGI << new_msg;
-        return "";
     }
-
-    return new_msg;
+    else if (new_msg.rfind("base:", 0) == 0)
+    {
+        base_data_.push(new_msg.substr(5, std::string::npos));
+    }
+    else if (new_msg.rfind("lift:", 0) == 0)
+    {
+        lift_data_.push(new_msg.substr(5, std::string::npos));
+    }
+    else if (new_msg.empty())
+    {
+        // Do nothing
+    }
+    else
+    {
+        PLOGE << "Unknown message type, skipping: " << new_msg;
+    }
 }
 
 void SerialComms::send(std::string msg)

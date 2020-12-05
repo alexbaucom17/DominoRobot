@@ -1,8 +1,6 @@
 #ifndef RobotController_h
 #define RobotController_h
 
-#include <chrono>
-
 #include "SmoothTrajectoryGenerator.h"
 #include "StatusUpdater.h"
 #include "serial/SerialComms.h"
@@ -64,17 +62,17 @@ class RobotController
     PVTPoint generateStationaryCommand();
     // Sets up everything to start the trajectory running
     void startTraj();
-    // Reads an incoming message from the motor driver and returns local
-    // velocity if available
-    std::vector<float> readMsgFromMotorDriver();
+    // Reads an incoming message from the motor driver and fills the decoded
+    // velocity in the pointer, if available. Returns true if velocity is filled, false otherwise
+    bool readMsgFromMotorDriver(Velocity* decodedVelocity);
 
     // Member variables
     SmoothTrajectoryGenerator trajGen_;    // Trajectory generator object
     StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
     SerialCommsBase* serial_to_motor_driver_;   // Serial connection to motor driver
-    std::chrono::time_point<std::chrono::steady_clock> prevControlLoopTime_;    // Previous loop time through the cartesian control loop
-    std::chrono::time_point<std::chrono::steady_clock> prevOdomLoopTime_;       // Previous loop time through the odom loop
-    std::chrono::time_point<std::chrono::steady_clock> trajStartTime_;          // Previous loop time when trajectory was started
+    Timer prevControlLoopTimer_;           // Timer for cartesian control loop
+    Timer prevOdomLoopTimer_;              // Timer for odom loop
+    Timer trajStartTimer_;                 // Timer for trajectory
     Point cartPos_;                        // Current cartesian position
     Point goalPos_;                        // Desired goal position
     Velocity cartVel_;                     // Current cartesian velocity
@@ -84,6 +82,8 @@ class RobotController
     RateController controller_rate_;       // Rate limit controller loops
     RateController logging_rate_ ;         // Rate limit logging to file
     bool log_this_cycle_;                  // Trigger for logging this cycle
+    bool fake_perfect_motion_;             // Flag used for testing to enable perfect motion without clearcore
+    Velocity fake_local_cart_vel_;         // Commanded local cartesian velocity used to fake perfect motion
 
     struct TrajectoryTolerances
     {

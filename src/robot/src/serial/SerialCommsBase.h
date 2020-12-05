@@ -16,7 +16,9 @@ class SerialCommsBase
 
     virtual void send(std::string msg);
 
-    virtual std::string rcv();
+    virtual std::string rcv_base();
+
+    virtual std::string rcv_lift();
 
     bool isConnected() {return connected_;};
 

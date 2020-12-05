@@ -2,6 +2,7 @@
 #define SerialComms_h
 
 #include <libserial/SerialPort.h>
+#include <queue>
 
 #include "SerialCommsBase.h"
 
@@ -19,16 +20,22 @@ class SerialComms : public SerialCommsBase
 
     void send(std::string msg) override;
 
-    std::string rcv() override;
+    std::string rcv_base() override;
 
+    std::string rcv_lift() override;
 
   protected:
+
+    void rcv();
 
     LibSerial::SerialPort serial_;;
 
     bool recvInProgress_;
     int recvIdx_;
     std::string buffer_;
+    
+    std::queue<std::string> base_data_;
+    std::queue<std::string> lift_data_;
     
 
 };

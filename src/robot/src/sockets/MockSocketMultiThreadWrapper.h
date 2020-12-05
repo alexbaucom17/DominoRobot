@@ -3,9 +3,9 @@
 
 #include <string>
 #include <queue>
-#include <chrono>
 
 #include "SocketMultiThreadWrapperBase.h"
+#include "utils.h"
 
 class MockSocketMultiThreadWrapper : public SocketMultiThreadWrapperBase
 {
@@ -21,12 +21,14 @@ class MockSocketMultiThreadWrapper : public SocketMultiThreadWrapperBase
     void sendMockData(std::string data);
 
     void purge_data();
+    void set_send_immediate(bool send_immediate) {send_immediate_ = send_immediate;};
 
   private:
     std::queue<std::string> send_data_;
     std::queue<std::string> rcv_data_;
     int ms_until_next_command_;
-    std::chrono::time_point<std::chrono::steady_clock> prev_time_;
+    bool send_immediate_;
+    Timer timer_;
 
 };
 

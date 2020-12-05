@@ -14,7 +14,6 @@ extern libconfig::Config cfg;
 
 // USB devices
 #define CLEARCORE_USB "/dev/clearcore"
-#define LIFTER_DRIVER_USB "/dev/arduino"
 #define MARVELMIND_USB_0 "/dev/marvelmind0" //Marvelminds could show up at any of these three links
 #define MARVELMIND_USB_1 "/dev/marvelmind1"
 #define MARVELMIND_USB_2 "/dev/marvelmind2"

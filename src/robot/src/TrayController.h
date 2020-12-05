@@ -2,6 +2,7 @@
 #define TrayController_h
 
 #include "serial/SerialComms.h"
+#include "utils.h"
 
 class TrayController
 {
@@ -38,6 +39,8 @@ class TrayController
     bool load_complete_;
     int action_step_;
     ACTION cur_action_;
+    RateController controller_rate_;       // Rate limit controller loop
+    Timer action_timer_;
 
     void runStepAndWaitForCompletion(std::string data, std::string debug_print);
     void updateInitialize();

@@ -5,11 +5,12 @@
 
 
 TrayController::TrayController()
-: serial_to_lifter_driver_(SerialCommsFactory::getFactoryInstance()->get_serial_comms(LIFTER_DRIVER_USB)),
+: serial_to_lifter_driver_(SerialCommsFactory::getFactoryInstance()->get_serial_comms(CLEARCORE_USB)),
   action_step_running_(false),
   load_complete_(false),
   action_step_(0),
-  cur_action_(ACTION::NONE)
+  cur_action_(ACTION::NONE),
+  controller_rate_(cfg.lookup("tray.controller_frequency"))
 {
 }
 
@@ -39,12 +40,13 @@ void TrayController::estop()
     cur_action_ = ACTION::NONE;
     if (serial_to_lifter_driver_->isConnected())
     {
-        serial_to_lifter_driver_->send("stop");
+        serial_to_lifter_driver_->send("lift:stop");
     }
 }
 
 void TrayController::update()
 {
+    if (!controller_rate_.ready()) { return; }
     switch (cur_action_)
     {
         case ACTION::INITIALIZE:
@@ -59,7 +61,7 @@ void TrayController::update()
         default:
             // Just to make sure a serial buffer doesn't fill up somewhere
             std::string msg = "";
-            msg = serial_to_lifter_driver_->rcv();
+            msg = serial_to_lifter_driver_->rcv_lift();
             (void) msg;
             break;
     }
@@ -74,19 +76,24 @@ void TrayController::runStepAndWaitForCompletion(std::string data, std::string d
             serial_to_lifter_driver_->send(data);
             action_step_running_ = true;
             PLOGI << debug_print;
+            action_timer_.reset();
         }
     }
     else
     {
+        // Request status and wait for command to complete
         std::string msg = "";
         if (serial_to_lifter_driver_->isConnected())
         {
-            msg = serial_to_lifter_driver_->rcv();
+            serial_to_lifter_driver_->send("lift:status_req");
+            msg = serial_to_lifter_driver_->rcv_lift();
+            //PLOGI << "Checking lift status: " << msg;
         }
-        if(msg == "none")
-        {
+                    // Initial delay for action
+        if(action_timer_.dt_ms() > 1000 && msg == "none") {
             action_step_running_ = false;
             action_step_++;
+            //PLOGI << "Done with lift step";
         }
     }
 }
@@ -103,14 +110,14 @@ void TrayController::updateInitialize()
     // 0 - Close latch
     if(action_step_ == 0)
     {
-        std::string data = "close";
+        std::string data = "lift:close";
         std::string debug = "Closing latch";
         runStepAndWaitForCompletion(data, debug);
     }
     // 1 - Do tray init
     if(action_step_ == 1)
     {
-        std::string data = "home";
+        std::string data = "lift:home";
         std::string debug = "Homing tray";
         runStepAndWaitForCompletion(data, debug);
     }
@@ -118,7 +125,7 @@ void TrayController::updateInitialize()
     if(action_step_ == 2)
     {
         int pos = cfg.lookup("tray.default_pos_steps");
-        std::string data = std::to_string(pos);
+        std::string data = "lift:pos:" + std::to_string(pos);
         std::string debug = "Moving tray to default position";
         runStepAndWaitForCompletion(data, debug);
     }
@@ -144,14 +151,14 @@ void TrayController::updatePlace()
     if(action_step_ == 0)
     {
         int pos = cfg.lookup("tray.place_pos_steps");
-        std::string data = std::to_string(pos);
+        std::string data = "lift:pos:" + std::to_string(pos);
         std::string debug = "Moving tray to placement position";
         runStepAndWaitForCompletion(data, debug);
     }
     // 1 - Open latch
     if(action_step_ == 1)
     {
-        std::string data = "open";
+        std::string data = "lift:open";
         std::string debug = "Opening latch";
         runStepAndWaitForCompletion(data, debug);
     }
@@ -159,14 +166,14 @@ void TrayController::updatePlace()
     if(action_step_ == 2)
     {
         int pos = cfg.lookup("tray.default_pos_steps");
-        std::string data = std::to_string(pos);
+        std::string data = "lift:pos:" + std::to_string(pos);
         std::string debug = "Moving tray to default position";
         runStepAndWaitForCompletion(data, debug);
     }
     // 3 - Close latch
     if(action_step_ == 3)
     {
-        std::string data = "close";
+        std::string data = "lift:close";
         std::string debug = "Closing latch";
         runStepAndWaitForCompletion(data, debug);
     }
@@ -191,7 +198,7 @@ void TrayController::updateLoad()
     if(action_step_ == 0)
     {
         int pos = cfg.lookup("tray.load_pos_steps");
-        std::string data = std::to_string(pos);
+        std::string data = "lift:pos:" + std::to_string(pos);
         std::string debug = "Moving tray to load position";
         runStepAndWaitForCompletion(data, debug);
     }
@@ -209,7 +216,7 @@ void TrayController::updateLoad()
     if(action_step_ == 2)
     {
         int pos = cfg.lookup("tray.default_pos_steps");
-        std::string data = std::to_string(pos);
+        std::string data = "lift:pos:" + std::to_string(pos);
         std::string debug = "Moving tray to default position";
         runStepAndWaitForCompletion(data, debug);
     }

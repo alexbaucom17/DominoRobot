@@ -6,8 +6,9 @@ MockSocketMultiThreadWrapper::MockSocketMultiThreadWrapper()
 : SocketMultiThreadWrapperBase(),
   send_data_(),
   rcv_data_(),
-  ms_until_next_command_(0),
-  prev_time_(std::chrono::steady_clock::now() - std::chrono::seconds(1))
+  ms_until_next_command_(-1),
+  send_immediate_(true),
+  timer_()
 {
 }
 
@@ -30,8 +31,10 @@ std::string MockSocketMultiThreadWrapper::getData()
     if(outdata[1] != '{')
     {
         ms_until_next_command_ = stoi(outdata);
-        prev_time_ = std::chrono::steady_clock::now();
+        timer_.reset();
         PLOGI << "Waiting " << ms_until_next_command_ << " ms to send next command";
+        send_immediate_ = false;
+        outdata = "";
     }
 
     return outdata;
@@ -44,8 +47,7 @@ void MockSocketMultiThreadWrapper::sendData(std::string data)
 
 bool MockSocketMultiThreadWrapper::dataAvailableToRead()
 {
-    int dt = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - prev_time_).count();
-    if(dt > ms_until_next_command_)
+    if(send_immediate_ || timer_.dt_ms() > ms_until_next_command_)
     {
         return !rcv_data_.empty();
     }
