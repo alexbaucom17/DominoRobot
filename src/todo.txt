@@ -1,6 +1,5 @@
 
 Stepper controller:
-- Test updated clearcore lift/controller code
 
 Robot controller:
 
@@ -13,8 +12,9 @@ Robot SW::
     - Might take some more digging/testing - robot thought it was at 1.57 (pi/2), but actual robot was at like 1/3 rotation (so just past 90) whereas robot on gui showed like half rotation (pi) 
 
 Robot HW:
-- Do clearcore calibration for one motor with full load
 - Try to estimate how long the controller batteries will last fully loaded
+    - Powering pi, clearcore, servo, and optoswitch
+- Try to estimate how long robot batteries will last (draw seems to be ~0.3-1 A)
 
 Master:
 - Figure out how to sequence loading between base and robot
