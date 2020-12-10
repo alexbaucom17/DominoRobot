@@ -45,6 +45,7 @@ float MOTOR_REAR_CENTER_FAKE = 0;
 #define LIFTER_MOTOR ConnectorM3
 #define INCREMENTAL_UP_PIN DI7
 #define INCREMENTAL_DOWN_PIN DI6
+#define SERVO_TOGGLE_PIN DI8
 #define LATCH_SERVO_PIN IO0 // Only IO0 does pwm
 #define HOMING_SWITCH_PIN IO4
 
@@ -61,6 +62,7 @@ float MOTOR_REAR_CENTER_FAKE = 0;
 #define LATCH_ACTIVE_MS 1000
 #define LATCH_OPEN_DUTY_CYCLE 50
 #define LATCH_CLOSE_DUTY_CYCLE 200
+#define MANUAL_LATCH_BUTTON_DELAY 200 // Poor man's debounce
 
 // --------------------------------------------------
 //                Helper structs
@@ -122,6 +124,9 @@ struct MotorVelocity
 
 MODE activeMode = MODE::NONE;
 unsigned long prevLatchMillis = millis();
+unsigned long prevLatchManualTriggerMillis = millis();
+bool prev_latch_state_open = false;
+bool prev_button_state = false;
 
 void lifter_setup() 
 {
@@ -137,6 +142,21 @@ void lifter_setup()
     LIFTER_MOTOR.VelMax(LIFTER_MAX_VEL*LIFTER_STEPS_PER_REV);
     LIFTER_MOTOR.AccelMax(LIFTER_MAX_ACC*LIFTER_STEPS_PER_REV);
     LIFTER_MOTOR.EnableRequest(false);
+}
+
+bool checkForLifterButtonFallingEdge(bool button_state) 
+{
+    if (button_state != prev_button_state &&
+        millis() - prevLatchManualTriggerMillis > MANUAL_LATCH_BUTTON_DELAY)
+    {
+        prev_button_state = button_state;
+        prevLatchManualTriggerMillis = millis();
+        if (!button_state)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 
@@ -209,6 +229,13 @@ void lifter_update(String msg)
     // Read inputs for manual mode
     bool vel_up = digitalRead(INCREMENTAL_UP_PIN);
     bool vel_down = digitalRead(INCREMENTAL_DOWN_PIN);
+    bool servo_button_state = digitalRead(SERVO_TOGGLE_PIN);
+
+    bool manaul_servo_toggle = false;
+    if (checkForLifterButtonFallingEdge(servo_button_state))
+    {
+        manaul_servo_toggle = true;
+    }
 
     // For debugging only
     // Serial.print("Vel up: ");
@@ -245,16 +272,20 @@ void lifter_update(String msg)
             LIFTER_MOTOR.EnableRequest(true);
             LIFTER_MOTOR.MoveVelocity(-1*LIFTER_HOMING_VEL*LIFTER_STEPS_PER_REV);
         }
-        else if(inputCommand.valid && inputCommand.latch_open)
+        else if((inputCommand.valid && inputCommand.latch_open) || 
+                 (manaul_servo_toggle && !prev_latch_state_open))
         {
             activeMode = MODE::LATCH_OPEN;
             analogWrite(LATCH_SERVO_PIN, LATCH_OPEN_DUTY_CYCLE);
+            prev_latch_state_open = true;
             prevLatchMillis = millis();
         }
-        else if(inputCommand.valid && inputCommand.latch_close)
+        else if(inputCommand.valid && inputCommand.latch_close || 
+                 (manaul_servo_toggle && prev_latch_state_open))
         {
             activeMode = MODE::LATCH_CLOSE;
             analogWrite(LATCH_SERVO_PIN, LATCH_CLOSE_DUTY_CYCLE);
+            prev_latch_state_open = false;
             prevLatchMillis = millis();
         }
         else if (inputCommand.valid && inputCommand.status_req)
