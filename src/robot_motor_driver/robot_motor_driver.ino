@@ -133,6 +133,7 @@ void lifter_setup()
     
     pinMode(INCREMENTAL_UP_PIN, INPUT);
     pinMode(INCREMENTAL_DOWN_PIN, INPUT);
+    pinMode(SERVO_TOGGLE_PIN, INPUT);
     pinMode(HOMING_SWITCH_PIN, INPUT);
     pinMode(LATCH_SERVO_PIN, OUTPUT);
 
