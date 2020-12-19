@@ -6,6 +6,7 @@ import matplotlib.patches as patches
 import math
 import enum
 import logging
+import os
 
 
 class DominoField:
@@ -23,11 +24,11 @@ class DominoField:
         self.n_tiles_y = 0
         self.tiles = []
 
-        logging.info('Generating domino field from image...',end='',flush=True)
+        logging.info('Generating domino field from image...')
         self._generateField()
         logging.info('done.')
 
-        logging.info('Generating tiles from field...',end='',flush=True)
+        logging.info('Generating tiles from field...')
         self._generateTiles()
         logging.info('done.')
 
@@ -493,7 +494,7 @@ class Plan:
         self.field = DominoField(cfg)
         self.cycles = []
 
-        logging.info('Generating robot actions...',end='',flush=True)
+        logging.info('Generating robot actions...')
         self._generate_all_cycles()
         logging.info('done.')
 
@@ -555,9 +556,7 @@ if __name__ == '__main__':
         ]
     )
 
-    pm = PlanManager(cfg)
-
-    plan = pm.get_plan()
+    plan = Plan(cfg)
 
     plan.field.printStats()
     plan.field.show_image_parsing()

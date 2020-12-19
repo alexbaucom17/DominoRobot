@@ -22,7 +22,7 @@ class Config:
     }
 
     # Specifies which IP address each robot has
-    ip_map = {'robot1': '10.0.0.3'}
+    ip_map = {'robot1': '192.168.131.164'}
     base_station_ip = '10.0.0.100'
 
     # ====== PLAN GENERATION ========
@@ -74,6 +74,7 @@ class Config:
     tile_placement_coarse_offset = np.array([1,1])
     prep_position_distance = 2 # How far out of field boundaries to do robot prep move
     exit_position_distance = 2 # How far out of the field boundaries to move to exit
+    frame_to_robot_offset = np.array([-1, 0])
 
     # Computed - don't change
     field_width = tile_size_x_meters * desired_width/tile_width
