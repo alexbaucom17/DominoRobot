@@ -107,28 +107,31 @@ void TimeRunningAverage::mark_point()
 
 
 Timer::Timer() 
-: clock_(ClockFactory::getFactoryInstance()->get_clock()),
-  prev_time_(clock_->now())
+: prev_time_(ClockFactory::getFactoryInstance()->get_clock()->now())
 { }
 
 void Timer::reset()
 {
-    prev_time_ = clock_->now();
+    ClockWrapperBase* clock = ClockFactory::getFactoryInstance()->get_clock();
+    prev_time_ = clock->now();
 }
 
 int Timer::dt_us()
 {
-    return std::chrono::duration_cast<std::chrono::microseconds>(clock_->now() - prev_time_).count();
+    ClockWrapperBase* clock = ClockFactory::getFactoryInstance()->get_clock();
+    return std::chrono::duration_cast<std::chrono::microseconds>(clock->now() - prev_time_).count();
 }
 
 int Timer::dt_ms()
 {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(clock_->now() - prev_time_).count();
+    ClockWrapperBase* clock = ClockFactory::getFactoryInstance()->get_clock();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(clock->now() - prev_time_).count();
 }
 
 float Timer::dt_s() 
 {
-    return std::chrono::duration_cast<FpSeconds>(clock_->now() - prev_time_).count();
+    ClockWrapperBase* clock = ClockFactory::getFactoryInstance()->get_clock();
+    return std::chrono::duration_cast<FpSeconds>(clock->now() - prev_time_).count();
 }
 
 
@@ -205,12 +208,12 @@ void ClockFactory::build_clock_instance()
 {
     if(mode_ == CLOCK_FACTORY_MODE::STANDARD)
     {
-        PLOGI << "Building STANDARD clock wrapper";
+        //PLOGI << "Building STANDARD clock wrapper";
         clock_instance_ = std::make_unique<ClockWrapper>();
     }
     else if (mode_ == CLOCK_FACTORY_MODE::MOCK)
     {
-        PLOGI << "Building MOCK clock wrapper";
+        //PLOGI << "Building MOCK clock wrapper";
         clock_instance_ = std::make_unique<MockClockWrapper>();
     }
 }

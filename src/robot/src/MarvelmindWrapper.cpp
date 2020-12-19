@@ -68,7 +68,9 @@ std::vector<float> MarvelmindWrapper::getPositions()
 
 MarvelmindWrapper::~MarvelmindWrapper()
 {
-    stopMarvelmindHedge (hedge_);
+    if(ready_){
+        stopMarvelmindHedge (hedge_);
+    }
     destroyMarvelmindHedge (hedge_);
 }
 

@@ -5,7 +5,6 @@ Robot controller:
 
 Robot SW::
 - Figure out how to test position update function
-- Figure out why clock goes bad during test
 - Debug why rotation motion didn't track correctly
     - Looks like clearcore wasn't tracking correctly? Some sort of error in the kinematics is my guess
     - Maybe not - looks like decoded velocity just lags by one iteration, maybe try to fix how that prints?

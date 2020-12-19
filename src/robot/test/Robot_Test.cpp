@@ -15,6 +15,7 @@ TEST_CASE("Robot move", "[Robot]")
     Robot r = Robot();
 
     mock_socket->sendMockData(msg);
+    mock_clock->advance_ms(1);
 
     r.runOnce();
     REQUIRE(r.getCurrentCommand() == COMMAND::MOVE);

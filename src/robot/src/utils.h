@@ -82,7 +82,6 @@ class Timer
     float dt_s();
 
   private:
-    ClockWrapperBase* clock_;
     ClockTimePoint prev_time_;
 };
 

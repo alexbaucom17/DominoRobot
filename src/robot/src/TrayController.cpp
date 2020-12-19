@@ -87,13 +87,11 @@ void TrayController::runStepAndWaitForCompletion(std::string data, std::string d
         {
             serial_to_lifter_driver_->send("lift:status_req");
             msg = serial_to_lifter_driver_->rcv_lift();
-            //PLOGI << "Checking lift status: " << msg;
         }
-                    // Initial delay for action
+        // Initial delay for action
         if(action_timer_.dt_ms() > 1000 && msg == "none") {
             action_step_running_ = false;
             action_step_++;
-            //PLOGI << "Done with lift step";
         }
     }
 }
