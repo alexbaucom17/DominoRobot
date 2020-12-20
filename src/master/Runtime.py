@@ -8,7 +8,7 @@ from Utils import write_file, NonBlockingTimer
 import pprint
 
 # Debugging flags
-OFFLINE_TESTING = False
+OFFLINE_TESTING = True
 SKIP_BASE_STATION = True
 SKIP_MARVELMIND = True
 

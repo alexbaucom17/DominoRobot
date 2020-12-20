@@ -384,7 +384,7 @@ def generate_action_sequence(cfg, tile):
     - Drop off
     - Move to coarse drop off
     - Move to field exit
-    - Move to near loa
+    - Move to near load
     """
 
     # Setup positions

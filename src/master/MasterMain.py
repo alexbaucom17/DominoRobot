@@ -25,20 +25,29 @@ def setup_gui_layout(panel_names, target_names):
         col1 += status_panel(name)
 
     # Middle column with plot and buttons
-    target_element = [ [sg.Text("Target: ")], [sg.Combo(target_names, key='_TARGET_')] ]
+    target_element = [ [sg.Text("Target: ")], [sg.Combo(target_names, key='_TARGET_', default_value='robot1')] ]
 
     actions = [a for a in ActionTypes]
     action_element = [ [sg.Text("Action: ")], [sg.Combo(actions, key='_ACTION_')] ]
 
     data_element = [ [sg.Text('Data:')], [sg.Input(key='_ACTION_DATA_')] ]
 
-    run_button = [[sg.Button('Run Plan', button_color=('white','green'), size=[20,5], pad=(5,30)) ]]
-    estop_button = [[sg.Button('ESTOP', button_color=('white','red'), size=[20,5], pad=(5,30)) ]]
-    manual_button = [[sg.Button('Send Command', button_color=('white','blue'), size=[20,5], pad=(5,30)) ]]
+    plan_button_size = [10,2]
+    plan_button_pad = (2, 10)
+    load_plan_button = sg.Button('Load Plan', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_LOAD_PLAN_') 
+    run_plan_button = sg.Button('Run Plan', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_RUN_PLAN_', disabled=True) 
+    pause_plan_button = sg.Button('Pause Plan', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_PAUSE_PLAN_', disabled=True) 
+    abort_plan_button = sg.Button('Abort Plan', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_ABORT_PLAN_', disabled=True)
+    plan_buttons = [[sg.Column([[load_plan_button], [run_plan_button]]), sg.Column([[pause_plan_button], [abort_plan_button]])]]
 
-    col2 = [[sg.Graph(canvas_size=(600,600), graph_bottom_left=(-5,-5), graph_top_right=(5, 5), key="_GRAPH_", background_color="grey") ],
+    button_size = [20,6]
+    button_pad = (2,10)
+    estop_button = [[sg.Button('ESTOP', button_color=('white','red'), size=button_size, pad=button_pad) ]]
+    manual_button = [[sg.Button('Send Command', button_color=('white','green'), size=button_size, pad=button_pad) ]]
+
+    col2 = [[sg.Graph(canvas_size=(700,700), graph_bottom_left=(-5,-5), graph_top_right=(5, 5), key="_GRAPH_", background_color="grey") ],
             [sg.Column(target_element), sg.Column(action_element), sg.Column(data_element)],
-            [sg.Column(run_button), sg.Column(estop_button), sg.Column(manual_button)]  ]
+            [sg.Column(plan_buttons), sg.Column(estop_button), sg.Column(manual_button)]  ]
 
     # Right hand column with text ouput
     col3 = [[sg.Output(size=(70, 50))]]
@@ -64,6 +73,7 @@ class CmdGui:
         self.window.finalize()
 
         self.viz_figs = {}
+        self.plan_state_str = ""
 
     def close(self):
         self.window.close()
@@ -72,6 +82,9 @@ class CmdGui:
     def update(self):
 
         event, values = self.window.read(timeout=20)
+        # if event != "__TIMEOUT__":
+        #     print(event)
+        #     print(values)
 
         # At exit, check if we should keep marvelmind on
         if event is None or event == 'Exit':
@@ -91,13 +104,50 @@ class CmdGui:
             return 'Action', manual_action
 
         # Pressing the run plan button
-        if event == "Run Plan":
-            return "Run", None
+        if event == "_RUN_PLAN_":
+            clicked_value = sg.popup_yes_no('Ready to start plan?')
+            if clicked_value == "Yes":
+                return "Run", None
+
+        if event == "_LOAD_PLAN_":
+            return "Load", None
+
+        if event == "_PAUSE_PLAN_":
+            return "Pause", None
+
+        if event == "_ABORT_PLAN_":
+            clicked_value = sg.popup_yes_no('Abort plan? This will stop running the plan and lose any progress\n!!!Not Implemented Yet!!!')
+            if clicked_value == "Yes":
+                return "Abort", None
 
         if event == "ESTOP":
             return "ESTOP", None
 
         return None, None
+
+    def update_plan_button_status(self, plan_state):
+        self.plan_state_str = plan_state
+        if plan_state == "None":
+            self.window['_RUN_PLAN_'].update(disabled=True)
+            self.window['_LOAD_PLAN_'].update(disabled=False)
+            self.window['_PAUSE_PLAN_'].update(disabled=True)
+            self.window['_ABORT_PLAN_'].update(disabled=True)
+        elif plan_state == "Loaded":
+            self.window['_RUN_PLAN_'].update(disabled=False)
+            self.window['_LOAD_PLAN_'].update(disabled=False)
+            self.window['_PAUSE_PLAN_'].update(disabled=True)
+            self.window['_ABORT_PLAN_'].update(disabled=True)
+        elif plan_state == "Running":
+            self.window['_RUN_PLAN_'].update(disabled=True)
+            self.window['_LOAD_PLAN_'].update(disabled=True)
+            self.window['_PAUSE_PLAN_'].update(disabled=False)
+            self.window['_ABORT_PLAN_'].update(disabled=False)
+        elif plan_state == "Paused":
+            self.window['_RUN_PLAN_'].update(disabled=False)
+            self.window['_LOAD_PLAN_'].update(disabled=True)
+            self.window['_PAUSE_PLAN_'].update(disabled=True)
+            self.window['_ABORT_PLAN_'].update(disabled=False)
+        
 
     def _parse_manual_action(self, values):
         target = values['_TARGET_']
@@ -149,6 +199,7 @@ class CmdGui:
         if status_dict:
             try:
                 status_str = ""
+                status_str += "Plan state: {}\n".format(self.plan_state_str)
                 for id, data in status_dict.items():
                     status_str += "{}\n".format(id)
                     status_str += "  Cycle: {}\n".format(data["cycle"])
@@ -192,7 +243,7 @@ class CmdGui:
         self.window['_{}_STATUS_'.format(robot_id.upper())].update(status_str)
 
     def _update_robot_viz_position(self, robot_id, x, y, a):
-        if robot_id in self.viz_figs:
+        if robot_id in self.viz_figs.keys():
             for f in self.viz_figs[robot_id]:
                 self.window['_GRAPH_'].DeleteFigure(f)
         
@@ -222,11 +273,10 @@ class Master:
         self.cfg = cfg
         self.plan_cycle_number = 0
         self.plan = None
-        self.load_plan()
         # For debugging, comment out plan lines above
         # self.plan = TestPlan()
         self.cmd_gui = gui_handle
-        self.plan_running = False
+        self.plan_status = "None"
 
         logging.info("Initializing Master")
         self.runtime_manager = RuntimeManager(self.cfg)
@@ -248,6 +298,8 @@ class Master:
                     pickle.dump(self.plan, f)
                     logging.info("Saved plan to {}".format(self.cfg.plan_file))
 
+            self.plan_status = "Loaded"
+
 
     def loop(self):
 
@@ -265,7 +317,7 @@ class Master:
             else:
             
                 # If we have an idle robot, send it the next cycle to execute
-                if self.plan_running and self.runtime_manager.any_idle_bots():
+                if self.plan_status == "Running" and self.runtime_manager.any_idle_bots():
                     logging.info("Sending cycle {} for execution".format(self.plan_cycle_number))
                     next_cycle = self.plan.get_cycle(self.plan_cycle_number)
                     
@@ -294,11 +346,24 @@ class Master:
                 keep_mm_running = True
                 break
             if event == "Run":
-                self.plan_running = True
+                self.plan_status = "Running"
+            if event == "Load":
+                # TODO: Acc option to save/load various plan files
+                # TODO: Enable ability to load new plan even if another plan is already loaded (with proper confirmation)
+                self.load_plan()
+            if event == "Pause":
+                # TODO: Actually pause plan
+                self.plan_status = "Paused"
+            if event == "Abort":
+                # TODO: Acutally abort plan
+                # TODO: Maybe add option to save state of plan when aborted/crashed so it is possible to reload
+                self.plan_status = "None"
             if event == "Action":
                 self.runtime_manager.run_manual_action(manual_action)
             if event == "ESTOP":
                 self.runtime_manager.estop()
+
+            self.cmd_gui.update_plan_button_status(self.plan_status)
 
         # Clean up whenever loop exits
         self.runtime_manager.shutdown(keep_mm_running)
