@@ -8,7 +8,7 @@ from Utils import write_file, NonBlockingTimer
 import pprint
 
 # Debugging flags
-OFFLINE_TESTING = True
+OFFLINE_TESTING = False
 SKIP_BASE_STATION = True
 SKIP_MARVELMIND = True
 
@@ -56,8 +56,12 @@ class RobotInterface:
 
             # Request a status update if needed
             if time.time() - self.last_status_time > self.config.robot_status_wait_time:
-                # Note that this causes a slight delay in the lifter stepper motors
-                self._get_status_from_robot()
+                try:
+                    self._get_status_from_robot()
+                except RuntimeError:
+                    logging.info("Network connection with {} lost".format(self.robot_id))
+                    self.comms_online = False
+                    self.last_status = "{} offline".format(self.robot_id)
 
     def run_action(self, action):
         
@@ -66,29 +70,36 @@ class RobotInterface:
 
         logging.info("Running {} on {}".format(action.action_type, self.robot_id))
 
-        if action.action_type == ActionTypes.MOVE_COARSE:
-            self.robot_client.move(action.x, action.y, action.a)
-        elif action.action_type == ActionTypes.MOVE_REL:
-            self.robot_client.move_rel(action.x, action.y, action.a)
-        elif action.action_type == ActionTypes.MOVE_FINE:
-            self.robot_client.move_fine(action.x, action.y, action.a)
-        elif action.action_type == ActionTypes.NET:
-            status = self.robot_client.net_status()
-            logging.info("Robot {} network status is: {}".format(self.robot_id, status))
-        elif action.action_type == ActionTypes.LOAD:
-            self.robot_client.load()
-        elif action.action_type == ActionTypes.PLACE:
-            self.robot_client.place()
-        elif action.action_type == ActionTypes.TRAY_INIT:
-            self.robot_client.tray_init()
-        elif action.action_type == ActionTypes.LOAD_COMPLETE:
-            self.robot_client.load_complete()
-        elif action.action_type == ActionTypes.ESTOP:
-            self.robot_client.estop()
-        elif action.action_type == ActionTypes.MOVE_CONST_VEL:
-            self.robot_client.move_const_vel(action.vx, action.vy, action.va, action.t)
-        else:
-            logging.info("Unknown action: {}".format(action.action_type))
+        try:
+            if action.action_type == ActionTypes.MOVE_COARSE:
+                self.robot_client.move(action.x, action.y, action.a)
+            elif action.action_type == ActionTypes.MOVE_REL:
+                self.robot_client.move_rel(action.x, action.y, action.a)
+            elif action.action_type == ActionTypes.MOVE_FINE:
+                self.robot_client.move_fine(action.x, action.y, action.a)
+            elif action.action_type == ActionTypes.NET:
+                status = self.robot_client.net_status()
+                logging.info("Robot {} network status is: {}".format(self.robot_id, status))
+            elif action.action_type == ActionTypes.LOAD:
+                self.robot_client.load()
+            elif action.action_type == ActionTypes.PLACE:
+                self.robot_client.place()
+            elif action.action_type == ActionTypes.TRAY_INIT:
+                self.robot_client.tray_init()
+            elif action.action_type == ActionTypes.LOAD_COMPLETE:
+                self.robot_client.load_complete()
+            elif action.action_type == ActionTypes.ESTOP:
+                self.robot_client.estop()
+            elif action.action_type == ActionTypes.MOVE_CONST_VEL:
+                self.robot_client.move_const_vel(action.vx, action.vy, action.va, action.t)
+            elif action.action_type == ActionTypes.CLEAR_ERROR:
+                self.robot_client.clear_error()
+            else:
+                logging.info("Unknown action: {}".format(action.action_type))
+        except RuntimeError:
+            logging.info("Network connection with {} lost".format(self.robot_id))
+            self.comms_online = False
+            self.last_status = "{} offline".format(self.robot_id)
 
 
 
@@ -120,7 +131,12 @@ class BaseStationInterface:
     def update(self):
         # Request a status update if needed
         if time.time() - self.last_status_time > self.config.base_station_status_wait_time:
-            self._get_status_from_base_station()
+            try:
+                self._get_status_from_base_station()
+            except RuntimeError:
+                logging.info("Network connection with base station lost")
+                self.comms_online = False
+                self.last_status = "Base station offline"
 
     def _get_status_from_base_station(self):
         self.last_status = self.client.request_status()
@@ -133,15 +149,21 @@ class BaseStationInterface:
         if not self.comms_online:
             return
 
-        if action.action_type == ActionTypes.ESTOP:
-            self.client.estop()
-        elif action.action_type == ActionTypes.NET:
-            status = self.client.net_status()
-            logging.info("Base station network status is: {}".format(self.robot_id, status))
-        elif action.action_type == ActionTypes.LOAD:
-            self.client.load()
-        else:
-            logging.info("Unknown action: {}".format(action.action_type))
+        try:
+            if action.action_type == ActionTypes.ESTOP:
+                self.client.estop()
+            elif action.action_type == ActionTypes.NET:
+                status = self.client.net_status()
+                logging.info("Base station network status is: {}".format(status))
+            elif action.action_type == ActionTypes.LOAD:
+                self.client.load()
+            else:
+                logging.info("Unknown action: {}".format(action.action_type))
+
+        except RuntimeError:
+            logging.info("Network connection with base station lost")
+            self.comms_online = False
+            self.last_status = "Base station offline"
 
 
 class RuntimeManager:
@@ -219,7 +241,10 @@ class RuntimeManager:
         return self.last_metrics
 
     def update(self):
+
         self._check_initialization_status()
+        if self.get_initialization_status != RuntimeManager.STATUS_FULLY_INITIALIZED:
+            self.initialize()
 
         self.base_station.update()
         for robot in self.robots.values():

@@ -13,10 +13,15 @@ from FieldPlanner import Plan, ActionTypes, Action, MoveAction, TestPlan, MoveCo
 from Runtime import RuntimeManager, OFFLINE_TESTING, SKIP_MARVELMIND
 
 
+STATUS_PANEL_OK_COLOR = "green"
+STATUS_PANEL_BAD_COLOR = "red"
+
+
 def status_panel(name):
     width = 40
     height = 10
-    return [[sg.Text("{} status".format(name))], [sg.Text("{} offline".format(name), size=(width, height), relief=sg.RELIEF_RIDGE, key='_{}_STATUS_'.format(name.upper())) ]]
+    return [[sg.Text("{} status".format(name))], [sg.Text("{} offline".format(name), size=(width, height), \
+        relief=sg.RELIEF_RIDGE, key='_{}_STATUS_'.format(name.upper()), background_color=STATUS_PANEL_BAD_COLOR) ]]
 
 def setup_gui_layout(panel_names, target_names):
     # Left hand column with status panels
@@ -183,19 +188,22 @@ class CmdGui:
 
     def _update_marvelmind_panel(self, status_dict):
         status_str = "Cannot get marvelmind status"
+        color_str = STATUS_PANEL_BAD_COLOR
         if status_dict:
             try:
                 status_str = ""
                 status_str = "Connected devices:\n"
                 for addr, data in status_dict:
                     status_str += "  Address: {} | Sleep: {}\n".format(addr, data['sleep'])
+                color_str = STATUS_PANEL_OK_COLOR
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
 
-        self.window['_MM_STATUS_'].update(status_str)
+        self.window['_MM_STATUS_'].update(status_str, background_color=color_str)
 
     def _update_plan_panel(self, status_dict):
         status_str = "Plan is not running"
+        color_str = STATUS_PANEL_BAD_COLOR
         if status_dict:
             try:
                 status_str = ""
@@ -204,13 +212,15 @@ class CmdGui:
                     status_str += "{}\n".format(id)
                     status_str += "  Cycle: {}\n".format(data["cycle"])
                     status_str += "  Action: {}\n".format(data["action"])
+                color_str = STATUS_PANEL_OK_COLOR
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
 
-        self.window['_PLAN_STATUS_'].update(status_str)
+        self.window['_PLAN_STATUS_'].update(status_str, background_color=color_str)
 
     def _update_base_panel(self, status_dict):
         status_str = "Cannot get base status"
+        color_str = STATUS_PANEL_BAD_COLOR
         if status_dict:
             try:
                 status_str = ""
@@ -218,13 +228,18 @@ class CmdGui:
                     status_dict['sensor_1'],status_dict['sensor_2'],status_dict['sensor_3'],status_dict['sensor_4'])
                 status_str += "Action in Progress: {}\n".format(status_dict['in_progress'])
                 status_str += "Counter: {}\n".format(status_dict['counter'])
+                color_str = STATUS_PANEL_OK_COLOR
             except Exception as e:
-                status_str = "Bad dict: " + str(status_dict)
+                if "offline" in str(status_dict):
+                    status_str = str(status_dict)
+                else:
+                    status_str = "Bad dict: " + str(status_dict)
 
-        self.window['_BASE_STATUS_'].update(status_str)
+        self.window['_BASE_STATUS_'].update(status_str, background_color=color_str)
 
     def _update_robot_panel(self, robot_id, status_dict):
         status_str = "Cannot get {} status".format(robot_id)
+        color_str = STATUS_PANEL_BAD_COLOR
         if status_dict:
             try:
                 status_str = ""
@@ -233,14 +248,19 @@ class CmdGui:
                 status_str += "Controller timing: {} ms\n".format(status_dict['controller_loop_ms'])
                 status_str += "Position timing:   {} ms\n".format(status_dict['position_loop_ms'])
                 status_str += "Motion in progress: {}\n".format(status_dict["in_progress"])
+                status_str += "Has error: {}\n".format(status_dict["error_status"])
                 status_str += "Counter:   {}\n".format(status_dict['counter'])
 
                 # Also update the visualization position
                 self._update_robot_viz_position(robot_id, status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
+                color_str = STATUS_PANEL_OK_COLOR
             except Exception as e:
-                status_str = "Bad dict: " + str(status_dict)
+                if "offline" in str(status_dict):
+                    status_str = str(status_dict)
+                else:
+                    status_str = "Bad dict: " + str(status_dict)
 
-        self.window['_{}_STATUS_'.format(robot_id.upper())].update(status_str)
+        self.window['_{}_STATUS_'.format(robot_id.upper())].update(status_str, background_color=color_str)
 
     def _update_robot_viz_position(self, robot_id, x, y, a):
         if robot_id in self.viz_figs.keys():
@@ -277,11 +297,11 @@ class Master:
         # self.plan = TestPlan()
         self.cmd_gui = gui_handle
         self.plan_status = "None"
+        self.keep_mm_running = False
 
         logging.info("Initializing Master")
         self.runtime_manager = RuntimeManager(self.cfg)
         self.runtime_manager.initialize()
-        self.initialized = False
 
 
     def load_plan(self):
@@ -303,71 +323,64 @@ class Master:
 
     def loop(self):
 
-        keep_mm_running = False
-        while True:
-
-            # Only do some stuff once we are initialized
-            if not self.initialized:
-                if self.runtime_manager.get_initialization_status() != RuntimeManager.STATUS_FULLY_INITIALIZED:
-                    self.runtime_manager.initialize()
-                else:
-                    self.initialized = True
-                    logging.info("Init completed, starting main loop")
-
-            else:
-            
-                # If we have an idle robot, send it the next cycle to execute
-                if self.plan_status == "Running" and self.runtime_manager.any_idle_bots():
-                    logging.info("Sending cycle {} for execution".format(self.plan_cycle_number))
-                    next_cycle = self.plan.get_cycle(self.plan_cycle_number)
-                    
-                    # If we get none, that means we are done with the plan
-                    if next_cycle is None:
-                        self.plan_running = False
-                        self.plan_cycle_number = 0
-                        logging.info("Completed plan!")
-                    else:
-                        self.plan_cycle_number += 1
-                        self.runtime_manager.assign_new_cycle(next_cycle)
-
-                # Run updates for the runtime manager
-                self.runtime_manager.update()
-            
-                # Get metrics and update the gui
-                metrics = self.runtime_manager.get_all_metrics()
-                self.cmd_gui.update_status_panels(metrics)
-
-
-            # Handle any input from gui
-            event, manual_action = self.cmd_gui.update()
-            if event == "Exit":
-                break
-            if event == "ExitMM":
-                keep_mm_running = True
-                break
-            if event == "Run":
-                self.plan_status = "Running"
-            if event == "Load":
-                # TODO: Acc option to save/load various plan files
-                # TODO: Enable ability to load new plan even if another plan is already loaded (with proper confirmation)
-                self.load_plan()
-            if event == "Pause":
-                # TODO: Actually pause plan
-                self.plan_status = "Paused"
-            if event == "Abort":
-                # TODO: Acutally abort plan
-                # TODO: Maybe add option to save state of plan when aborted/crashed so it is possible to reload
-                self.plan_status = "None"
-            if event == "Action":
-                self.runtime_manager.run_manual_action(manual_action)
-            if event == "ESTOP":
-                self.runtime_manager.estop()
-
-            self.cmd_gui.update_plan_button_status(self.plan_status)
+        ready_to_exit = False
+        while not ready_to_exit:
+            self.runtime_manager.update()
+            self.update_plan()
+            ready_to_exit = self.update_gui_and_handle_input()
 
         # Clean up whenever loop exits
-        self.runtime_manager.shutdown(keep_mm_running)
+        self.runtime_manager.shutdown(self.keep_mm_running)
         self.cmd_gui.close()
+
+    def update_plan(self):
+        # If we have an idle robot, send it the next cycle to execute
+        if self.plan_status == "Running" and self.runtime_manager.any_idle_bots():
+            logging.info("Sending cycle {} for execution".format(self.plan_cycle_number))
+            next_cycle = self.plan.get_cycle(self.plan_cycle_number)
+            
+            # If we get none, that means we are done with the plan
+            if next_cycle is None:
+                self.plan_running = False
+                self.plan_cycle_number = 0
+                logging.info("Completed plan!")
+            else:
+                self.plan_cycle_number += 1
+                self.runtime_manager.assign_new_cycle(next_cycle)
+
+    def update_gui_and_handle_input(self):
+        # Handle any input from gui
+        event, manual_action = self.cmd_gui.update()
+        if event == "Exit":
+            return True
+        if event == "ExitMM":
+            self.keep_mm_running = True
+            return True
+        if event == "Run":
+            self.plan_status = "Running"
+        if event == "Load":
+            # TODO: Acc option to save/load various plan files
+            # TODO: Enable ability to load new plan even if another plan is already loaded (with proper confirmation)
+            self.load_plan()
+        if event == "Pause":
+            # TODO: Actually pause plan
+            self.plan_status = "Paused"
+        if event == "Abort":
+            # TODO: Acutally abort plan
+            # TODO: Maybe add option to save state of plan when aborted/crashed so it is possible to reload
+            self.plan_status = "None"
+        if event == "Action":
+            self.runtime_manager.run_manual_action(manual_action)
+        if event == "ESTOP":
+            self.runtime_manager.estop()
+
+        # Get metrics and update the displayed info
+        metrics = self.runtime_manager.get_all_metrics()
+        self.cmd_gui.update_status_panels(metrics)
+        self.cmd_gui.update_plan_button_status(self.plan_status)
+
+        return False
+
 
 
 def configure_logging(path):

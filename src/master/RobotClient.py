@@ -8,7 +8,7 @@ import time
 import logging
 
 PORT = 8123
-NET_TIMEOUT = 5 # seconds
+NET_TIMEOUT = 0.1 # seconds
 START_CHAR = "<"
 END_CHAR = ">"
 
@@ -27,12 +27,16 @@ class TcpClient:
         msg = START_CHAR + msg + END_CHAR
         msg_bytes = msg.encode()
         while totalsent < len(msg):
-            sent = self.socket.send(msg_bytes[totalsent:])
+            sent = 0
+            try:
+                sent = self.socket.send(msg_bytes[totalsent:])
+            except:
+                pass
             if sent == 0:
                 raise RuntimeError("socket connection broken")
             totalsent = totalsent + sent
 
-    def recieve(self, timeout=1, print_debug=True):
+    def recieve(self, timeout=0.1, print_debug=True):
 
         # logging.info("Checking socket ready")
         # socket_ready, _, _ = select.select([self.socket], [], [])
@@ -83,7 +87,7 @@ class ClientBase:
     def __init__(self, ip): 
         self.client = TcpClient(ip, PORT, NET_TIMEOUT)
 
-    def wait_for_server_response(self, timeout=1, print_debug=True):
+    def wait_for_server_response(self, timeout=0.1, print_debug=True):
         """
         Waits for specified time to get a reply from the server
         Returns a dict with the message if one is recieved
@@ -93,7 +97,7 @@ class ClientBase:
         start_time = time.time()
         while time.time() - start_time < timeout:
             try:
-                incoming_msg = self.client.recieve(timeout=0.5, print_debug=print_debug)
+                incoming_msg = self.client.recieve(timeout=0.1, print_debug=print_debug)
             except socket.timeout:
                 break
             if incoming_msg:
@@ -197,6 +201,10 @@ class RobotClient(ClientBase):
         msg = {'type': 'lc'}
         self.send_msg_and_wait_for_ack(msg)
 
+    def clear_error(self):
+        """ Tell robot to clear an existing error """
+        msg = {'type': 'clear_error'}
+        self.send_msg_and_wait_for_ack(msg)
 
 class BaseStationClient(ClientBase):
     
@@ -240,6 +248,9 @@ class MockRobotClient:
 
     def request_status(self):
         return {"in_progress": False, "pos_x": 1, "pos_y": 2, "pos_a": 0}
+    
+    def clear_error(self):
+        pass
 
 class MockBaseStationClient:
     

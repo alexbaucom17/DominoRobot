@@ -292,6 +292,7 @@ class ActionTypes(enum.Enum):
     ESTOP = 8,
     WAIT = 9, # TODO: Make sure this is handled correctly everywhere, probably just in master....
     MOVE_CONST_VEL = 10,
+    CLEAR_ERROR = 11,
 
 class Action:
 
