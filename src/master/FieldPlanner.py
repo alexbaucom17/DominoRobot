@@ -545,7 +545,9 @@ class TestPlan:
 
 if __name__ == '__main__':
 
+    import PySimpleGUI as sg
     import config
+    import pickle
     cfg = config.Config()
 
     logging.basicConfig(
@@ -559,9 +561,18 @@ if __name__ == '__main__':
 
     plan = Plan(cfg)
 
-    plan.field.printStats()
-    plan.field.show_image_parsing()
-    plan.field.render_domino_image_tiles()
-    plan.field.show_tile_ordering()
-    plan.draw_cycle(5)
+    # plan.field.printStats()
+    # plan.field.show_image_parsing()
+    # plan.field.render_domino_image_tiles()
+    # plan.field.show_tile_ordering()
+    # plan.draw_cycle(5)
+
+
+    sg.change_look_and_feel('Dark Blue 3')
+    clicked_value = sg.popup_yes_no('Save plan to file?')
+    if clicked_value == "Yes":
+        fname = sg.popup_get_file("Location to save", save_as=True)
+        with open(fname, 'wb') as f:
+            pickle.dump(plan, f)
+            logging.info("Saved plan to {}".format(fname))
 

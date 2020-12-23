@@ -110,7 +110,7 @@ class ClientBase:
         # Will get here if timeout is reached or decode error happens
         return None
 
-    def send_msg_and_wait_for_ack(self, msg, print_debug=True):
+    def send_msg_and_wait_for_ack(self, msg, print_debug=False):
         """ 
         Sends msg and ensures that the correct ack is returned
         Raises an error if ack is not recieved pr incorrect ack is recieved

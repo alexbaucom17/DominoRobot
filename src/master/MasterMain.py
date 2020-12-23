@@ -9,7 +9,7 @@ import logging
 import PySimpleGUI as sg
 import traceback
 
-from FieldPlanner import Plan, ActionTypes, Action, MoveAction, TestPlan, MoveConstVelAction
+from FieldPlanner import *
 from Runtime import RuntimeManager, OFFLINE_TESTING, SKIP_MARVELMIND
 
 
@@ -39,11 +39,13 @@ def setup_gui_layout(panel_names, target_names):
 
     plan_button_size = [10,2]
     plan_button_pad = (2, 10)
-    load_plan_button = sg.Button('Load Plan', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_LOAD_PLAN_') 
+    plan_file_field = sg.Input(key='_PLAN_FILE_', visible=False, enable_events=True)
+    load_plan_button = sg.FileBrowse(button_text='Load Plan', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, \
+        key='_LOAD_PLAN_') 
     run_plan_button = sg.Button('Run Plan', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_RUN_PLAN_', disabled=True) 
     pause_plan_button = sg.Button('Pause Plan', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_PAUSE_PLAN_', disabled=True) 
     abort_plan_button = sg.Button('Abort Plan', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_ABORT_PLAN_', disabled=True)
-    plan_buttons = [[sg.Column([[load_plan_button], [run_plan_button]]), sg.Column([[pause_plan_button], [abort_plan_button]])]]
+    plan_buttons = [[sg.Column([[plan_file_field, load_plan_button], [run_plan_button]]), sg.Column([[pause_plan_button], [abort_plan_button]])]]
 
     button_size = [20,6]
     button_pad = (2,10)
@@ -114,8 +116,8 @@ class CmdGui:
             if clicked_value == "Yes":
                 return "Run", None
 
-        if event == "_LOAD_PLAN_":
-            return "Load", None
+        if event == "_PLAN_FILE_":
+            return "Load", values["_PLAN_FILE_"]
 
         if event == "_PAUSE_PLAN_":
             return "Pause", None
@@ -212,7 +214,8 @@ class CmdGui:
                     status_str += "{}\n".format(id)
                     status_str += "  Cycle: {}\n".format(data["cycle"])
                     status_str += "  Action: {}\n".format(data["action"])
-                color_str = STATUS_PANEL_OK_COLOR
+                if self.plan_state_str is not "None":
+                    color_str = STATUS_PANEL_OK_COLOR
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
 
@@ -304,22 +307,11 @@ class Master:
         self.runtime_manager.initialize()
 
 
-    def load_plan(self):
-
-        # If we don't already have a plan, load it or generate it
-        if not self.plan:
-            if os.path.exists(self.cfg.plan_file):
-                with open(self.cfg.plan_file, 'rb') as f:
-                    self.plan = pickle.load(f)
-                    logging.info("Loaded plan from {}".format(self.cfg.plan_file))
-            else:
-                self.plan = Plan(self.cfg)
-                with open(self.cfg.plan_file, 'wb') as f:
-                    pickle.dump(self.plan, f)
-                    logging.info("Saved plan to {}".format(self.cfg.plan_file))
-
+    def load_plan(self, plan_file):
+        with open(plan_file, 'rb') as f:
+            self.plan = pickle.load(f)
+            logging.info("Loaded plan from {}".format(plan_file))
             self.plan_status = "Loaded"
-
 
     def loop(self):
 
@@ -350,28 +342,26 @@ class Master:
 
     def update_gui_and_handle_input(self):
         # Handle any input from gui
-        event, manual_action = self.cmd_gui.update()
-        if event == "Exit":
+        event_type, event_data = self.cmd_gui.update()
+        if event_type == "Exit":
             return True
-        if event == "ExitMM":
+        if event_type == "ExitMM":
             self.keep_mm_running = True
             return True
-        if event == "Run":
+        if event_type == "Run":
             self.plan_status = "Running"
-        if event == "Load":
-            # TODO: Acc option to save/load various plan files
-            # TODO: Enable ability to load new plan even if another plan is already loaded (with proper confirmation)
-            self.load_plan()
-        if event == "Pause":
+        if event_type == "Load":
+            self.load_plan(event_data)
+        if event_type == "Pause":
             # TODO: Actually pause plan
             self.plan_status = "Paused"
-        if event == "Abort":
+        if event_type == "Abort":
             # TODO: Acutally abort plan
             # TODO: Maybe add option to save state of plan when aborted/crashed so it is possible to reload
             self.plan_status = "None"
-        if event == "Action":
-            self.runtime_manager.run_manual_action(manual_action)
-        if event == "ESTOP":
+        if event_type == "Action":
+            self.runtime_manager.run_manual_action(event_data)
+        if event_type == "ESTOP":
             self.runtime_manager.estop()
 
         # Get metrics and update the displayed info
