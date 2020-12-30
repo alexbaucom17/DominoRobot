@@ -110,7 +110,7 @@ class StatusUpdater
 
         // Serialize and return string
         std::string msg;
-        serializeJson(doc, msg);
+        serializeJson(root, msg);
         return msg;
       }
     };
