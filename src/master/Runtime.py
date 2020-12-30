@@ -8,7 +8,7 @@ from Utils import write_file, NonBlockingTimer
 import pprint
 
 # Debugging flags
-OFFLINE_TESTING = False
+OFFLINE_TESTING = True
 SKIP_BASE_STATION = True
 SKIP_MARVELMIND = True
 
@@ -240,7 +240,7 @@ class RuntimeManager:
     def get_all_metrics(self):
         return self.last_metrics
 
-    def update(self):
+    def update(self, update_plan_cycles=True):
 
         self._check_initialization_status()
         if self.get_initialization_status != RuntimeManager.STATUS_FULLY_INITIALIZED:
@@ -251,7 +251,8 @@ class RuntimeManager:
             robot.update()
 
         self._update_all_metrics()
-        self._update_cycle_actions()
+        if update_plan_cycles:
+            self._update_cycle_actions()
 
     def run_manual_action(self, manual_action):
         target = manual_action[0]
@@ -259,7 +260,7 @@ class RuntimeManager:
         self._run_action(target, action)
 
     def estop(self):
-        logging.warn("ESTOP")
+        logging.warning("ESTOP")
         self._run_action('base', Action(ActionTypes.ESTOP, 'ESTOP'))
         for robot in self.robots.values():
             robot.run_action(Action(ActionTypes.ESTOP, 'ESTOP'))

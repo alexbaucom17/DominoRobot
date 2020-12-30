@@ -141,12 +141,12 @@ class ClientBase:
         self.client.send(json.dumps(msg,separators=(',',':')), print_debug=print_debug) # Make sure json dump is compact for transmission
         resp = self.wait_for_server_response(expected_msg_type='ack', print_debug=print_debug)
         if not resp:
-            logging.warn('Did not recieve ack')
+            logging.warning('Did not recieve ack')
         else:
             if resp['type'] != 'ack':
-                logging.warn('Expecting return type ack')
+                logging.warning('Expecting return type ack')
             elif resp['data'] != msg['type']:
-                logging.warn('Incorrect ack type')
+                logging.warning('Incorrect ack type')
         
         return resp
 
@@ -168,7 +168,7 @@ class ClientBase:
         self.client.send(json.dumps(msg), print_debug=False)
         resp = self.wait_for_server_response(expected_msg_type='status', print_debug=False)
         if not resp:
-            logging.warn("Did not recieve status response")
+            logging.warning("Did not recieve status response")
             return None
         return resp['data']
 

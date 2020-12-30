@@ -82,12 +82,12 @@ class MarvelmindWrapper:
             for d in self.expected_devices:
                 if d not in self.devices.keys():
                     ready = False
-                    logging.warn("Could not find expected device {}".format(d))
+                    logging.warning("Could not find expected device {}".format(d))
                     continue
 
                 if self.devices[d]['sleep'] is False:
                     ready = False
-                    logging.warn("Device {} is not awake".format(d))
+                    logging.warning("Device {} is not awake".format(d))
                     continue
 
 

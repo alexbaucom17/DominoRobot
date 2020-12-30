@@ -318,7 +318,7 @@ class Master:
 
         ready_to_exit = False
         while not ready_to_exit:
-            self.runtime_manager.update()
+            self.runtime_manager.update(update_plan_cycles=(self.plan_status == "Running"))
             self.update_plan()
             ready_to_exit = self.update_gui_and_handle_input()
 
@@ -351,20 +351,29 @@ class Master:
             self.keep_mm_running = True
             return True
         if event_type == "Run":
+            if self.plan_status == "Paused":
+                logging.info("PLAN RESUMED")
             self.plan_status = "Running"
         if event_type == "Load":
             self.load_plan(event_data)
         if event_type == "Pause":
-            # TODO: Actually pause plan
+            logging.info("PLAN PAUSED")
+            # TODO: Evaluate whether letting current action complete is reasonable way to 'pause'
             self.plan_status = "Paused"
         if event_type == "Abort":
             # TODO: Acutally abort plan
             # TODO: Maybe add option to save state of plan when aborted/crashed so it is possible to reload
+            logging.warning("PLAN ABORTED")
             self.plan_status = "None"
         if event_type == "Action":
             self.runtime_manager.run_manual_action(event_data)
         if event_type == "ESTOP":
             self.runtime_manager.estop()
+            # TODO: This would need to handle restarting from the current action that was aborted with the estop
+            # in order to safely restart the plan. May be worth doing if this proves to be a common issue
+            if self.plan_status == "Running":
+                self.plan_status = "None"
+                logging.warning("Aborting plan due to ESTOP event")
 
         # Get metrics and update the displayed info
         metrics = self.runtime_manager.get_all_metrics()
