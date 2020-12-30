@@ -17,11 +17,10 @@ Robot HW:
 - Figure out and document safe low battery level before recharge is needed
 
 Master:
-- Figure out how to sequence loading between base and robot
 - Hook up pause/stop button
-- Add timer/delay between running steps of plan (seems like robot takes a few cycles to update in progress status)
-- Add unit tests
 - Document use of master gui for testing (installation, setup robot, running etc.)
+- Figure out how to sequence loading between base and robot
+- Add unit tests (?)
 
 Base station HW:
 - Set up electronics

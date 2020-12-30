@@ -191,7 +191,7 @@ class RuntimeManager:
             self.mm_wrapper = MarvelmindWrapper(config)
 
         self.last_metrics = {}
-        self.cycle_tracker = {n: {'action': None, 'cycle': None, 'step': 0} for n in self.robots.keys()}
+        self.cycle_tracker = {n: {'action': None, 'cycle': None, 'step': 0, 'timer': None} for n in self.robots.keys()}
         self.idle_bots = set([n for n in self.robots.keys()])
         self.initialization_timer = None
 
@@ -277,7 +277,6 @@ class RuntimeManager:
             self.cycle_tracker[expected_robot]['step'] = 0
             self.cycle_tracker[expected_robot]['action'] = None
 
-
     def _run_action(self, target, action):
         if target == 'base':
             self.base_station.run_action(action)
@@ -330,17 +329,26 @@ class RuntimeManager:
             if robot_id in ['mm', 'plan', 'base']:
                 continue
 
+            if metric is None or 'in_progress' not in metric.keys():
+                continue
+
             # Figure out if we need to do any updates on the running actions
             tracker_data = self.cycle_tracker[robot_id]
             if tracker_data['cycle'] is not None:
                 start_next_action = False
-                
+
+                # The timer check here is to give a delay for the robot to actually start the action 
+                # before master checks if it is finished
+                action_timer_ready = tracker_data['timer'] is None or tracker_data['timer'].check()
+
                 # If we got a new cycle but haven't started an action yet, start the first action
                 if tracker_data['action'] is None:
                     start_next_action = True
 
                 # If the robot was doing an action and is now finished, start the next one
-                if tracker_data['action'] is not None and not metric['in_progress']:
+                tracker_ok = tracker_data['action'] is not None
+                metric_ok = not metric['in_progress']
+                if tracker_ok and metric_ok and action_timer_ready:
                     tracker_data['step'] += 1
                     start_next_action = True
 
@@ -356,6 +364,7 @@ class RuntimeManager:
                         # If there is a new action to run, start it
                         next_action = tracker_data['cycle'].action_sequence[tracker_data['step']]
                         tracker_data['action'] = next_action
+                        tracker_data['timer'] = NonBlockingTimer(self.config.robot_next_action_wait_time)
                         logging.info("Starting action {} on {}".format(next_action.name, robot_id))
                         self._run_action(robot_id, next_action)
 

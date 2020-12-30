@@ -6,6 +6,7 @@ import select
 import json
 import time
 import logging
+import copy
 
 PORT = 8123
 NET_TIMEOUT = 0.1 # seconds
@@ -86,14 +87,28 @@ class ClientBase:
 
     def __init__(self, ip): 
         self.client = TcpClient(ip, PORT, NET_TIMEOUT)
+        # Queue is used to help handle out of order messages recieved
+        self.incoming_queue = []
 
-    def wait_for_server_response(self, timeout=0.1, print_debug=True):
+    def wait_for_server_response(self, expected_msg_type, timeout=0.1, print_debug=True):
         """
         Waits for specified time to get a reply from the server
-        Returns a dict with the message if one is recieved
-        Returns None if no message is recieved
+        Must set expected_msg_type to a string and this function will return the first message
+        recieved matching that type. Other messages are added to the queue and checked the
+        next time this function is called. If no matching message is recieved before timeout,
+        this function returns None
         """
-          
+
+        # First, check the existing queue to see if the message we are looking for is there
+        for ix in range(len(self.incoming_queue)):
+            # Since type field existence is checked before insertion into queue, it should
+            # always be safe to check the field directly
+            if self.incoming_queue[ix]['type'] == expected_msg_type:
+                msg_copy = copy.copy(self.incoming_queue[ix])
+                del self.incoming_queue[ix]
+                return msg_copy    
+
+        # If there was nothing in the queue matching the expected type, try to recieve a message
         start_time = time.time()
         while time.time() - start_time < timeout:
             try:
@@ -102,7 +117,14 @@ class ClientBase:
                 break
             if incoming_msg:
                 try:
-                    return json.loads(incoming_msg)
+                    new_msg = json.loads(incoming_msg)
+                    if 'type' not in new_msg:
+                        logging.warning("Discarded msg for missing type field: {}".format(new_msg))
+                        continue
+                    elif new_msg['type'] == expected_msg_type:
+                        return new_msg
+                    else:
+                        self.incoming_queue.append(new_msg)
                 except:
                     logging.warning("Error decoding json: {}".format(incoming_msg))
                     break
@@ -110,21 +132,21 @@ class ClientBase:
         # Will get here if timeout is reached or decode error happens
         return None
 
-    def send_msg_and_wait_for_ack(self, msg, print_debug=False):
+    def send_msg_and_wait_for_ack(self, msg, print_debug=False, timeout=0.1):
         """ 
         Sends msg and ensures that the correct ack is returned
-        Raises an error if ack is not recieved pr incorrect ack is recieved
+        Logs a warning if ack is not recieved or incorrect ack is recieved
         """
 
         self.client.send(json.dumps(msg,separators=(',',':')), print_debug=print_debug) # Make sure json dump is compact for transmission
-        resp = self.wait_for_server_response(print_debug=print_debug)
+        resp = self.wait_for_server_response(expected_msg_type='ack', print_debug=print_debug)
         if not resp:
-            logging.info('WARNING: Did not recieve ack')
+            logging.warn('Did not recieve ack')
         else:
             if resp['type'] != 'ack':
-                logging.info('ERROR: Expecting return type ack')
+                logging.warn('Expecting return type ack')
             elif resp['data'] != msg['type']:
-                logging.info('ERROR: Incorrect ack type')
+                logging.warn('Incorrect ack type')
         
         return resp
 
@@ -144,8 +166,11 @@ class ClientBase:
         """ Request status from server """
         msg = {'type' : 'status'}
         self.client.send(json.dumps(msg), print_debug=False)
-        status_dict = self.wait_for_server_response(print_debug=False)
-        return status_dict
+        resp = self.wait_for_server_response(expected_msg_type='status', print_debug=False)
+        if not resp:
+            logging.warn("Did not recieve status response")
+            return None
+        return resp['data']
 
     def estop(self):
         """ Tell client to estop """

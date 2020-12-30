@@ -57,7 +57,7 @@ def setup_gui_layout(panel_names, target_names):
             [sg.Column(plan_buttons), sg.Column(estop_button), sg.Column(manual_button)]  ]
 
     # Right hand column with text ouput
-    col3 = [[sg.Output(size=(70, 50))]]
+    col3 = [[sg.Output(size=(70, 50), echo_stdout_stderr=True)]]
     
     return [[ sg.Column(col1), sg.Column(col2), sg.Column(col3)]]
 
@@ -295,11 +295,12 @@ class Master:
 
         self.cfg = cfg
         self.plan_cycle_number = 0
-        self.plan = None
+        # self.plan = None
+        # self.plan_status = "None"
         # For debugging, comment out plan lines above
-        # self.plan = TestPlan()
+        self.plan = TestPlan()
+        self.plan_status = "Loaded"
         self.cmd_gui = gui_handle
-        self.plan_status = "None"
         self.keep_mm_running = False
 
         logging.info("Initializing Master")
@@ -336,6 +337,7 @@ class Master:
                 self.plan_running = False
                 self.plan_cycle_number = 0
                 logging.info("Completed plan!")
+                self.plan_status = "Loaded"
             else:
                 self.plan_cycle_number += 1
                 self.runtime_manager.assign_new_cycle(next_cycle)
@@ -393,16 +395,13 @@ def configure_logging(path):
 
 
 if __name__ == '__main__':
-    try:
-        # Setup config and gui
-        cfg = config.Config()
-        gui = CmdGui(cfg)
-        # Need to setup gui before logging to ensure that output pane captures logs correctly
-        configure_logging(cfg.log_folder)
-        # Startup master and loop forever
-        m = Master(cfg, gui)
-        m.loop()
-    except Exception:
-        logging.exception("Unhandled exception")
+    # Setup config and gui
+    cfg = config.Config()
+    gui = CmdGui(cfg)
+    # Need to setup gui before logging to ensure that output pane captures logs correctly
+    configure_logging(cfg.log_folder)
+    # Startup master and loop forever
+    m = Master(cfg, gui)
+    m.loop()
 
 

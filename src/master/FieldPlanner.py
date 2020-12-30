@@ -473,13 +473,16 @@ def draw_env(cfg):
 
 class Cycle:
 
-    def __init__(self, id, cfg, robot_id, tile):
+    def __init__(self, id, cfg, robot_id, tile, seq=None):
         self.id = id
         self.cfg = cfg
         self.robot_id = robot_id
         self.tile = tile
         
-        self.action_sequence = generate_action_sequence(cfg, tile)
+        if seq is not None:
+            self.action_sequence = seq
+        else:
+            self.action_sequence = generate_action_sequence(cfg, tile)
         
 
     def draw_cycle(self, ax):
@@ -533,7 +536,7 @@ class TestPlan:
         actions.append(MoveAction(ActionTypes.MOVE_COARSE, "TestMoveCoarse", 0.5, 0.5, 0))
         actions.append(MoveAction(ActionTypes.MOVE_FINE, 'TestMoveFine', 1,1,0))
 
-        self.cycles = [{'id':'robot1', 'action_sequence': actions}]
+        self.cycles = [Cycle(i,None,'robot1','TestCycle{}'.format(i), seq=actions) for i in range(3)]
 
     def get_cycle(self, cycle_num):
         try:
@@ -561,11 +564,11 @@ if __name__ == '__main__':
 
     plan = Plan(cfg)
 
-    # plan.field.printStats()
-    # plan.field.show_image_parsing()
-    # plan.field.render_domino_image_tiles()
-    # plan.field.show_tile_ordering()
-    # plan.draw_cycle(5)
+    plan.field.printStats()
+    plan.field.show_image_parsing()
+    plan.field.render_domino_image_tiles()
+    plan.field.show_tile_ordering()
+    plan.draw_cycle(3)
 
 
     sg.change_look_and_feel('Dark Blue 3')
