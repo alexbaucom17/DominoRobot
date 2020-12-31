@@ -40,7 +40,7 @@ def setup_gui_layout(panel_names, target_names):
     plan_button_pad = (2, 10)
     plan_file_field = sg.Input(key='_PLAN_FILE_', visible=False, enable_events=True)
     load_plan_button = sg.FileBrowse(button_text='Load Plan', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, \
-        key='_LOAD_PLAN_') 
+        key='_LOAD_PLAN_', file_types=(('Robot Plans', ('*.json','*.p')),)) 
     run_plan_button = sg.Button('Run Plan', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_RUN_PLAN_', disabled=True) 
     pause_plan_button = sg.Button('Pause Plan', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_PAUSE_PLAN_', disabled=True) 
     abort_plan_button = sg.Button('Abort Plan', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_ABORT_PLAN_', disabled=True)
@@ -179,22 +179,22 @@ class CmdGui:
 
     def _update_plan_button_status(self, plan_status):
         if plan_status == PlanStatus.NONE or plan_status == PlanStatus.ABORTED:
-            self.window['_RUN_PLAN_'].update(disabled=True)
+            self.window['_RUN_PLAN_'].update(text='Run', disabled=True)
             self.window['_LOAD_PLAN_'].update(disabled=False)
             self.window['_PAUSE_PLAN_'].update(disabled=True)
             self.window['_ABORT_PLAN_'].update(disabled=True)
         elif plan_status == PlanStatus.LOADED or plan_status == PlanStatus.DONE:
-            self.window['_RUN_PLAN_'].update(disabled=False)
+            self.window['_RUN_PLAN_'].update(text='Run', disabled=False)
             self.window['_LOAD_PLAN_'].update(disabled=False)
             self.window['_PAUSE_PLAN_'].update(disabled=True)
             self.window['_ABORT_PLAN_'].update(disabled=True)
         elif plan_status == PlanStatus.RUNNING:
-            self.window['_RUN_PLAN_'].update(disabled=True)
+            self.window['_RUN_PLAN_'].update(text='Run', disabled=True)
             self.window['_LOAD_PLAN_'].update(disabled=True)
             self.window['_PAUSE_PLAN_'].update(disabled=False)
             self.window['_ABORT_PLAN_'].update(disabled=False)
         elif plan_status == PlanStatus.PAUSED:
-            self.window['_RUN_PLAN_'].update(disabled=False)
+            self.window['_RUN_PLAN_'].update(text='Resume', disabled=False)
             self.window['_LOAD_PLAN_'].update(disabled=True)
             self.window['_PAUSE_PLAN_'].update(disabled=True)
             self.window['_ABORT_PLAN_'].update(disabled=False)
@@ -212,14 +212,18 @@ class CmdGui:
                 plan_state_str = "{}".format(status_dict['status']).split('.')[1]
                 status_str += "Plan status: {}\n".format(plan_state_str)
                 status_str += "Plan filename: {}\n".format(status_dict['filename'])
+                status_str += "Plan cycle num: {}\n".format(status_dict['plan_cycle_num'])
+                status_str += "Idle bots: {}\n".format(status_dict['idle_bots'])
                 for id, data in status_dict['robots'].items():
-                    status_str += "{}\n".format(id)
-                    status_str += "  Cycle: {}\n".format(data["cycle"])
-                    status_str += "  Action: {}\n".format(data["action"])
+                    status_str += "{}:\n".format(id)
+                    status_str += "  Cycle id: {}\n".format(data["cycle_id"])
+                    status_str += "  Action id: {}\n".format(data["action_id"])
+                    status_str += "  Action name: {}\n".format(data["action_name"])
                 if plan_state_str != "NONE":
                     color_str = STATUS_PANEL_OK_COLOR
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
+                print(e)
 
         self.window['_PLAN_STATUS_'].update(status_str, background_color=color_str)
 

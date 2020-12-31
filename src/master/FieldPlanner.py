@@ -518,10 +518,20 @@ class Plan:
         self.cycles[cycle_num].draw_cycle(ax)
         plt.show()
 
-    def get_cycle(self, cycle_num):
+    def get_cycle(self, cycle_id):
         try:
-            return self.cycles[cycle_num]
+            return self.cycles[cycle_id]
         except IndexError:
+            return None
+
+    def get_action(self, cycle_id, action_id):
+        cycle = self.get_cycle(cycle_id)
+        if cycle:
+            try:
+                return cycle.action_sequence[action_id]
+            except IndexError:
+                return None
+        else:
             return None
 
 
@@ -542,6 +552,16 @@ class TestPlan:
         try:
             return self.cycles[cycle_num]
         except IndexError:
+            return None
+
+    def get_action(self, cycle_id, action_id):
+        cycle = self.get_cycle(cycle_id)
+        if cycle:
+            try:
+                return cycle.action_sequence[action_id]
+            except IndexError:
+                return None
+        else:
             return None
 
 

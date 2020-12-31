@@ -1,5 +1,5 @@
 import numpy as np
-import os 
+import os
 
 class Config:
 
@@ -10,6 +10,7 @@ class Config:
     config_dir_path = os.path.dirname(os.path.realpath(__file__))
     mm_api_path = os.path.join(root_path, mm_api_relative_path)
     log_folder = os.path.join(root_path, 'log')
+    cycle_state_file = os.path.join(config_dir_path, 'plans', 'cycle_state.json')
 
 
     # ====== ROBOT CONFIG ========

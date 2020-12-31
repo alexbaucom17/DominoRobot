@@ -4,6 +4,8 @@ import enum
 import pprint
 import pickle
 import os
+import json
+import copy
 
 from MarvelMindHandler import MarvelmindWrapper, MockMarvelmindWrapper
 from RobotClient import RobotClient, BaseStationClient, MockRobotClient, MockBaseStationClient
@@ -206,13 +208,13 @@ class RuntimeManager:
         self.idle_bots = set([n for n in self.robots.keys()])
         self.initialization_timer = None
 
-        self.cycle_tracker = {n: {'action': None, 'cycle': None, 'step': 0, 'timer': None} for n in self.robots.keys()}
+        self.cycle_tracker = {n: {'action_id': None, 'cycle_id': None, 'step': 0, 'timer': None} for n in self.robots.keys()}
         self.plan_cycle_number = 0
         self.plan = None
-        self.plan_filename = ""
+        self.plan_path = ""
         self.plan_status = PlanStatus.NONE
         if USE_TEST_PLAN:
-            self.load_plan('')
+            self._load_plan_from_file('')
 
     def initialize(self):
 
@@ -260,7 +262,6 @@ class RuntimeManager:
         return self.last_metrics
 
     def update(self):
-
         self._check_initialization_status()
         if self.get_initialization_status != RuntimeManager.STATUS_FULLY_INITIALIZED:
             self.initialize()
@@ -274,6 +275,7 @@ class RuntimeManager:
         if self.plan_status == PlanStatus.RUNNING:
             self._update_plan()
             self._update_cycle_actions()
+            self._cycle_state_to_file()
 
     def run_manual_action(self, manual_action):
         target = manual_action[0]
@@ -287,16 +289,10 @@ class RuntimeManager:
             robot.run_action(Action(ActionTypes.ESTOP, 'ESTOP'))
 
     def load_plan(self, plan_file):
-        if USE_TEST_PLAN:
-            self.plan = TestPlan()
-            self.plan_status = PlanStatus.LOADED
-            self.plan_filename = "testplan"
+        if plan_file and os.path.basename(plan_file).split('.')[1] == 'json':
+            self._load_cycle_state_from_file(plan_file)
         else:
-            self.plan_filename = os.path.basename(plan_file)
-            with open(plan_file, 'rb') as f:
-                self.plan = pickle.load(f)
-                logging.info("Loaded plan from {}".format(plan_file))
-                self.plan_status = PlanStatus.LOADED
+            self._load_plan_from_file(plan_file)        
 
     def set_plan_status(self, status):
         self.plan_status = status
@@ -304,10 +300,21 @@ class RuntimeManager:
     def get_plan_status(self):
         return self.plan_status
 
+    def _load_plan_from_file(self, plan_file):
+        if USE_TEST_PLAN or plan_file == "testplan":
+            self.plan = TestPlan()
+            self.plan_status = PlanStatus.LOADED
+            self.plan_path = "testplan"
+        else:
+            self.plan_path = plan_file
+            with open(plan_file, 'rb') as f:
+                self.plan = pickle.load(f)
+                logging.info("Loaded plan from {}".format(plan_file))
+                self.plan_status = PlanStatus.LOADED    
+
     def _update_plan(self):
         # If we have an idle robot, send it the next cycle to execute
         if self.plan_status == PlanStatus.RUNNING and self._any_idle_bots():
-            logging.info("Sending cycle {} for execution".format(self.plan_cycle_number))
             next_cycle = self.plan.get_cycle(self.plan_cycle_number)
             
             # If we get none, that means we are done with the plan
@@ -315,22 +322,25 @@ class RuntimeManager:
                 self.plan_cycle_number = 0
                 logging.info("Completed plan!")
                 self.plan_status = PlanStatus.DONE
+                self._erase_cycle_state_file()
             else:
+                logging.info("Sending cycle {} for execution".format(self.plan_cycle_number))
                 self.plan_cycle_number += 1
                 self._assign_new_cycle(next_cycle)
 
     def _any_idle_bots(self):
         return len(self.idle_bots) > 0
 
-    def _assign_new_cycle(self, new_cycle):
-        expected_robot = new_cycle.robot_id
+    def _assign_new_cycle(self, cycle):
+        expected_robot = cycle.robot_id
+        cycle_id = cycle.id
         if expected_robot not in self.idle_bots:
-            raise ValueError("Expected cycle {} to be run with {} but only available robots are {}".format(new_cycle.id, expected_robot, self.idle_bots))
+            raise ValueError("Expected cycle {} to be run with {} but only available robots are {}".format(cycle_id, expected_robot, self.idle_bots))
         else:
-            logging.info("Assigning cycle {} to {}".format(new_cycle.id, expected_robot))
-            self.cycle_tracker[expected_robot]['cycle'] = new_cycle
+            logging.info("Assigning cycle {} to {}".format(cycle_id, expected_robot))
+            self.cycle_tracker[expected_robot]['cycle_id'] = cycle_id
             self.cycle_tracker[expected_robot]['step'] = 0
-            self.cycle_tracker[expected_robot]['action'] = None
+            self.cycle_tracker[expected_robot]['action_id'] = None
 
     def _run_action(self, target, action):
         if target == 'base':
@@ -365,17 +375,20 @@ class RuntimeManager:
     def _get_plan_metrics(self):
         plan_metrics = {}
         plan_metrics['status'] = self.plan_status
-        plan_metrics['filename'] = self.plan_filename
+        plan_metrics['filename'] = os.path.basename(self.plan_path)
+        plan_metrics['plan_cycle_num'] = self.plan_cycle_number
+        plan_metrics['idle_bots'] = list(self.idle_bots)
         robot_metrics = {}
         for id, data in self.cycle_tracker.items():
-            if data['cycle']:
-                robot_metrics[id] = {'cycle': data['cycle'].id}
-            else:
-                robot_metrics[id] = {'cycle': 'None'}
-            if data['action']:
-                robot_metrics[id]['action'] = data['action'].name
-            else:
-                robot_metrics[id]['action'] = 'None'
+            robot_metrics[id] = {}
+            robot_metrics[id] = {'cycle_id': 'None', 'action_name': 'None', 'action_id': 'None'}
+            if data['cycle_id'] is not None:
+                robot_metrics[id]['cycle_id'] = data['cycle_id']                
+            if data['action_id'] is not None:
+                robot_metrics[id]['action_id'] = data['action_id']
+                action = self.plan.get_action(data['cycle_id'], data['action_id'])
+                if action:
+                    robot_metrics[id]['action_name'] = action.name
 
         plan_metrics['robots'] = robot_metrics
         return plan_metrics
@@ -393,7 +406,7 @@ class RuntimeManager:
 
             # Figure out if we need to do any updates on the running actions
             tracker_data = self.cycle_tracker[robot_id]
-            if tracker_data['cycle'] is not None:
+            if tracker_data['cycle_id'] is not None:
                 start_next_action = False
 
                 # The timer check here is to give a delay for the robot to actually start the action 
@@ -401,33 +414,92 @@ class RuntimeManager:
                 action_timer_ready = tracker_data['timer'] is None or tracker_data['timer'].check()
 
                 # If we got a new cycle but haven't started an action yet, start the first action
-                if tracker_data['action'] is None:
+                if tracker_data['action_id'] is None:
                     start_next_action = True
 
                 # If the robot was doing an action and is now finished, start the next one
-                tracker_ok = tracker_data['action'] is not None
-                metric_ok = not metric['in_progress']
-                if tracker_ok and metric_ok and action_timer_ready:
+                action_assigned = tracker_data['action_id'] is not None
+                action_finished = not metric['in_progress']
+                if action_assigned and action_finished and action_timer_ready:
                     tracker_data['step'] += 1
                     start_next_action = True
 
                 if start_next_action:
                     # Check if there is a new action to run for this cycle, if not, end the cycle
-                    if tracker_data['step'] >= len(tracker_data['cycle'].action_sequence):
-                        logging.info("{} finished cycle {}".format(robot_id, tracker_data['cycle'].id))
-                        tracker_data['cycle'] = None
+                    cycle = self.plan.get_cycle(tracker_data['cycle_id'])
+                    logging.info("Cycle action lengh {}".format(len(cycle.action_sequence)))
+                    logging.info("Tracker step: {}".format(tracker_data['step']))
+                    if tracker_data['step'] >= len(cycle.action_sequence):
+                        logging.info("{} finished cycle {}".format(robot_id, cycle.id))
+                        tracker_data['cycle_id'] = None
                         tracker_data['step'] = 0
-                        tracker_data['action'] = None
+                        tracker_data['action_id'] = None
 
                     else:
                         # If there is a new action to run, start it
-                        next_action = tracker_data['cycle'].action_sequence[tracker_data['step']]
-                        tracker_data['action'] = next_action
+                        next_action = cycle.action_sequence[tracker_data['step']]
+                        tracker_data['action_id'] = tracker_data['step'] # TODO: remove one of these since they are basically the same now
                         tracker_data['timer'] = NonBlockingTimer(self.config.robot_next_action_wait_time)
-                        logging.info("Starting action {} on {}".format(next_action.name, robot_id))
+                        logging.info("Starting action {}({}) on {}".format(next_action.name, tracker_data['action_id'], robot_id))
                         self._run_action(robot_id, next_action)
 
         # Update if any robots are idle
         for robot, data in self.cycle_tracker.items():
-            if data['action'] == None and data['cycle'] == None:
+            if data['action_id'] == None and data['cycle_id'] == None:
                 self.idle_bots.add(robot)
+
+    def _cycle_state_to_file(self):
+        if self.plan_status == PlanStatus.RUNNING:
+            # Copy data and prepare to write
+            robot_cycle_states = copy.deepcopy(self.cycle_tracker)
+            for tracker_data in robot_cycle_states.values():
+                del tracker_data['timer']
+
+            data_to_dump = {}
+            data_to_dump['plan_path'] = self.plan_path
+            data_to_dump['plan_cycle_number'] = self.plan_cycle_number
+            data_to_dump['robots'] = robot_cycle_states
+
+            with open(self.config.cycle_state_file, 'w') as f:
+                json.dump(data_to_dump, f)
+
+    def _load_cycle_state_from_file(self, filepath):
+        logging.info("Loading cycle state information from {}".format(filepath))
+        with open(filepath, 'r') as f:
+            loaded_data = json.load(f)
+        
+        # Set the various bits of data from the file
+        self.plan_path = loaded_data['plan_path']
+        self.plan_cycle_number = loaded_data['plan_cycle_number']
+        self.cycle_tracker = loaded_data['robots']
+
+        # Need to handle robot states carefully
+        for robot, data in self.cycle_tracker.items():
+            # Need to re-add timer state
+            data['timer'] = None
+
+            # Need to decrement action id so that the action it was stopped in the middle of will restart correctly
+            if data['action_id'] == 0:
+                data['action_id'] = None
+                data['step'] = 0
+            else:
+                data['action_id'] -= 1
+                data['step'] -= 1
+
+            # Need to remove the robot from the idle list if it was actually doing something at the time it stopped
+            if data['action_id'] is not None or data['cycle_id'] is not None:
+                self.idle_bots.remove(robot)
+        
+        # Reload the plan data and start the status as PAUSED so that it can be resumed
+        self._load_plan_from_file(self.plan_path)
+        self.plan_status = PlanStatus.PAUSED
+
+    def _erase_cycle_state_file(self):
+        fname = self.config.cycle_state_file       
+        if os.path.exists(fname):
+            os.remove(fname)
+
+
+
+        
+
