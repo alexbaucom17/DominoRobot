@@ -10,7 +10,7 @@ class Config:
     config_dir_path = os.path.dirname(os.path.realpath(__file__))
     mm_api_path = os.path.join(root_path, mm_api_relative_path)
     log_folder = os.path.join(root_path, 'log')
-    cycle_state_file = os.path.join(config_dir_path, 'plans', 'cycle_state.json')
+    cycle_state_file = os.path.join(config_dir_path, 'plans', 'previous_plan_state.json')
 
 
     # ====== ROBOT CONFIG ========
@@ -84,4 +84,4 @@ class Config:
     # ====== RUNTIME CONFIGURATION ========
     robot_status_wait_time = 0.5    # How many seconds to wait between status requests for each robot
     base_station_status_wait_time = 1 # How many seconds to wait between status requests for the base station
-    robot_next_action_wait_time = 1.0 # How many seconds to wait before checking if robot is finished with current plan action
+    robot_next_action_wait_time = 2.0 # How many seconds to wait before checking if robot is finished with current plan action

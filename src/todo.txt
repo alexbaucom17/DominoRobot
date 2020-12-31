@@ -4,6 +4,8 @@ Stepper controller:
 Robot controller:
 
 Robot SW::
+- Make estop print a warning to get color
+- Figure out why resuming with small angular motion causes trajectory generation error (might need threshold for when to generate nonzero trajectory)
 - Figure out how to test position update function
 - Debug why rotation motion didn't track correctly
     - Looks like clearcore wasn't tracking correctly? Some sort of error in the kinematics is my guess
@@ -17,7 +19,7 @@ Robot HW:
 - Figure out and document safe low battery level before recharge is needed
 
 Master:
-- Hook up pause/stop button
+- Ensure plan can handle when robot has error and gracefully recover
 - Document use of master gui for testing (installation, setup robot, running etc.)
 - Figure out how to sequence loading between base and robot
 - Add unit tests (?)

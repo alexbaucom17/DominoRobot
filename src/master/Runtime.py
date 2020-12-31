@@ -14,7 +14,7 @@ from Utils import write_file, NonBlockingTimer
 
 # Debugging flags
 # TODO: move these to centralized location like config
-OFFLINE_TESTING = True
+OFFLINE_TESTING = False
 SKIP_BASE_STATION = True
 SKIP_MARVELMIND = True
 USE_TEST_PLAN = True
@@ -208,8 +208,8 @@ class RuntimeManager:
         self.idle_bots = set([n for n in self.robots.keys()])
         self.initialization_timer = None
 
-        self.cycle_tracker = {n: {'action_id': None, 'cycle_id': None, 'step': 0, 'timer': None} for n in self.robots.keys()}
-        self.plan_cycle_number = 0
+        self.cycle_tracker = {n: {'action_id': None, 'cycle_id': None, 'timer': None, 'needs_restart': False} for n in self.robots.keys()}
+        self.next_cycle_number = 0
         self.plan = None
         self.plan_path = ""
         self.plan_status = PlanStatus.NONE
@@ -295,6 +295,16 @@ class RuntimeManager:
             self._load_plan_from_file(plan_file)        
 
     def set_plan_status(self, status):
+        
+        # Clean up if we don't want to save the plan state
+        if status == PlanStatus.ABORTED:
+            self.next_cycle_number = 0
+            self.cycle_tracker = {n: {'action_id': None, 'cycle_id': None, 'timer': None, 'needs_restart': False} for n in self.robots.keys()}
+            self.idle_bots = set([n for n in self.robots.keys()])
+        elif status == PlanStatus.PAUSED:
+            for data in self.cycle_tracker.values():
+                data['needs_restart'] = True
+
         self.plan_status = status
 
     def get_plan_status(self):
@@ -315,17 +325,17 @@ class RuntimeManager:
     def _update_plan(self):
         # If we have an idle robot, send it the next cycle to execute
         if self.plan_status == PlanStatus.RUNNING and self._any_idle_bots():
-            next_cycle = self.plan.get_cycle(self.plan_cycle_number)
+            next_cycle = self.plan.get_cycle(self.next_cycle_number)
             
             # If we get none, that means we are done with the plan
             if next_cycle is None:
-                self.plan_cycle_number = 0
+                self.next_cycle_number = 0
                 logging.info("Completed plan!")
                 self.plan_status = PlanStatus.DONE
                 self._erase_cycle_state_file()
             else:
-                logging.info("Sending cycle {} for execution".format(self.plan_cycle_number))
-                self.plan_cycle_number += 1
+                logging.info("Sending cycle {} for execution".format(self.next_cycle_number))
+                self.next_cycle_number += 1
                 self._assign_new_cycle(next_cycle)
 
     def _any_idle_bots(self):
@@ -339,7 +349,6 @@ class RuntimeManager:
         else:
             logging.info("Assigning cycle {} to {}".format(cycle_id, expected_robot))
             self.cycle_tracker[expected_robot]['cycle_id'] = cycle_id
-            self.cycle_tracker[expected_robot]['step'] = 0
             self.cycle_tracker[expected_robot]['action_id'] = None
 
     def _run_action(self, target, action):
@@ -376,7 +385,7 @@ class RuntimeManager:
         plan_metrics = {}
         plan_metrics['status'] = self.plan_status
         plan_metrics['filename'] = os.path.basename(self.plan_path)
-        plan_metrics['plan_cycle_num'] = self.plan_cycle_number
+        plan_metrics['next_cycle_number'] = self.next_cycle_number
         plan_metrics['idle_bots'] = list(self.idle_bots)
         robot_metrics = {}
         for id, data in self.cycle_tracker.items():
@@ -389,6 +398,7 @@ class RuntimeManager:
                 action = self.plan.get_action(data['cycle_id'], data['action_id'])
                 if action:
                     robot_metrics[id]['action_name'] = action.name
+            robot_metrics[id]['needs_restart'] = data['needs_restart']
 
         plan_metrics['robots'] = robot_metrics
         return plan_metrics
@@ -407,13 +417,22 @@ class RuntimeManager:
             # Figure out if we need to do any updates on the running actions
             tracker_data = self.cycle_tracker[robot_id]
             if tracker_data['cycle_id'] is not None:
-                start_next_action = False
+                cycle = self.plan.get_cycle(tracker_data['cycle_id'])
+
+                # Check if this action needs to be restarted due to being paused or interrupted
+                if tracker_data['needs_restart']:
+                    tracker_data['timer'] = NonBlockingTimer(self.config.robot_next_action_wait_time)
+                    action = cycle.action_sequence[tracker_data['action_id']]
+                    logging.info("Re-starting action {} ({}) on {}".format(tracker_data['action_id'], action.name, robot_id))
+                    self._run_action(robot_id, action)
+                    tracker_data['needs_restart'] = False
 
                 # The timer check here is to give a delay for the robot to actually start the action 
                 # before master checks if it is finished
                 action_timer_ready = tracker_data['timer'] is None or tracker_data['timer'].check()
 
                 # If we got a new cycle but haven't started an action yet, start the first action
+                start_next_action = False
                 if tracker_data['action_id'] is None:
                     start_next_action = True
 
@@ -421,26 +440,24 @@ class RuntimeManager:
                 action_assigned = tracker_data['action_id'] is not None
                 action_finished = not metric['in_progress']
                 if action_assigned and action_finished and action_timer_ready:
-                    tracker_data['step'] += 1
                     start_next_action = True
 
                 if start_next_action:
                     # Check if there is a new action to run for this cycle, if not, end the cycle
-                    cycle = self.plan.get_cycle(tracker_data['cycle_id'])
-                    logging.info("Cycle action lengh {}".format(len(cycle.action_sequence)))
-                    logging.info("Tracker step: {}".format(tracker_data['step']))
-                    if tracker_data['step'] >= len(cycle.action_sequence):
+                    if tracker_data['action_id'] is not None and (tracker_data['action_id'] + 1) >= len(cycle.action_sequence):
                         logging.info("{} finished cycle {}".format(robot_id, cycle.id))
                         tracker_data['cycle_id'] = None
-                        tracker_data['step'] = 0
                         tracker_data['action_id'] = None
 
                     else:
                         # If there is a new action to run, start it
-                        next_action = cycle.action_sequence[tracker_data['step']]
-                        tracker_data['action_id'] = tracker_data['step'] # TODO: remove one of these since they are basically the same now
+                        if tracker_data['action_id'] is None:
+                            tracker_data['action_id'] = 0
+                        else:
+                            tracker_data['action_id'] += 1
                         tracker_data['timer'] = NonBlockingTimer(self.config.robot_next_action_wait_time)
-                        logging.info("Starting action {}({}) on {}".format(next_action.name, tracker_data['action_id'], robot_id))
+                        next_action = cycle.action_sequence[tracker_data['action_id']]
+                        logging.info("Starting action {} ({}) on {}".format(tracker_data['action_id'], next_action.name, robot_id))
                         self._run_action(robot_id, next_action)
 
         # Update if any robots are idle
@@ -457,7 +474,7 @@ class RuntimeManager:
 
             data_to_dump = {}
             data_to_dump['plan_path'] = self.plan_path
-            data_to_dump['plan_cycle_number'] = self.plan_cycle_number
+            data_to_dump['next_cycle_number'] = self.next_cycle_number
             data_to_dump['robots'] = robot_cycle_states
 
             with open(self.config.cycle_state_file, 'w') as f:
@@ -470,21 +487,20 @@ class RuntimeManager:
         
         # Set the various bits of data from the file
         self.plan_path = loaded_data['plan_path']
-        self.plan_cycle_number = loaded_data['plan_cycle_number']
+        self.next_cycle_number = loaded_data['next_cycle_number']
         self.cycle_tracker = loaded_data['robots']
 
         # Need to handle robot states carefully
         for robot, data in self.cycle_tracker.items():
-            # Need to re-add timer state
+            # Need to re-add timer state and tell the controller the action needs to be restarted
             data['timer'] = None
+            data['needs_restart'] = True
 
             # Need to decrement action id so that the action it was stopped in the middle of will restart correctly
-            if data['action_id'] == 0:
-                data['action_id'] = None
-                data['step'] = 0
-            else:
-                data['action_id'] -= 1
-                data['step'] -= 1
+            # if data['action_id'] == 0:
+            #     data['action_id'] = None
+            # elif data['action_id'] is not None:
+            #     data['action_id'] -= 1
 
             # Need to remove the robot from the idle list if it was actually doing something at the time it stopped
             if data['action_id'] is not None or data['cycle_id'] is not None:

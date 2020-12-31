@@ -121,7 +121,7 @@ class CmdGui:
             return "Pause", None
 
         if event == "_ABORT_PLAN_":
-            clicked_value = sg.popup_yes_no('Abort plan? This will stop running the plan and lose any progress\n!!!Not Implemented Yet!!!')
+            clicked_value = sg.popup_yes_no('Abort plan?')
             if clicked_value == "Yes":
                 return "Abort", None
 
@@ -212,18 +212,24 @@ class CmdGui:
                 plan_state_str = "{}".format(status_dict['status']).split('.')[1]
                 status_str += "Plan status: {}\n".format(plan_state_str)
                 status_str += "Plan filename: {}\n".format(status_dict['filename'])
-                status_str += "Plan cycle num: {}\n".format(status_dict['plan_cycle_num'])
+                status_str += "Next cycle num: {}\n".format(status_dict['next_cycle_number'])
                 status_str += "Idle bots: {}\n".format(status_dict['idle_bots'])
                 for id, data in status_dict['robots'].items():
-                    status_str += "{}:\n".format(id)
+                    needs_restart_str = ''
+                    if data['needs_restart']:
+                        needs_restart_str = "(Needs Restart)"
+                    status_str += "{}{}:\n".format(id, needs_restart_str)
                     status_str += "  Cycle id: {}\n".format(data["cycle_id"])
                     status_str += "  Action id: {}\n".format(data["action_id"])
                     status_str += "  Action name: {}\n".format(data["action_name"])
-                if plan_state_str != "NONE":
+                
+                # Set panel coloring based on state
+                if plan_state_str == "PAUSED" or plan_state_str == "ABORTED":
+                    color_str = STATUS_PANEL_BAD_COLOR
+                elif plan_state_str != "NONE":
                     color_str = STATUS_PANEL_OK_COLOR
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
-                print(e)
 
         self.window['_PLAN_STATUS_'].update(status_str, background_color=color_str)
 
@@ -335,22 +341,19 @@ class Master:
                 self.runtime_manager.load_plan(event_data)
         if event_type == "Pause":
             logging.info("PLAN PAUSED")
-            # TODO: Evaluate whether letting current action complete is reasonable way to 'pause'
+            self.runtime_manager.estop()
             self.runtime_manager.set_plan_status(PlanStatus.PAUSED)
         if event_type == "Abort":
-            # TODO: Acutally abort plan
-            # TODO: Maybe add option to save state of plan when aborted/crashed so it is possible to reload
             logging.warning("PLAN ABORTED")
+            self.runtime_manager.estop()
             self.runtime_manager.set_plan_status(PlanStatus.ABORTED)
         if event_type == "Action":
             self.runtime_manager.run_manual_action(event_data)
         if event_type == "ESTOP":
             self.runtime_manager.estop()
-            # TODO: This would need to handle restarting from the current action that was aborted with the estop
-            # in order to safely restart the plan. May be worth doing if this proves to be a common issue
             if self.runtime_manager.get_plan_status() == PlanStatus.RUNNING:
-                self.runtime_manager.set_plan_status(PlanStatus.ABORTED)
-                logging.warning("Aborting plan due to ESTOP event")
+                self.runtime_manager.set_plan_status(PlanStatus.PAUSED)
+                logging.warning("Pausing plan due to ESTOP event")
 
         # Get metrics and update the displayed info
         metrics = self.runtime_manager.get_all_metrics()

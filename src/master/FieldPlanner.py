@@ -545,6 +545,7 @@ class TestPlan:
         actions = []
         actions.append(MoveAction(ActionTypes.MOVE_COARSE, "TestMoveCoarse", 0.5, 0.5, 0))
         actions.append(MoveAction(ActionTypes.MOVE_FINE, 'TestMoveFine', 1,1,0))
+        actions.append(MoveAction(ActionTypes.MOVE_COARSE, 'Blah', 0,0,3.14))
 
         self.cycles = [Cycle(i,None,'robot1','TestCycle{}'.format(i), seq=actions) for i in range(3)]
 
