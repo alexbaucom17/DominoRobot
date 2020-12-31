@@ -1,16 +1,21 @@
 import time
 import logging
+import enum
+import pprint
+import pickle
+import os
 
 from MarvelMindHandler import MarvelmindWrapper, MockMarvelmindWrapper
 from RobotClient import RobotClient, BaseStationClient, MockRobotClient, MockBaseStationClient
-from FieldPlanner import ActionTypes, Action
+from FieldPlanner import ActionTypes, Action, TestPlan
 from Utils import write_file, NonBlockingTimer
-import pprint
 
 # Debugging flags
+# TODO: move these to centralized location like config
 OFFLINE_TESTING = True
 SKIP_BASE_STATION = True
 SKIP_MARVELMIND = True
+USE_TEST_PLAN = True
 
 class RobotInterface:
     def __init__(self, config, robot_id):
@@ -165,6 +170,13 @@ class BaseStationInterface:
             self.comms_online = False
             self.last_status = "Base station offline"
 
+class PlanStatus(enum.Enum):
+    NONE = 0,
+    LOADED = 1,
+    RUNNING = 2,
+    PAUSED = 3,
+    ABORTED = 4,
+    DONE = 5,
 
 class RuntimeManager:
 
@@ -191,9 +203,16 @@ class RuntimeManager:
             self.mm_wrapper = MarvelmindWrapper(config)
 
         self.last_metrics = {}
-        self.cycle_tracker = {n: {'action': None, 'cycle': None, 'step': 0, 'timer': None} for n in self.robots.keys()}
         self.idle_bots = set([n for n in self.robots.keys()])
         self.initialization_timer = None
+
+        self.cycle_tracker = {n: {'action': None, 'cycle': None, 'step': 0, 'timer': None} for n in self.robots.keys()}
+        self.plan_cycle_number = 0
+        self.plan = None
+        self.plan_filename = ""
+        self.plan_status = PlanStatus.NONE
+        if USE_TEST_PLAN:
+            self.load_plan('')
 
     def initialize(self):
 
@@ -240,7 +259,7 @@ class RuntimeManager:
     def get_all_metrics(self):
         return self.last_metrics
 
-    def update(self, update_plan_cycles=True):
+    def update(self):
 
         self._check_initialization_status()
         if self.get_initialization_status != RuntimeManager.STATUS_FULLY_INITIALIZED:
@@ -251,7 +270,9 @@ class RuntimeManager:
             robot.update()
 
         self._update_all_metrics()
-        if update_plan_cycles:
+
+        if self.plan_status == PlanStatus.RUNNING:
+            self._update_plan()
             self._update_cycle_actions()
 
     def run_manual_action(self, manual_action):
@@ -265,10 +286,43 @@ class RuntimeManager:
         for robot in self.robots.values():
             robot.run_action(Action(ActionTypes.ESTOP, 'ESTOP'))
 
-    def any_idle_bots(self):
+    def load_plan(self, plan_file):
+        if USE_TEST_PLAN:
+            self.plan = TestPlan()
+            self.plan_status = PlanStatus.LOADED
+            self.plan_filename = "testplan"
+        else:
+            self.plan_filename = os.path.basename(plan_file)
+            with open(plan_file, 'rb') as f:
+                self.plan = pickle.load(f)
+                logging.info("Loaded plan from {}".format(plan_file))
+                self.plan_status = PlanStatus.LOADED
+
+    def set_plan_status(self, status):
+        self.plan_status = status
+
+    def get_plan_status(self):
+        return self.plan_status
+
+    def _update_plan(self):
+        # If we have an idle robot, send it the next cycle to execute
+        if self.plan_status == PlanStatus.RUNNING and self._any_idle_bots():
+            logging.info("Sending cycle {} for execution".format(self.plan_cycle_number))
+            next_cycle = self.plan.get_cycle(self.plan_cycle_number)
+            
+            # If we get none, that means we are done with the plan
+            if next_cycle is None:
+                self.plan_cycle_number = 0
+                logging.info("Completed plan!")
+                self.plan_status = PlanStatus.DONE
+            else:
+                self.plan_cycle_number += 1
+                self._assign_new_cycle(next_cycle)
+
+    def _any_idle_bots(self):
         return len(self.idle_bots) > 0
 
-    def assign_new_cycle(self, new_cycle):
+    def _assign_new_cycle(self, new_cycle):
         expected_robot = new_cycle.robot_id
         if expected_robot not in self.idle_bots:
             raise ValueError("Expected cycle {} to be run with {} but only available robots are {}".format(new_cycle.id, expected_robot, self.idle_bots))
@@ -310,16 +364,20 @@ class RuntimeManager:
 
     def _get_plan_metrics(self):
         plan_metrics = {}
+        plan_metrics['status'] = self.plan_status
+        plan_metrics['filename'] = self.plan_filename
+        robot_metrics = {}
         for id, data in self.cycle_tracker.items():
             if data['cycle']:
-                plan_metrics[id] = {'cycle': data['cycle'].id}
+                robot_metrics[id] = {'cycle': data['cycle'].id}
             else:
-                plan_metrics[id] = {'cycle': 'None'}
+                robot_metrics[id] = {'cycle': 'None'}
             if data['action']:
-                plan_metrics[id]['action'] = data['action'].name
+                robot_metrics[id]['action'] = data['action'].name
             else:
-                plan_metrics[id]['action'] = 'None'
+                robot_metrics[id]['action'] = 'None'
 
+        plan_metrics['robots'] = robot_metrics
         return plan_metrics
 
     def _update_cycle_actions(self):

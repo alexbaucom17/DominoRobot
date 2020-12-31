@@ -4,13 +4,12 @@ import copy
 import config
 import os
 import sys
-import pickle
 import logging
 import PySimpleGUI as sg
 import traceback
 
 from FieldPlanner import *
-from Runtime import RuntimeManager, OFFLINE_TESTING, SKIP_MARVELMIND
+from Runtime import RuntimeManager, OFFLINE_TESTING, SKIP_MARVELMIND, PlanStatus
 
 
 STATUS_PANEL_OK_COLOR = "green"
@@ -80,7 +79,6 @@ class CmdGui:
         self.window.finalize()
 
         self.viz_figs = {}
-        self.plan_state_str = ""
 
     def close(self):
         self.window.close()
@@ -131,29 +129,17 @@ class CmdGui:
             return "ESTOP", None
 
         return None, None
-
-    def update_plan_button_status(self, plan_state):
-        self.plan_state_str = plan_state
-        if plan_state == "None":
-            self.window['_RUN_PLAN_'].update(disabled=True)
-            self.window['_LOAD_PLAN_'].update(disabled=False)
-            self.window['_PAUSE_PLAN_'].update(disabled=True)
-            self.window['_ABORT_PLAN_'].update(disabled=True)
-        elif plan_state == "Loaded":
-            self.window['_RUN_PLAN_'].update(disabled=False)
-            self.window['_LOAD_PLAN_'].update(disabled=False)
-            self.window['_PAUSE_PLAN_'].update(disabled=True)
-            self.window['_ABORT_PLAN_'].update(disabled=True)
-        elif plan_state == "Running":
-            self.window['_RUN_PLAN_'].update(disabled=True)
-            self.window['_LOAD_PLAN_'].update(disabled=True)
-            self.window['_PAUSE_PLAN_'].update(disabled=False)
-            self.window['_ABORT_PLAN_'].update(disabled=False)
-        elif plan_state == "Paused":
-            self.window['_RUN_PLAN_'].update(disabled=False)
-            self.window['_LOAD_PLAN_'].update(disabled=True)
-            self.window['_PAUSE_PLAN_'].update(disabled=True)
-            self.window['_ABORT_PLAN_'].update(disabled=False)
+    
+    def update_status_panels(self, metrics):
+        for key, metric in metrics.items():
+            if key == 'mm':
+                self._update_marvelmind_panel(metric)
+            elif key == 'plan':
+                self._update_plan_panel(metric)
+            elif key == 'base':
+                self._update_base_panel(metric)
+            else:
+                self._update_robot_panel(key, metric) 
         
 
     def _parse_manual_action(self, values):
@@ -176,18 +162,6 @@ class CmdGui:
 
         return (target, action)
 
-    def update_status_panels(self, metrics):
-        for key, metric in metrics.items():
-            if key == 'mm':
-                self._update_marvelmind_panel(metric)
-            elif key == 'plan':
-                self._update_plan_panel(metric)
-            elif key == 'base':
-                self._update_base_panel(metric)
-            else:
-                self._update_robot_panel(key, metric) 
-
-
     def _update_marvelmind_panel(self, status_dict):
         status_str = "Cannot get marvelmind status"
         color_str = STATUS_PANEL_BAD_COLOR
@@ -203,18 +177,46 @@ class CmdGui:
 
         self.window['_MM_STATUS_'].update(status_str, background_color=color_str)
 
+    def _update_plan_button_status(self, plan_status):
+        if plan_status == PlanStatus.NONE or plan_status == PlanStatus.ABORTED:
+            self.window['_RUN_PLAN_'].update(disabled=True)
+            self.window['_LOAD_PLAN_'].update(disabled=False)
+            self.window['_PAUSE_PLAN_'].update(disabled=True)
+            self.window['_ABORT_PLAN_'].update(disabled=True)
+        elif plan_status == PlanStatus.LOADED or plan_status == PlanStatus.DONE:
+            self.window['_RUN_PLAN_'].update(disabled=False)
+            self.window['_LOAD_PLAN_'].update(disabled=False)
+            self.window['_PAUSE_PLAN_'].update(disabled=True)
+            self.window['_ABORT_PLAN_'].update(disabled=True)
+        elif plan_status == PlanStatus.RUNNING:
+            self.window['_RUN_PLAN_'].update(disabled=True)
+            self.window['_LOAD_PLAN_'].update(disabled=True)
+            self.window['_PAUSE_PLAN_'].update(disabled=False)
+            self.window['_ABORT_PLAN_'].update(disabled=False)
+        elif plan_status == PlanStatus.PAUSED:
+            self.window['_RUN_PLAN_'].update(disabled=False)
+            self.window['_LOAD_PLAN_'].update(disabled=True)
+            self.window['_PAUSE_PLAN_'].update(disabled=True)
+            self.window['_ABORT_PLAN_'].update(disabled=False)
+        else:
+            logging.warning("Unhandled plan statusfor button state: {}".format(plan_status))
+
     def _update_plan_panel(self, status_dict):
         status_str = "Plan is not running"
         color_str = STATUS_PANEL_BAD_COLOR
         if status_dict:
             try:
+                self._update_plan_button_status(status_dict['status'])
+
                 status_str = ""
-                status_str += "Plan state: {}\n".format(self.plan_state_str)
-                for id, data in status_dict.items():
+                plan_state_str = "{}".format(status_dict['status']).split('.')[1]
+                status_str += "Plan status: {}\n".format(plan_state_str)
+                status_str += "Plan filename: {}\n".format(status_dict['filename'])
+                for id, data in status_dict['robots'].items():
                     status_str += "{}\n".format(id)
                     status_str += "  Cycle: {}\n".format(data["cycle"])
                     status_str += "  Action: {}\n".format(data["action"])
-                if self.plan_state_str is not "None":
+                if plan_state_str != "NONE":
                     color_str = STATUS_PANEL_OK_COLOR
             except Exception as e:
                 status_str = "Bad dict: " + str(status_dict)
@@ -294,12 +296,6 @@ class Master:
     def __init__(self, cfg, gui_handle):
 
         self.cfg = cfg
-        self.plan_cycle_number = 0
-        # self.plan = None
-        # self.plan_status = "None"
-        # For debugging, comment out plan lines above
-        self.plan = TestPlan()
-        self.plan_status = "Loaded"
         self.cmd_gui = gui_handle
         self.keep_mm_running = False
 
@@ -307,40 +303,16 @@ class Master:
         self.runtime_manager = RuntimeManager(self.cfg)
         self.runtime_manager.initialize()
 
-
-    def load_plan(self, plan_file):
-        with open(plan_file, 'rb') as f:
-            self.plan = pickle.load(f)
-            logging.info("Loaded plan from {}".format(plan_file))
-            self.plan_status = "Loaded"
-
     def loop(self):
 
         ready_to_exit = False
         while not ready_to_exit:
-            self.runtime_manager.update(update_plan_cycles=(self.plan_status == "Running"))
-            self.update_plan()
+            self.runtime_manager.update()
             ready_to_exit = self.update_gui_and_handle_input()
 
         # Clean up whenever loop exits
         self.runtime_manager.shutdown(self.keep_mm_running)
         self.cmd_gui.close()
-
-    def update_plan(self):
-        # If we have an idle robot, send it the next cycle to execute
-        if self.plan_status == "Running" and self.runtime_manager.any_idle_bots():
-            logging.info("Sending cycle {} for execution".format(self.plan_cycle_number))
-            next_cycle = self.plan.get_cycle(self.plan_cycle_number)
-            
-            # If we get none, that means we are done with the plan
-            if next_cycle is None:
-                self.plan_running = False
-                self.plan_cycle_number = 0
-                logging.info("Completed plan!")
-                self.plan_status = "Loaded"
-            else:
-                self.plan_cycle_number += 1
-                self.runtime_manager.assign_new_cycle(next_cycle)
 
     def update_gui_and_handle_input(self):
         # Handle any input from gui
@@ -351,34 +323,34 @@ class Master:
             self.keep_mm_running = True
             return True
         if event_type == "Run":
-            if self.plan_status == "Paused":
+            if self.runtime_manager.get_plan_status() == PlanStatus.PAUSED:
                 logging.info("PLAN RESUMED")
-            self.plan_status = "Running"
+            self.runtime_manager.set_plan_status(PlanStatus.RUNNING)
         if event_type == "Load":
-            self.load_plan(event_data)
+            if event_data is not '':
+                self.runtime_manager.load_plan(event_data)
         if event_type == "Pause":
             logging.info("PLAN PAUSED")
             # TODO: Evaluate whether letting current action complete is reasonable way to 'pause'
-            self.plan_status = "Paused"
+            self.runtime_manager.set_plan_status(PlanStatus.PAUSED)
         if event_type == "Abort":
             # TODO: Acutally abort plan
             # TODO: Maybe add option to save state of plan when aborted/crashed so it is possible to reload
             logging.warning("PLAN ABORTED")
-            self.plan_status = "None"
+            self.runtime_manager.set_plan_status(PlanStatus.ABORTED)
         if event_type == "Action":
             self.runtime_manager.run_manual_action(event_data)
         if event_type == "ESTOP":
             self.runtime_manager.estop()
             # TODO: This would need to handle restarting from the current action that was aborted with the estop
             # in order to safely restart the plan. May be worth doing if this proves to be a common issue
-            if self.plan_status == "Running":
-                self.plan_status = "None"
+            if self.runtime_manager.get_plan_status() == PlanStatus.RUNNING:
+                self.runtime_manager.set_plan_status(PlanStatus.ABORTED)
                 logging.warning("Aborting plan due to ESTOP event")
 
         # Get metrics and update the displayed info
         metrics = self.runtime_manager.get_all_metrics()
         self.cmd_gui.update_status_panels(metrics)
-        self.cmd_gui.update_plan_button_status(self.plan_status)
 
         return False
 
