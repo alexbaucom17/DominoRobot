@@ -18,4 +18,4 @@ This is a project that uses a robot to setup a field of dominos.
 
 ## Usage
 
-Check out the [README for the master code](#src/master/README.md) for installaiton and usage instructions
+Check out the [README for the master code](src/master/README.md) for installaiton and usage instructions
