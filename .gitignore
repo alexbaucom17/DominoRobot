@@ -9,3 +9,4 @@ __pycache__
 *.so
 marvelmind_SW*
 *previous_plan_state.json
+venv/

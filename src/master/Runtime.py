@@ -17,7 +17,7 @@ from Utils import write_file, NonBlockingTimer
 OFFLINE_TESTING = False
 SKIP_BASE_STATION = True
 SKIP_MARVELMIND = True
-USE_TEST_PLAN = True
+USE_TEST_PLAN = False
 
 class RobotInterface:
     def __init__(self, config, robot_id):
