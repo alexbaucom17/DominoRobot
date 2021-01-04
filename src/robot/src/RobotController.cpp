@@ -92,7 +92,7 @@ void RobotController::startTraj()
 
 void RobotController::estop()
 {
-    PLOGI.printf("Estopping robot control");
+    PLOGW.printf("Estopping robot control");
     PLOGD_(MOTION_LOG_ID) << "\n====ESTOP====\n";
     trajRunning_ = false;
     fineMode_ = true;

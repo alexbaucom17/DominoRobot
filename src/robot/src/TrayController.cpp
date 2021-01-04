@@ -38,6 +38,7 @@ void TrayController::load()
 void TrayController::estop()
 {
     cur_action_ = ACTION::NONE;
+    PLOGW << "Estopping tray control";
     if (serial_to_lifter_driver_->isConnected())
     {
         serial_to_lifter_driver_->send("lift:stop");

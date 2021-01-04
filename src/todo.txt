@@ -4,7 +4,6 @@ Stepper controller:
 Robot controller:
 
 Robot SW::
-- Make estop print a warning to get color
 - Figure out why resuming with small angular motion causes trajectory generation error (might need threshold for when to generate nonzero trajectory)
 - Figure out how to test position update function
 - Debug why rotation motion didn't track correctly
