@@ -18,7 +18,6 @@ Robot HW:
 - Figure out and document safe low battery level before recharge is needed
 
 Master:
-- Ensure plan can handle when robot has error and gracefully recover
 - Figure out how to sequence loading between base and robot
 - Add unit tests (?)
 

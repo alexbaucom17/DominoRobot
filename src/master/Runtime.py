@@ -372,7 +372,15 @@ class RuntimeManager:
         self.last_metrics['base'] = self.base_station.get_last_status()
         self.last_metrics['plan'] = self._get_plan_metrics()
         for robot in self.robots.values():
-            self.last_metrics[str(robot.robot_id)] = robot.get_last_status()
+            robot_metrics = robot.get_last_status()
+            self.last_metrics[str(robot.robot_id)] = robot_metrics
+
+            # Check if the robot has an error that would require pausing the plan
+            robot_has_error = robot_metrics and "error_status" in robot_metrics and robot_metrics["error_status"]
+            plan_running = self.plan_status == PlanStatus.RUNNING
+            if plan_running and robot_has_error:
+                logging.warning("Pausing plan due to error on {}. Please address before proceeding.".format(robot.robot_id))
+                self.set_plan_status(PlanStatus.PAUSED)
 
     def _get_plan_metrics(self):
         plan_metrics = {}
@@ -488,12 +496,6 @@ class RuntimeManager:
             # Need to re-add timer state and tell the controller the action needs to be restarted
             data['timer'] = None
             data['needs_restart'] = True
-
-            # Need to decrement action id so that the action it was stopped in the middle of will restart correctly
-            # if data['action_id'] == 0:
-            #     data['action_id'] = None
-            # elif data['action_id'] is not None:
-            #     data['action_id'] -= 1
 
             # Need to remove the robot from the idle list if it was actually doing something at the time it stopped
             if data['action_id'] is not None or data['cycle_id'] is not None:
