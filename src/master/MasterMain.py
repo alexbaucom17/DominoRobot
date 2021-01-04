@@ -9,12 +9,11 @@ import PySimpleGUI as sg
 import traceback
 
 from FieldPlanner import *
-from Runtime import RuntimeManager, OFFLINE_TESTING, SKIP_MARVELMIND, PlanStatus
+from Runtime import RuntimeManager, PlanStatus
 
 
 STATUS_PANEL_OK_COLOR = "green"
 STATUS_PANEL_BAD_COLOR = "red"
-
 
 def status_panel(name):
     width = 40
@@ -93,7 +92,7 @@ class CmdGui:
 
         # At exit, check if we should keep marvelmind on
         if event is None or event == 'Exit':
-            if OFFLINE_TESTING or SKIP_MARVELMIND:
+            if self.config.OFFLINE_TESTING or self.config.SKIP_MARVELMIND:
                 return 'Exit', None
             else:
                 clicked_value = sg.popup_yes_no('Do you want to keep the Marvelmind running')

@@ -12,13 +12,6 @@ from RobotClient import RobotClient, BaseStationClient, MockRobotClient, MockBas
 from FieldPlanner import ActionTypes, Action, TestPlan
 from Utils import write_file, NonBlockingTimer
 
-# Debugging flags
-# TODO: move these to centralized location like config
-OFFLINE_TESTING = False
-SKIP_BASE_STATION = True
-SKIP_MARVELMIND = True
-USE_TEST_PLAN = False
-
 class RobotInterface:
     def __init__(self, config, robot_id):
         self.comms_online = False
@@ -199,7 +192,7 @@ class RuntimeManager:
         self.component_initialization_status['mm'] = False
         self.component_initialization_status['base_station'] = False
 
-        if OFFLINE_TESTING or SKIP_MARVELMIND:
+        if self.config.OFFLINE_TESTING or self.config.SKIP_MARVELMIND:
             self.mm_wrapper = MockMarvelmindWrapper(config)
         else:
             self.mm_wrapper = MarvelmindWrapper(config)
@@ -213,7 +206,7 @@ class RuntimeManager:
         self.plan = None
         self.plan_path = ""
         self.plan_status = PlanStatus.NONE
-        if USE_TEST_PLAN:
+        if self.config.USE_TEST_PLAN:
             self._load_plan_from_file('')
 
     def initialize(self):
@@ -224,10 +217,10 @@ class RuntimeManager:
         # Handle testing/mock case
         use_base_station_mock = False
         use_robot_mock = False
-        if OFFLINE_TESTING:
+        if self.config.OFFLINE_TESTING:
             use_base_station_mock = True
             use_robot_mock = True
-        if SKIP_BASE_STATION:
+        if self.config.SKIP_BASE_STATION:
             use_base_station_mock = True
         
         # Bring everything online if needed
@@ -311,7 +304,7 @@ class RuntimeManager:
         return self.plan_status
 
     def _load_plan_from_file(self, plan_file):
-        if USE_TEST_PLAN or plan_file == "testplan":
+        if self.config.USE_TEST_PLAN or plan_file == "testplan":
             self.plan = TestPlan()
             self.plan_status = PlanStatus.LOADED
             self.plan_path = "testplan"

@@ -3,6 +3,12 @@ import os
 
 class Config:
 
+    # Debugging flags
+    OFFLINE_TESTING = False
+    SKIP_BASE_STATION = True
+    SKIP_MARVELMIND = True
+    USE_TEST_PLAN = False
+
     # ====== PATHS ========
     
     root_path = "C:\\Users\\alexb\\Data\\Github\\DominoRobot\\"
