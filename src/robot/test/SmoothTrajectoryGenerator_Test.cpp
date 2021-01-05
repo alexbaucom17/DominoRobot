@@ -301,6 +301,39 @@ TEST_CASE("generateSCurve", "[trajectory]")
         }
     }
 
+    SECTION("Very close to zero")
+    {
+        float dist = 0.000001;
+        DynamicLimits limits = {1, 2, 8};
+        SolverParameters solver = {25, 0.8, 0.8, 0.1};
+        SCurveParameters params;
+        bool ok = generateSCurve(dist, limits, solver, &params);
+        REQUIRE(ok == true);
+        REQUIRE(params.v_lim_ == 0);
+        REQUIRE(params.a_lim_ == 0);
+        REQUIRE(params.j_lim_ == 0);
+        for (int i = 0; i < 8; i++)
+        {
+            CHECK(params.switch_points_[i].t_ == 0);
+            CHECK(params.switch_points_[i].p_ == 0);
+            CHECK(params.switch_points_[i].v_ == 0);
+            CHECK(params.switch_points_[i].a_ == 0);
+        }
+    }
+
+    SECTION("Small dist that is above min_dist_limit")
+    {
+        float dist = 0.0001;
+        DynamicLimits limits = {4, 2, 1};
+        SolverParameters solver = {30, 0.8, 0.8, 0.1};
+        SCurveParameters params;
+        bool ok = generateSCurve(dist, limits, solver, &params);
+        REQUIRE(ok == true);
+        REQUIRE(params.v_lim_ < 4);
+        REQUIRE(params.a_lim_ < 2);
+        REQUIRE(params.j_lim_ == 1);
+    }
+
     SECTION("Modified v limit")
     {
         float dist = 10;
@@ -330,19 +363,6 @@ TEST_CASE("generateSCurve", "[trajectory]")
     SECTION("Modified both limits")
     {
         float dist = 10;
-        DynamicLimits limits = {4, 2, 1};
-        SolverParameters solver = {25, 0.8, 0.8, 0.1};
-        SCurveParameters params;
-        bool ok = generateSCurve(dist, limits, solver, &params);
-        REQUIRE(ok == true);
-        REQUIRE(params.v_lim_ < 4);
-        REQUIRE(params.a_lim_ < 2);
-        REQUIRE(params.j_lim_ == 1);
-    }
-
-    SECTION("Very small dist")
-    {
-        float dist = 0.001;
         DynamicLimits limits = {4, 2, 1};
         SolverParameters solver = {25, 0.8, 0.8, 0.1};
         SCurveParameters params;

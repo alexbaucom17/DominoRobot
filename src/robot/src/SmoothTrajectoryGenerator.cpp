@@ -156,12 +156,12 @@ MotionPlanningProblem buildMotionPlanningProblem(Point initialPoint, Point targe
 }
 
 Trajectory generateTrajectory(MotionPlanningProblem problem)
-{
+{   
     // Figure out delta that the trajectory needs to cover
     Eigen::Vector3f deltaPosition = problem.targetPoint_ - problem.initialPoint_;
     deltaPosition(2) = wrap_angle(deltaPosition(2));
 
-    // Being building trajectory object
+    // Begin building trajectory object
     Trajectory traj;
     traj.complete_ = false;
     traj.initialPoint_ = {problem.initialPoint_(0), problem.initialPoint_(1), problem.initialPoint_(2)};
@@ -197,8 +197,9 @@ Trajectory generateTrajectory(MotionPlanningProblem problem)
 
 bool generateSCurve(float dist, DynamicLimits limits, const SolverParameters& solver, SCurveParameters* params)
 {
-    // Handle case where distance is 0
-    if (dist == 0)
+    // Handle case where distance is very close to 0
+    float min_dist = cfg.lookup("trajectory_generation.min_dist_limit"); 
+    if (fabs(dist) < min_dist)
     {
         params->v_lim_ = 0;
         params->a_lim_ = 0;
