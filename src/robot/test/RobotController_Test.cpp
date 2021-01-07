@@ -88,28 +88,31 @@ TEST_CASE("Simple coarse motion", "[RobotController]")
     }
 }
 
-TEST_CASE("Block on error", "[RobotController]")
-{
-    MockSerialComms* mock_serial = build_and_get_mock_serial();
-    StatusUpdater s;
-    RobotController r = RobotController(s);
+// Trajectory generation can no longer trigger an error. Re-enable this test once something can trigger errors again
+// TEST_CASE("Block on error", "[RobotController]")
+// {
+//     MockSerialComms* mock_serial = build_and_get_mock_serial();
+//     StatusUpdater s;
+//     RobotController r = RobotController(s);
 
-    mock_serial->purge_data();
-    r.moveToPosition(0.00001,10000,0.0000001);
-    REQUIRE(s.getErrorStatus() == true);
-    REQUIRE(s.getInProgress() == false);
-    REQUIRE(r.isTrajectoryRunning() == false); 
-    r.update();
-    REQUIRE(mock_serial->mock_rcv_base() != "Power:ON");
-    REQUIRE(s.getErrorStatus() == true);
-    REQUIRE(s.getInProgress() == false);
-    REQUIRE(r.isTrajectoryRunning() == false); 
-}
+//     mock_serial->purge_data();
+//     r.moveToPosition(0.00001,10000,0.0000001);
+//     REQUIRE(s.getErrorStatus() == true);
+//     REQUIRE(s.getInProgress() == false);
+//     REQUIRE(r.isTrajectoryRunning() == false); 
+//     r.update();
+//     REQUIRE(mock_serial->mock_rcv_base() != "Power:ON");
+//     REQUIRE(s.getErrorStatus() == true);
+//     REQUIRE(s.getInProgress() == false);
+//     REQUIRE(r.isTrajectoryRunning() == false); 
+// }
 
 
 void fakeMotionHelper(float x, float y, float a, int max_loops, StatusUpdater& s)
 {
     MockClockWrapper* mock_clock = get_mock_clock();
+    MockSerialComms* mock_serial = build_and_get_mock_serial();
+    mock_serial->purge_data();
     RobotController r = RobotController(s);
     r.moveToPosition(x,y,a);
 
