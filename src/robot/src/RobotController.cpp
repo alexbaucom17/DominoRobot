@@ -55,7 +55,7 @@ void RobotController::moveToPositionRelative(float x, float y, float a)
 {
     fineMode_ = false;
     velOnlyMode_ = false;
-    goalPos_ = Point(cartPos_.x_ + x, cartPos_.y_ + y, cartPos_.a_ + a);
+    goalPos_ = Point(cartPos_.x + x, cartPos_.y + y, cartPos_.a + a);
     bool ok = trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
     if (ok) { startTraj(); }
     else { statusUpdater_.setErrorStatus(); }
@@ -134,9 +134,9 @@ void RobotController::update()
         cmd = generateStationaryCommand();
         
         // Force current velocity to 0
-        cartVel_.vx_ = 0;
-        cartVel_.vy_ = 0;
-        cartVel_.va_ = 0;
+        cartVel_.vx = 0;
+        cartVel_.vy = 0;
+        cartVel_.va = 0;
 
         // Force flags to default values
         fineMode_ = true;
@@ -149,8 +149,8 @@ void RobotController::update()
     computeOdometry();
 
     // Update status 
-    statusUpdater_.updatePosition(cartPos_.x_, cartPos_.y_, cartPos_.a_);
-    statusUpdater_.updateVelocity(cartVel_.vx_, cartVel_.vy_, cartVel_.va_);
+    statusUpdater_.updatePosition(cartPos_.x, cartPos_.y, cartPos_.a);
+    statusUpdater_.updateVelocity(cartVel_.vx, cartVel_.vy, cartVel_.va);
 }
 
 
@@ -163,22 +163,22 @@ PVTPoint RobotController::generateCommandFromTrajectory()
 PVTPoint RobotController::generateStationaryCommand()
 {
     PVTPoint cmd;
-    cmd.position_.x_ = cartPos_.x_;
-    cmd.position_.y_ = cartPos_.y_;
-    cmd.position_.a_ = cartPos_.a_;;
-    cmd.velocity_.vx_ = 0;
-    cmd.velocity_.vy_ = 0;
-    cmd.velocity_.va_ = 0;
-    cmd.time_ = 0; // Doesn't matter, not used
+    cmd.position.x = cartPos_.x;
+    cmd.position.y = cartPos_.y;
+    cmd.position.a = cartPos_.a;;
+    cmd.velocity.vx = 0;
+    cmd.velocity.vy = 0;
+    cmd.velocity.va = 0;
+    cmd.time = 0; // Doesn't matter, not used
     return cmd;
 }
 
 Velocity RobotController::computeControl(PVTPoint cmd)
 {
     // TODO: Convert back to closed loop when ready
-    float x_cmd = cmd.velocity_.vx_;
-    float y_cmd = cmd.velocity_.vy_;
-    float a_cmd = cmd.velocity_.va_;
+    float x_cmd = cmd.velocity.vx;
+    float y_cmd = cmd.velocity.vy;
+    float a_cmd = cmd.velocity.va;
 
     return {x_cmd, y_cmd, a_cmd};
 }
@@ -189,16 +189,16 @@ bool RobotController::checkForCompletedTrajectory(const PVTPoint cmd)
     TrajectoryTolerances tol = fineMode_ ? fine_tolerances_ : coarse_tolerances_;
 
     // Verify our commanded velocity is zero
-    bool zeroCmdVel = cmd.velocity_.nearZero();
+    bool zeroCmdVel = cmd.velocity.nearZero();
 
     // Verify translational and rotational positions are within tolerance
-    Eigen::Vector2f dp = {goalPos_.x_ - cartPos_.x_, goalPos_.y_ - cartPos_.y_};
+    Eigen::Vector2f dp = {goalPos_.x - cartPos_.x, goalPos_.y - cartPos_.y};
     bool pos_in_tolerance = dp.norm() < tol.trans_pos_err &&
-                            fabs(angle_diff(goalPos_.a_, cartPos_.a_)) < tol.ang_pos_err; 
+                            fabs(angle_diff(goalPos_.a, cartPos_.a)) < tol.ang_pos_err; 
 
     // Verify translational and rotational velocities are within tolerance
-    Eigen::Vector2f dv = {cartVel_.vx_, cartVel_.vy_};
-    bool vel_in_tolerance = dv.norm() < tol.trans_vel_err && fabs(cartVel_.va_) < tol.ang_vel_err;
+    Eigen::Vector2f dv = {cartVel_.vx, cartVel_.vy};
+    bool vel_in_tolerance = dv.norm() < tol.trans_vel_err && fabs(cartVel_.va) < tol.ang_vel_err;
 
     // Trajectory is done when we aren't commanding any velocity, our actual velocity is
     // within the correct tolerance and we are either within position tolerance or in velocity
@@ -240,7 +240,7 @@ void RobotController::inputPosition(float x, float y, float a)
 {
     if (fineMode_)
     {
-        Eigen::Vector3f v = {cartVel_.vx_, cartVel_.vy_, cartVel_.va_};
+        Eigen::Vector3f v = {cartVel_.vx, cartVel_.vy, cartVel_.va};
         float total_v = v.norm();
         float vel_update_fraction = 1.0;
         if (total_v > 0)
@@ -249,9 +249,9 @@ void RobotController::inputPosition(float x, float y, float a)
         }
         float update_fraction = mm_update_fraction_ * vel_update_fraction;
         
-        cartPos_.x_ += update_fraction * (x - cartPos_.x_);
-        cartPos_.y_ += update_fraction * (y - cartPos_.y_);
-        cartPos_.a_ += update_fraction * (a - cartPos_.a_);
+        cartPos_.x += update_fraction * (x - cartPos_.x);
+        cartPos_.y += update_fraction * (y - cartPos_.y);
+        cartPos_.a += update_fraction * (a - cartPos_.a);
     }
 }
 
@@ -296,9 +296,9 @@ bool RobotController::readMsgFromMotorDriver(Velocity* decodedVelocity)
             return false;
         }
     }
-    decodedVelocity->vx_ = tmpVelocity[0];
-    decodedVelocity->vy_ = tmpVelocity[1];
-    decodedVelocity->va_ = tmpVelocity[2];
+    decodedVelocity->vx = tmpVelocity[0];
+    decodedVelocity->vy = tmpVelocity[1];
+    decodedVelocity->va = tmpVelocity[2];
     return true;
 }
 
@@ -314,24 +314,24 @@ void RobotController::computeOdometry()
     Velocity zero = {0,0,0};
     if(trajRunning_ || !(local_cart_vel == zero))
     {
-        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_).printf("Decoded velocity: %.3f, %.3f, %.3f", local_cart_vel.vx_, local_cart_vel.vy_, local_cart_vel.va_);
+        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_).printf("Decoded velocity: %.3f, %.3f, %.3f", local_cart_vel.vx, local_cart_vel.vy, local_cart_vel.va);
     }
 
     // Convert local cartesian velocity to global cartesian velocity using the last estimated angle
-    float cA = cos(cartPos_.a_);
-    float sA = sin(cartPos_.a_);
-    cartVel_.vx_ = cA * local_cart_vel.vx_ - sA * local_cart_vel.vy_;
-    cartVel_.vy_ = sA * local_cart_vel.vx_ + cA * local_cart_vel.vy_;
-    cartVel_.va_ = local_cart_vel.va_;
+    float cA = cos(cartPos_.a);
+    float sA = sin(cartPos_.a);
+    cartVel_.vx = cA * local_cart_vel.vx - sA * local_cart_vel.vy;
+    cartVel_.vy = sA * local_cart_vel.vx + cA * local_cart_vel.vy;
+    cartVel_.va = local_cart_vel.va;
 
     // Compute time since last odom update
     float dt = prevOdomLoopTimer_.dt_s();
     prevOdomLoopTimer_.reset();
 
     // Compute new position estimate
-    cartPos_.x_ += cartVel_.vx_ * dt;
-    cartPos_.y_ += cartVel_.vy_ * dt;
-    cartPos_.a_ += cartVel_.va_ * dt;
+    cartPos_.x += cartVel_.vx * dt;
+    cartPos_.y += cartVel_.vy * dt;
+    cartPos_.a += cartVel_.va * dt;
 
 }
 
@@ -339,22 +339,22 @@ void RobotController::setCartVelCommand(Velocity target_vel)
 {
     if (trajRunning_) 
     {
-        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_).printf("CartVelCmd: [vx: %.4f, vy: %.4f, va: %.4f]", target_vel.vx_, target_vel.vy_, target_vel.va_);
+        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_).printf("CartVelCmd: [vx: %.4f, vy: %.4f, va: %.4f]", target_vel.vx, target_vel.vy, target_vel.va);
     }
 
     // Convert input global velocities to local velocities
     Velocity local_cart_vel;
-    float cA = cos(cartPos_.a_);
-    float sA = sin(cartPos_.a_);
-    local_cart_vel.vx_ =  cA * target_vel.vx_ + sA * target_vel.vy_;
-    local_cart_vel.vy_ = -sA * target_vel.vx_ + cA * target_vel.vy_;
-    local_cart_vel.va_ = target_vel.va_;
+    float cA = cos(cartPos_.a);
+    float sA = sin(cartPos_.a);
+    local_cart_vel.vx =  cA * target_vel.vx + sA * target_vel.vy;
+    local_cart_vel.vy = -sA * target_vel.vx + cA * target_vel.vy;
+    local_cart_vel.va = target_vel.va;
 
     char buff[100];
-    sprintf(buff, "base:%.4f,%.4f,%.4f",local_cart_vel.vx_, local_cart_vel.vy_, local_cart_vel.va_);
+    sprintf(buff, "base:%.4f,%.4f,%.4f",local_cart_vel.vx, local_cart_vel.vy, local_cart_vel.va);
     std::string s = buff;
 
-    if (local_cart_vel.vx_ != 0 || local_cart_vel.vy_ != 0 || local_cart_vel.va_ != 0 )
+    if (local_cart_vel.vx != 0 || local_cart_vel.vy != 0 || local_cart_vel.va != 0 )
     {
         PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_).printf("Sending to motors: [%s]", s.c_str());
     }

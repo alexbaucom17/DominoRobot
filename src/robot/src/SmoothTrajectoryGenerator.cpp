@@ -8,46 +8,46 @@ constexpr float d6 = 1/6.0;
 SmoothTrajectoryGenerator::SmoothTrajectoryGenerator()
   : currentTrajectory_()
 {
-    currentTrajectory_.complete_ = false;
-    solver_params_.num_loops_ = cfg.lookup("trajectory_generation.solver_max_loops"); 
-    solver_params_.beta_decay_ = cfg.lookup("trajectory_generation.solver_beta_decay");
-    solver_params_.alpha_decay_ = cfg.lookup("trajectory_generation.solver_alpha_decay");
-    solver_params_.exponent_decay_ = cfg.lookup("trajectory_generation.solver_exponent_decay");
+    currentTrajectory_.complete = false;
+    solver_params_.num_loops = cfg.lookup("trajectory_generation.solver_max_loops"); 
+    solver_params_.beta_decay = cfg.lookup("trajectory_generation.solver_beta_decay");
+    solver_params_.alpha_decay = cfg.lookup("trajectory_generation.solver_alpha_decay");
+    solver_params_.exponent_decay = cfg.lookup("trajectory_generation.solver_exponent_decay");
 }
 
 PVTPoint SmoothTrajectoryGenerator::lookup(float time)
 {
-    std::vector<float> trans_values = lookup_1D(time, currentTrajectory_.trans_params_);
-    std::vector<float> rot_values = lookup_1D(time, currentTrajectory_.rot_params_);    
+    std::vector<float> trans_values = lookup_1D(time, currentTrajectory_.trans_params);
+    std::vector<float> rot_values = lookup_1D(time, currentTrajectory_.rot_params);    
 
     // Map translational trajectory into XY space with direction vector
-    Eigen::Vector2f trans_pos_delta = trans_values[0] * currentTrajectory_.trans_direction_;
-    Eigen::Vector2f trans_vel = trans_values[1] * currentTrajectory_.trans_direction_;
+    Eigen::Vector2f trans_pos_delta = trans_values[0] * currentTrajectory_.trans_direction;
+    Eigen::Vector2f trans_vel = trans_values[1] * currentTrajectory_.trans_direction;
     // Map rotational trajectory into angular space with direction
-    float rot_pos_delta = rot_values[0] * currentTrajectory_.rot_direction_;
-    float rot_vel = rot_values[1] * currentTrajectory_.rot_direction_;
+    float rot_pos_delta = rot_values[0] * currentTrajectory_.rot_direction;
+    float rot_vel = rot_values[1] * currentTrajectory_.rot_direction;
 
     // Build and return pvtpoint
     PVTPoint pvt;
-    pvt.position_ = {currentTrajectory_.initialPoint_.x_ + trans_pos_delta(0),
-                     currentTrajectory_.initialPoint_.y_ + trans_pos_delta(1),
-                     wrap_angle(currentTrajectory_.initialPoint_.a_ + rot_pos_delta) };
-    pvt.velocity_ = {trans_vel(0), trans_vel(1), rot_vel};
-    pvt.time_ = time;
+    pvt.position = {currentTrajectory_.initialPoint.x + trans_pos_delta(0),
+                     currentTrajectory_.initialPoint.y + trans_pos_delta(1),
+                     wrap_angle(currentTrajectory_.initialPoint.a + rot_pos_delta) };
+    pvt.velocity = {trans_vel(0), trans_vel(1), rot_vel};
+    pvt.time = time;
     return pvt;
 }
 
 std::vector<float> lookup_1D(float time, const SCurveParameters& params)
 {
     // Handle time before start of trajectory
-    if(time <= params.switch_points_[0].t_)
+    if(time <= params.switch_points[0].t)
     {
-        return {params.switch_points_[0].p_, params.switch_points_[0].v_};
+        return {params.switch_points[0].p, params.switch_points[0].v};
     }
     // Handle time after the end of the trajectory
-    else if (time > params.switch_points_[7].t_)
+    else if (time > params.switch_points[7].t)
     {
-        return {params.switch_points_[7].p_, params.switch_points_[7].v_};
+        return {params.switch_points[7].p, params.switch_points[7].v};
     }
     // Handle times within the trajectory
     else
@@ -56,9 +56,9 @@ std::vector<float> lookup_1D(float time, const SCurveParameters& params)
         for (int i = 1; i <= 7; i++)
         {
             // Once region is found, compute position and velocity from previous switch point
-            if(params.switch_points_[i-1].t_ < time && time <= params.switch_points_[i].t_)
+            if(params.switch_points[i-1].t < time && time <= params.switch_points[i].t)
             {
-                float dt = time - params.switch_points_[i-1].t_;
+                float dt = time - params.switch_points[i-1].t;
                 std::vector<float> values = computeKinematicsBasedOnRegion(params, i, dt);
                 return {values[2], values[1]};
             }
@@ -86,7 +86,7 @@ bool SmoothTrajectoryGenerator::generatePointToPointTrajectory(Point initialPoin
     PLOGI << currentTrajectory_.toString();
     PLOGD_(MOTION_LOG_ID) << currentTrajectory_.toString();
 
-    return currentTrajectory_.complete_;
+    return currentTrajectory_.complete;
 }
 
 // TODO Implement a more accurate version of this if needed
@@ -106,9 +106,9 @@ bool SmoothTrajectoryGenerator::generateConstVelTrajectory(Point initialPoint, V
     // This will undershoot the target velocity because we aren't consider accel/jerk here so the 
     // solver will not quite reach this velocity - especially if the move time specified is small.
     Point targetPoint;
-    targetPoint.x_ = initialPoint.x_ + velocity.vx_ * moveTime;
-    targetPoint.y_ = initialPoint.y_ + velocity.vy_ * moveTime;
-    targetPoint.a_ = initialPoint.a_ + velocity.va_ * moveTime;
+    targetPoint.x = initialPoint.x + velocity.vx * moveTime;
+    targetPoint.y = initialPoint.y + velocity.vy * moveTime;
+    targetPoint.a = initialPoint.a + velocity.va * moveTime;
 
     MotionPlanningProblem mpp = buildMotionPlanningProblem(initialPoint, targetPoint, fineMode, solver_params_);
     currentTrajectory_ = generateTrajectory(mpp);
@@ -116,14 +116,14 @@ bool SmoothTrajectoryGenerator::generateConstVelTrajectory(Point initialPoint, V
     PLOGI << currentTrajectory_.toString();
     PLOGD_(MOTION_LOG_ID) << currentTrajectory_.toString();
 
-    return currentTrajectory_.complete_;
+    return currentTrajectory_.complete;
 }
 
 MotionPlanningProblem buildMotionPlanningProblem(Point initialPoint, Point targetPoint, bool fineMode, const SolverParameters& solver)
 {
     MotionPlanningProblem mpp;
-    mpp.initialPoint_ = {initialPoint.x_, initialPoint.y_, initialPoint.a_};
-    mpp.targetPoint_ = {targetPoint.x_, targetPoint.y_, targetPoint.a_};
+    mpp.initialPoint = {initialPoint.x, initialPoint.y, initialPoint.a};
+    mpp.targetPoint = {targetPoint.x, targetPoint.y, targetPoint.a};
 
     DynamicLimits translationalLimits;
     DynamicLimits rotationalLimits;
@@ -148,9 +148,9 @@ MotionPlanningProblem buildMotionPlanningProblem(Point initialPoint, Point targe
 
     // This scaling makes sure to give some headroom for the controller to go a bit faster than the planned limits 
     // without actually violating any hard constraints
-    mpp.translationalLimits_ = translationalLimits * cfg.lookup("motion.limit_max_fraction");
-    mpp.rotationalLimits_ = rotationalLimits * cfg.lookup("motion.limit_max_fraction");
-    mpp.solver_params_ = solver;
+    mpp.translationalLimits = translationalLimits * cfg.lookup("motion.limit_max_fraction");
+    mpp.rotationalLimits = rotationalLimits * cfg.lookup("motion.limit_max_fraction");
+    mpp.solver_params = solver;
 
     return std::move(mpp);     
 }
@@ -158,20 +158,20 @@ MotionPlanningProblem buildMotionPlanningProblem(Point initialPoint, Point targe
 Trajectory generateTrajectory(MotionPlanningProblem problem)
 {   
     // Figure out delta that the trajectory needs to cover
-    Eigen::Vector3f deltaPosition = problem.targetPoint_ - problem.initialPoint_;
+    Eigen::Vector3f deltaPosition = problem.targetPoint - problem.initialPoint;
     deltaPosition(2) = wrap_angle(deltaPosition(2));
 
     // Begin building trajectory object
     Trajectory traj;
-    traj.complete_ = false;
-    traj.initialPoint_ = {problem.initialPoint_(0), problem.initialPoint_(1), problem.initialPoint_(2)};
-    traj.trans_direction_ = deltaPosition.head(2).normalized();
-    traj.rot_direction_ = sgn(deltaPosition(2));
+    traj.complete = false;
+    traj.initialPoint = {problem.initialPoint(0), problem.initialPoint(1), problem.initialPoint(2)};
+    traj.trans_direction = deltaPosition.head(2).normalized();
+    traj.rot_direction = sgn(deltaPosition(2));
     
     // Solve translational component
     float dist = deltaPosition.head(2).norm();
     SCurveParameters trans_params;
-    bool ok = generateSCurve(dist, problem.translationalLimits_, problem.solver_params_, &trans_params);
+    bool ok = generateSCurve(dist, problem.translationalLimits, problem.solver_params, &trans_params);
     if(!ok)
     {
         PLOGW << "Failed to generate translational trajectory";
@@ -181,16 +181,16 @@ Trajectory generateTrajectory(MotionPlanningProblem problem)
     // Solve rotational component
     SCurveParameters rot_params;
     dist = fabs(deltaPosition(2));
-    ok = generateSCurve(dist, problem.rotationalLimits_, problem.solver_params_, &rot_params);
+    ok = generateSCurve(dist, problem.rotationalLimits, problem.solver_params, &rot_params);
     if(!ok)
     {
         PLOGW << "Failed to generate rotational trajectory";
         return traj;
     }
 
-    traj.trans_params_ = trans_params;
-    traj.rot_params_ = rot_params;
-    traj.complete_ = true;
+    traj.trans_params = trans_params;
+    traj.rot_params = rot_params;
+    traj.complete = true;
 
     return traj;
 }
@@ -201,27 +201,27 @@ bool generateSCurve(float dist, DynamicLimits limits, const SolverParameters& so
     float min_dist = cfg.lookup("trajectory_generation.min_dist_limit"); 
     if (fabs(dist) < min_dist)
     {
-        params->v_lim_ = 0;
-        params->a_lim_ = 0;
-        params->j_lim_ = 0;
+        params->v_lim = 0;
+        params->a_lim = 0;
+        params->j_lim = 0;
         for (int i = 0; i < 8; i++)
         {
-            params->switch_points_[i].t_ = 0;
-            params->switch_points_[i].p_ = 0;
-            params->switch_points_[i].v_ = 0;
-            params->switch_points_[i].a_ = 0;
+            params->switch_points[i].t = 0;
+            params->switch_points[i].p = 0;
+            params->switch_points[i].v = 0;
+            params->switch_points[i].a = 0;
         }
         return true;
     }
     
     // Initialize parameters
-    float v_lim = limits.max_vel_;
-    float a_lim = limits.max_acc_;
-    float j_lim = limits.max_jerk_;
+    float v_lim = limits.max_vel;
+    float a_lim = limits.max_acc;
+    float j_lim = limits.max_jerk;
 
     bool solution_found = false;
     int loop_counter = 0;
-    while(!solution_found && loop_counter < solver.num_loops_)
+    while(!solution_found && loop_counter < solver.num_loops)
     {
         loop_counter++;
         PLOGI << "Trajectory generation loop " << loop_counter;
@@ -238,7 +238,7 @@ bool generateSCurve(float dist, DynamicLimits limits, const SolverParameters& so
         {
             // If dt_a is negative, it means we couldn't find a solution
             // so adjust accel parameter and try loop again
-            a_lim *= std::pow(solver.beta_decay_, 1 + solver.exponent_decay_ * loop_counter);
+            a_lim *= std::pow(solver.beta_decay, 1 + solver.exponent_decay * loop_counter);
             PLOGI << "dt_a: " << dt_a << ", trying new accel limit: " << a_lim;
             continue;
         }
@@ -250,7 +250,7 @@ bool generateSCurve(float dist, DynamicLimits limits, const SolverParameters& so
         {
             // If dt_a is negative, it means we couldn't find a solution
             // so adjust velocity parameter and try loop again
-            v_lim *= std::pow(solver.alpha_decay_, 1 + solver.exponent_decay_ * loop_counter);
+            v_lim *= std::pow(solver.alpha_decay, 1 + solver.exponent_decay * loop_counter);
             PLOGI << "dt_v: " << dt_v << ", trying new velocity limit: " << v_lim;
             continue;
         }
@@ -258,9 +258,9 @@ bool generateSCurve(float dist, DynamicLimits limits, const SolverParameters& so
         // If we get here, it means we found a valid solution and can populate the rest of the 
         // switch time parameters
         solution_found = true;
-        params->v_lim_ = v_lim;
-        params->a_lim_ = a_lim;
-        params->j_lim_ = j_lim;
+        params->v_lim = v_lim;
+        params->a_lim = a_lim;
+        params->j_lim = j_lim;
         PLOGI << "Trajectory solution found";
         populateSwitchTimeParameters(params, dt_j, dt_a, dt_v);
     }
@@ -271,10 +271,10 @@ bool generateSCurve(float dist, DynamicLimits limits, const SolverParameters& so
 void populateSwitchTimeParameters(SCurveParameters* params, float dt_j, float dt_a, float dt_v)
 {
     // Fill first point with all zeros
-    params->switch_points_[0].t_ = 0;
-    params->switch_points_[0].p_ = 0;
-    params->switch_points_[0].v_ = 0;
-    params->switch_points_[0].a_ = 0;
+    params->switch_points[0].t = 0;
+    params->switch_points[0].p = 0;
+    params->switch_points[0].v = 0;
+    params->switch_points[0].a = 0;
 
     for (int i = 1; i < 8; i++)
     {
@@ -297,10 +297,10 @@ void populateSwitchTimeParameters(SCurveParameters* params, float dt_j, float dt
 
         // Populate values
         std::vector<float> values = computeKinematicsBasedOnRegion(*params, i, dt);
-        params->switch_points_[i].a_ = values[0];
-        params->switch_points_[i].v_ = values[1];
-        params->switch_points_[i].p_ = values[2];
-        params->switch_points_[i].t_ = params->switch_points_[i-1].t_ + dt;
+        params->switch_points[i].a = values[0];
+        params->switch_points[i].v = values[1];
+        params->switch_points[i].p = values[2];
+        params->switch_points[i].t = params->switch_points[i-1].t + dt;
     }
 }
 
@@ -315,8 +315,8 @@ void populateSwitchTimeParameters(SCurveParameters* params, float dt_j, float dt
 //     std::vector<float> longest_dts;
 //     for (int i = 1; i < 7; i++)
 //     {
-//         float dt1 = params1_copy.switch_points_[i].t_ - params1_copy.switch_points_[i-1].t_;
-//         float dt2 = params2_copy.switch_points_[i].t_ - params2_copy.switch_points_[i-1].t_;
+//         float dt1 = params1_copy.switch_points[i].t - params1_copy.switch_points[i-1].t;
+//         float dt2 = params2_copy.switch_points[i].t - params2_copy.switch_points[i-1].t;
 //         if(dt1 > dt2)
 //         {
 //             longest_dts.push_back(dt1);
@@ -328,12 +328,12 @@ void populateSwitchTimeParameters(SCurveParameters* params, float dt_j, float dt
 //     }
 
 //     // Synchronize times to match up
-//     params1_copy.switch_points_[0].t_ = 0;
-//     params2_copy.switch_points_[0].t_ = 0;
+//     params1_copy.switch_points[0].t = 0;
+//     params2_copy.switch_points[0].t = 0;
 //     for (int i = 1; i < 7; i++)
 //     {
-//         params1_copy.switch_points_[i].t_ = params1_copy.switch_points_[i-1].t_ + longest_dts[i-1];
-//         params2_copy.switch_points_[i].t_ = params2_copy.switch_points_[i-1].t_ + longest_dts[i-1];
+//         params1_copy.switch_points[i].t = params1_copy.switch_points[i-1].t + longest_dts[i-1];
+//         params2_copy.switch_points[i].t = params2_copy.switch_points[i-1].t + longest_dts[i-1];
 //     }
 
 //     // Solve inverse problem for new time mapping
@@ -361,10 +361,10 @@ void populateSwitchTimeParameters(SCurveParameters* params, float dt_j, float dt
 // bool solveInverse(SCurveParameters* params)
 // {
 //     // Gather parameters needed
-//     const float dt_j = params->switch_points_[1].t_ - params->switch_points_[0].t_;
-//     const float dt_a = params->switch_points_[2].t_ - params->switch_points_[1].t_;
-//     const float dt_v = params->switch_points_[4].t_ - params->switch_points_[3].t_;
-//     const float deltaPosition = params->switch_points_[7].p_;
+//     const float dt_j = params->switch_points[1].t - params->switch_points[0].t;
+//     const float dt_a = params->switch_points[2].t - params->switch_points[1].t;
+//     const float dt_v = params->switch_points[4].t - params->switch_points[3].t;
+//     const float deltaPosition = params->switch_points[7].p;
 
 //     // Build linear system
 //     Eigen::Matrix3f A;
@@ -383,9 +383,9 @@ void populateSwitchTimeParameters(SCurveParameters* params, float dt_j, float dt
 //         return false;
 //     }
 
-//     params->j_lim_ = lims(0);
-//     params->a_lim_ = lims(1);
-//     params->v_lim_ = lims(2);
+//     params->j_lim = lims(0);
+//     params->a_lim = lims(1);
+//     params->v_lim = lims(2);
 //     populateSwitchTimeParameters(params, dt_j, dt_a, dt_v);   
 //     return true;
 // }
@@ -399,25 +399,25 @@ std::vector<float> computeKinematicsBasedOnRegion(const SCurveParameters& params
     // Positive jerk
     if (region == 1 || region == 7) 
     { 
-        j = params.j_lim_; 
+        j = params.j_lim; 
     }
     // Negative jerk
     else if (region == 3 || region == 5) 
     { 
-        j = -1 * params.j_lim_; 
+        j = -1 * params.j_lim; 
     }
     // Constant positive acceleration
     else if (region == 2)
     {
         j = 0;
-        a = params.a_lim_;
+        a = params.a_lim;
         need_a = false;        
     }
     // Constant negative acceleration
     else if ( region == 6)
     {
         j = 0;
-        a = -1*params.a_lim_;
+        a = -1*params.a_lim;
         need_a = false; 
     }
     // Constant velocity region
@@ -425,7 +425,7 @@ std::vector<float> computeKinematicsBasedOnRegion(const SCurveParameters& params
     {
         j = 0;
         a = 0;
-        v = params.v_lim_;
+        v = params.v_lim;
         need_a = false; 
         need_v = false; 
     }
@@ -439,19 +439,19 @@ std::vector<float> computeKinematicsBasedOnRegion(const SCurveParameters& params
     // Compute remaining values
     if (need_a)
     {
-        a = params.switch_points_[region-1].a_ + j * dt;
+        a = params.switch_points[region-1].a + j * dt;
     }
 
     if (need_v)
     {
-        v = params.switch_points_[region-1].v_ + 
-            params.switch_points_[region-1].a_ * dt + 
+        v = params.switch_points[region-1].v + 
+            params.switch_points[region-1].a * dt + 
             0.5 * j * std::pow(dt, 2);
     }
 
-    p = params.switch_points_[region-1].p_ + 
-        params.switch_points_[region-1].v_ * dt + 
-        0.5 * params.switch_points_[region-1].a_ * std::pow(dt, 2) + 
+    p = params.switch_points[region-1].p + 
+        params.switch_points[region-1].v * dt + 
+        0.5 * params.switch_points[region-1].a * std::pow(dt, 2) + 
         d6 * j * std::pow(dt, 3);
 
     return {a,v,p};
