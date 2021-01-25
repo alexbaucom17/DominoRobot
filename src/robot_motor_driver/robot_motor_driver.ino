@@ -18,7 +18,7 @@ SerialComms comm(Serial);
 
 // Constants
 #define WHEEL_RADIUS 0.0751
-#define WHEEL_DIST_FROM_CENTER 0.4794
+#define WHEEL_DIST_FROM_CENTER 0.35 //0.4794
 #define BELT_RATIO 4
 #define STEPS_PER_REV 800
 #define MOTOR_MAX_VEL_STEPS_PER_SECOND 10000
@@ -248,7 +248,7 @@ void lifter_update(String msg)
     if (inputCommand.valid && inputCommand.stop)
     {
         activeMode = MODE::NONE;
-        LIFTER_MOTOR.EnableRequest(false);
+//        LIFTER_MOTOR.EnableRequest(false);
     }
     // For any other command, we will only handle it when there are no other active commands
     else if (activeMode == MODE::NONE)
@@ -355,7 +355,7 @@ void lifter_update(String msg)
     else if (activeMode == MODE::NONE)
     {
         LIFTER_MOTOR.MoveStopAbrupt();
-        LIFTER_MOTOR.EnableRequest(false);
+//        LIFTER_MOTOR.EnableRequest(false);
     }
 
     // Will send back one of [none, manual, pos, homing, open, close]

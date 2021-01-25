@@ -11,7 +11,7 @@ class Config:
 
     # ====== PATHS ========
     
-    root_path = "C:\\Users\\alexb\\Data\\Github\\DominoRobot\\"
+    root_path = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\"
     mm_api_relative_path = "marvelmind_SW_20202_04_19\\API\\api_windows_64bit\\dashapi.dll"
     config_dir_path = os.path.dirname(os.path.realpath(__file__))
     mm_api_path = os.path.join(root_path, mm_api_relative_path)
@@ -28,7 +28,7 @@ class Config:
     }
 
     # Specifies which IP address each robot has
-    ip_map = {'robot1': '192.168.1.5'}
+    ip_map = {'robot1': '10.0.0.3'}
     base_station_ip = '10.0.0.100'
 
     # ====== PLAN GENERATION ========
