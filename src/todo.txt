@@ -16,6 +16,14 @@ Robot HW:
     - Powering pi, clearcore, servo, and optoswitch
 - Try to estimate how long robot batteries will last (draw seems to be ~0.3-1 A)
 - Figure out and document safe low battery level before recharge is needed
+- Approx Dimensions:
+    - Distance between mm pair on robot - 570mm, dist from front - 245mm
+    - Wheel mount to center of wheel: FL: 44mm FR: 43mm RC: 44mm
+- Exact values from Josh:
+    - Center of rotation - 12 in from sides, 7.5 in from front of frame
+    - Wheel mounts - 14.22 in from COR to front face of wheel mounts
+- Investigate couterweight options
+
 
 Master:
 - Figure out how to sequence loading between base and robot
