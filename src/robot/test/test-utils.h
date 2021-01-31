@@ -30,8 +30,20 @@ inline MockClockWrapper* get_mock_clock()
 {
     ClockWrapperBase* base_clock = ClockFactory::getFactoryInstance()->get_clock();
     MockClockWrapper* mock_clock = dynamic_cast<MockClockWrapper*>(base_clock);
+    return mock_clock;
+}
+
+inline MockClockWrapper* get_mock_clock_and_reset()
+{
+    MockClockWrapper* mock_clock = get_mock_clock();
     mock_clock->set_now();
     return mock_clock;
+}
+
+inline void reset_mock_clock()
+{
+    MockClockWrapper* mock_clock = get_mock_clock();
+    mock_clock->set_now();
 }
 
 #endif

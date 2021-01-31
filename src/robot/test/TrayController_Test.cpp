@@ -6,7 +6,7 @@
 TEST_CASE("Send and waiting", "[TrayController]")
 {
     MockSerialComms* mock_serial = build_and_get_mock_serial();
-    MockClockWrapper* mock_clock = get_mock_clock();
+    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
     TrayController t;
 
     t.initialize();
@@ -38,7 +38,7 @@ TEST_CASE("Send and waiting", "[TrayController]")
 TEST_CASE("Initialize tray", "[TrayController]")
 {
     MockSerialComms* mock_serial = build_and_get_mock_serial();
-    MockClockWrapper* mock_clock = get_mock_clock();
+    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
     TrayController t;
 
     t.initialize();
@@ -71,7 +71,7 @@ TEST_CASE("Initialize tray", "[TrayController]")
 TEST_CASE("Place tray", "[TrayController]")
 {
     MockSerialComms* mock_serial = build_and_get_mock_serial();
-    MockClockWrapper* mock_clock = get_mock_clock();
+    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
     TrayController t;
 
     t.place();
@@ -111,7 +111,7 @@ TEST_CASE("Place tray", "[TrayController]")
 TEST_CASE("Load tray", "[TrayController]")
 {
     MockSerialComms* mock_serial = build_and_get_mock_serial();
-    MockClockWrapper* mock_clock = get_mock_clock();
+    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
     TrayController t;
 
     t.load();

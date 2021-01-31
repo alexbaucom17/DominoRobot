@@ -40,7 +40,7 @@ TEST_CASE("TimeRunningAverage - Test constant time pauses", "[utils]")
     int window = 10;
     int sleep_time_us = 2000;
     TimeRunningAverage T = TimeRunningAverage(window);
-    MockClockWrapper* mock_clock = get_mock_clock();
+    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
 
     for(int i = 0; i < window+1; i++)
     {
@@ -69,7 +69,7 @@ TEST_CASE("TimeRunningAverage - Test larger buffer", "[utils]")
     int window = 100;
     int sleep_time_us = 1000;
     TimeRunningAverage T = TimeRunningAverage(window);
-    MockClockWrapper* mock_clock = get_mock_clock();
+    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
 
     for(int i = 0; i < window+1; i++)
     {
@@ -105,7 +105,7 @@ TEST_CASE("TimeRunningAverage - Variable timing", "[utils]")
     int window = 10;
     int sleep_time_us = 2000;
     TimeRunningAverage T = TimeRunningAverage(window);
-    MockClockWrapper* mock_clock = get_mock_clock();
+    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
 
     SECTION("Partial buffer")
     {
@@ -134,7 +134,7 @@ TEST_CASE("TimeRunningAverage - Variable timing", "[utils]")
 
 TEST_CASE("Rate controller - slow", "[utils]")
 {
-    MockClockWrapper* mock_clock = get_mock_clock();
+    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
     RateController r(1);
     REQUIRE(r.ready() == false);
     mock_clock->advance_sec(0.5);
@@ -146,7 +146,7 @@ TEST_CASE("Rate controller - slow", "[utils]")
 
 TEST_CASE("Rate controller - fast", "[utils]")
 {
-    MockClockWrapper* mock_clock = get_mock_clock();
+    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
     RateController r(1000);
     REQUIRE(r.ready() == false);
     mock_clock->advance_us(500);
@@ -161,7 +161,7 @@ TEST_CASE("Rate controller - fast", "[utils]")
 
 TEST_CASE("MockClockWrapper", "[utils]")
 {
-    MockClockWrapper* mock_clock = get_mock_clock();
+    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
     SECTION("Microseconds")
     {
         int count = 100;
@@ -215,7 +215,7 @@ TEST_CASE("ClockWrapper", "[utils]")
 
 TEST_CASE("Timer", "[utils]")
 {
-    MockClockWrapper* mock_clock = get_mock_clock();
+    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
 
     Timer t;
     REQUIRE(t.dt_s() == 0);

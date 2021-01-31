@@ -10,7 +10,7 @@ TEST_CASE("Robot move", "[Robot]")
     libconfig::Setting& fake_perfect_motion = cfg.lookup("motion.fake_perfect_motion");
     fake_perfect_motion = true; 
     
-    MockClockWrapper* mock_clock = get_mock_clock();
+    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
     MockSocketMultiThreadWrapper* mock_socket = build_and_get_mock_socket();
     Robot r = Robot();
 

@@ -4,13 +4,15 @@
 #include "StatusUpdater.h"
 #include "test-utils.h"
 
-void coarsePositionTest(float x, float y, float a, int max_loops)
+
+
+// Helper that commands the robot to move to the given position
+// Returns the number of loops run before the robot either stopped or max_loops was hit
+int moveToPositionHelper(RobotController& r, float x, float y, float a, int max_loops)
 {
     MockSerialComms* mock_serial = build_and_get_mock_serial();
     MockClockWrapper* mock_clock = get_mock_clock();
-    StatusUpdater s;
-    RobotController r = RobotController(s);
-
+    
     mock_serial->purge_data();
     r.moveToPosition(x,y,a);
     REQUIRE(mock_serial->mock_rcv_base() == "Power:ON");
@@ -27,8 +29,21 @@ void coarsePositionTest(float x, float y, float a, int max_loops)
 
         mock_clock->advance_ms(1);
     }
+    return count;
+}
 
-    CHECK(count != max_loops);
+// A simple position tests that checks if the target position is reached within
+// a set amount of time
+void coarsePositionTest(float x, float y, float a)
+{
+    int max_loop_counts =  100000;
+    reset_mock_clock(); // Need to reset before creating RobotController which instantiates timers
+    StatusUpdater s;
+    RobotController r = RobotController(s);
+
+    int num_loops = moveToPositionHelper(r, x, y, a, max_loop_counts);
+
+    CHECK(num_loops != max_loop_counts);
     CHECK(r.isTrajectoryRunning() == false);
 
     StatusUpdater::Status status = s.getStatus();
@@ -65,26 +80,26 @@ TEST_CASE("Motor enable and disable", "[RobotController]")
 
 TEST_CASE("Simple coarse motion", "[RobotController]")
 {
-    int test_counts =  100000;
+    
     SECTION("Straight forward")
     {
-        coarsePositionTest(0.5,0,0, test_counts);
+        coarsePositionTest(0.5,0,0);
     }
     SECTION("Diagonal")
     {
-        coarsePositionTest(0.5,0.5,0, test_counts);
+        coarsePositionTest(0.5,0.5,0);
     }
     SECTION("Positive rotation")
     {
-        coarsePositionTest(0,0,0.5, test_counts);
+        coarsePositionTest(0,0,0.5);
     }
     SECTION("Negative rotation")
     {
-        coarsePositionTest(0,0,-0.5, test_counts);
+        coarsePositionTest(0,0,-0.5);
     }
     SECTION("All directions")
     {
-        coarsePositionTest(0.1,0.1,-0.5, test_counts);
+        coarsePositionTest(0.1,0.1,-0.5);
     }
 }
 
@@ -110,7 +125,7 @@ TEST_CASE("Simple coarse motion", "[RobotController]")
 
 void fakeMotionHelper(float x, float y, float a, int max_loops, StatusUpdater& s)
 {
-    MockClockWrapper* mock_clock = get_mock_clock();
+    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
     MockSerialComms* mock_serial = build_and_get_mock_serial();
     mock_serial->purge_data();
     RobotController r = RobotController(s);
@@ -157,6 +172,11 @@ TEST_CASE("Validate fake_perfect_motion option", "[RobotController]")
     REQUIRE(status.pos_x != Approx(x).margin(0.0005));
     REQUIRE(status.pos_y != Approx(y).margin(0.0005));
     REQUIRE(status.pos_a != Approx(a).margin(0.0005));
+}
+
+TEST_CASE("Position update", "[RobotController]") 
+{
+
 }
 
 // TEST_CASE("Benchmarking motion", "[RobotController]")
