@@ -4,6 +4,7 @@
 #include <chrono>
 #include <vector>
 #include <memory>
+#include <math.h>
 
 using ClockTimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 using FpSeconds = std::chrono::duration<float, std::chrono::seconds::period>;
@@ -116,6 +117,65 @@ class RateController
   private:
     Timer timer_;
     int dt_us_;
+};
+
+
+struct Point
+{
+    float x;
+    float y;
+    float a;
+
+    Point(float x=0, float y=0, float a=0)
+    : x(x), y(y), a(a)
+    {}
+
+    std::string toString() const
+    {
+        char s[100];
+        sprintf(s, "[x: %.3f, y: %.3f, a: %.3f]", x, y, a);
+        return static_cast<std::string>(s);
+    }
+
+    bool operator== (const Point& other) const
+    {
+        return x == other.x && y == other.y && a == other.a;
+    }
+};
+
+struct Velocity
+{
+    float vx;
+    float vy;
+    float va;
+
+    Velocity(float vx=0, float vy=0, float va=0)
+    : vx(vx), vy(vy), va(va)
+    {}
+
+    std::string toString() const
+    {
+        char s[100];
+        sprintf(s, "[vx: %.3f, vy: %.3f, va: %.3f]", vx, vy, va);
+        return static_cast<std::string>(s);
+    }
+
+    bool operator== (const Velocity& other) const 
+    {
+        return vx == other.vx && vy == other.vy && va == other.va;
+    }
+
+    bool nearZero(float eps=1e-6) const
+    {
+        if (fabs(vx) < eps && fabs(vy) < eps && fabs(va) < eps)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
 };
 
 

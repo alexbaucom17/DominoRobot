@@ -12,6 +12,7 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
 : trajGen_(),
   statusUpdater_(statusUpdater),
   serial_to_motor_driver_(SerialCommsFactory::getFactoryInstance()->get_serial_comms(CLEARCORE_USB)),
+  localization_(),
   prevControlLoopTimer_(),
   prevOdomLoopTimer_(),
   trajStartTimer_(),
@@ -25,11 +26,7 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
   logging_rate_(cfg.lookup("motion.log_frequency")),
   log_this_cycle_(false),
   fake_perfect_motion_(cfg.lookup("motion.fake_perfect_motion")),
-  fake_local_cart_vel_(0,0,0),
-  update_fraction_at_zero_vel_(cfg.lookup("localization.update_fraction_at_zero_vel")),
-  val_for_zero_update_(cfg.lookup("localization.val_for_zero_update")),
-  mm_x_offset_(cfg.lookup("localization.mm_x_offset")),
-  mm_y_offset_(cfg.lookup("localization.mm_y_offset"))
+  fake_local_cart_vel_(0,0,0)
 {    
     coarse_tolerances_.trans_pos_err = cfg.lookup("motion.translation.position_threshold.coarse");
     coarse_tolerances_.ang_pos_err = cfg.lookup("motion.rotation.position_threshold.coarse");
@@ -135,9 +132,7 @@ void RobotController::update()
         cmd = generateStationaryCommand();
         
         // Force current velocity to 0
-        cartVel_.vx = 0;
-        cartVel_.vy = 0;
-        cartVel_.va = 0;
+        localization_.forceZeroVelocity();
 
         // Force flags to default values
         fineMode_ = true;
@@ -241,29 +236,8 @@ void RobotController::inputPosition(float x, float y, float a)
 {
     if (fineMode_)
     {
-        // The x,y,a here is from the center of the marvlemind pair, so we need to transform it to the actual center of the
-        // robot (i.e. center of rotation)
-        Eigen::Vector3f raw_measured_position = {x,y,a};
-        Eigen::Vector3f local_offset = {mm_x_offset_/1000.0f, mm_y_offset_/1000.0f, 0.0f};
-        float cA = cos(a);
-        float sA = sin(a);
-        Eigen::Matrix3f rotation;
-        rotation << cA, -sA, 0.0f, 
-                    sA, cA, 0.0f,
-                    0.0f, 0.0f, 1.0f;
-        Eigen::Vector3f adjusted_measured_position = raw_measured_position - rotation * local_offset;
-        
-        // Generate an update fraction based on the current velocity since we know the beacons are less accurate when moving
-        Eigen::Vector3f v = {cartVel_.vx, cartVel_.vy, cartVel_.va};
-        float total_v = v.norm();
-        float slope = update_fraction_at_zero_vel_ / -val_for_zero_update_;
-        float update_fraction = update_fraction_at_zero_vel_ + slope * total_v;
-        update_fraction = std::max(std::min(update_fraction, update_fraction_at_zero_vel_), 0.0f);
-        
-        // Actually update the position based on the observed position and the update fraction
-        cartPos_.x += update_fraction * (adjusted_measured_position(0) - cartPos_.x);
-        cartPos_.y += update_fraction * (adjusted_measured_position(1) - cartPos_.y);
-        cartPos_.a += update_fraction * (adjusted_measured_position(2) - cartPos_.a);
+        localization_.updatePositionReading({x,y,a});
+        cartPos_ = localization_.getPosition();
     }
 }
 
@@ -329,21 +303,13 @@ void RobotController::computeOdometry()
         PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_).printf("Decoded velocity: %.3f, %.3f, %.3f", local_cart_vel.vx, local_cart_vel.vy, local_cart_vel.va);
     }
 
-    // Convert local cartesian velocity to global cartesian velocity using the last estimated angle
-    float cA = cos(cartPos_.a);
-    float sA = sin(cartPos_.a);
-    cartVel_.vx = cA * local_cart_vel.vx - sA * local_cart_vel.vy;
-    cartVel_.vy = sA * local_cart_vel.vx + cA * local_cart_vel.vy;
-    cartVel_.va = local_cart_vel.va;
-
     // Compute time since last odom update
     float dt = prevOdomLoopTimer_.dt_s();
     prevOdomLoopTimer_.reset();
 
-    // Compute new position estimate
-    cartPos_.x += cartVel_.vx * dt;
-    cartPos_.y += cartVel_.vy * dt;
-    cartPos_.a += cartVel_.va * dt;
+    localization_.updateVelocityReading(local_cart_vel, dt);
+    cartPos_ = localization_.getPosition();
+    cartVel_ = localization_.getVelocity();
 
 }
 

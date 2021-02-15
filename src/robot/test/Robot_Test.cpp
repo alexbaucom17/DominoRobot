@@ -7,8 +7,7 @@
 TEST_CASE("Robot move", "[Robot]")
 {
     std::string msg = "<{'type':'move','data':{'x':0.5,'y':0.4,'a':0.3}}>";
-    libconfig::Setting& fake_perfect_motion = cfg.lookup("motion.fake_perfect_motion");
-    fake_perfect_motion = true; 
+    SafeConfigModifier<bool> config_modifier("motion.fake_perfect_motion", true);
     
     MockClockWrapper* mock_clock = get_mock_clock_and_reset();
     MockSocketMultiThreadWrapper* mock_socket = build_and_get_mock_socket();
@@ -33,6 +32,4 @@ TEST_CASE("Robot move", "[Robot]")
     REQUIRE(status.pos_y == Approx(0.4).margin(0.0005));
     REQUIRE(status.pos_a == Approx(0.3).margin(0.0005));
 
-    // Have to reset at the end
-    fake_perfect_motion = false;
 }

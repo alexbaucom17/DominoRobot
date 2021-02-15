@@ -2,64 +2,8 @@
 #define SmoothTrajectoryGenerator_h
 
 #include <Eigen/Dense>
+#include "utils.h"
 
-struct Point
-{
-    float x;
-    float y;
-    float a;
-
-    Point(float x=0, float y=0, float a=0)
-    : x(x), y(y), a(a)
-    {}
-
-    std::string toString() const
-    {
-        char s[100];
-        sprintf(s, "[x: %.3f, y: %.3f, a: %.3f]", x, y, a);
-        return static_cast<std::string>(s);
-    }
-
-    bool operator== (const Point& other) const
-    {
-        return x == other.x && y == other.y && a == other.a;
-    }
-};
-
-struct Velocity
-{
-    float vx;
-    float vy;
-    float va;
-
-    Velocity(float vx=0, float vy=0, float va=0)
-    : vx(vx), vy(vy), va(va)
-    {}
-
-    std::string toString() const
-    {
-        char s[100];
-        sprintf(s, "[vx: %.3f, vy: %.3f, va: %.3f]", vx, vy, va);
-        return static_cast<std::string>(s);
-    }
-
-    bool operator== (const Velocity& other) const 
-    {
-        return vx == other.vx && vy == other.vy && va == other.va;
-    }
-
-    bool nearZero(float eps=1e-6) const
-    {
-        if (fabs(vx) < eps && fabs(vy) < eps && fabs(va) < eps)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-};
 
 // Return structure for a trajectory point lookup that contains all the info about a point in time the controller
 // needs to drive the robot

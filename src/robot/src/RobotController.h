@@ -5,6 +5,7 @@
 #include "StatusUpdater.h"
 #include "serial/SerialComms.h"
 #include "utils.h"
+#include "Localization.h"
 
 class RobotController
 {
@@ -70,6 +71,7 @@ class RobotController
     SmoothTrajectoryGenerator trajGen_;    // Trajectory generator object
     StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
     SerialCommsBase* serial_to_motor_driver_;   // Serial connection to motor driver
+    Localization localization_;            // Object that handles localization
     Timer prevControlLoopTimer_;           // Timer for cartesian control loop
     Timer prevOdomLoopTimer_;              // Timer for odom loop
     Timer trajStartTimer_;                 // Timer for trajectory
@@ -94,11 +96,6 @@ class RobotController
     };
     TrajectoryTolerances coarse_tolerances_;
     TrajectoryTolerances fine_tolerances_;
-
-    float update_fraction_at_zero_vel_;
-    float val_for_zero_update_;
-    float mm_x_offset_;
-    float mm_y_offset_;
 
 };
 

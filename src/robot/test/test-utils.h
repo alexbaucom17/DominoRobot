@@ -46,4 +46,25 @@ inline void reset_mock_clock()
     mock_clock->set_now();
 }
 
+// Helper class to modify a global setting which will revert the setting change when going out of scope
+template <typename T>
+class SafeConfigModifier
+{
+  public:
+    SafeConfigModifier(std::string config_path, T value)
+     : cur_val_(cfg.lookup(config_path)),
+       old_val_(static_cast<T>(cur_val_))
+    {
+        cur_val_ = value;
+    }
+    ~SafeConfigModifier()
+    {
+        cur_val_ = old_val_;
+    }
+
+  private:
+    libconfig::Setting& cur_val_;
+    T old_val_;
+};
+
 #endif

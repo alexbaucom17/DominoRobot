@@ -4,27 +4,6 @@
 #include "StatusUpdater.h"
 #include "test-utils.h"
 
-// Helper class to modify a global setting which will revert the setting change when going out of scope
-template <typename T>
-class SafeConfigModifier
-{
-  public:
-    SafeConfigModifier(std::string config_path, T value)
-     : cur_val_(cfg.lookup(config_path)),
-       old_val_(static_cast<T>(cur_val_))
-    {
-        cur_val_ = value;
-    }
-    ~SafeConfigModifier()
-    {
-        cur_val_ = old_val_;
-    }
-
-  private:
-    libconfig::Setting& cur_val_;
-    T old_val_;
-};
-
 
 // Helper that commands the robot to move to the given position
 // Returns the number of loops run before the robot either stopped or max_loops was hit
@@ -249,7 +228,7 @@ TEST_CASE("Position update", "[RobotController]")
         float move_x = 1.0;
         float move_y = 0.0;
         float move_a = 0.0;
-        int num_loops = moveToPositionHelper(r, move_x, move_y, move_a, max_loop_counts);
+        int num_loops = positionUpdateTestingHelper(r, move_x, move_y, move_a, max_loop_counts);
         CHECK(num_loops != max_loop_counts);
 
         // Verify robot is in expected position
@@ -291,7 +270,7 @@ TEST_CASE("Position update", "[RobotController]")
         float move_x = 1.0;
         float move_y = 0.0;
         float move_a = 3.14;
-        int num_loops = moveToPositionHelper(r, move_x, move_y, move_a, max_loop_counts);
+        int num_loops = positionUpdateTestingHelper(r, move_x, move_y, move_a, max_loop_counts);
         CHECK(num_loops != max_loop_counts);
 
         // Verify robot is in expected position
