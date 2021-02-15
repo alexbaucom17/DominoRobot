@@ -1,6 +1,6 @@
 #include "Localization.h"
 
-#include <Eigen/Dense>
+
 #include <math.h>
 #include "constants.h"
 
@@ -18,21 +18,10 @@ void Localization::updatePositionReading(Point global_position)
     // The x,y,a here is from the center of the marvlemind pair, so we need to transform it to the actual center of the
     // robot (i.e. center of rotation)
     Eigen::Vector3f raw_measured_position = {global_position.x, global_position.y, global_position.a};
-    Eigen::Vector3f local_offset = {mm_x_offset_/1000.0f, mm_y_offset_/1000.0f, 0.0f};
-    float cA = cos(global_position.a);
-    float sA = sin(global_position.a);
-    Eigen::Matrix3f rotation;
-    rotation << cA, -sA, 0.0f, 
-                sA, cA, 0.0f,
-                0.0f, 0.0f, 1.0f;
-    Eigen::Vector3f adjusted_measured_position = raw_measured_position - rotation * local_offset;
+    Eigen::Vector3f adjusted_measured_position = marvelmindToRobotFrame(raw_measured_position);
     
     // Generate an update fraction based on the current velocity since we know the beacons are less accurate when moving
-    Eigen::Vector3f v = {vel_.vx, vel_.vy, vel_.va};
-    float total_v = v.norm();
-    float slope = update_fraction_at_zero_vel_ / -val_for_zero_update_;
-    float update_fraction = update_fraction_at_zero_vel_ + slope * total_v;
-    update_fraction = std::max(std::min(update_fraction, update_fraction_at_zero_vel_), 0.0f);
+    const float update_fraction = computeVelocityUpdateFraction();
     
     // Actually update the position based on the observed position and the update fraction
     pos_.x += update_fraction * (adjusted_measured_position(0) - pos_.x);
@@ -54,4 +43,27 @@ void Localization::updateVelocityReading(Velocity local_cart_vel, float dt)
     pos_.x += vel_.vx * dt;
     pos_.y += vel_.vy * dt;
     pos_.a += vel_.va * dt;
+}
+
+Eigen::Vector3f Localization::marvelmindToRobotFrame(Eigen::Vector3f mm_global_position) 
+{
+    Eigen::Vector3f local_offset = {mm_x_offset_/1000.0f, mm_y_offset_/1000.0f, 0.0f};
+    float cA = cos(mm_global_position(2));
+    float sA = sin(mm_global_position(2));
+    Eigen::Matrix3f rotation;
+    rotation << cA, -sA, 0.0f, 
+                sA, cA, 0.0f,
+                0.0f, 0.0f, 1.0f;
+    Eigen::Vector3f adjusted_position = mm_global_position - rotation * local_offset;
+    return adjusted_position;
+}
+
+float Localization::computeVelocityUpdateFraction()
+{
+    Eigen::Vector3f v = {vel_.vx, vel_.vy, vel_.va};
+    float total_v = v.norm();
+    float slope = update_fraction_at_zero_vel_ / -val_for_zero_update_;
+    float update_fraction = update_fraction_at_zero_vel_ + slope * total_v;
+    update_fraction = std::max(std::min(update_fraction, update_fraction_at_zero_vel_), 0.0f);
+    return update_fraction;
 }

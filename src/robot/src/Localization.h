@@ -2,6 +2,7 @@
 #define Localization_h
 
 #include "utils.h"
+#include <Eigen/Dense>
 
 class Localization
 {
@@ -19,6 +20,9 @@ class Localization
     void forceZeroVelocity() {vel_ = {0,0,0}; };
 
   private:
+
+    Eigen::Vector3f marvelmindToRobotFrame(Eigen::Vector3f mm_global_position);
+    float computeVelocityUpdateFraction();
     
     // Current position and velocity
     Point pos_;
