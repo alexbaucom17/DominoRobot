@@ -2,6 +2,14 @@
 Robot controller:
 
 Robot SW:
+- Possible update function improvements
+    - "Trust factor" based on last N updates
+        - Compute stddev of odom_pos-measured_pos
+            - Need below some threshold to update based on raw distance
+        - Compute stddev of all measured_pos
+            - Compute 'confidence' in measured pos, use as part of trust factor
+            - Might capture the velocity scaling automatically
+            - Consider surfacing warning if rolling stddev of measurements gets really large while stationary 
 
 Robot HW:
 - Try to estimate how long the controller batteries will last fully loaded
@@ -15,6 +23,32 @@ Robot HW:
     - Center of rotation - 12 in from sides, 7.5 in from front of frame
     - Wheel mounts - 14.22 in from COR to front face of wheel mounts
 - Investigate couterweight options
+
+Marvelmind issues:
+    - About 70-80% of the time, accuracy looks great, but the rest of the time, the positions jump around wildly
+    - Raising hedges to give clear LOS didn't fix
+    - Raising stationary beacons up really high to help LOS didn't fix either (maybe slight improvement though)
+    - IMU fusion didn't help (but it's possible IMU wasn't calibrated)
+    - This was in mostly empty warehouse with stationary beacons about 9m apart and paired hedges 0.6 m apart on robot 
+        - No fluorescent lights on, barely any other equipment on in the area other than robot. Turning off robot didn't help either (maybe re-confirm this one?)
+    - Next steps:
+        - Maybe just buy newer set, should be better and less beat up. Maybe one of my beacons is too beat up or dirty and causing interference?
+        - Ask for help about jumping on forum, search around for other options to test
+        - Start researching alternative systems
+
+    Learnings from additional testing
+        The issue seems to be some sort of slight ultrasonic interference. I took a few screenshots.
+            I tested with the lights off and robot off - neither of those appear to be the source
+            It also isn't consistent between stationary/static beacons from what I can tell - seems somewhat location dependent in the warehouse
+        I was able to get the IMUs calibrated for the hedges and get fusion enabled, that seemed like it might have helped a little bit
+        I spent some time moving the stationary beacons around while looking at the osciloscope - this was informative as I was able to see places where there was more or less noise and there was a better signal
+            My theory is there was some reflections from the ceiling so I angled them down a little bit, that helped somewhat, but didn't fix the problem
+            Medium height was the best though - too high gave noise and too low gave poor signal - I think about halfway up the wall would be ideal (or maybe even on ceiling facing down? If we got a lift and permenant power lol)
+        The jumping was less common by the end of the testing, but still there. I think I could probably write a filter in SW, but would be nice if I didn't have to rely on that
+        I wonder if the extra stationary/redundant beacons would help - I could imagine the MM software being clever about dropping the noisiest measurement if there is redundancy, which might help the problem - could possibly test by getting more batteries to fix mini-RX beacons, but unclear if that is worth it if I will just get the newer ones anyways.
+        I took some screenshots and I can hopefully post with some questions
+        It still may be worth getting the newer beacons just to simply the distance setup - otherwise I have to manually calibrate distances all the time and I am worried about error from that.
+        Other than the jumping - the motion looked really nice and smooth and promising. Just need to fix the noise
 
 
 Master:
