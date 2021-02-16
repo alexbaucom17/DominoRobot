@@ -1,11 +1,13 @@
 #define _USE_MATH_DEFINES
  
-#include <cmath>
 #include "utils.h"
+
+#include <cmath>
 #include <chrono>
 #include <plog/Log.h>
-
 #include <iostream>
+
+#include "constants.h"
 
 float wrap_angle(float a)
 {
@@ -33,13 +35,14 @@ float angle_diff(float a1, float a2)
 
 RateController::RateController(int hz)
 : timer_(),
-  dt_us_(1000000 / hz)
+  dt_us_(1000000 / hz),
+  always_ready_(cfg.lookup("motion.rate_always_ready"))
 {
 }
 
 bool RateController::ready()
 {
-  if(timer_.dt_us() > dt_us_)
+  if(always_ready_ || timer_.dt_us() > dt_us_)
   {
     timer_.reset();
     return true;

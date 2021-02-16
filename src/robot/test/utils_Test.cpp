@@ -134,28 +134,31 @@ TEST_CASE("TimeRunningAverage - Variable timing", "[utils]")
 
 TEST_CASE("Rate controller - slow", "[utils]")
 {
-    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
-    RateController r(1);
-    REQUIRE(r.ready() == false);
-    mock_clock->advance_sec(0.5);
-    REQUIRE(r.ready() == false);
-    mock_clock->advance_sec(0.55);
-    REQUIRE(r.ready() == true);
-    REQUIRE(r.ready() == false);
-}
-
-TEST_CASE("Rate controller - fast", "[utils]")
-{
-    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
-    RateController r(1000);
-    REQUIRE(r.ready() == false);
-    mock_clock->advance_us(500);
-    REQUIRE(r.ready() == false);
-    mock_clock->advance_us(600);
-    REQUIRE(r.ready() == true);
-    REQUIRE(r.ready() == false);
-    mock_clock->advance_us(1100);
-    REQUIRE(r.ready() == true);
+    SafeConfigModifier<bool> config_modifier("motion.rate_always_ready", false);
+    SECTION("Slow")
+    {
+        MockClockWrapper* mock_clock = get_mock_clock_and_reset();
+        RateController r(1);
+        REQUIRE(r.ready() == false);
+        mock_clock->advance_sec(0.5);
+        REQUIRE(r.ready() == false);
+        mock_clock->advance_sec(0.55);
+        REQUIRE(r.ready() == true);
+        REQUIRE(r.ready() == false);
+    }
+    SECTION("Fast")
+    {
+        MockClockWrapper* mock_clock = get_mock_clock_and_reset();
+        RateController r(1000);
+        REQUIRE(r.ready() == false);
+        mock_clock->advance_us(500);
+        REQUIRE(r.ready() == false);
+        mock_clock->advance_us(600);
+        REQUIRE(r.ready() == true);
+        REQUIRE(r.ready() == false);
+        mock_clock->advance_us(1100);
+        REQUIRE(r.ready() == true);
+    }
 }
 
 
@@ -251,4 +254,48 @@ TEST_CASE("Timer", "[utils]")
     REQUIRE(t.dt_s() == 0);
     REQUIRE(t.dt_ms() == 0);
     REQUIRE(t.dt_us() == 0);
+}
+
+TEST_CASE("CircularBuffer", "[utils]")
+{
+    SECTION("CheckFull")
+    {
+        CircularBuffer<int> buf(5);
+
+        buf.insert(1);
+        buf.insert(2);
+        buf.insert(3);
+        buf.insert(4);
+        REQUIRE(buf.isFull() == false);
+
+        buf.insert(1);
+        REQUIRE(buf.isFull() == true);
+
+        buf.insert(2);
+        REQUIRE(buf.isFull() == true);
+
+        buf.clear();
+        REQUIRE(buf.isFull() == false);
+    }
+    SECTION("CheckContents")
+    {
+        CircularBuffer<int> buf(5);
+
+        buf.insert(1);
+        buf.insert(2);
+        buf.insert(3);
+        buf.insert(4);
+        REQUIRE(buf.get_contents() == std::vector<int>{1,2,3,4});
+
+        buf.insert(5);
+        REQUIRE(buf.get_contents() == std::vector<int>{1,2,3,4,5});
+
+        buf.insert(6);
+        REQUIRE(buf.get_contents() == std::vector<int>{2,3,4,5,6});
+
+        buf.clear();
+        REQUIRE(buf.get_contents() == std::vector<int>{});
+
+    }
+    
 }

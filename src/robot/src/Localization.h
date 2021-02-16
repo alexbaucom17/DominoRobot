@@ -21,8 +21,14 @@ class Localization
 
   private:
 
+    // Convert position reading from marvelmind frame to robot frame
     Eigen::Vector3f marvelmindToRobotFrame(Eigen::Vector3f mm_global_position);
+
+    // Compute a multiplier based on the current velocity that informs how trustworthy the current reading might be
     float computeVelocityUpdateFraction();
+
+    // Compute a position reliability multiplier based on previously observed readings
+    float computePositionReadingReliability(Eigen::Vector3f position);
     
     // Current position and velocity
     Point pos_;
@@ -33,6 +39,10 @@ class Localization
     float val_for_zero_update_;
     float mm_x_offset_;
     float mm_y_offset_;
+    float position_reliability_stddev_thresh_;
+
+    CircularBuffer<Eigen::Vector3f> prev_positions_raw_;
+    CircularBuffer<Eigen::Vector3f> prev_positions_filtered_;
 
 
 };

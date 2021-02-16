@@ -15,10 +15,22 @@ template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
 
-float wrap_angle(float a);
 
+//*******************************************
+//           Angle stuff
+//*******************************************
+
+// Wrap an angle between +/- 2 pi
+float wrap_angle(float a);
+// Take diff of two angles, ensures the result is wrapped betwee +/- 2 pi
 float angle_diff(float a1, float a2);
 
+
+//*******************************************
+//           Clock/time stuff
+//*******************************************
+
+// The ClockWrapperX classes provide wrappers around the system clock to simplified mocking the clock
 class ClockWrapperBase
 {
  public:
@@ -52,6 +64,7 @@ enum class CLOCK_FACTORY_MODE
   MOCK
 };
 
+// Provides a way to get the current clock
 class ClockFactory
 {
  public:
@@ -73,6 +86,7 @@ class ClockFactory
 };
 
 
+// Simple timer class that can return the time since reset in various formats
 class Timer
 {
   public:
@@ -87,6 +101,7 @@ class Timer
 };
 
 
+// Keeps an average of how long the time delta is between events
 class TimeRunningAverage
 {
   public:
@@ -109,6 +124,7 @@ class TimeRunningAverage
 
 };
 
+// Simple class to run a loop at a certian rate
 class RateController
 {
   public:
@@ -117,8 +133,13 @@ class RateController
   private:
     Timer timer_;
     int dt_us_;
+    bool always_ready_;
 };
 
+
+//*******************************************
+//           Useful data structures
+//*******************************************
 
 struct Point
 {
@@ -177,6 +198,74 @@ struct Velocity
         }
     }
 };
+
+
+// Very simple circular buffer class
+template<class T>
+class CircularBuffer 
+{
+  public:
+    CircularBuffer(int size)
+    : data_(std::make_unique<std::vector<T>>()),
+      size_(size),
+      idx_(0),
+      full_(false)
+    {
+        data_->reserve(size_);
+    }
+
+    void insert(T val)
+    {
+        if(!full_) 
+        {
+            data_->push_back(val);
+            idx_++;
+            if (idx_ % size_ == 0)
+            {
+                full_ = true;
+                idx_ = 0;
+            }
+        }
+        else 
+        {
+            data_->at(idx_) = val;
+            idx_ = (idx_ + 1) % size_;
+        }
+    }
+
+    void clear()
+    {
+        data_->clear();
+        idx_ = 0;
+        full_ = false;
+    }
+
+    std::vector<T> get_contents()
+    {
+      if(!full_ || idx_ == 0)
+      {
+        return *data_;
+      }
+      else 
+      {
+        std::vector<T> front(data_->begin() + idx_, data_->end());
+        std::vector<T> back(data_->begin(), data_->begin() + idx_);
+        front.insert(front.end(), back.begin(), back.end());
+        return front;
+      }
+    }
+
+    bool isFull() { return full_;}
+    
+  private:
+    std::unique_ptr<std::vector<T>> data_;
+    const int size_;
+    int idx_;
+    bool full_;
+
+};
+
+
 
 
 #endif
