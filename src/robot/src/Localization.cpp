@@ -10,7 +10,8 @@ Localization::Localization()
   val_for_zero_update_(cfg.lookup("localization.val_for_zero_update")),
   mm_x_offset_(cfg.lookup("localization.mm_x_offset")),
   mm_y_offset_(cfg.lookup("localization.mm_y_offset")),
-  position_reliability_stddev_thresh_(cfg.lookup("localization.position_reliability_stddev_thresh")),
+  position_reliability_zscore_thresh_(cfg.lookup("localization.position_reliability_zscore_thresh")),
+  position_reliability_max_stddev_(cfg.lookup("localization.position_reliability_max_stddev")),
   prev_positions_raw_(cfg.lookup("localization.position_reliability_buffer_size")),
   prev_positions_filtered_(cfg.lookup("localization.position_reliability_buffer_size"))
 {}
@@ -80,27 +81,41 @@ float Localization::computePositionReadingReliability(Eigen::Vector3f position)
     // Partially borrowed from https://stackoverflow.com/questions/33268513/calculating-standard-deviation-variance-in-c
     bool all_valid = true;
     const int num_points = previous_readings.size();
-    for(int i = 0; i < 3; i++) 
+    if(num_points > 3)
     {
-        float mean = 0;
-        for (const auto& reading : previous_readings)
+        for(int i = 0; i < 3; i++) 
         {
-            mean += reading(i);
-        }
-        mean /= num_points; 
+            // Compute mean of previous samples
+            float mean = 0;
+            for (const auto& reading : previous_readings)
+            {
+                mean += reading(i);
+            }
+            mean /= num_points; 
 
-        float variance = 0;
-        for (const auto& reading : previous_readings)
-        {
-            variance += (reading(i) - mean) * (reading(i) - mean);
-        }
-        variance /= num_points;
-        const float stddev = sqrt(variance);
+            // Compute standard deviation of previous samples
+            float variance = 0;
+            for (const auto& reading : previous_readings)
+            {
+                variance += (reading(i) - mean) * (reading(i) - mean);
+            }
+            variance /= num_points;
+            const float stddev = sqrt(variance);
 
-        if(stddev > position_reliability_stddev_thresh_)
-        {
-            all_valid = false;
-            break;
+            // If stddev of population is too high, don't consider it
+            if (stddev > position_reliability_max_stddev_)
+            {
+                all_valid = false;
+                break;
+            }
+
+            // Compute Z score of the current sample and check if it is in the range to keep
+            const float z_score = (position(i) - mean)/stddev;
+            if(z_score > position_reliability_zscore_thresh_)
+            {
+                all_valid = false;
+                break;
+            }
         }
     }
 
