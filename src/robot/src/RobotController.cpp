@@ -26,7 +26,8 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
   logging_rate_(cfg.lookup("motion.log_frequency")),
   log_this_cycle_(false),
   fake_perfect_motion_(cfg.lookup("motion.fake_perfect_motion")),
-  fake_local_cart_vel_(0,0,0)
+  fake_local_cart_vel_(0,0,0),
+  loop_time_averager_(20)
 {    
     coarse_tolerances_.trans_pos_err = cfg.lookup("motion.translation.position_threshold.coarse");
     coarse_tolerances_.ang_pos_err = cfg.lookup("motion.rotation.position_threshold.coarse");
@@ -147,6 +148,8 @@ void RobotController::update()
     // Update status 
     statusUpdater_.updatePosition(cartPos_.x, cartPos_.y, cartPos_.a);
     statusUpdater_.updateVelocity(cartVel_.vx, cartVel_.vy, cartVel_.va);
+    loop_time_averager_.mark_point();
+    statusUpdater_.updateControlLoopTime(loop_time_averager_.get_ms());
 }
 
 

@@ -95,6 +95,7 @@ void TimeRunningAverage::mark_point()
     {
         timer_.reset();
         started_ = true;
+        return;
     }
 
     buf_[buf_idx_] = timer_.dt_ms();

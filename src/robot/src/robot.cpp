@@ -11,7 +11,6 @@ Robot::Robot()
   controller_(statusUpdater_),
   tray_controller_(),
   mm_wrapper_(),
-  loop_time_averager_(20),
   position_time_averager_(20),
   curCmd_(COMMAND::NONE)
 {
@@ -61,8 +60,7 @@ void Robot::runOnce()
     }
 
     // Update loop time and status updater
-    loop_time_averager_.mark_point();
-    statusUpdater_.updateLoopTimes(loop_time_averager_.get_ms(), position_time_averager_.get_ms());
+    statusUpdater_.updatePositionLoopTime(position_time_averager_.get_ms());
 }
 
 

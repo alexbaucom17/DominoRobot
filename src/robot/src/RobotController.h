@@ -96,6 +96,7 @@ class RobotController
     };
     TrajectoryTolerances coarse_tolerances_;
     TrajectoryTolerances fine_tolerances_;
+    TimeRunningAverage loop_time_averager_;        // Handles keeping average of the loop timing
 
 };
 

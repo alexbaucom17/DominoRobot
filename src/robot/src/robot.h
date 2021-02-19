@@ -33,7 +33,6 @@ class Robot
     TrayController tray_controller_;
     MarvelmindWrapper mm_wrapper_;
 
-    TimeRunningAverage loop_time_averager_;        // Handles keeping average of the loop timing
     TimeRunningAverage position_time_averager_;    // Handles keeping average of the position update timing
 
     COMMAND curCmd_;

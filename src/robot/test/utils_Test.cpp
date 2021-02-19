@@ -116,7 +116,7 @@ TEST_CASE("TimeRunningAverage - Variable timing", "[utils]")
             mock_clock->advance_us(sleep_time_us);
             sleep_time_us += 2000;
         }
-        REQUIRE(T.get_ms() == 5);
+        REQUIRE(T.get_ms() == 6);
 
         SECTION("Full buffer")
         {

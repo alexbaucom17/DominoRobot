@@ -18,7 +18,9 @@ class StatusUpdater
 
     void updatePositionConfidence(float cx, float cy, float ca);
 
-    void updateLoopTimes(int controller_loop_ms, int position_loop_ms);
+    void updateControlLoopTime(int controller_loop_ms);
+
+    void updatePositionLoopTime(int position_loop_ms);
 
     void updateInProgress(bool in_progress);
 
