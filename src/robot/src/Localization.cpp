@@ -1,7 +1,22 @@
 #include "Localization.h"
 
 #include <math.h>
+#include <plog/Log.h>
 #include "constants.h"
+
+std::string toString(const Eigen::Matrix3f& mat)
+{
+    std::stringstream ss;
+    ss << mat;
+    return ss.str();
+}
+
+std::string toString(const Eigen::Vector3f& mat)
+{
+    std::stringstream ss;
+    ss << mat;
+    return ss.str();
+}
 
 Localization::Localization()
 : pos_(0,0,0),
@@ -32,6 +47,13 @@ void Localization::updatePositionReading(Point global_position)
     pos_.y += update_fraction * reading_reliability * (adjusted_measured_position(1) - pos_.y);
     pos_.a += update_fraction * reading_reliability * (adjusted_measured_position(2) - pos_.a);
 
+    PLOGI_(LOCALIZATION_LOG_ID).printf("\nPosition update:\n");
+    PLOGI_(LOCALIZATION_LOG_ID).printf("  Raw input: [%4.2f, %4.2f, %4.2f]\n", 
+        raw_measured_position(0), raw_measured_position(1), raw_measured_position(2));
+    PLOGI_(LOCALIZATION_LOG_ID).printf("  Adjusted input: [%4.2f, %4.2f, %4.2f]\n", 
+        adjusted_measured_position(0), adjusted_measured_position(1), adjusted_measured_position(2));
+    PLOGI_(LOCALIZATION_LOG_ID).printf("  vel_fraction: %4.2f, reliability: %4.2f\n", update_fraction, reading_reliability);
+    PLOGI_(LOCALIZATION_LOG_ID).printf("  Current position: %s\n", pos_.toString().c_str());
 }
 
 void Localization::updateVelocityReading(Velocity local_cart_vel, float dt)
@@ -59,6 +81,12 @@ Eigen::Vector3f Localization::marvelmindToRobotFrame(Eigen::Vector3f mm_global_p
                 sA, cA, 0.0f,
                 0.0f, 0.0f, 1.0f;
     Eigen::Vector3f adjusted_position = mm_global_position - rotation * local_offset;
+
+    PLOGD_(LOCALIZATION_LOG_ID).printf("\nMM to robot frame:\n");
+    PLOGD_(LOCALIZATION_LOG_ID).printf("  mm position: %s\n", toString(mm_global_position));
+    PLOGD_(LOCALIZATION_LOG_ID).printf("  R: %s\n", toString(rotation));
+    PLOGD_(LOCALIZATION_LOG_ID).printf("  new position: %s\n", toString(adjusted_position));
+
     return adjusted_position;
 }
 
@@ -69,6 +97,10 @@ float Localization::computeVelocityUpdateFraction()
     float slope = update_fraction_at_zero_vel_ / -val_for_zero_update_;
     float update_fraction = update_fraction_at_zero_vel_ + slope * total_v;
     update_fraction = std::max(std::min(update_fraction, update_fraction_at_zero_vel_), 0.0f);
+
+    PLOGD_(LOCALIZATION_LOG_ID).printf("\nVelocity fraction:\n");
+    PLOGD_(LOCALIZATION_LOG_ID).printf("  Total v: %4.2f, slope: %4.2f, update_fraction: %4.2f\n", total_v, slope, update_fraction);
+
     return update_fraction;
 }
 
@@ -77,14 +109,18 @@ float Localization::computePositionReadingReliability(Eigen::Vector3f position)
     std::vector<Eigen::Vector3f> previous_readings = prev_positions_raw_.get_contents();
     prev_positions_raw_.insert(position);
 
+    PLOGD_(LOCALIZATION_LOG_ID).printf("\nPosition reliability:\n");
+
     // Hacky algorithm to calculate standard deviation in each dimension
     // Partially borrowed from https://stackoverflow.com/questions/33268513/calculating-standard-deviation-variance-in-c
     bool all_valid = true;
     const int num_points = previous_readings.size();
+    PLOGD_(LOCALIZATION_LOG_ID).printf("  Num points: %i\n", num_points);
     if(num_points > 3)
     {
         for(int i = 0; i < 3; i++) 
         {
+            PLOGD_(LOCALIZATION_LOG_ID).printf("  Axis: %i\n", i);
             // Compute mean of previous samples
             float mean = 0;
             for (const auto& reading : previous_readings)
@@ -92,6 +128,7 @@ float Localization::computePositionReadingReliability(Eigen::Vector3f position)
                 mean += reading(i);
             }
             mean /= num_points; 
+            PLOGD_(LOCALIZATION_LOG_ID).printf("    Mean: %4.2f\n", mean);
 
             // Compute standard deviation of previous samples
             float variance = 0;
@@ -101,23 +138,28 @@ float Localization::computePositionReadingReliability(Eigen::Vector3f position)
             }
             variance /= num_points;
             const float stddev = sqrt(variance);
+            PLOGD_(LOCALIZATION_LOG_ID).printf("    Stddev: %4.2f\n", stddev);
 
             // If stddev of population is too high, don't consider it
             if (stddev > position_reliability_max_stddev_)
             {
                 all_valid = false;
+                PLOGD_(LOCALIZATION_LOG_ID).printf("    Invalid stddev\n");
                 break;
             }
 
             // Compute Z score of the current sample and check if it is in the range to keep
             const float z_score = (position(i) - mean)/stddev;
+            PLOGD_(LOCALIZATION_LOG_ID).printf("    Zscore: %4.2f\n", z_score);
             if(z_score > position_reliability_zscore_thresh_)
             {
+                PLOGD_(LOCALIZATION_LOG_ID).printf("    Invalid zscore\n");
                 all_valid = false;
                 break;
             }
         }
     }
+    else { PLOGD_(LOCALIZATION_LOG_ID).printf("  Skipped - not enough points\n");}
 
     // TODO: Make this more intelligent
     if(all_valid)

@@ -10,6 +10,7 @@ Robot SW:
             - Compute 'confidence' in measured pos, use as part of trust factor
             - Might capture the velocity scaling automatically
             - Consider surfacing warning if rolling stddev of measurements gets really large while stationary 
+- Fix controller loop time averager reading
 
 Robot HW:
 - Try to estimate how long the controller batteries will last fully loaded

@@ -23,6 +23,7 @@ void configure_logger()
     // Make file names
     std::string robot_log_file_name = std::string("log/robot_log_") + std::string(datetime_str) + std::string(".txt");
     std::string motion_log_file_name = std::string("log/motion_log_") + std::string(datetime_str) + std::string(".txt");
+    std::string localization_log_file_name = std::string("log/localization_log_") + std::string(datetime_str) + std::string(".txt");
 
     // Initialize robot logs to to go file and console
     static plog::RollingFileAppender<plog::TxtFormatter> fileAppender(robot_log_file_name.c_str(), 0, 0);
@@ -32,6 +33,10 @@ void configure_logger()
     // Initialize motion logs to go to file
     static plog::RollingFileAppender<plog::MessageOnlyFormatter> motionFileAppender(motion_log_file_name.c_str(), 100000, 0);
     plog::init<MOTION_LOG_ID>(plog::debug, &motionFileAppender);
+
+    // Initialize localization logs to go to file
+    static plog::RollingFileAppender<plog::MessageOnlyFormatter> localizationFileAppender(localization_log_file_name.c_str(), 100000, 0);
+    plog::init<LOCALIZATION_LOG_ID>(plog::debug, &localizationFileAppender);
 
     PLOGI << "Logger ready";
 }

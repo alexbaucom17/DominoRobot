@@ -24,6 +24,7 @@ extern libconfig::Config cfg;
 
 // Log file ID for motion specific stuff
 #define MOTION_LOG_ID 2
+#define LOCALIZATION_LOG_ID 3
 
 // Commands use to communicate about behavior specified from master
 enum class COMMAND
