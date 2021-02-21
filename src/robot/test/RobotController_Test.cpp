@@ -35,6 +35,14 @@ int moveToPositionHelper(RobotController& r, float x, float y, float a, int max_
 // a set amount of time
 void coarsePositionTest(float x, float y, float a)
 {
+    // Force all control parameters to 0 for perfect velocity tracking (due to ffd)
+    SafeConfigModifier<float> pos_kp_config_modifier("motion.translation.gains.kp", 0.0);
+    SafeConfigModifier<float> pos_ki_config_modifier("motion.translation.gains.ki", 0.0);
+    SafeConfigModifier<float> pos_kd_config_modifier("motion.translation.gains.kd", 0.0);
+    SafeConfigModifier<float> ang_kp_config_modifier("motion.rotation.gains.kp", 0.0);
+    SafeConfigModifier<float> ang_ki_config_modifier("motion.rotation.gains.ki", 0.0);
+    SafeConfigModifier<float> ang_kd_config_modifier("motion.rotation.gains.kd", 0.0);
+    
     int max_loop_counts =  100000;
     reset_mock_clock(); // Need to reset before creating RobotController which instantiates timers
     StatusUpdater s;

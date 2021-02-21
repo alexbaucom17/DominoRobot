@@ -277,7 +277,7 @@ class PositionController
         float kd;    
     };
 
-    PositionController(Gains gains);
+    PositionController(Gains gains = {0,0,0});
 
     // Resets error sum to avoid integral windup
     void reset();

@@ -38,6 +38,19 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
     fine_tolerances_.ang_pos_err = cfg.lookup("motion.rotation.position_threshold.fine");
     fine_tolerances_.trans_vel_err = cfg.lookup("motion.translation.velocity_threshold.fine");
     fine_tolerances_.ang_vel_err = cfg.lookup("motion.rotation.velocity_threshold.fine");
+
+    PositionController::Gains position_gains;
+    position_gains.kp = cfg.lookup("motion.translation.gains.kp");
+    position_gains.ki = cfg.lookup("motion.translation.gains.ki");
+    position_gains.kd = cfg.lookup("motion.translation.gains.kd");
+    x_controller_ = PositionController(position_gains);
+    y_controller_ = PositionController(position_gains);
+
+    PositionController::Gains angle_gains;
+    angle_gains.kp = cfg.lookup("motion.rotation.gains.kp");
+    angle_gains.ki = cfg.lookup("motion.rotation.gains.ki");
+    angle_gains.kd = cfg.lookup("motion.rotation.gains.kd");
+    a_controller_ = PositionController(angle_gains);
 }
 
 void RobotController::moveToPosition(float x, float y, float a)
@@ -174,12 +187,19 @@ PVTPoint RobotController::generateStationaryCommand()
 
 Velocity RobotController::computeControl(PVTPoint cmd)
 {
-    // TODO: Convert back to closed loop when ready
-    float x_cmd = cmd.velocity.vx;
-    float y_cmd = cmd.velocity.vy;
-    float a_cmd = cmd.velocity.va;
+    if(fake_perfect_motion_)
+    {
+        return cmd.velocity;
+    }
+    
+    float dt = prevControlLoopTimer_.dt_s();
+    prevControlLoopTimer_.reset();
+    
+    float x_cmd_vel = x_controller_.compute(cmd.position.x, cartPos_.x, cmd.velocity.vx, cartVel_.vx, dt);
+    float y_cmd_vel = y_controller_.compute(cmd.position.y, cartPos_.y, cmd.velocity.vy, cartVel_.vy, dt);
+    float a_cmd_vel = a_controller_.compute(cmd.position.a, cartPos_.a, cmd.velocity.va, cartVel_.va, dt);
 
-    return {x_cmd, y_cmd, a_cmd};
+    return {x_cmd_vel, y_cmd_vel, a_cmd_vel};
 }
 
 bool RobotController::checkForCompletedTrajectory(const PVTPoint cmd)

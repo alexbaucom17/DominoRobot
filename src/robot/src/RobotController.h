@@ -98,6 +98,10 @@ class RobotController
     TrajectoryTolerances fine_tolerances_;
     TimeRunningAverage loop_time_averager_;        // Handles keeping average of the loop timing
 
+    PositionController x_controller_;
+    PositionController y_controller_;
+    PositionController a_controller_;
+
 };
 
 #endif
