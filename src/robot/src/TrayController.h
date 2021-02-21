@@ -38,6 +38,7 @@ class TrayController
     bool action_step_running_;
     bool load_complete_;
     int action_step_;
+    bool fake_tray_motion_;
     ACTION cur_action_;
     RateController controller_rate_;       // Rate limit controller loop
     Timer action_timer_;

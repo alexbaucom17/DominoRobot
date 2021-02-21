@@ -9,9 +9,11 @@ TrayController::TrayController()
   action_step_running_(false),
   load_complete_(false),
   action_step_(0),
+  fake_tray_motion_(cfg.lookup("tray.fake_tray_motions")),
   cur_action_(ACTION::NONE),
   controller_rate_(cfg.lookup("tray.controller_frequency"))
 {
+    if(fake_tray_motion_) PLOGW << "Fake tray motion enabled";
 }
 
 void TrayController::initialize()
@@ -75,10 +77,10 @@ void TrayController::runStepAndWaitForCompletion(std::string data, std::string d
         if (serial_to_lifter_driver_->isConnected())
         {
             serial_to_lifter_driver_->send(data);
-            action_step_running_ = true;
-            PLOGI << debug_print;
-            action_timer_.reset();
         }
+        action_step_running_ = true;
+        PLOGI << debug_print;
+        action_timer_.reset();
     }
     else
     {
@@ -90,7 +92,7 @@ void TrayController::runStepAndWaitForCompletion(std::string data, std::string d
             msg = serial_to_lifter_driver_->rcv_lift();
         }
         // Initial delay for action
-        if(action_timer_.dt_ms() > 1000 && msg == "none") {
+        if(action_timer_.dt_ms() > 1000 && (msg == "none" || fake_tray_motion_)) {
             action_step_running_ = false;
             action_step_++;
         }
@@ -204,11 +206,20 @@ void TrayController::updateLoad()
     // 1 - Wait for load complete signal
     if(action_step_ == 1)
     {
-        if(load_complete_)
+        if(!action_step_running_) 
         {
-            action_step_++;
-            PLOGI << "Got load complete signal";
-            load_complete_ = false;
+            action_step_running_ = true;
+            PLOGI << "Waiting for load complete";
+        } 
+        else
+        {
+            if(load_complete_)
+            {
+                action_step_++;
+                PLOGI << "Got load complete signal";
+                load_complete_ = false;
+                action_step_running_ = false;
+            }
         }
     }
     // 2 - Move to default

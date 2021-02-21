@@ -51,6 +51,8 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
     angle_gains.ki = cfg.lookup("motion.rotation.gains.ki");
     angle_gains.kd = cfg.lookup("motion.rotation.gains.kd");
     a_controller_ = PositionController(angle_gains);
+
+    if(fake_perfect_motion_) PLOGW << "Fake robot motion enabled";
 }
 
 void RobotController::moveToPosition(float x, float y, float a)
