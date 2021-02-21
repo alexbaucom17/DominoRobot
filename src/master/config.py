@@ -11,7 +11,8 @@ class Config:
 
     # ====== PATHS ========
     
-    root_path = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\"
+    root_path = "C:\\Users\\alexb\\Data\\Github\\DominoRobot\\"   # Desktop
+    #root_path = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\"  # Laptop
     mm_api_relative_path = "marvelmind_SW_20202_04_19\\API\\api_windows_64bit\\dashapi.dll"
     config_dir_path = os.path.dirname(os.path.realpath(__file__))
     mm_api_path = os.path.join(root_path, mm_api_relative_path)
@@ -23,20 +24,21 @@ class Config:
 
     # Maps robot (or static) to sets of marvel mind beacons
     device_map = {
-    "static": (1, 2),
-    "robot1": (12, 13)
+    "static": (11, 12),
+    "robot1": (1, 2)
     }
 
     # Specifies which IP address each robot has
-    ip_map = {'robot1': '10.0.0.3'}
+    # ip_map = {'robot1': '10.0.0.3'}   # Workshop
+    ip_map = {'robot1': '192.168.1.5'}   # Home
     base_station_ip = '10.0.0.100'
 
     # ====== PLAN GENERATION ========
 
     # Image configuration
     image_name = os.path.join(config_dir_path, 'MR.jpg')
-    desired_width = 200
-    desired_height = 200
+    desired_width = 40
+    desired_height = 80
     dominos = np.array(
                 [('black', (0,0,0)),
                 ('red',   (1,0,0)),
@@ -60,8 +62,8 @@ class Config:
     domino_spacing_y_px = round(domino_spacing_y / meters_per_pixel)
 
     # Tile configuration
-    tile_width = 100
-    tile_height = 100
+    tile_width = 20
+    tile_height = 40
     tile_background_color = (0.8, 0.8, 0.8)
     tile_edge_color = (0,0,1)
     tile_size_x_meters = tile_width * (domino_spacing_x + domino_width)
@@ -71,16 +73,16 @@ class Config:
     # ====== ENVIRONMENT CONFIGURATION ========
 
     # Map configuration (distances in meters, angles in degrees)
-    robot_boundaries = np.array([[0,0],[5,5]])
-    base_station_boundaries = np.array([[0.5,0.5],[0.5,1.5]])
-    base_station_target_pose = np.array([0, 1])
-    base_station_coarse_pose_offset = np.array([0, -1])
-    domino_field_origin = np.array([2,2])
-    domino_field_angle = 90
-    tile_placement_coarse_offset = np.array([0.2,0.2])
-    prep_position_distance = 2 # How far out of field boundaries to do robot prep move
-    exit_position_distance = 2 # How far out of the field boundaries to move to exit
-    frame_to_robot_offset = np.array([-0.5, 0])
+    robot_boundaries = np.array([[0,0],[10,10]])                # Bottom left, top right
+    base_station_boundaries = np.array([[0,1],[1,2]])           # Bottom left, top right
+    base_station_target_pose = np.array([0.5, 1.5, 180])        # Target position for robot to be under base station [x,y,a]
+    base_station_coarse_pose_offset = np.array([1.5, 0, 0])     # Offset from base station to use for apprach [x,y, a]
+    domino_field_origin = np.array([3,3])                       # Bottom left corner of domino field
+    domino_field_angle = 90                                     # Robot angle inside domino field 
+    tile_placement_coarse_offset = np.array([0.3,0.3])          # Offset position for tile placement [x,y]
+    prep_position_distance = 1                                  # How far out of field boundaries to do robot prep move
+    exit_position_distance = 1                                  # How far out of the field boundaries to move to exit
+    frame_to_robot_offset = np.array([0, 0])                    # Offset from front of tile to robot center [x,y] - not implemented yet
 
     # Computed - don't change
     field_width = tile_size_x_meters * desired_width/tile_width

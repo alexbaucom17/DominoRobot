@@ -327,22 +327,22 @@ class MoveAction(Action):
         # string name
         # X position [m]
         # Y position [m]
-        # Angle [rad]
+        # Angle [deg]
 
         super().__init__(action_type, name)
 
         self.x = float(x)
         self.y = float(y)
-        self.a = float(a)
+        self.a = float(a) * math.pi/180.0
 
     def getPos(self):
         return np.array([self.x, self.y])
 
     def getAngleDegrees(self):
-        return self.a
+        return self.a * 180.0/math.pi
 
     def getAngleRadians(self):
-        return self.a * math.pi/180.0
+        return self.a
 
     def draw(self, ax):
 
@@ -373,7 +373,7 @@ class MoveAction(Action):
                                     facecolor='c'))
 
 
-def generate_action_sequence(cfg, tile):
+def generate_full_action_sequence(cfg, tile):
     """
     Standard sequence:
     - Move to load
@@ -398,13 +398,13 @@ def generate_action_sequence(cfg, tile):
     actions = []
 
     name = "Move to load - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, cfg.base_station_target_pose[0], cfg.base_station_target_pose[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, cfg.base_station_target_pose[0], cfg.base_station_target_pose[1], cfg.base_station_target_pose[2]))
 
     name = "Load tile"
     actions.append(Action(ActionTypes.LOAD, name))
 
     name = "Move away from load - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], base_station_coarse_pos[2]))
 
     name = "Move to prep - coarse"
     prep_x = robot_placement_coarse_pose[0]
@@ -429,7 +429,48 @@ def generate_action_sequence(cfg, tile):
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, exit_x, exit_y, cfg.domino_field_angle))
 
     name = "Move to near load - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], base_station_coarse_pos[2]))
+
+    return actions
+
+
+def generate_small_testing_action_sequence(cfg, tile):
+    """
+    Short sequence for testing
+    Load
+    Move to near place - coarse
+    Move to place - fine
+    Move away from place - fine
+    Move to load - coarse
+    """
+
+    # Hardcoded values for quick hacky testing here
+    domino_field_origin = np.array([3,1]) 
+    field_angle = 0
+    tile_placement_coarse_offset = np.array([0.2, 0])
+    load_pose = np.array([1,1,0])
+
+    tile_pos_in_field_frame = np.array(tile.getPlacementPositionInMeters())
+    tile_pos_in_global_frame = tile_pos_in_field_frame + domino_field_origin
+    robot_placement_fine_pose = tile_pos_in_global_frame
+    robot_placement_coarse_pose = robot_placement_fine_pose - tile_placement_coarse_offset
+
+    actions = []
+
+    name = "Load tile"
+    actions.append(Action(ActionTypes.LOAD, name))
+
+    name = "Move to near place - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], field_angle))
+
+    name = "Move to place - fine"
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pose[0], robot_placement_fine_pose[1], field_angle))
+
+    name = "Move away from place - fine"
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], field_angle))
+
+    name = "Move to near load - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, load_pose[0], load_pose[1], load_pose[2]))
 
     return actions
 
@@ -473,16 +514,12 @@ def draw_env(cfg):
 
 class Cycle:
 
-    def __init__(self, id, cfg, robot_id, tile, seq=None):
+    def __init__(self, id, cfg, robot_id, tile, action_sequence):
         self.id = id
         self.cfg = cfg
         self.robot_id = robot_id
         self.tile = tile
-        
-        if seq is not None:
-            self.action_sequence = seq
-        else:
-            self.action_sequence = generate_action_sequence(cfg, tile)
+        self.action_sequence = action_sequence
         
 
     def draw_cycle(self, ax):
@@ -490,64 +527,26 @@ class Cycle:
             action.draw(ax)
 
 
+def generate_standard_cycles(cfg, field, cycle_generator_fn):
+    start_num = 1
+    robot_num = start_num
+    n_robots = len(cfg.ip_map)
+    cycles = []
 
-class Plan:
+    for tile in field.tiles:
+        action_sequence = cycle_generator_fn(cfg, tile)
+        cycles.append(Cycle(tile.order, cfg, "robot{}".format(robot_num), tile, action_sequence))
+        robot_num += 1
+        if robot_num > n_robots:
+            robot_num = start_num
 
-    def __init__(self, cfg):
-        self.cfg = cfg
-        self.field = DominoField(cfg)
-        self.cycles = []
-
-        logging.info('Generating robot actions...')
-        self._generate_all_cycles()
-        logging.info('done.')
-
-    def _generate_all_cycles(self):
-        start_num = 1
-        robot_num = start_num
-        n_robots = len(self.cfg.ip_map)
-
-        for tile in self.field.tiles:
-            self.cycles.append(Cycle(tile.order, self.cfg, "robot{}".format(robot_num), tile))
-            robot_num += 1
-            if robot_num > n_robots:
-                robot_num = start_num
-
-    def draw_cycle(self, cycle_num):
-        ax = draw_env(self.cfg)
-        self.cycles[cycle_num].draw_cycle(ax)
-        plt.show()
-
-    def get_cycle(self, cycle_id):
-        try:
-            return self.cycles[cycle_id]
-        except IndexError:
-            return None
-
-    def get_action(self, cycle_id, action_id):
-        cycle = self.get_cycle(cycle_id)
-        if cycle:
-            try:
-                return cycle.action_sequence[action_id]
-            except IndexError:
-                return None
-        else:
-            return None
+    return cycles
 
 
+class BasePlan:
 
-class TestPlan:
-    """
-    Test plan used for debugging and testing various action sequences
-    """
-
-    def __init__(self):
-        actions = []
-        actions.append(MoveAction(ActionTypes.MOVE_COARSE, "TestMoveCoarse", 0.5, 0.5, 0))
-        actions.append(MoveAction(ActionTypes.MOVE_FINE, 'TestMoveFine', 1,1,0))
-        actions.append(MoveAction(ActionTypes.MOVE_COARSE, 'Blah', 0,0,3.14))
-
-        self.cycles = [Cycle(i,None,'robot1','TestCycle{}'.format(i), seq=actions) for i in range(3)]
+    def __init__(self, cycles):
+        self.cycles = cycles
 
     def get_cycle(self, cycle_num):
         try:
@@ -564,6 +563,37 @@ class TestPlan:
                 return None
         else:
             return None
+
+class Plan(BasePlan):
+
+    def __init__(self, cfg, cycle_generator_fn):
+        self.cfg = cfg
+        self.field = DominoField(cfg)
+
+        logging.info('Generating robot actions...')
+        cycles = generate_standard_cycles(self.cfg, self.field, cycle_generator_fn)
+        logging.info('done.')
+        super().__init__(cycles)
+
+    def draw_cycle(self, cycle_num):
+        ax = draw_env(self.cfg)
+        self.get_cycle(cycle_num).draw_cycle(ax)
+        plt.show()
+
+
+class TestPlan(BasePlan):
+    """
+    Test plan used for debugging and testing various action sequences
+    """
+
+    def __init__(self):
+        actions = []
+        actions.append(MoveAction(ActionTypes.MOVE_COARSE, "TestMoveCoarse", 0.5, 0.5, 0))
+        actions.append(MoveAction(ActionTypes.MOVE_FINE, 'TestMoveFine', 1,1,0))
+        actions.append(MoveAction(ActionTypes.MOVE_COARSE, 'Blah', 0,0,3.14))
+
+        cycles = [Cycle(i,None,'robot1','TestCycle{}'.format(i), actions) for i in range(3)]
+        super().__init__(cycles)
 
 
 
@@ -583,13 +613,13 @@ if __name__ == '__main__':
         ]
     )
 
-    plan = Plan(cfg)
+    plan = Plan(cfg, generate_small_testing_action_sequence)
 
-    plan.field.printStats()
+    # plan.field.printStats()
     plan.field.show_image_parsing()
     plan.field.render_domino_image_tiles()
-    plan.field.show_tile_ordering()
-    plan.draw_cycle(3)
+    # plan.field.show_tile_ordering()
+    plan.draw_cycle(2)
 
 
     sg.change_look_and_feel('Dark Blue 3')
