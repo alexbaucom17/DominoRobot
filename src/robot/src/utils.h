@@ -266,6 +266,31 @@ class CircularBuffer
 };
 
 
+class PositionController
+{
+  public:
+
+    struct Gains
+    {
+        float kp;
+        float ki;
+        float kd;    
+    };
+
+    PositionController(Gains gains);
+
+    // Resets error sum to avoid integral windup
+    void reset();
+
+    // Compute control velocity for target position with feedforward velocity
+    float compute(float target_position, float actual_position, float target_velocity, float actual_velocity, float dt);
+
+  private:
+
+    Gains gains_;
+    float error_sum_;
+};
+
 
 
 #endif

@@ -227,3 +227,23 @@ ClockFactory::ClockFactory()
 : mode_(CLOCK_FACTORY_MODE::STANDARD),
   clock_instance_()
 {}
+
+
+PositionController::PositionController(Gains gains) 
+: gains_(gains),
+  error_sum_(0.0)
+{ }
+
+void PositionController::reset()
+{
+    error_sum_ = 0.0;
+}
+
+float PositionController::compute(float target_position, float actual_position, float target_velocity, float actual_velocity, float dt)
+{
+    float pos_err = target_position - actual_position;
+    float vel_err = target_velocity - actual_velocity;
+    error_sum_ += pos_err * dt;
+    float output_velocity = target_velocity + gains_.kp * pos_err + gains_.kd * vel_err + gains_.ki * error_sum_;
+    return output_velocity;
+}

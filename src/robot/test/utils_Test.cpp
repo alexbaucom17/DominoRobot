@@ -299,3 +299,83 @@ TEST_CASE("CircularBuffer", "[utils]")
     }
     
 }
+
+
+TEST_CASE("PositionController", "[utils]")
+{
+
+    SECTION("P only")
+    {
+        PositionController::Gains gains {1,0,0};
+        PositionController controller(gains);
+
+        float target_pos = 1.0;
+        float actual_pos = 0.0;
+        float target_vel = 0.0;
+        float actual_vel = 0.0;
+        float dt = 0.1;
+        float cmd_vel = controller.compute(target_pos, actual_pos, target_vel, actual_vel, dt);
+
+        REQUIRE(cmd_vel == 1.0);
+    }
+
+    SECTION("PD")
+    {
+        PositionController::Gains gains {1,0,0.5};
+        PositionController controller(gains);
+
+        float target_pos = 1.0;
+        float actual_pos = 0.0;
+        float target_vel = 1.0;
+        float actual_vel = 0.0;
+        float dt = 0.1;
+        float cmd_vel = controller.compute(target_pos, actual_pos, target_vel, actual_vel, dt);
+
+        REQUIRE(cmd_vel == 2.5);
+    }
+
+    SECTION("PID")
+    {
+        PositionController::Gains gains {1,1,0.5};
+        PositionController controller(gains);
+
+        float target_pos = 1.0;
+        float actual_pos = 0.0;
+        float target_vel = 1.0;
+        float actual_vel = 0.0;
+        float dt = 0.1;
+        float cmd_vel = controller.compute(target_pos, actual_pos, target_vel, actual_vel, dt);
+
+        
+        // Compute again to get additive I gain
+        cmd_vel = controller.compute(target_pos, actual_pos, target_vel, actual_vel, dt);
+        REQUIRE(cmd_vel == 2.7f);
+
+        // Reset gain
+        controller.reset();
+        cmd_vel = controller.compute(target_pos, actual_pos, target_vel, actual_vel, dt);
+        REQUIRE(cmd_vel == 2.6f);
+    }
+
+    SECTION("PID step response no noise")
+    {
+        PositionController::Gains gains {2,1,0.01};
+        PositionController controller(gains);
+
+        float target_pos = 1.0;
+        float actual_pos = 0.0;
+        float target_vel = 0.0;
+        float actual_vel = 0.0;
+        float dt = 0.1;
+
+        for (int i = 0; i < 100; i++) 
+        {
+            actual_vel = controller.compute(target_pos, actual_pos, target_vel, actual_vel, dt);
+            actual_pos += actual_vel*dt;
+        }
+
+        REQUIRE(actual_vel == Approx(target_vel).margin(0.001));
+        REQUIRE(actual_pos == Approx(target_pos).margin(0.001));
+    }
+
+}
