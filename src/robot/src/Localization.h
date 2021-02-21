@@ -40,7 +40,8 @@ class Localization
     float mm_x_offset_;
     float mm_y_offset_;
     float position_reliability_zscore_thresh_;
-    float position_reliability_max_stddev_;
+    float position_reliability_max_stddev_pos_;
+    float position_reliability_max_stddev_ang_;
 
     CircularBuffer<Eigen::Vector3f> prev_positions_raw_;
     CircularBuffer<Eigen::Vector3f> prev_positions_filtered_;

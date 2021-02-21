@@ -181,7 +181,8 @@ TEST_CASE("Test reading reliability filter", "[Localization]")
     SafeConfigModifier<float> frac_config_modifier("localization.update_fraction_at_zero_vel", 1.0);
     SafeConfigModifier<float> zscore_config_modifier("localization.position_reliability_zscore_thresh", 3.0);
     SafeConfigModifier<int> buffer_size_config_modifier("localization.position_reliability_buffer_size", 10);
-    SafeConfigModifier<float> stddev_config_modifier("localization.position_reliability_max_stddev", 0.05);
+    SafeConfigModifier<float> stddev_pos_config_modifier("localization.position_reliability_max_stddev_pos", 0.05);
+    SafeConfigModifier<float> stddev_ang_config_modifier("localization.position_reliability_max_stddev_ang", 0.1);
     std::default_random_engine generator;
 
     SECTION("Filter spurious value")

@@ -1,6 +1,7 @@
 #include "robot.h"
 
 #include <plog/Log.h> 
+#include "utils.h"
 
 #include <iostream>
 
@@ -44,7 +45,8 @@ void Robot::runOnce()
     if (positions.size() == 3)
     {
         position_time_averager_.mark_point();
-        controller_.inputPosition(positions[0], positions[1], positions[2]);
+        float angle_rad = wrap_angle(positions[2] * M_PI / 180.0);
+        controller_.inputPosition(positions[0], positions[1], angle_rad);
     }
 
     // Service controllers
