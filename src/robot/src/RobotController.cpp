@@ -150,6 +150,10 @@ void RobotController::update()
         // Force current velocity to 0
         localization_.forceZeroVelocity();
 
+        x_controller_.reset();
+        y_controller_.reset();
+        a_controller_.reset();
+
         // Force flags to default values
         fineMode_ = true;
         velOnlyMode_ = false;
