@@ -238,7 +238,7 @@ class Tile:
 
         tile_start_x = self.coordinate[0] * self.cfg.tile_size_x_meters
         tile_start_y = self.coordinate[1] * self.cfg.tile_size_y_meters
-        return (tile_start_x, tile_start_y)
+        return (tile_start_y, tile_start_x)
 
 
     def draw(self, array):
@@ -445,15 +445,19 @@ def generate_small_testing_action_sequence(cfg, tile):
     """
 
     # Hardcoded values for quick hacky testing here
-    domino_field_origin = np.array([3,1]) 
+    domino_field_origin = np.array([1,0]) 
     field_angle = 0
-    tile_placement_coarse_offset = np.array([0.2, 0])
-    load_pose = np.array([1,1,0])
+    tile_placement_coarse_offset = np.array([0.3, 0])
+    load_pose = np.array([0,0,0])
 
     tile_pos_in_field_frame = np.array(tile.getPlacementPositionInMeters())
     tile_pos_in_global_frame = tile_pos_in_field_frame + domino_field_origin
     robot_placement_fine_pose = tile_pos_in_global_frame
     robot_placement_coarse_pose = robot_placement_fine_pose - tile_placement_coarse_offset
+
+    print(tile.order)
+    print(robot_placement_coarse_pose)
+    print(robot_placement_fine_pose)
 
     actions = []
 
@@ -464,10 +468,13 @@ def generate_small_testing_action_sequence(cfg, tile):
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], field_angle))
 
     name = "Move to place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pose[0], robot_placement_fine_pose[1], field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_fine_pose[0], robot_placement_fine_pose[1], field_angle))
+
+    name = "Place tile"
+    actions.append(Action(ActionTypes.PLACE, name))
 
     name = "Move away from place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], field_angle))
 
     name = "Move to near load - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, load_pose[0], load_pose[1], load_pose[2]))
@@ -616,10 +623,10 @@ if __name__ == '__main__':
     plan = Plan(cfg, generate_small_testing_action_sequence)
 
     # plan.field.printStats()
-    plan.field.show_image_parsing()
-    plan.field.render_domino_image_tiles()
+    # plan.field.show_image_parsing()
+    # plan.field.render_domino_image_tiles()
     # plan.field.show_tile_ordering()
-    plan.draw_cycle(2)
+    plan.draw_cycle(3)
 
 
     sg.change_look_and_feel('Dark Blue 3')

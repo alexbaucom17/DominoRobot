@@ -11,8 +11,8 @@ class Config:
 
     # ====== PATHS ========
     
-    root_path = "C:\\Users\\alexb\\Data\\Github\\DominoRobot\\"   # Desktop
-    #root_path = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\"  # Laptop
+    #root_path = "C:\\Users\\alexb\\Data\\Github\\DominoRobot\\"   # Desktop
+    root_path = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\"  # Laptop
     mm_api_relative_path = "marvelmind_SW_20202_04_19\\API\\api_windows_64bit\\dashapi.dll"
     config_dir_path = os.path.dirname(os.path.realpath(__file__))
     mm_api_path = os.path.join(root_path, mm_api_relative_path)
@@ -29,16 +29,16 @@ class Config:
     }
 
     # Specifies which IP address each robot has
-    # ip_map = {'robot1': '10.0.0.3'}   # Workshop
-    ip_map = {'robot1': '192.168.1.5'}   # Home
+    ip_map = {'robot1': '10.0.0.3'}   # Workshop
+    #ip_map = {'robot1': '192.168.1.5'}   # Home
     base_station_ip = '10.0.0.100'
 
     # ====== PLAN GENERATION ========
 
     # Image configuration
     image_name = os.path.join(config_dir_path, 'MR.jpg')
-    desired_width = 40
-    desired_height = 80
+    desired_width = 30
+    desired_height = 40
     dominos = np.array(
                 [('black', (0,0,0)),
                 ('red',   (1,0,0)),
@@ -49,9 +49,9 @@ class Config:
 
     # To get image to look right, need spacing to create square pixels for now
     # could fix this later by making image field creation take into account non-square pixels
-    domino_width  = 0.024 # meters
-    domino_height = 0.008 # meters
-    domino_spacing_x = 0.008 # meters
+    domino_width  = 0.028 # meters
+    domino_height = 0.0095 # meters
+    domino_spacing_x = 0.036 # meters
     domino_spacing_y = 0.024 # meters
 
     # Spacing for drawing dominos as pixels instead of rectangles
@@ -62,12 +62,14 @@ class Config:
     domino_spacing_y_px = round(domino_spacing_y / meters_per_pixel)
 
     # Tile configuration
-    tile_width = 20
-    tile_height = 40
+    tile_width = 15
+    tile_height = 20
     tile_background_color = (0.8, 0.8, 0.8)
     tile_edge_color = (0,0,1)
     tile_size_x_meters = tile_width * (domino_spacing_x + domino_width)
     tile_size_y_meters = tile_height * (domino_spacing_y + domino_height)
+
+    print(tile_size_y_meters)
 
 
     # ====== ENVIRONMENT CONFIGURATION ========
