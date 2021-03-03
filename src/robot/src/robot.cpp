@@ -6,6 +6,36 @@
 #include <iostream>
 
 
+WaitForLocalizeHelper::WaitForLocalizeHelper(const StatusUpdater& statusUpdater, float max_timeout, float confidence_threshold) 
+: statusUpdater_(statusUpdater),
+    timer_(),
+    max_timeout_(max_timeout),
+    confidence_threshold_(confidence_threshold)
+{}
+
+bool WaitForLocalizeHelper::isDone() 
+{
+    if(timer_.dt_s() > max_timeout_)
+    {
+        PLOGW.printf("Exiting wait for localize due to time");
+        return true;
+    }
+    float confidence = statusUpdater_.getLocalizationConfidence();
+    if(confidence > confidence_threshold_)
+    {
+        PLOGI.printf("Exiting wait for localize with confidence: %4.2f", confidence);
+        return true;
+    }
+    return false;
+}
+
+void WaitForLocalizeHelper::start()
+{
+    timer_.reset();
+}
+
+
+
 Robot::Robot()
 : statusUpdater_(),
   server_(statusUpdater_),
@@ -13,6 +43,7 @@ Robot::Robot()
   tray_controller_(),
   mm_wrapper_(),
   position_time_averager_(20),
+  wait_for_localize_helper_(statusUpdater_, cfg.lookup("localization.max_wait_time"), cfg.lookup("localization.confidence_for_wait")),
   curCmd_(COMMAND::NONE)
 {
     PLOGI.printf("Robot starting");
@@ -141,6 +172,10 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     {
         tray_controller_.initialize();
     }
+    else if (cmd == COMMAND::WAIT_FOR_LOCALIZATION)
+    {
+        wait_for_localize_helper_.start();
+    }
     else
     {
         PLOGW.printf("Unknown command!");
@@ -168,6 +203,10 @@ bool Robot::checkForCmdComplete(COMMAND cmd)
             cmd == COMMAND::INITIALIZE_TRAY)
     {
         return !tray_controller_.isActionRunning();
+    }
+    else if (cmd == COMMAND::WAIT_FOR_LOCALIZATION) 
+    {
+        return wait_for_localize_helper_.isDone();
     }
     else
     {

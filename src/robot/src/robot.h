@@ -8,6 +8,21 @@
 #include "TrayController.h"
 #include "utils.h"
 
+class WaitForLocalizeHelper 
+{
+  public:
+    WaitForLocalizeHelper(const StatusUpdater& statusUpdater, float max_timeout, float confidence_threshold);
+    bool isDone();
+    void start();
+
+  private:
+    const StatusUpdater& statusUpdater_;
+    Timer timer_;
+    float max_timeout_;
+    float confidence_threshold_;
+};
+
+
 class Robot
 {
 
@@ -34,6 +49,7 @@ class Robot
     MarvelmindWrapper mm_wrapper_;
 
     TimeRunningAverage position_time_averager_;    // Handles keeping average of the position update timing
+    WaitForLocalizeHelper wait_for_localize_helper_;
 
     COMMAND curCmd_;
 };

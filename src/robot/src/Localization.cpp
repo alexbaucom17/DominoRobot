@@ -4,9 +4,10 @@
 #include <plog/Log.h>
 #include "constants.h"
 
-Localization::Localization()
+Localization::Localization(StatusUpdater& statusUpdater)
 : pos_(0,0,0),
   vel_(0,0,0),
+  localization_confidence_(1.0),
   update_fraction_at_zero_vel_(cfg.lookup("localization.update_fraction_at_zero_vel")),
   val_for_zero_update_(cfg.lookup("localization.val_for_zero_update")),
   mm_x_offset_(cfg.lookup("localization.mm_x_offset")),
@@ -15,7 +16,8 @@ Localization::Localization()
   position_reliability_max_stddev_pos_(cfg.lookup("localization.position_reliability_max_stddev_pos")),
   position_reliability_max_stddev_ang_(cfg.lookup("localization.position_reliability_max_stddev_ang")),
   prev_positions_raw_(cfg.lookup("localization.position_reliability_buffer_size")),
-  prev_positions_filtered_(cfg.lookup("localization.position_reliability_buffer_size"))
+  prev_positions_filtered_(cfg.lookup("localization.position_reliability_buffer_size")),
+  statusUpdater_(statusUpdater)
 {}
 
 void Localization::updatePositionReading(Point global_position)
@@ -47,6 +49,10 @@ void Localization::updatePositionReading(Point global_position)
         adjusted_measured_position(0), adjusted_measured_position(1), adjusted_measured_position(2));
     PLOGI_(LOCALIZATION_LOG_ID).printf("  vel_fraction: %4.3f, reliability: %4.3f", update_fraction, reading_reliability);
     PLOGI_(LOCALIZATION_LOG_ID).printf("  Current position: %s\n", pos_.toString().c_str());
+
+    // TODO: Merge all reliability into a single score
+    // TODO: Report additional metrics - last reading used, current reading reliability, overall position reliability
+    // TODO: Consider if this warrents using a kalman filter again - reading reliability could factor into update covariance matrix?
 }
 
 void Localization::updateVelocityReading(Velocity local_cart_vel, float dt)

@@ -43,6 +43,11 @@ void StatusUpdater::updatePositionLoopTime(int position_loop_ms)
     currentStatus_.position_loop_ms = position_loop_ms;
 }
 
+void StatusUpdater::updateLocalizationConfidence(float localization_confidence)
+{
+    currentStatus_.localization_confidence = localization_confidence;
+}
+
 void StatusUpdater::updatePositionConfidence(float cx, float cy, float ca)
 {
   // Inputs are from the covariance matrix, using those values to estimate a fractional 'confidence'

@@ -12,7 +12,7 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
 : trajGen_(),
   statusUpdater_(statusUpdater),
   serial_to_motor_driver_(SerialCommsFactory::getFactoryInstance()->get_serial_comms(CLEARCORE_USB)),
-  localization_(),
+  localization_(statusUpdater),
   prevControlLoopTimer_(),
   prevOdomLoopTimer_(),
   trajStartTimer_(),

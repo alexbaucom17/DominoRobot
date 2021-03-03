@@ -123,6 +123,11 @@ COMMAND RobotServer::getCommand(std::string message)
             statusUpdater_.clearErrorStatus();
             sendAck(type);
         }
+        else if (type == "wait_for_loc")
+        {
+            sendAck(type);
+            cmd = COMMAND::WAIT_FOR_LOCALIZATION;
+        }
         else if(type == "")
         {
             printIncomingCommand(message);

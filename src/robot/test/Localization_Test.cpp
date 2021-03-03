@@ -3,6 +3,7 @@
 #include <random>
 
 #include "Localization.h"
+#include "StatusUpdater.h"
 #include "test-utils.h"
 
 void moveToPositionWithVelOnly(Localization& L, Point target)
@@ -19,7 +20,8 @@ TEST_CASE("Simple velocity only", "[Localization]")
     SafeConfigModifier<float> mm_x_config_modifier("localization.mm_x_offset", 0.0);
     SafeConfigModifier<float> mm_y_config_modifier("localization.mm_y_offset", 0.0);
     
-    Localization L;
+    StatusUpdater s;
+    Localization L(s);
 
     L.updateVelocityReading({1,0,0}, 1);
     REQUIRE(L.getVelocity() == Velocity{1,0,0});
@@ -36,7 +38,8 @@ TEST_CASE("Simple position adjustment", "[Localization]")
         // Setup x,y offset for mm to be 0 for this simple case
         SafeConfigModifier<float> mm_x_config_modifier("localization.mm_x_offset", 0.0);
         SafeConfigModifier<float> mm_y_config_modifier("localization.mm_y_offset", 0.0);
-        Localization L;
+        StatusUpdater s;
+        Localization L(s);
 
         // "Move" robot to target position
         float move_x = 1.0;
@@ -66,7 +69,8 @@ TEST_CASE("Simple position adjustment", "[Localization]")
         // Setup x,y offset for mm to be 0 for this simple case
         SafeConfigModifier<float> mm_x_config_modifier("localization.mm_x_offset", 0.0);
         SafeConfigModifier<float> mm_y_config_modifier("localization.mm_y_offset", 0.0);
-        Localization L;
+        StatusUpdater s;
+        Localization L(s);
 
         // "Move" robot to target position
         float move_x = 1.0;
@@ -104,7 +108,8 @@ TEST_CASE("Position update with MM offset", "[Localization]")
     // Setup x,y offset for mm
     SafeConfigModifier<float> mm_x_config_modifier("localization.mm_x_offset", -100.0);
     SafeConfigModifier<float> mm_y_config_modifier("localization.mm_y_offset", 10.0);
-    Localization L;
+    StatusUpdater s;
+    Localization L(s);
 
     // "Move" robot to target position
     float move_x = 1.0;
@@ -145,7 +150,8 @@ TEST_CASE("Position update with velocity adjustment", "[Localization]")
     // because I modified those values in the config
     SafeConfigModifier<float> frac_config_modifier("localization.update_fraction_at_zero_vel", 1.0);
     SafeConfigModifier<float> val_config_modifier("localization.val_for_zero_update", 0.1);
-    Localization L;
+    StatusUpdater s;
+    Localization L(s);
 
     // Start 'robot' moving at specific velocity so we can inject the test conditions
     float target_vel_x = 0.05;
@@ -187,7 +193,8 @@ TEST_CASE("Test reading reliability filter", "[Localization]")
 
     SECTION("Filter spurious value")
     {
-        Localization L;
+        StatusUpdater s;
+        Localization L(s);
         float update_x = 0.0;
         float update_y = 0.0; 
         float update_a = 0.0;
@@ -212,7 +219,8 @@ TEST_CASE("Test reading reliability filter", "[Localization]")
     }
     SECTION("Position updates after shift")
     {
-        Localization L;
+        StatusUpdater s;
+        Localization L(s);
         float update_x = 1.0;
         float update_y = 0.0; 
         float update_a = 0.0;
@@ -251,7 +259,8 @@ TEST_CASE("Test reading reliability filter", "[Localization]")
     }
     SECTION("High variance sampling doesn't affect position")
     {
-        Localization L;
+        StatusUpdater s;
+        Localization L(s);
         float update_x = 1.0;
         float update_y = 0.0; 
         float update_a = 0.0;

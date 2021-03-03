@@ -24,13 +24,17 @@ class StatusUpdater
 
     void updateInProgress(bool in_progress);
 
-    bool getInProgress() { return currentStatus_.in_progress; };
+    bool getInProgress() const { return currentStatus_.in_progress; };
     
     void setErrorStatus() { currentStatus_.error_status = true;}
 
     void clearErrorStatus() {currentStatus_.error_status = false;};
 
-    bool getErrorStatus() {return currentStatus_.error_status;}
+    bool getErrorStatus() const {return currentStatus_.error_status;}
+
+    void updateLocalizationConfidence(float localization_confidence);
+
+    float getLocalizationConfidence() const {return currentStatus_.localization_confidence;};
 
     void update_motor_driver_connected(bool connected);
 
@@ -60,6 +64,8 @@ class StatusUpdater
       bool motor_driver_connected;
       bool lifter_driver_connected;
 
+      float localization_confidence;
+
       //When adding extra fields, update toJsonString method to serialize and add additional capacity
 
       Status():
@@ -78,14 +84,15 @@ class StatusUpdater
       error_status(false),
       counter(0),
       motor_driver_connected(false),
-      lifter_driver_connected(false)
+      lifter_driver_connected(false),
+      localization_confidence(0.0)
       {
       }
 
       std::string toJsonString()
       {
         // Size the object correctly
-        const size_t capacity = JSON_OBJECT_SIZE(20); // Update when adding new fields
+        const size_t capacity = JSON_OBJECT_SIZE(22); // Update when adding new fields
         DynamicJsonDocument root(capacity);
 
         // Format to match messages sent by server
@@ -109,6 +116,7 @@ class StatusUpdater
         doc["counter"] = counter++;
         doc["motor_driver_connected"] = motor_driver_connected;
         doc["lifter_driver_connected"] = lifter_driver_connected;
+        doc["localization_confidence"] = localization_confidence;
 
         // Serialize and return string
         std::string msg;

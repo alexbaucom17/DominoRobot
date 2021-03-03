@@ -2,12 +2,13 @@
 #define Localization_h
 
 #include "utils.h"
+#include "StatusUpdater.h"
 #include <Eigen/Dense>
 
 class Localization
 {
   public:
-    Localization();
+    Localization(StatusUpdater& statusUpdater);
 
     void updatePositionReading(Point global_position);
 
@@ -33,6 +34,7 @@ class Localization
     // Current position and velocity
     Point pos_;
     Velocity vel_;
+    float localization_confidence_;
 
     // Parameters for localization algorithms
     float update_fraction_at_zero_vel_;
@@ -45,6 +47,8 @@ class Localization
 
     CircularBuffer<Eigen::Vector3f> prev_positions_raw_;
     CircularBuffer<Eigen::Vector3f> prev_positions_filtered_;
+
+    StatusUpdater& statusUpdater_;
 
 
 };
