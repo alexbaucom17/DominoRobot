@@ -231,6 +231,11 @@ class RobotClient(ClientBase):
         msg = {'type': 'clear_error'}
         self.send_msg_and_wait_for_ack(msg)
 
+    def wait_for_localization(self):
+        """ Tell robot to wait for localization"""
+        msg = {'type': 'wait_for_loc'}
+        self.send_msg_and_wait_for_ack(msg)
+
 class BaseStationClient(ClientBase):
     
     def __init__(self, cfg):
@@ -275,6 +280,9 @@ class MockRobotClient:
         return {"in_progress": False, "pos_x": 1, "pos_y": 2, "pos_a": 0}
     
     def clear_error(self):
+        pass
+
+    def wait_for_localization(self):
         pass
 
 class MockBaseStationClient:

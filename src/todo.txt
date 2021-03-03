@@ -2,32 +2,20 @@
 Robot controller:
 
 Robot SW:
-- Possible update function improvements
-    - "Trust factor" based on last N updates
-        - Compute stddev of odom_pos-measured_pos
-            - Need below some threshold to update based on raw distance
-        - Compute stddev of all measured_pos
-            - Compute 'confidence' in measured pos, use as part of trust factor
-            - Might capture the velocity scaling automatically
-            - Consider surfacing warning if rolling stddev of measurements gets really large while stationary 
 - Consider using marvelmind position confidence metric as part of localization reliability
-- Consider surfacing some sort of position confidence to gui
-- Fix rotation issue with config/plan generation
+- Improve general position localization algorithm/metric
 
 Robot HW:
-- Try to estimate how long the controller batteries will last fully loaded
-    - Powering pi, clearcore, servo, and optoswitch
-- Try to estimate how long robot batteries will last (draw seems to be ~0.3-1 A)
-- Figure out and document safe low battery level before recharge is needed
-- Approx Dimensions:
-    - Distance between mm pair on robot - 570mm, dist from front - 245mm
-    - Wheel mount to center of wheel: FL: 44mm FR: 43mm RC: 44mm
-- Exact values from Josh:
-    - Center of rotation - 12 in from sides, 7.5 in from front of frame
-    - Wheel mounts - 14.22 in from COR to front face of wheel mounts
-- Investigate couterweight options
 
-Marvelmind issues:
+Master:
+- Fix rotation issue with config/plan generation
+
+Base station HW:
+
+Purchase:
+
+
+Marvelmind notes:
     - About 70-80% of the time, accuracy looks great, but the rest of the time, the positions jump around wildly
     - Raising hedges to give clear LOS didn't fix
     - Raising stationary beacons up really high to help LOS didn't fix either (maybe slight improvement though)
@@ -53,13 +41,11 @@ Marvelmind issues:
         It still may be worth getting the newer beacons just to simply the distance setup - otherwise I have to manually calibrate distances all the time and I am worried about error from that.
         Other than the jumping - the motion looked really nice and smooth and promising. Just need to fix the noise
 
-
-Master:
-- Figure out how to sequence loading between base and robot
-- Add unit tests (?)
-
-Base station HW:
-- Set up electronics
-
-
-Purchase:
+Hardware info
+- Approx Dimensions:
+    - Distance between mm pair on robot - 570mm, dist from front - 245mm
+    - Wheel mount to center of wheel: FL: 44mm FR: 43mm RC: 44mm
+- Exact values from Josh:
+    - Center of rotation - 12 in from sides, 7.5 in from front of frame
+    - Wheel mounts - 14.22 in from COR to front face of wheel mounts
+- Controller battery - 2x 11.V battery - min safe charge voltage is ~21V

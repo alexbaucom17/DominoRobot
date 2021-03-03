@@ -11,8 +11,8 @@ class Config:
 
     # ====== PATHS ========
     
-    #root_path = "C:\\Users\\alexb\\Data\\Github\\DominoRobot\\"   # Desktop
-    root_path = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\"  # Laptop
+    root_path = "C:\\Users\\alexb\\Data\\Github\\DominoRobot\\"   # Desktop
+    #root_path = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\"  # Laptop
     mm_api_relative_path = "marvelmind_SW_20202_04_19\\API\\api_windows_64bit\\dashapi.dll"
     config_dir_path = os.path.dirname(os.path.realpath(__file__))
     mm_api_path = os.path.join(root_path, mm_api_relative_path)
@@ -29,8 +29,8 @@ class Config:
     }
 
     # Specifies which IP address each robot has
-    ip_map = {'robot1': '10.0.0.3'}   # Workshop
-    #ip_map = {'robot1': '192.168.1.5'}   # Home
+    #ip_map = {'robot1': '10.0.0.3'}   # Workshop
+    ip_map = {'robot1': '192.168.1.5'}   # Home
     base_station_ip = '10.0.0.100'
 
     # ====== PLAN GENERATION ========
@@ -69,7 +69,7 @@ class Config:
     tile_size_x_meters = tile_width * (domino_spacing_x + domino_width)
     tile_size_y_meters = tile_height * (domino_spacing_y + domino_height)
 
-    print(tile_size_y_meters)
+    #print(tile_size_y_meters)
 
 
     # ====== ENVIRONMENT CONFIGURATION ========

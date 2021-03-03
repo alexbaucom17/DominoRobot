@@ -290,7 +290,7 @@ class ActionTypes(enum.Enum):
     TRAY_INIT = 6, 
     LOAD_COMPLETE = 7,
     ESTOP = 8,
-    WAIT = 9, # TODO: Make sure this is handled correctly everywhere, probably just in master....
+    WAIT_FOR_LOCALIZATION = 9, 
     MOVE_CONST_VEL = 10,
     CLEAR_ERROR = 11,
 
@@ -381,6 +381,7 @@ def generate_full_action_sequence(cfg, tile):
     - Move out of load
     - Move to field entry
     - Move to coarse drop off
+    - Wait for localization
     - Move to fine drop off
     - Drop off
     - Move to coarse drop off
@@ -414,6 +415,9 @@ def generate_full_action_sequence(cfg, tile):
     name = "Move to near place - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], cfg.domino_field_angle))
 
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+
     name = "Move to place - fine"
     actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pose[0], robot_placement_fine_pose[1], cfg.domino_field_angle))
 
@@ -439,7 +443,9 @@ def generate_small_testing_action_sequence(cfg, tile):
     Short sequence for testing
     Load
     Move to near place - coarse
+    Wait for localization
     Move to place - fine
+    Place
     Move away from place - fine
     Move to load - coarse
     """
@@ -466,6 +472,9 @@ def generate_small_testing_action_sequence(cfg, tile):
 
     name = "Move to near place - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], field_angle))
+
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to place - fine"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_fine_pose[0], robot_placement_fine_pose[1], field_angle))

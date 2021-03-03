@@ -259,6 +259,7 @@ class CmdGui:
                 status_str = ""
                 status_str += "Position: [{0:.3f} m, {1:.3f} m, {2:.3f} rad]\n".format(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
                 status_str += "Velocity: [{0:.3f} m/s, {1:.3f} m/s, {2:.3f} rad/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], status_dict['vel_a'])
+                status_str += "Localization Confidence: {0:.1f}%\n".format(status_dict['localization_confidence']*100)
                 status_str += "Controller timing: {} ms\n".format(status_dict['controller_loop_ms'])
                 status_str += "Position timing:   {} ms\n".format(status_dict['position_loop_ms'])
                 status_str += "Motion in progress: {}\n".format(status_dict["in_progress"])

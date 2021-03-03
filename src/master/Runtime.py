@@ -94,6 +94,8 @@ class RobotInterface:
                 self.robot_client.move_const_vel(action.vx, action.vy, action.va, action.t)
             elif action.action_type == ActionTypes.CLEAR_ERROR:
                 self.robot_client.clear_error()
+            elif action.action_type == ActionTypes.WAIT_FOR_LOCALIZATION:
+                self.robot_client.wait_for_localization()
             else:
                 logging.info("Unknown action: {}".format(action.action_type))
         except RuntimeError:
