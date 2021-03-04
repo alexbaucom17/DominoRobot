@@ -37,8 +37,8 @@ class Config:
 
     # Image configuration
     image_name = os.path.join(config_dir_path, 'MR.jpg')
-    desired_width = 30
-    desired_height = 40
+    desired_width_dominos = 30
+    desired_height_dominos = 40
     dominos = np.array(
                 [('black', (0,0,0)),
                 ('red',   (1,0,0)),
@@ -47,48 +47,47 @@ class Config:
                 ('white', (1,1,1))
                 ], dtype=object)
 
-    # To get image to look right, need spacing to create square pixels for now
-    # could fix this later by making image field creation take into account non-square pixels
+    # Physical dimensions of dominos
     domino_width  = 0.028 # meters
     domino_height = 0.0095 # meters
-    domino_spacing_x = 0.036 # meters
-    domino_spacing_y = 0.024 # meters
+    domino_spacing_width = 0.024 # meters
+    domino_spacing_height = 0.036 # meters
 
     # Spacing for drawing dominos as pixels instead of rectangles
     meters_per_pixel = 0.008
     domino_width_px = round(domino_width / meters_per_pixel)
     domino_height_px = round(domino_height / meters_per_pixel)
-    domino_spacing_x_px = round(domino_spacing_x / meters_per_pixel)
-    domino_spacing_y_px = round(domino_spacing_y / meters_per_pixel)
+    domino_spacing_width_px = round(domino_spacing_width / meters_per_pixel)
+    domino_spacing_height_px = round(domino_spacing_height / meters_per_pixel)
 
     # Tile configuration
     tile_width = 15
     tile_height = 20
     tile_background_color = (0.8, 0.8, 0.8)
     tile_edge_color = (0,0,1)
-    tile_size_x_meters = tile_width * (domino_spacing_x + domino_width)
-    tile_size_y_meters = tile_height * (domino_spacing_y + domino_height)
-
-    #print(tile_size_y_meters)
+    tile_size_width_meters = tile_width * (domino_spacing_width + domino_width)
+    tile_size_height_meters = tile_height * (domino_spacing_height + domino_height)
 
 
     # ====== ENVIRONMENT CONFIGURATION ========
 
     # Map configuration (distances in meters, angles in degrees)
-    robot_boundaries = np.array([[0,0],[10,10]])                # Bottom left, top right
-    base_station_boundaries = np.array([[0,1],[1,2]])           # Bottom left, top right
-    base_station_target_pose = np.array([0.5, 1.5, 180])        # Target position for robot to be under base station [x,y,a]
-    base_station_coarse_pose_offset = np.array([1.5, 0, 0])     # Offset from base station to use for apprach [x,y, a]
-    domino_field_origin = np.array([3,3])                       # Bottom left corner of domino field
-    domino_field_angle = 90                                     # Robot angle inside domino field 
-    tile_placement_coarse_offset = np.array([0.3,0.3])          # Offset position for tile placement [x,y]
+    robot_boundaries = np.array([[0,0],[10,10]])                # Bottom left, top right, global frame
+    base_station_boundaries = np.array([[0,1],[1,2]])           # Bottom left, top right, global frame
+    base_station_target_pos = np.array([0.5, 1.5])              # Target position for robot to be under base station [x,y], in global frame
+    base_station_target_angle = 180                             # Target angle (deg) for base station in global frame
+    base_station_coarse_pose_offset = np.array([-1.5, 0])       # Offset from base station to use for apprach [x,y] in robot frame
+    domino_field_origin = np.array([3,3])                       # Bottom left corner of domino field in global frame
+    domino_field_angle = 90                                     # Domino field angle (deg), global frame
+    tile_placement_coarse_offset = np.array([0.3,-0.3])         # Offset position for tile placement [x,y], in robot coordinate frame
+    tile_to_robot_offset = np.array([tile_size_width_meters/2.0, -0.2])  # Offset from bottom left of tile to robot center [x,y], in robot coordinate frame
     prep_position_distance = 1                                  # How far out of field boundaries to do robot prep move
     exit_position_distance = 1                                  # How far out of the field boundaries to move to exit
-    frame_to_robot_offset = np.array([0, 0])                    # Offset from front of tile to robot center [x,y] - not implemented yet
+    field_to_robot_frame_angle = 0                              # In case robot frame and field frame ever need to be rotated relative to each other
 
     # Computed - don't change
-    field_width = tile_size_x_meters * desired_width/tile_width
-    field_height = tile_size_y_meters * desired_height/tile_height
+    field_width = tile_size_width_meters * desired_width_dominos/tile_width
+    field_height = tile_size_height_meters * desired_height_dominos/tile_height
     domino_field_boundaries = np.array([domino_field_origin,domino_field_origin + np.array([field_width,field_height])])
 
     # ====== RUNTIME CONFIGURATION ========

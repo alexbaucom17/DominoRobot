@@ -7,6 +7,7 @@ import math
 import enum
 import logging
 import os
+import Utils
 
 
 class DominoField:
@@ -62,8 +63,8 @@ class DominoField:
     def render_domino_image_tiles(self):
 
         # Allocate memory for image
-        tile_size_x_in_px = (self.cfg.domino_width_px + self.cfg.domino_spacing_x_px) * self.cfg.tile_width
-        tile_size_y_in_px = (self.cfg.domino_height_px + self.cfg.domino_spacing_y_px) * self.cfg.tile_height
+        tile_size_x_in_px = (self.cfg.domino_width_px + self.cfg.domino_spacing_width_px) * self.cfg.tile_width
+        tile_size_y_in_px = (self.cfg.domino_height_px + self.cfg.domino_spacing_height_px) * self.cfg.tile_height
         array_size_x = tile_size_x_in_px * self.n_tiles_x
         array_size_y = tile_size_y_in_px * self.n_tiles_y
         image_array = np.zeros((array_size_x, array_size_y, 3))
@@ -110,10 +111,10 @@ class DominoField:
         img = mpimg.imread(self.cfg.image_name)
 
         # Scaled image
-        img_scaled = sktf.resize(img, (self.cfg.desired_height, self.cfg.desired_width), anti_aliasing=False)
+        img_scaled = sktf.resize(img, (self.cfg.desired_height_dominos, self.cfg.desired_width_dominos), anti_aliasing=False)
 
         # Parse image into domino IDs by choosing 'closest' color
-        img_parsed_color = np.zeros((self.cfg.desired_width * self.cfg.desired_height, 3))
+        img_parsed_color = np.zeros((self.cfg.desired_width_dominos * self.cfg.desired_height_dominos, 3))
         img_parsed_ids = np.zeros_like(img_parsed_color, dtype=np.int_)[:, 0]
         count = 0
         for row in img_scaled:
@@ -130,8 +131,8 @@ class DominoField:
                 img_parsed_color[count] = self.cfg.dominos[best_id][1]
                 count = count + 1
 
-        img_parsed_ids = img_parsed_ids.reshape((self.cfg.desired_height, self.cfg.desired_width))
-        img_parsed_color = img_parsed_color.reshape((self.cfg.desired_height, self.cfg.desired_width, 3))
+        img_parsed_ids = img_parsed_ids.reshape((self.cfg.desired_height_dominos, self.cfg.desired_width_dominos))
+        img_parsed_color = img_parsed_color.reshape((self.cfg.desired_height_dominos, self.cfg.desired_width_dominos, 3))
 
         self.img = img
         self.img_scaled = img_scaled
@@ -151,14 +152,14 @@ class DominoField:
     def _generateTiles(self):
 
         # Check sizes and make sure things line up
-        if self.cfg.desired_height % self.cfg.tile_height != 0:
+        if self.cfg.desired_height_dominos % self.cfg.tile_height != 0:
             raise ValueError('Field height is not evenly divisible by tile height!')
-        if self.cfg.desired_width % self.cfg.tile_width != 0:
+        if self.cfg.desired_width_dominos % self.cfg.tile_width != 0:
             raise ValueError('Field width is not evenly divisible by tile width!')
 
         # Determine number of tiles needed in x and y
-        n_tiles_x = int(self.cfg.desired_width / self.cfg.tile_width)
-        n_tiles_y = int(self.cfg.desired_height / self.cfg.tile_height)
+        n_tiles_x = int(self.cfg.desired_width_dominos / self.cfg.tile_width)
+        n_tiles_y = int(self.cfg.desired_height_dominos / self.cfg.tile_height)
 
         order_map = self._generateTileOrdering(n_tiles_x, n_tiles_y)
 
@@ -236,18 +237,19 @@ class Tile:
     def getPlacementPositionInMeters(self):
         # Returns bottom left corner position of the tile relative to the origin of the field
 
-        tile_start_x = self.coordinate[0] * self.cfg.tile_size_x_meters
-        tile_start_y = self.coordinate[1] * self.cfg.tile_size_y_meters
-        return (tile_start_y, tile_start_x)
+        tile_start_x = self.coordinate[0] * self.cfg.tile_size_width_meters
+        tile_start_y = self.coordinate[1] * self.cfg.tile_size_height_meters
+        return (tile_start_x, tile_start_y)
 
 
     def draw(self, array):
         # Note that this function draws pixels assuming the array is indexed as x,y instead of rows and columns
         # the array is flipped to plot as an image in the parent function
 
+
         # Determine tile location
-        tile_size_x_in_px = (self.cfg.domino_width_px + self.cfg.domino_spacing_x_px) * self.cfg.tile_width
-        tile_size_y_in_px = (self.cfg.domino_height_px + self.cfg.domino_spacing_y_px) * self.cfg.tile_height
+        tile_size_x_in_px = (self.cfg.domino_width_px + self.cfg.domino_spacing_width_px) * self.cfg.tile_width
+        tile_size_y_in_px = (self.cfg.domino_height_px + self.cfg.domino_spacing_height_px) * self.cfg.tile_height
         tile_start_x_px = self.coordinate[0] * tile_size_x_in_px
         tile_start_y_px = self.coordinate[1] * tile_size_y_in_px
         tile_end_x_px = tile_start_x_px + tile_size_x_in_px
@@ -268,10 +270,10 @@ class Tile:
 
         # Draw dominos
         for i in range(self.cfg.tile_width):
-            domino_start_x = tile_start_x_px + self.cfg.domino_spacing_x_px + (self.cfg.domino_width_px + self.cfg.domino_spacing_x_px) * i
+            domino_start_x = tile_start_x_px + self.cfg.domino_spacing_width_px + (self.cfg.domino_width_px + self.cfg.domino_spacing_width_px) * i
             domino_end_x = domino_start_x + self.cfg.domino_width_px
             for j in range(self.cfg.tile_height):
-                domino_start_y = tile_start_y_px + self.cfg.domino_spacing_y_px + (self.cfg.domino_height_px + self.cfg.domino_spacing_y_px) * j
+                domino_start_y = tile_start_y_px + self.cfg.domino_spacing_height_px + (self.cfg.domino_height_px + self.cfg.domino_spacing_height_px) * j
                 domino_end_y = domino_start_y + self.cfg.domino_height_px
                 domino_id = self.values[j, i]
                 domino_color = self.cfg.dominos[domino_id][1]
@@ -346,31 +348,33 @@ class MoveAction(Action):
 
     def draw(self, ax):
 
-       # Base triangle at 0 degrees
-       scale = 0.3
-       p1 = np.array([scale, 0])
-       s = math.sin(45*math.pi/180.0)
-       c = math.cos(45 * math.pi / 180.0)
-       p2 = np.array([-scale*s, scale*c])
-       p3 = np.array([-scale*s, -scale*c])
-       points = np.vstack((p1, p2 ,p3))
+        # Base triangle at 0 degrees
+        scale = 0.3
+        p1 = np.array([scale, 0])
+        s = math.sin(45*math.pi/180.0)
+        c = math.cos(45 * math.pi / 180.0)
+        p2 = np.array([-scale*s, scale*c])
+        p3 = np.array([-scale*s, -scale*c])
+        points = np.vstack((p1, p2 ,p3))
 
-       # Rotate for orientation
-       s = math.sin(self.getAngleRadians())
-       c = math.cos(self.getAngleRadians())
-       R = np.array([[c, -s],[s, c]])
+        # Rotate for orientation
+        s = math.sin(self.getAngleRadians())
+        c = math.cos(self.getAngleRadians())
+        R = np.array([[c, -s],[s, c]])
 
-       for i in range(3):
-           # Do local rotation
-           points[i,:] = np.matmul(R, np.reshape(points[i,:],(2,1))).ravel()
+        for i in range(3):
+            # Do local rotation
+            points[i,:] = np.matmul(R, np.reshape(points[i,:],(2,1))).ravel()
 
-           # Then offset for position
-           points[i, :] = points[i, :] + self.getPos()
+            # Then offset for position
+            points[i, :] = points[i, :] + self.getPos()
 
-       ax.add_patch(patches.Polygon(points,
+        ax.add_patch(patches.Polygon(points,
                                     fill=True,
                                     edgecolor='c',
                                     facecolor='c'))
+        text_point = points[0]
+        ax.annotate(self.name, xy=text_point[:2], xytext=[1, 1], textcoords="offset points", fontsize=8, color="green")
 
 
 def generate_full_action_sequence(cfg, tile):
@@ -389,51 +393,54 @@ def generate_full_action_sequence(cfg, tile):
     - Move to near load
     """
 
-    # Setup positions
+    # Setup positions in field frame
     tile_pos_in_field_frame = np.array(tile.getPlacementPositionInMeters())
-    tile_pos_in_global_frame = tile_pos_in_field_frame + cfg.domino_field_origin
-    robot_placement_fine_pose = tile_pos_in_global_frame + cfg.frame_to_robot_offset #TODO: make sure this works, might need to be a transform
-    robot_placement_coarse_pose = robot_placement_fine_pose - cfg.tile_placement_coarse_offset
-    base_station_coarse_pos = cfg.base_station_target_pose + cfg.base_station_coarse_pose_offset
+    robot_placement_fine_pos_field_frame = tile_pos_in_field_frame + Utils.TransformPos(cfg.tile_to_robot_offset, [0,0], cfg.field_to_robot_frame_angle)
+    robot_placement_coarse_pos_field_frame = robot_placement_fine_pos_field_frame + Utils.TransformPos(cfg.tile_placement_coarse_offset, [0,0], cfg.field_to_robot_frame_angle)
+    enter_field_prep_pos_field_frame = [robot_placement_coarse_pos_field_frame[0], - cfg.prep_position_distance]
+    exit_field_prep_pos_field_frame = [-cfg.exit_position_distance, robot_placement_coarse_pos_field_frame[1]]
+
+    # Convert positions to global frame
+    robot_placement_coarse_pos_global_frame = Utils.TransformPos(robot_placement_coarse_pos_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
+    robot_placement_fine_pos_global_frame = Utils.TransformPos(robot_placement_fine_pos_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
+    enter_field_prep_global_frame = Utils.TransformPos(enter_field_prep_pos_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
+    exit_field_prep_global_frame = Utils.TransformPos(exit_field_prep_pos_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
+    base_station_coarse_pos = cfg.base_station_target_pos + Utils.TransformPos(cfg.base_station_coarse_pose_offset, [0,0], cfg.base_station_target_angle)
 
     actions = []
 
     name = "Move to load - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, cfg.base_station_target_pose[0], cfg.base_station_target_pose[1], cfg.base_station_target_pose[2]))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, cfg.base_station_target_pos[0], cfg.base_station_target_pos[1], cfg.base_station_target_angle))
 
     name = "Load tile"
     actions.append(Action(ActionTypes.LOAD, name))
 
     name = "Move away from load - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], base_station_coarse_pos[2]))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], cfg.base_station_target_angle))
 
     name = "Move to prep - coarse"
-    prep_x = robot_placement_coarse_pose[0]
-    prep_y = cfg.domino_field_origin[1] - cfg.prep_position_distance
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, prep_x, prep_y, cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, enter_field_prep_global_frame[0], enter_field_prep_global_frame[1], cfg.domino_field_angle))
 
     name = "Move to near place - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], cfg.domino_field_angle))
 
     name = "Wait for localization"
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pose[0], robot_placement_fine_pose[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], cfg.domino_field_angle))
 
     name = "Place tile"
     actions.append(Action(ActionTypes.PLACE, name))
 
     name = "Move away from place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], cfg.domino_field_angle))
 
     name = "Move to exit - coarse"
-    exit_x = cfg.domino_field_origin[0] - cfg.exit_position_distance
-    exit_y = robot_placement_coarse_pose[1]
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, exit_x, exit_y, cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, exit_field_prep_global_frame[0], exit_field_prep_global_frame[1], cfg.domino_field_angle))
 
     name = "Move to near load - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], base_station_coarse_pos[2]))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], cfg.base_station_target_angle))
 
     return actions
 
@@ -454,16 +461,17 @@ def generate_small_testing_action_sequence(cfg, tile):
     domino_field_origin = np.array([1,0]) 
     field_angle = 0
     tile_placement_coarse_offset = np.array([0.3, 0])
+    tile_to_robot_offset = np.array([0,0])
     load_pose = np.array([0,0,0])
 
     tile_pos_in_field_frame = np.array(tile.getPlacementPositionInMeters())
-    tile_pos_in_global_frame = tile_pos_in_field_frame + domino_field_origin
-    robot_placement_fine_pose = tile_pos_in_global_frame
-    robot_placement_coarse_pose = robot_placement_fine_pose - tile_placement_coarse_offset
+    tile_pos_in_global_frame = Utils.TransformPos(tile_pos_in_field_frame, domino_field_origin, field_angle)
+    robot_placement_fine_pos = tile_pos_in_global_frame + Utils.TransformPos(tile_to_robot_offset, [0,0], field_angle)
+    robot_placement_coarse_pos = robot_placement_fine_pos + Utils.TransformPos(tile_placement_coarse_offset, [0,0], field_angle)
 
     print(tile.order)
-    print(robot_placement_coarse_pose)
-    print(robot_placement_fine_pose)
+    print(robot_placement_coarse_pos)
+    print(robot_placement_fine_pos)
 
     actions = []
 
@@ -471,19 +479,19 @@ def generate_small_testing_action_sequence(cfg, tile):
     actions.append(Action(ActionTypes.LOAD, name))
 
     name = "Move to near place - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos[0], robot_placement_coarse_pos[1], field_angle))
 
     name = "Wait for localization"
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_fine_pose[0], robot_placement_fine_pose[1], field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_fine_pos[0], robot_placement_fine_pos[1], field_angle))
 
     name = "Place tile"
     actions.append(Action(ActionTypes.PLACE, name))
 
     name = "Move away from place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pose[0], robot_placement_coarse_pose[1], field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos[0], robot_placement_coarse_pos[1], field_angle))
 
     name = "Move to near load - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, load_pose[0], load_pose[1], load_pose[2]))
@@ -629,7 +637,8 @@ if __name__ == '__main__':
         ]
     )
 
-    plan = Plan(cfg, generate_small_testing_action_sequence)
+    plan = Plan(cfg, generate_full_action_sequence)
+    #plan = Plan(cfg, generate_small_testing_action_sequence)
 
     # plan.field.printStats()
     # plan.field.show_image_parsing()
