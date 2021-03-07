@@ -3,16 +3,25 @@ import os
 
 class Config:
 
-    # Debugging flags
+    # Various debug/test flags
+    # Set to override config values for home network
+    USING_HOME_NETWORK = True
+    # Set to override config values for small scale testing
+    USE_SMALL_TESTING_CONFIG = True
+    # Set to skip connecting to robot
     OFFLINE_TESTING = False
+    # Set to skip connecting to base station
     SKIP_BASE_STATION = True
+    # Set to skip connecting to Marvelmind
     SKIP_MARVELMIND = True
+    # Set to use fake plan instead of loading a generated one
     USE_TEST_PLAN = False
 
     # ====== PATHS ========
     
-    root_path = "C:\\Users\\alexb\\Data\\Github\\DominoRobot\\"   # Desktop
-    #root_path = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\"  # Laptop
+    root_path = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\"  # Laptop
+    if USING_HOME_NETWORK:
+        root_path = "C:\\Users\\alexb\\Data\\Github\\DominoRobot\\"   # Desktop
     mm_api_relative_path = "marvelmind_SW_20202_04_19\\API\\api_windows_64bit\\dashapi.dll"
     config_dir_path = os.path.dirname(os.path.realpath(__file__))
     mm_api_path = os.path.join(root_path, mm_api_relative_path)
@@ -29,8 +38,9 @@ class Config:
     }
 
     # Specifies which IP address each robot has
-    #ip_map = {'robot1': '10.0.0.3'}   # Workshop
-    ip_map = {'robot1': '192.168.1.5'}   # Home
+    ip_map = {'robot1': '10.0.0.3'}   # Workshop
+    if USING_HOME_NETWORK:
+        ip_map = {'robot1': '192.168.1.5'}   # Home
     base_station_ip = '10.0.0.100'
 
     # ====== PLAN GENERATION ========
@@ -39,6 +49,9 @@ class Config:
     image_name = os.path.join(config_dir_path, 'MR.jpg')
     desired_width_dominos = 30
     desired_height_dominos = 40
+    if USE_SMALL_TESTING_CONFIG:
+        desired_width_dominos = 30
+        desired_height_dominos = 40
     dominos = np.array(
                 [('black', (0,0,0)),
                 ('red',   (1,0,0)),
@@ -84,6 +97,20 @@ class Config:
     prep_position_distance = 1                                  # How far out of field boundaries to do robot prep move
     exit_position_distance = 1                                  # How far out of the field boundaries to move to exit
     field_to_robot_frame_angle = 0                              # In case robot frame and field frame ever need to be rotated relative to each other
+
+    if USE_SMALL_TESTING_CONFIG:
+        robot_boundaries = np.array([[0,0],[10,10]])                
+        base_station_boundaries = np.array([[0,1],[1,2]])           
+        base_station_target_pos = np.array([0.5, 1.5])
+        base_station_target_angle = 180
+        base_station_coarse_pose_offset = np.array([-1.5, 0]) 
+        domino_field_origin = np.array([3,3])  
+        domino_field_angle = 90 
+        tile_placement_coarse_offset = np.array([0.3,-0.3])
+        tile_to_robot_offset = np.array([tile_size_width_meters/2.0, -0.2]) 
+        prep_position_distance = 1                                 
+        exit_position_distance = 1                               
+        field_to_robot_frame_angle = 0            
 
     # Computed - don't change
     field_width = tile_size_width_meters * desired_width_dominos/tile_width
