@@ -458,11 +458,13 @@ def generate_small_testing_action_sequence(cfg, tile):
     """
 
     # Hardcoded values for quick hacky testing here
-    domino_field_origin = np.array([1,0]) 
+    domino_field_origin = np.array([9,-3]) 
     field_angle = 0
-    tile_placement_coarse_offset = np.array([0.3, 0])
+    tile_placement_coarse_offset = np.array([-0.3, -0.3])
     tile_to_robot_offset = np.array([0,0])
-    load_pose = np.array([0,0,0])
+    load_pose = np.array([8,-4,90])
+    field_to_robot_frame_angle = 90
+    robot_angle = field_angle + field_to_robot_frame_angle
 
     tile_pos_in_field_frame = np.array(tile.getPlacementPositionInMeters())
     tile_pos_in_global_frame = Utils.TransformPos(tile_pos_in_field_frame, domino_field_origin, field_angle)
@@ -470,6 +472,8 @@ def generate_small_testing_action_sequence(cfg, tile):
     robot_placement_coarse_pos = robot_placement_fine_pos + Utils.TransformPos(tile_placement_coarse_offset, [0,0], field_angle)
 
     print(tile.order)
+    print(tile_pos_in_field_frame)
+    print(tile_pos_in_global_frame)
     print(robot_placement_coarse_pos)
     print(robot_placement_fine_pos)
 
@@ -479,19 +483,25 @@ def generate_small_testing_action_sequence(cfg, tile):
     actions.append(Action(ActionTypes.LOAD, name))
 
     name = "Move to near place - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos[0], robot_placement_coarse_pos[1], field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos[0], robot_placement_coarse_pos[1], robot_angle))
 
     name = "Wait for localization"
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_fine_pos[0], robot_placement_fine_pos[1], field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos[0], robot_placement_fine_pos[1], robot_angle))
+
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+
+    name = "Move to place - fine"
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos[0], robot_placement_fine_pos[1], robot_angle))
 
     name = "Place tile"
     actions.append(Action(ActionTypes.PLACE, name))
 
     name = "Move away from place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos[0], robot_placement_coarse_pos[1], field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_coarse_pos[0], robot_placement_coarse_pos[1], robot_angle))
 
     name = "Move to near load - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, load_pose[0], load_pose[1], load_pose[2]))
@@ -637,8 +647,11 @@ if __name__ == '__main__':
         ]
     )
 
-    plan = Plan(cfg, generate_full_action_sequence)
-    #plan = Plan(cfg, generate_small_testing_action_sequence)
+    plan = None
+    if cfg.USE_SMALL_TESTING_CONFIG:
+        plan = Plan(cfg, generate_small_testing_action_sequence)
+    else:
+        plan = Plan(cfg, generate_full_action_sequence)
 
     # plan.field.printStats()
     # plan.field.show_image_parsing()

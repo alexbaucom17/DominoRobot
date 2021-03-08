@@ -5,7 +5,7 @@ class Config:
 
     # Various debug/test flags
     # Set to override config values for home network
-    USING_HOME_NETWORK = True
+    USING_HOME_NETWORK = False
     # Set to override config values for small scale testing
     USE_SMALL_TESTING_CONFIG = True
     # Set to skip connecting to robot
@@ -61,10 +61,13 @@ class Config:
                 ], dtype=object)
 
     # Physical dimensions of dominos
-    domino_width  = 0.028 # meters
-    domino_height = 0.0095 # meters
-    domino_spacing_width = 0.024 # meters
-    domino_spacing_height = 0.036 # meters
+    domino_width  = 0.025 # meters
+    domino_height = 0.010 # meters
+    domino_spacing_width = 0.037 # meters
+    domino_spacing_height = 0.024 # meters
+
+    print((domino_spacing_width + domino_width))
+    print((domino_spacing_height + domino_height))
 
     # Spacing for drawing dominos as pixels instead of rectangles
     meters_per_pixel = 0.008
@@ -80,6 +83,9 @@ class Config:
     tile_edge_color = (0,0,1)
     tile_size_width_meters = tile_width * (domino_spacing_width + domino_width)
     tile_size_height_meters = tile_height * (domino_spacing_height + domino_height)
+
+    print(tile_size_height_meters)
+    print(tile_size_width_meters)
 
 
     # ====== ENVIRONMENT CONFIGURATION ========
@@ -99,23 +105,26 @@ class Config:
     field_to_robot_frame_angle = 0                              # In case robot frame and field frame ever need to be rotated relative to each other
 
     if USE_SMALL_TESTING_CONFIG:
-        robot_boundaries = np.array([[0,0],[10,10]])                
+        robot_boundaries = np.array([[1,-11],[15,11]])                
         base_station_boundaries = np.array([[0,1],[1,2]])           
         base_station_target_pos = np.array([0.5, 1.5])
         base_station_target_angle = 180
         base_station_coarse_pose_offset = np.array([-1.5, 0]) 
-        domino_field_origin = np.array([3,3])  
+        domino_field_origin = np.array([9,-3])  
         domino_field_angle = 90 
-        tile_placement_coarse_offset = np.array([0.3,-0.3])
+        tile_placement_coarse_offset = np.array([-0.3,0])
         tile_to_robot_offset = np.array([tile_size_width_meters/2.0, -0.2]) 
         prep_position_distance = 1                                 
         exit_position_distance = 1                               
-        field_to_robot_frame_angle = 0            
+        field_to_robot_frame_angle = 90            
 
     # Computed - don't change
     field_width = tile_size_width_meters * desired_width_dominos/tile_width
     field_height = tile_size_height_meters * desired_height_dominos/tile_height
     domino_field_boundaries = np.array([domino_field_origin,domino_field_origin + np.array([field_width,field_height])])
+
+    print(field_width)
+    print(field_height)
 
     # ====== RUNTIME CONFIGURATION ========
     robot_status_wait_time = 0.5    # How many seconds to wait between status requests for each robot

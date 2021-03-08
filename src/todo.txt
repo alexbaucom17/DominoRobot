@@ -4,11 +4,17 @@ Robot controller:
 Robot SW:
 - Consider using marvelmind position confidence metric as part of localization reliability
 - Improve general position localization algorithm/metric
+- Consider if move rel should use robot or global coordinate system (currently uses global)
+- Add check for tray initialization
+- Research how to handle latency in a controller
 
 Robot HW:
 
 Master:
 - Fix rotation issue with config/plan generation
+    - Port robot to frame angle adjustment to full plan 
+    - Fix visualization when generating plan for coarse offset
+- Fix gui display of robot and axes
 
 Base station HW:
 
@@ -40,6 +46,9 @@ Marvelmind notes:
         I took some screenshots and I can hopefully post with some questions
         It still may be worth getting the newer beacons just to simply the distance setup - otherwise I have to manually calibrate distances all the time and I am worried about error from that.
         Other than the jumping - the motion looked really nice and smooth and promising. Just need to fix the noise
+
+    Additional questions with super beacons
+        Pairing them seems to make the positions incorrect. Unpairing them resets to correct distance between
 
 Hardware info
 - Approx Dimensions:

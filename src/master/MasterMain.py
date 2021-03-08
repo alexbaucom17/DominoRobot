@@ -50,7 +50,7 @@ def setup_gui_layout(panel_names, target_names):
     estop_button = [[sg.Button('ESTOP', button_color=('white','red'), size=button_size, pad=button_pad) ]]
     manual_button = [[sg.Button('Send Command', button_color=('white','green'), size=button_size, pad=button_pad) ]]
 
-    col2 = [[sg.Graph(canvas_size=(700,700), graph_bottom_left=(-1,-1), graph_top_right=(10, 10), key="_GRAPH_", background_color="grey") ],
+    col2 = [[sg.Graph(canvas_size=(700,700), graph_bottom_left=(-13,-1), graph_top_right=(13, 16), key="_GRAPH_", background_color="grey") ],
             [sg.Column(target_element), sg.Column(action_element), sg.Column(data_element)],
             [sg.Column(plan_buttons), sg.Column(estop_button), sg.Column(manual_button)]  ]
 
@@ -285,8 +285,8 @@ class CmdGui:
         self.viz_figs[robot_id] = self._draw_robot(x, y, a)
 
     def _draw_robot(self, x, y, a):
-        robot_length = 1
-        robot_width = 1
+        robot_length = 5
+        robot_width = 5
         front_point = [x + robot_length/2 * math.cos(a), y + robot_length/2 * math.sin(a)]
         back_point = [x - robot_length/2 * math.cos(a), y - robot_length/2 * math.sin(a)]
         ortho_angle = a + math.pi/2
