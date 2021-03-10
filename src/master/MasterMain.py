@@ -10,6 +10,7 @@ import traceback
 
 from FieldPlanner import *
 from Runtime import RuntimeManager, PlanStatus
+import Utils
 
 
 STATUS_PANEL_OK_COLOR = "green"
@@ -21,7 +22,8 @@ def status_panel(name):
     return [[sg.Text("{} status".format(name))], [sg.Text("{} offline".format(name), size=(width, height), \
         relief=sg.RELIEF_RIDGE, key='_{}_STATUS_'.format(name.upper()), background_color=STATUS_PANEL_BAD_COLOR) ]]
 
-def setup_gui_layout(panel_names, target_names):
+
+def setup_gui_layout(config, panel_names, target_names):
     # Left hand column with status panels
     col1 = []
     for name in panel_names:
@@ -50,7 +52,7 @@ def setup_gui_layout(panel_names, target_names):
     estop_button = [[sg.Button('ESTOP', button_color=('white','red'), size=button_size, pad=button_pad) ]]
     manual_button = [[sg.Button('Send Command', button_color=('white','green'), size=button_size, pad=button_pad) ]]
 
-    col2 = [[sg.Graph(canvas_size=(700,700), graph_bottom_left=(-13,-1), graph_top_right=(13, 16), key="_GRAPH_", background_color="grey") ],
+    col2 = [[sg.Graph(canvas_size=(700,700), graph_bottom_left=config.graph_bottom_left, graph_top_right=config.graph_top_right, float_values=True, key="_GRAPH_", background_color="light grey") ],
             [sg.Column(target_element), sg.Column(action_element), sg.Column(data_element)],
             [sg.Column(plan_buttons), sg.Column(estop_button), sg.Column(manual_button)]  ]
 
@@ -72,12 +74,14 @@ class CmdGui:
         panel_names += ['base', 'plan', 'mm']
         target_names = copy.deepcopy(panel_names)
         target_names.remove('plan')
-        layout = setup_gui_layout(panel_names, target_names)
+        layout = setup_gui_layout(config, panel_names, target_names)
 
         self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True)
         self.window.finalize()
 
         self.viz_figs = {}
+
+        self._draw_environment()
 
     def close(self):
         self.window.close()
@@ -255,51 +259,166 @@ class CmdGui:
         status_str = "Cannot get {} status".format(robot_id)
         color_str = STATUS_PANEL_BAD_COLOR
         if status_dict:
-            try:
-                status_str = ""
-                status_str += "Position: [{0:.3f} m, {1:.3f} m, {2:.3f} rad]\n".format(status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
-                status_str += "Velocity: [{0:.3f} m/s, {1:.3f} m/s, {2:.3f} rad/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], status_dict['vel_a'])
-                status_str += "Localization Confidence: {0:.1f}%\n".format(status_dict['localization_confidence']*100)
-                status_str += "Controller timing: {} ms\n".format(status_dict['controller_loop_ms'])
-                status_str += "Position timing:   {} ms\n".format(status_dict['position_loop_ms'])
-                status_str += "Motion in progress: {}\n".format(status_dict["in_progress"])
-                status_str += "Has error: {}\n".format(status_dict["error_status"])
-                status_str += "Counter:   {}\n".format(status_dict['counter'])
+            # try:
+            robot_pose = [status_dict['pos_x'], status_dict['pos_y'], math.degrees(status_dict['pos_a'])]
+            status_str = ""
+            status_str += "Position: [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(robot_pose[0], robot_pose[1], robot_pose[2])
+            status_str += "Velocity: [{0:.3f} m/s, {1:.3f} m/s, {2:.2f} deg/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], math.degrees(status_dict['vel_a']))
+            status_str += "Localization Confidence: {0:.1f}%\n".format(status_dict['localization_confidence']*100)
+            status_str += "Controller timing: {} ms\n".format(status_dict['controller_loop_ms'])
+            status_str += "Position timing:   {} ms\n".format(status_dict['position_loop_ms'])
+            status_str += "Current action:   {}\n".format(status_dict['current_action'].split('.')[-1])
+            status_str += "Motion in progress: {}\n".format(status_dict["in_progress"])
+            status_str += "Has error: {}\n".format(status_dict["error_status"])
+            status_str += "Counter:   {}\n".format(status_dict['counter'])
 
-                # Also update the visualization position
-                self._update_robot_viz_position(robot_id, status_dict['pos_x'],status_dict['pos_y'], status_dict['pos_a'])
-                color_str = STATUS_PANEL_OK_COLOR
-            except Exception as e:
-                if "offline" in str(status_dict):
-                    status_str = str(status_dict)
-                else:
-                    status_str = "Bad dict: " + str(status_dict)
+            # Also update the visualization position
+            self._update_robot_viz_position(robot_id, robot_pose)
+            # If there is target position data populated, draw the target too
+            if 'current_move_data' in status_dict.keys():
+                self._update_target_viz_position(robot_id, robot_pose, status_dict['current_move_data'])
+
+            color_str = STATUS_PANEL_OK_COLOR
+            # except Exception as e:
+            #     if "offline" in str(status_dict):
+            #         status_str = str(status_dict)
+            #     else:
+            #         status_str = "Bad dict: " + str(status_dict)
 
         self.window['_{}_STATUS_'.format(robot_id.upper())].update(status_str, background_color=color_str)
 
-    def _update_robot_viz_position(self, robot_id, x, y, a):
+    def _update_robot_viz_position(self, robot_id, robot_pose):
         if robot_id in self.viz_figs.keys():
             for f in self.viz_figs[robot_id]:
                 self.window['_GRAPH_'].DeleteFigure(f)
+        self.viz_figs[robot_id] = self._draw_robot(robot_pose, use_target_color=False)
+
+    def _update_target_viz_position(self, robot_id, robot_pose, target_pose):
+        viz_key = "{}_target".format(robot_id)
+        if viz_key in self.viz_figs.keys():
+            for f in self.viz_figs[viz_key]:
+                self.window['_GRAPH_'].DeleteFigure(f)
+
+        if robot_pose and target_pose:
+            target_line = self.window['_GRAPH_'].draw_line(point_from=robot_pose[:2], point_to=target_pose[:2], color='yellow', width=2)
+            self.viz_figs[viz_key] = self._draw_robot(target_pose, use_target_color=True)
+            self.viz_figs[viz_key].append(target_line)  
+
+    def _draw_robot(self, robot_pose, use_target_color):
+
+        robot_line_color = 'black'
+        robot_line_thickness = 2
+        direction_line_color = 'red'
+        direction_line_thickness = 1
+        if use_target_color:
+            robot_line_color = 'green'
+            robot_line_thickness = 2
+            direction_line_color = 'tomato'
+            direction_line_thickness = 1
+
+
+        robot_global_pos_2d = np.array([robot_pose[0],robot_pose[1]])
+        robot_angle = robot_pose[2]
+        robot_fig_handles = []
         
-        self.viz_figs[robot_id] = self._draw_robot(x, y, a)
+        # Robot chassis points in robot frame
+        chassis_fl = np.array([self.config.robot_rotation_center_offset,  self.config.robot_chassis_size/2.0])
+        chassis_fr = np.array([self.config.robot_rotation_center_offset, -self.config.robot_chassis_size/2.0])
+        chassis_bl = np.array([self.config.robot_rotation_center_offset - self.config.robot_chassis_size,  self.config.robot_chassis_size/2.0])
+        chassis_br = np.array([self.config.robot_rotation_center_offset - self.config.robot_chassis_size, -self.config.robot_chassis_size/2.0])
 
-    def _draw_robot(self, x, y, a):
-        robot_length = 5
-        robot_width = 5
-        front_point = [x + robot_length/2 * math.cos(a), y + robot_length/2 * math.sin(a)]
-        back_point = [x - robot_length/2 * math.cos(a), y - robot_length/2 * math.sin(a)]
-        ortho_angle = a + math.pi/2
-        back_left_point = [back_point[0] + robot_width/2 * math.cos(ortho_angle), back_point[1] + robot_width/2 * math.sin(ortho_angle)]
-        back_right_point = [back_point[0] - robot_width/2 * math.cos(ortho_angle), back_point[1] - robot_width/2 * math.sin(ortho_angle)]
+        # Tile points in robot frame
+        tile_bl = -self.config.tile_to_robot_offset
+        tile_br = tile_bl + np.array([0, -self.config.tile_size_width_meters])
+        tile_fl = tile_bl + np.array([self.config.tile_size_height_meters, 0])
+        tile_fr = tile_br + np.array([self.config.tile_size_height_meters, 0])
 
-        figs = []
-        figs.append(self.window['_GRAPH_'].DrawLine(point_from=front_point, point_to=back_left_point, color='black'))
-        figs.append(self.window['_GRAPH_'].DrawLine(point_from=back_left_point, point_to=back_right_point, color='black'))
-        figs.append(self.window['_GRAPH_'].DrawLine(point_from=back_right_point, point_to=front_point, color='black'))
-        figs.append(self.window['_GRAPH_'].DrawLine(point_from=[x,y], point_to=front_point, color='red'))
-        return figs
-    
+        # Robot direction indicator
+        direction_pt = np.array([self.config.robot_direction_indicator_length, 0])
+        direction_arrow_x = self.config.robot_direction_indicator_arrow_length*math.cos(math.radians(self.config.robot_direction_indicator_arrow_angle))
+        direction_arrow_y = self.config.robot_direction_indicator_arrow_length*math.sin(math.radians(self.config.robot_direction_indicator_arrow_angle))
+        direction_arrow_left =  direction_pt + np.array([-direction_arrow_x,  direction_arrow_y])
+        direction_arrow_right = direction_pt + np.array([-direction_arrow_x, -direction_arrow_y])
+
+        # Collect, transform, and draw chassis points
+        chassis_points_robot_frame = [chassis_fl, chassis_fr, chassis_br, chassis_bl] # order matters for drawing
+        chassis_points_global_frame = []
+        for pt in chassis_points_robot_frame:
+            global_pt = Utils.TransformPos(pt, robot_global_pos_2d, robot_angle)
+            chassis_points_global_frame.append(global_pt)
+        for i in range(4):
+            start_pt = list(chassis_points_global_frame[i])
+            end_pt = list(chassis_points_global_frame[(i+1)%4])
+            robot_fig_handles.append(self.window['_GRAPH_'].draw_line(point_from=start_pt, point_to=end_pt, color=robot_line_color, width = robot_line_thickness))
+
+        # Collect, transform, and draw tile points
+        tile_points_robot_frame = [tile_bl, tile_br, tile_fr, tile_fl] # order matters for drawing
+        tile_points_global_frame = []
+        for pt in tile_points_robot_frame:
+            global_pt = Utils.TransformPos(pt, robot_global_pos_2d, robot_angle)
+            tile_points_global_frame.append(global_pt)
+        for i in range(4):
+            start_pt = list(tile_points_global_frame[i])
+            end_pt = list(tile_points_global_frame[(i+1)%4])
+            robot_fig_handles.append(self.window['_GRAPH_'].draw_line(point_from=start_pt, point_to=end_pt, color=robot_line_color, width = robot_line_thickness))
+
+        # Draw angle indicator line
+        global_direction_pt = Utils.TransformPos(direction_pt, robot_global_pos_2d, robot_angle)
+        robot_fig_handles.append(self.window['_GRAPH_'].draw_line(point_from=list(robot_global_pos_2d), point_to=list(global_direction_pt), color=direction_line_color, width=direction_line_thickness))
+        global_direction_arrow_left = Utils.TransformPos(direction_arrow_left, robot_global_pos_2d, robot_angle)
+        robot_fig_handles.append(self.window['_GRAPH_'].draw_line(point_from=list(global_direction_pt), point_to=list(global_direction_arrow_left), color=direction_line_color, width=direction_line_thickness))
+        global_direction_arrow_right = Utils.TransformPos(direction_arrow_right, robot_global_pos_2d, robot_angle)
+        robot_fig_handles.append(self.window['_GRAPH_'].draw_line(point_from=list(global_direction_pt), point_to=list(global_direction_arrow_right), color=direction_line_color, width=direction_line_thickness))
+
+        return robot_fig_handles
+
+    def _draw_environment(self):
+
+        # Robot boundaries
+        self.viz_figs["boundaires"] = self.window['_GRAPH_'].draw_rectangle(self.config.robot_boundaries[0], self.config.robot_boundaries[1], line_color='red')
+
+        # Domino field boundaries
+        bottom_left = self.config.domino_field_origin
+        rect_width_height = Utils.TransformPos(np.array([self.config.field_width, self.config.field_height]), [0,0], self.config.domino_field_angle)
+        top_left = (bottom_left[0], bottom_left[1]+rect_width_height[1])
+        bottom_right = (bottom_left[0] + rect_width_height[0], bottom_left[1])
+        self.viz_figs["field"] = self.window['_GRAPH_'].draw_rectangle(top_left, bottom_right, line_color='green')
+
+        # Base station
+        base_station_top_left = (self.config.base_station_boundaries[0][0], self.config.base_station_boundaries[1][1])
+        base_station_bottom_right = (self.config.base_station_boundaries[1][0], self.config.base_station_boundaries[0][1])
+        self.viz_figs["base"] = self.window['_GRAPH_'].draw_rectangle(base_station_top_left, base_station_bottom_right, line_color='blue')
+
+        # X axis
+        left_side = (self.config.graph_bottom_left[0], 0)
+        right_side = (self.config.graph_top_right[0], 0)
+        self.viz_figs["xaxis"] = self.window['_GRAPH_'].draw_line(left_side, right_side, color="black", width=2)
+        x_text_location = (right_side[0] - self.config.axes_label_offset, right_side[1] + self.config.axes_label_offset)
+        self.viz_figs["xaxis_label"] = self.window['_GRAPH_'].draw_text("X", x_text_location)
+        x_ticks = [i for i in range(0, int(right_side[0]), self.config.axes_tick_spacing)] + [i for i in range(0, int(left_side[0]), -self.config.axes_tick_spacing)]
+        x_ticks = np.sort(np.unique(np.array(x_ticks)))
+        for val in x_ticks:
+            bottom = (val, -self.config.axes_tick_size/2)
+            top = (val, self.config.axes_tick_size/2)
+            self.viz_figs["xtick_{}".format(val)] = self.window['_GRAPH_'].draw_line(bottom, top, color="black")
+            label_location = (bottom[0] + self.config.axes_label_offset, bottom[1])
+            self.viz_figs["xtick_label_{}".format(val)] = self.window['_GRAPH_'].draw_text("{}".format(val), label_location)
+
+        # Y axis
+        bottom_side = (0, self.config.graph_bottom_left[1])
+        top_side = (0, self.config.graph_top_right[1])
+        self.viz_figs["yaxis"] = self.window['_GRAPH_'].draw_line(bottom_side, top_side, color="black", width=2)
+        y_text_location = (top_side[0] + self.config.axes_label_offset, top_side[1] - self.config.axes_label_offset)
+        self.viz_figs["yaxis_label"] = self.window['_GRAPH_'].draw_text("Y", y_text_location)
+        y_ticks = [i for i in range(0, int(top_side[1]), self.config.axes_tick_spacing)] + [i for i in range(0, int(bottom_side[1]), -self.config.axes_tick_spacing)]
+        y_ticks = np.sort(np.unique(np.array(y_ticks)))
+        for val in y_ticks:
+            left = (-self.config.axes_tick_size/2, val)
+            right = (self.config.axes_tick_size/2, val)
+            self.viz_figs["ytick_{}".format(val)] = self.window['_GRAPH_'].draw_line(left, right, color="black")
+            label_location = (right[0], right[1]+self.config.axes_label_offset)
+            self.viz_figs["ytick_label_{}".format(val)] = self.window['_GRAPH_'].draw_text("{}".format(val), label_location)
+
 
 class Master:
 

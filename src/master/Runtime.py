@@ -20,6 +20,9 @@ class RobotInterface:
         self.robot_id = robot_id
         self.last_status_time = 0
         self.last_status = None
+        self.simple_action_map = {}
+        self.current_action = ActionTypes.NONE
+        self.current_move_data = []
 
     def bring_online(self, use_mock=False):
         self._bring_comms_online(use_mock)
@@ -27,8 +30,23 @@ class RobotInterface:
     def check_online(self):
         return self.comms_online
 
-    def get_last_status(self):
-        return self.last_status
+    def get_robot_metrics(self):
+        metrics = copy.copy(self.last_status)
+        if metrics:
+            metrics['current_action'] = str(self.current_action)
+            metrics['current_move_data'] = self.current_move_data
+        return metrics
+
+    def _setup_action_map(self):
+        self.simple_action_map = {
+            ActionTypes.LOAD: self.robot_client.load,
+            ActionTypes.PLACE: self.robot_client.place,
+            ActionTypes.TRAY_INIT: self.robot_client.tray_init,
+            ActionTypes.LOAD_COMPLETE: self.robot_client.load_complete,
+            ActionTypes.ESTOP: self.robot_client.estop,
+            ActionTypes.CLEAR_ERROR: self.robot_client.clear_error,
+            ActionTypes.WAIT_FOR_LOCALIZATION: self.robot_client.wait_for_localization,
+        }
 
     def _bring_comms_online(self, use_mock=False):
         try:
@@ -41,6 +59,7 @@ class RobotInterface:
 
             if self.robot_client.net_status():
                 self.comms_online = True
+                self._setup_action_map()
                 logging.info("Connected to {} over wifi".format(self.robot_id))
         except Exception as e:
             logging.info("Couldn't connect to {} over wifi".format(self.robot_id))
@@ -49,6 +68,13 @@ class RobotInterface:
     def _get_status_from_robot(self):
         self.last_status = self.robot_client.request_status()
         self.last_status_time = time.time()
+        
+        # Reset current action and move data if the robot finished an action
+        if self.current_action != ActionTypes.NONE and self.last_status is not None and \
+            'in_progress' in self.last_status.keys() and not self.last_status['in_progress']:
+            self.current_action = ActionTypes.NONE
+            self.current_move_data = []
+
 
     def update(self):
 
@@ -71,31 +97,25 @@ class RobotInterface:
         logging.info("Running {} on {}".format(action.action_type, self.robot_id))
 
         try:
+            if action.action_type is not None:
+                self.current_action = action.action_type
+            
             if action.action_type == ActionTypes.MOVE_COARSE:
                 self.robot_client.move(action.x, action.y, action.a)
+                self.current_move_data = [action.x, action.y, action.getAngleDegrees()]
             elif action.action_type == ActionTypes.MOVE_REL:
                 self.robot_client.move_rel(action.x, action.y, action.a)
+                self.current_move_data = [action.x, action.y, action.getAngleDegrees()]
             elif action.action_type == ActionTypes.MOVE_FINE:
                 self.robot_client.move_fine(action.x, action.y, action.a)
+                self.current_move_data = [action.x, action.y, action.getAngleDegrees()]
+            elif action.action_type == ActionTypes.MOVE_CONST_VEL:
+                self.robot_client.move_const_vel(action.vx, action.vy, action.va, action.t)
             elif action.action_type == ActionTypes.NET:
                 status = self.robot_client.net_status()
                 logging.info("Robot {} network status is: {}".format(self.robot_id, status))
-            elif action.action_type == ActionTypes.LOAD:
-                self.robot_client.load()
-            elif action.action_type == ActionTypes.PLACE:
-                self.robot_client.place()
-            elif action.action_type == ActionTypes.TRAY_INIT:
-                self.robot_client.tray_init()
-            elif action.action_type == ActionTypes.LOAD_COMPLETE:
-                self.robot_client.load_complete()
-            elif action.action_type == ActionTypes.ESTOP:
-                self.robot_client.estop()
-            elif action.action_type == ActionTypes.MOVE_CONST_VEL:
-                self.robot_client.move_const_vel(action.vx, action.vy, action.va, action.t)
-            elif action.action_type == ActionTypes.CLEAR_ERROR:
-                self.robot_client.clear_error()
-            elif action.action_type == ActionTypes.WAIT_FOR_LOCALIZATION:
-                self.robot_client.wait_for_localization()
+            elif action.action_type in self.simple_action_map.keys():
+                self.simple_action_map[action.action_type]()
             else:
                 logging.info("Unknown action: {}".format(action.action_type))
         except RuntimeError:
@@ -374,7 +394,7 @@ class RuntimeManager:
         self.last_metrics['base'] = self.base_station.get_last_status()
         self.last_metrics['plan'] = self._get_plan_metrics()
         for robot in self.robots.values():
-            robot_metrics = robot.get_last_status()
+            robot_metrics = robot.get_robot_metrics()
             self.last_metrics[str(robot.robot_id)] = robot_metrics
 
             # Check if the robot has an error that would require pausing the plan

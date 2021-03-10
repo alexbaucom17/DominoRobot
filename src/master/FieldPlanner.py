@@ -295,6 +295,7 @@ class ActionTypes(enum.Enum):
     WAIT_FOR_LOCALIZATION = 9, 
     MOVE_CONST_VEL = 10,
     CLEAR_ERROR = 11,
+    NONE = 12,
 
 class Action:
 
@@ -335,13 +336,13 @@ class MoveAction(Action):
 
         self.x = float(x)
         self.y = float(y)
-        self.a = float(a) * math.pi/180.0
+        self.a = math.radians(float(a))
 
     def getPos(self):
         return np.array([self.x, self.y])
 
     def getAngleDegrees(self):
-        return self.a * 180.0/math.pi
+        return math.degrees(self.a)
 
     def getAngleRadians(self):
         return self.a

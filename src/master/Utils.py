@@ -1,5 +1,6 @@
 import time
 import numpy as np
+import math
 
 class NonBlockingTimer:
 
@@ -18,9 +19,11 @@ def write_file(filename, text):
         f.write(text)
 
 
+# Pos and offset expected as 2 long numpy vector, Angle is expected in degrees
+# Returns 2 length numpy vector
 def TransformPos(pos_2d, frame_offset_2d, frame_angle):
 
-    frame_angle = frame_angle * np.pi/180.0
+    frame_angle = math.radians(frame_angle)
     # Make a transform
     tf = np.array([[ np.cos(frame_angle), -np.sin(frame_angle), frame_offset_2d[0] ],
                    [ np.sin(frame_angle),  np.cos(frame_angle), frame_offset_2d[1] ],
@@ -29,6 +32,7 @@ def TransformPos(pos_2d, frame_offset_2d, frame_angle):
     pos_2d = np.concatenate((pos_2d,[1])).reshape((3,))
     new_pos = np.matmul(tf, pos_2d)
     return new_pos[:2].reshape((2,))
+
 
 
 
