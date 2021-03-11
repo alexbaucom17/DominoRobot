@@ -270,6 +270,12 @@ void RobotController::inputPosition(float x, float y, float a)
     }
 }
 
+void RobotController::force_set_position(float x, float y, float a)
+{
+    localization_.force_set_position({x,y,a});
+    cartPos_ = localization_.getPosition();
+}
+
 bool RobotController::readMsgFromMotorDriver(Velocity* decodedVelocity)
 {
     std::string msg = "";

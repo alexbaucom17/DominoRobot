@@ -98,6 +98,14 @@ COMMAND RobotServer::getCommand(std::string message)
             positionData_.a = doc["data"]["a"];
             sendAck(type);
         }
+        else if(type == "set_pose")
+        {
+            cmd = COMMAND::SET_POSE;
+            positionData_.x = doc["data"]["x"];
+            positionData_.y = doc["data"]["y"];
+            positionData_.a = doc["data"]["a"];
+            sendAck(type);
+        }
         else if(type == "estop")
         {
             cmd = COMMAND::ESTOP;

@@ -42,6 +42,7 @@ enum class COMMAND
     LOAD_COMPLETE,
     CLEAR_ERROR,
     WAIT_FOR_LOCALIZATION,
+    SET_POSE,
 };
 
 #endif
