@@ -12,9 +12,11 @@ class TrayController
 
     void initialize();
 
-    void place();
+    // Returns bool indicating if action started successfully
+    bool place();
 
-    void load();
+    // Returns bool indicating if action started successfully
+    bool load();
 
     bool isActionRunning() {return cur_action_ != ACTION::NONE;}
 
@@ -23,6 +25,9 @@ class TrayController
     void estop();
 
     void setLoadComplete() {load_complete_ = true;};
+
+    // Used for testing
+    void setTrayInitialized(bool value) {is_initialized_ = value;};
 
   private:
 
@@ -42,6 +47,7 @@ class TrayController
     ACTION cur_action_;
     RateController controller_rate_;       // Rate limit controller loop
     Timer action_timer_;
+    bool is_initialized_;
 
     void runStepAndWaitForCompletion(std::string data, std::string debug_print);
     void updateInitialize();

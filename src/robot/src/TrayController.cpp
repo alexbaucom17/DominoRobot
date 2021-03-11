@@ -11,7 +11,8 @@ TrayController::TrayController()
   action_step_(0),
   fake_tray_motion_(cfg.lookup("tray.fake_tray_motions")),
   cur_action_(ACTION::NONE),
-  controller_rate_(cfg.lookup("tray.controller_frequency"))
+  controller_rate_(cfg.lookup("tray.controller_frequency")),
+  is_initialized_(false)
 {
     if(fake_tray_motion_) PLOGW << "Fake tray motion enabled";
 }
@@ -23,18 +24,32 @@ void TrayController::initialize()
     PLOGI << "Starting tray action INITIALIZE";
 }
 
-void TrayController::place()
+bool TrayController::place()
 {
+    if(!is_initialized_) 
+    {
+        PLOGE << "Tray is not initialized, aborting action";
+        return false;
+    }
+    
     cur_action_ = ACTION::PLACE;
     action_step_ = 0;
     PLOGI << "Starting tray action PLACE";
+    return true;
 }
 
-void TrayController::load()
+bool TrayController::load()
 {
+    if(!is_initialized_) 
+    {
+        PLOGE << "Tray is not initialized, aborting action";
+        return false;
+    }
+    
     cur_action_ = ACTION::LOAD;
     action_step_ = 0;
     PLOGI << "Starting tray action LOAD";
+    return true;
 }
 
 void TrayController::estop()
@@ -135,6 +150,7 @@ void TrayController::updateInitialize()
     {
         cur_action_ = ACTION::NONE;
         PLOGI << "Done with initialization";
+        is_initialized_ = true;
     }
 }
 

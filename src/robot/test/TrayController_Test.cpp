@@ -73,8 +73,10 @@ TEST_CASE("Place tray", "[TrayController]")
     MockSerialComms* mock_serial = build_and_get_mock_serial();
     MockClockWrapper* mock_clock = get_mock_clock_and_reset();
     TrayController t;
+    t.setTrayInitialized(true);
 
-    t.place();
+    bool status = t.place();    
+    REQUIRE(status == true);
     REQUIRE(mock_serial->mock_rcv_lift() == "");
     REQUIRE(t.isActionRunning() == true);
 
@@ -113,8 +115,10 @@ TEST_CASE("Load tray", "[TrayController]")
     MockSerialComms* mock_serial = build_and_get_mock_serial();
     MockClockWrapper* mock_clock = get_mock_clock_and_reset();
     TrayController t;
+    t.setTrayInitialized(true);
 
-    t.load();
+    bool status = t.load();
+    REQUIRE(status == true);
     REQUIRE(mock_serial->mock_rcv_lift() == "");
     REQUIRE(t.isActionRunning() == true);
 
@@ -139,4 +143,13 @@ TEST_CASE("Load tray", "[TrayController]")
     mock_clock->advance_ms(1500);
     t.update();
     REQUIRE(t.isActionRunning() == false);
+}
+
+TEST_CASE("Errors when tray not initialized", "[TrayController]")
+{
+    TrayController t;
+    t.setTrayInitialized(false);
+
+    REQUIRE(t.place() == false);
+    REQUIRE(t.load() == false);
 }

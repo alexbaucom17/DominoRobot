@@ -168,11 +168,11 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     }
     else if(cmd == COMMAND::PLACE_TRAY)
     {
-        tray_controller_.place();
+        return tray_controller_.place();
     }
     else if(cmd == COMMAND::LOAD_TRAY)
     {
-        tray_controller_.load();
+        return tray_controller_.load();
     }
     else if(cmd == COMMAND::INITIALIZE_TRAY)
     {

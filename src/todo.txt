@@ -5,8 +5,8 @@ Robot SW:
 - Consider using marvelmind position confidence metric as part of localization reliability
 - Improve general position localization algorithm/metric
 - Consider if move rel should use robot or global coordinate system (currently uses global)
-- Add check for tray initialization
 - Research how to handle latency in a controller
+- Make backup of robot SD card
 
 Robot HW:
 
