@@ -111,6 +111,8 @@ class RobotInterface:
                 self.current_move_data = [action.x, action.y, action.getAngleDegrees()]
             elif action.action_type == ActionTypes.MOVE_CONST_VEL:
                 self.robot_client.move_const_vel(action.vx, action.vy, action.va, action.t)
+            elif action.action_type == ActionTypes.SET_POSE:
+                self.robot_client.set_pose(action.x, action.y. action.a)
             elif action.action_type == ActionTypes.NET:
                 status = self.robot_client.net_status()
                 logging.info("Robot {} network status is: {}".format(self.robot_id, status))

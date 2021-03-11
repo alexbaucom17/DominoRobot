@@ -296,6 +296,7 @@ class ActionTypes(enum.Enum):
     MOVE_CONST_VEL = 10,
     CLEAR_ERROR = 11,
     NONE = 12,
+    SET_POSE = 13,
 
 class Action:
 
@@ -305,6 +306,21 @@ class Action:
 
     def draw(self, ax):
         pass
+
+class SetPoseAction(Action):
+    def __init__(self, action_type, name, x, y, a):
+        # action_type (enum)
+        # string name
+        # X position [m]
+        # Y position [m]
+        # Angle [deg]
+
+        super().__init__(action_type, name)
+
+        self.x = float(x)
+        self.y = float(y)
+        self.a = math.radians(float(a))
+
 
 class MoveConstVelAction(Action):
 

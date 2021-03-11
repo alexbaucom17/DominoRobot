@@ -160,6 +160,10 @@ class CmdGui:
             data = data_str.split(',')
             data = [x.strip() for x in data]
             action = MoveConstVelAction(action_type, name, data[0], data[1], data[2], data[3])
+        elif action_type in [ActionTypes.SET_POSE]:
+            data = data_str.split(',')
+            data = [x.strip() for x in data]
+            action = SetPoseAction(action_type, name, data[0], data[1], data[2])
         else:
             action = Action(action_type, name)
 

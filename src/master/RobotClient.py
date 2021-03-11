@@ -236,6 +236,11 @@ class RobotClient(ClientBase):
         msg = {'type': 'wait_for_loc'}
         self.send_msg_and_wait_for_ack(msg)
 
+    def set_pose(self, x, y, a):
+        """ Sets the pose of the robot explicity bypassing any localization code """
+        msg = {'type': 'set_pose', 'data': {'x': x, 'y': y, 'a': a}}
+        self.send_msg_and_wait_for_ack(msg)
+
 class BaseStationClient(ClientBase):
     
     def __init__(self, cfg):
