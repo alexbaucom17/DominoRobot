@@ -65,11 +65,14 @@ void RobotController::moveToPosition(float x, float y, float a)
     else { statusUpdater_.setErrorStatus(); }
 }
 
-void RobotController::moveToPositionRelative(float x, float y, float a)
+void RobotController::moveToPositionRelative(float dx_local, float dy_local, float da_local)
 {
     fineMode_ = false;
     velOnlyMode_ = false;
-    goalPos_ = Point(cartPos_.x + x, cartPos_.y + y, cartPos_.a + a);
+    float dx_global =  cos(cartPos_.a) * dx_local + sin(cartPos_.a) * dy_local;
+    float dy_global = -sin(cartPos_.a) * dx_local + cos(cartPos_.a) * dy_local;
+    float da_global = da_local;
+    goalPos_ = Point(cartPos_.x + dx_global, cartPos_.y + dy_global, wrap_angle(cartPos_.a + da_global));
     bool ok = trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
     if (ok) { startTraj(); }
     else { statusUpdater_.setErrorStatus(); }
