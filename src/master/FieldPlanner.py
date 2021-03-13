@@ -423,6 +423,7 @@ def generate_full_action_sequence(cfg, tile):
     enter_field_prep_global_frame = Utils.TransformPos(enter_field_prep_pos_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
     exit_field_prep_global_frame = Utils.TransformPos(exit_field_prep_pos_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
     base_station_coarse_pos = cfg.base_station_target_pos + Utils.TransformPos(cfg.base_station_coarse_pose_offset, [0,0], cfg.base_station_target_angle)
+    robot_field_angle = cfg.domino_field_angle + cfg.field_to_robot_frame_angle
 
     actions = []
 
@@ -436,25 +437,25 @@ def generate_full_action_sequence(cfg, tile):
     actions.append(MoveAction(ActionTypes.MOVE_FINE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], cfg.base_station_target_angle))
 
     name = "Move to prep - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, enter_field_prep_global_frame[0], enter_field_prep_global_frame[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, enter_field_prep_global_frame[0], enter_field_prep_global_frame[1], robot_field_angle))
 
     name = "Move to near place - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
 
     name = "Wait for localization"
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle))
 
     name = "Place tile"
     actions.append(Action(ActionTypes.PLACE, name))
 
     name = "Move away from place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
 
     name = "Move to exit - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, exit_field_prep_global_frame[0], exit_field_prep_global_frame[1], cfg.domino_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, exit_field_prep_global_frame[0], exit_field_prep_global_frame[1], robot_field_angle))
 
     name = "Move to near load - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], cfg.base_station_target_angle))
@@ -474,25 +475,22 @@ def generate_small_testing_action_sequence(cfg, tile):
     Move to load - coarse
     """
 
-    # Hardcoded values for quick hacky testing here
-    domino_field_origin = np.array([9,-3]) 
-    field_angle = 0
-    tile_placement_coarse_offset = np.array([-0.3, -0.3])
-    tile_to_robot_offset = np.array([0,0])
-    load_pose = np.array([8,-4,90])
-    field_to_robot_frame_angle = 90
-    robot_angle = field_angle + field_to_robot_frame_angle
-
+    # Setup positions in field frame
     tile_pos_in_field_frame = np.array(tile.getPlacementPositionInMeters())
-    tile_pos_in_global_frame = Utils.TransformPos(tile_pos_in_field_frame, domino_field_origin, field_angle)
-    robot_placement_fine_pos = tile_pos_in_global_frame + Utils.TransformPos(tile_to_robot_offset, [0,0], field_angle)
-    robot_placement_coarse_pos = robot_placement_fine_pos + Utils.TransformPos(tile_placement_coarse_offset, [0,0], field_angle)
+    robot_placement_fine_pos_field_frame = tile_pos_in_field_frame + Utils.TransformPos(cfg.tile_to_robot_offset, [0,0], cfg.field_to_robot_frame_angle)
+    robot_placement_coarse_pos_field_frame = robot_placement_fine_pos_field_frame + Utils.TransformPos(cfg.tile_placement_coarse_offset, [0,0], cfg.field_to_robot_frame_angle)
+
+    # Convert positions to global frame
+    tile_pos_in_global_frame = Utils.TransformPos(tile_pos_in_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
+    robot_placement_coarse_pos_global_frame = Utils.TransformPos(robot_placement_coarse_pos_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
+    robot_placement_fine_pos_global_frame = Utils.TransformPos(robot_placement_fine_pos_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
+    robot_field_angle = cfg.domino_field_angle + cfg.field_to_robot_frame_angle
 
     print(tile.order)
     print(tile_pos_in_field_frame)
     print(tile_pos_in_global_frame)
-    print(robot_placement_coarse_pos)
-    print(robot_placement_fine_pos)
+    print(robot_placement_coarse_pos_global_frame)
+    print(robot_placement_fine_pos_global_frame)
 
     actions = []
 
@@ -500,28 +498,22 @@ def generate_small_testing_action_sequence(cfg, tile):
     actions.append(Action(ActionTypes.LOAD, name))
 
     name = "Move to near place - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos[0], robot_placement_coarse_pos[1], robot_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
 
     name = "Wait for localization"
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos[0], robot_placement_fine_pos[1], robot_angle))
-
-    name = "Wait for localization"
-    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
-
-    name = "Move to place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos[0], robot_placement_fine_pos[1], robot_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle))
 
     name = "Place tile"
     actions.append(Action(ActionTypes.PLACE, name))
 
     name = "Move away from place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_coarse_pos[0], robot_placement_coarse_pos[1], robot_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
 
     name = "Move to near load - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, load_pose[0], load_pose[1], load_pose[2]))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_pose[0], cfg.load_pose[1], cfg.load_pose[2]))
 
     return actions
 
@@ -674,7 +666,7 @@ if __name__ == '__main__':
     # plan.field.show_image_parsing()
     # plan.field.render_domino_image_tiles()
     # plan.field.show_tile_ordering()
-    plan.draw_cycle(3)
+    plan.draw_cycle(2)
 
 
     sg.change_look_and_feel('Dark Blue 3')
