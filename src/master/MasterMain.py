@@ -108,8 +108,9 @@ class CmdGui:
         # Sending a manual action (via button or pressing enter)
         if event in ('Send Command', '\r', '\n'):
             manual_action = self._parse_manual_action(values)
-            self.window['_ACTION_DATA_'].update("")
-            return 'Action', manual_action
+            if manual_action is not None:
+                self.window['_ACTION_DATA_'].update("")
+                return 'Action', manual_action
 
         # Pressing the run plan button
         if event == "_RUN_PLAN_":
@@ -155,14 +156,23 @@ class CmdGui:
         if action_type in [ActionTypes.MOVE_COARSE, ActionTypes.MOVE_REL, ActionTypes.MOVE_FINE]:
             data = data_str.split(',')
             data = [x.strip() for x in data]
+            if len(data) != 3:
+                logging.warning("Invalid data: {}".format(data))
+                return None
             action = MoveAction(action_type, name, data[0], data[1], data[2])
         elif action_type in [ActionTypes.MOVE_CONST_VEL]:
             data = data_str.split(',')
             data = [x.strip() for x in data]
+            if len(data) != 4:
+                logging.warning("Invalid data: {}".format(data))
+                return None
             action = MoveConstVelAction(action_type, name, data[0], data[1], data[2], data[3])
         elif action_type in [ActionTypes.SET_POSE]:
             data = data_str.split(',')
             data = [x.strip() for x in data]
+            if len(data) != 3:
+                logging.warning("Invalid data: {}".format(data))
+                return None
             action = SetPoseAction(action_type, name, data[0], data[1], data[2])
         else:
             action = Action(action_type, name)
@@ -263,31 +273,31 @@ class CmdGui:
         status_str = "Cannot get {} status".format(robot_id)
         color_str = STATUS_PANEL_BAD_COLOR
         if status_dict:
-            # try:
-            robot_pose = [status_dict['pos_x'], status_dict['pos_y'], math.degrees(status_dict['pos_a'])]
-            status_str = ""
-            status_str += "Position: [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(robot_pose[0], robot_pose[1], robot_pose[2])
-            status_str += "Velocity: [{0:.3f} m/s, {1:.3f} m/s, {2:.2f} deg/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], math.degrees(status_dict['vel_a']))
-            status_str += "Localization Confidence: {0:.1f}%\n".format(status_dict['localization_confidence']*100)
-            status_str += "Controller timing: {} ms\n".format(status_dict['controller_loop_ms'])
-            status_str += "Position timing:   {} ms\n".format(status_dict['position_loop_ms'])
-            status_str += "Current action:   {}\n".format(status_dict['current_action'].split('.')[-1])
-            status_str += "Motion in progress: {}\n".format(status_dict["in_progress"])
-            status_str += "Has error: {}\n".format(status_dict["error_status"])
-            status_str += "Counter:   {}\n".format(status_dict['counter'])
+            try:
+                robot_pose = [status_dict['pos_x'], status_dict['pos_y'], math.degrees(status_dict['pos_a'])]
+                status_str = ""
+                status_str += "Position: [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(robot_pose[0], robot_pose[1], robot_pose[2])
+                status_str += "Velocity: [{0:.3f} m/s, {1:.3f} m/s, {2:.2f} deg/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], math.degrees(status_dict['vel_a']))
+                status_str += "Localization Confidence: {0:.1f}%\n".format(status_dict['localization_confidence']*100)
+                status_str += "Controller timing: {} ms\n".format(status_dict['controller_loop_ms'])
+                status_str += "Position timing:   {} ms\n".format(status_dict['position_loop_ms'])
+                status_str += "Current action:   {}\n".format(status_dict['current_action'].split('.')[-1])
+                status_str += "Motion in progress: {}\n".format(status_dict["in_progress"])
+                status_str += "Has error: {}\n".format(status_dict["error_status"])
+                status_str += "Counter:   {}\n".format(status_dict['counter'])
 
-            # Also update the visualization position
-            self._update_robot_viz_position(robot_id, robot_pose)
-            # If there is target position data populated, draw the target too
-            if 'current_move_data' in status_dict.keys():
-                self._update_target_viz_position(robot_id, robot_pose, status_dict['current_move_data'])
+                # Also update the visualization position
+                self._update_robot_viz_position(robot_id, robot_pose)
+                # If there is target position data populated, draw the target too
+                if 'current_move_data' in status_dict.keys():
+                    self._update_target_viz_position(robot_id, robot_pose, status_dict['current_move_data'])
+                color_str = STATUS_PANEL_OK_COLOR
 
-            color_str = STATUS_PANEL_OK_COLOR
-            # except Exception as e:
-            #     if "offline" in str(status_dict):
-            #         status_str = str(status_dict)
-            #     else:
-            #         status_str = "Bad dict: " + str(status_dict)
+            except Exception as e:
+                if "offline" in str(status_dict):
+                    status_str = str(status_dict)
+                else:
+                    status_str = "Bad dict: " + str(status_dict)
 
         self.window['_{}_STATUS_'.format(robot_id.upper())].update(status_str, background_color=color_str)
 
