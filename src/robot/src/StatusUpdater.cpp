@@ -1,8 +1,5 @@
 #include "StatusUpdater.h"
 
-#define VARIANCE_REF_XY 1     // 1 m
-#define VARIANCE_REF_A  1.57  // 90 degrees
-
 StatusUpdater::StatusUpdater() :
   currentStatus_()
 {
@@ -43,27 +40,9 @@ void StatusUpdater::updatePositionLoopTime(int position_loop_ms)
     currentStatus_.position_loop_ms = position_loop_ms;
 }
 
-void StatusUpdater::updateLocalizationConfidence(float localization_confidence)
+void StatusUpdater::updateLocalizationMetrics(LocalizationMetrics localization_metrics)
 {
-    currentStatus_.localization_confidence = localization_confidence;
-}
-
-void StatusUpdater::updatePositionConfidence(float cx, float cy, float ca)
-{
-  // Inputs are from the covariance matrix, using those values to estimate a fractional 'confidence'
-  // in our positioning relative to some reference amount. This isn't any official measurement, just an estimate to use for debugging
-
-  // Compute inverse confidence. As long as the variance isn't larger than the reference values
-  // these will be between 0-1 with 0 being more confident in the positioning
-  float icx = cx/VARIANCE_REF_XY;
-  float icy = cy/VARIANCE_REF_XY;
-  float ica = ca/VARIANCE_REF_A;
-
-  // Flip and scale to uint8 value for transmission
-  currentStatus_.confidence_x = static_cast<uint8_t>((1-icx)*255);
-  currentStatus_.confidence_y = static_cast<uint8_t>((1-icy)*255);
-  currentStatus_.confidence_a = static_cast<uint8_t>((1-ica)*255);
-  
+    currentStatus_.localization_metrics = localization_metrics;
 }
 
 void StatusUpdater::update_motor_driver_connected(bool connected)

@@ -3,6 +3,7 @@
 #define StatusUpdater_h
 
 #include <ArduinoJson/ArduinoJson.h>
+#include "Localization.h"
 
 
 class StatusUpdater
@@ -15,8 +16,6 @@ class StatusUpdater
     void updatePosition(float x, float y, float a);
 
     void updateVelocity(float vx, float vy, float va);
-
-    void updatePositionConfidence(float cx, float cy, float ca);
 
     void updateControlLoopTime(int controller_loop_ms);
 
@@ -32,9 +31,9 @@ class StatusUpdater
 
     bool getErrorStatus() const {return currentStatus_.error_status;}
 
-    void updateLocalizationConfidence(float localization_confidence);
+    void updateLocalizationMetrics(LocalizationMetrics localization_metrics);
 
-    float getLocalizationConfidence() const {return currentStatus_.localization_confidence;};
+    float getLocalizationConfidence() const {return currentStatus_.localization_metrics.confidence;};
 
     void update_motor_driver_connected(bool connected);
 
@@ -49,9 +48,6 @@ class StatusUpdater
       float vel_x;
       float vel_y;
       float vel_a;
-      uint8_t confidence_x;
-      uint8_t confidence_y;
-      uint8_t confidence_a;
 
       // Loop times
       int controller_loop_ms;
@@ -64,7 +60,7 @@ class StatusUpdater
       bool motor_driver_connected;
       bool lifter_driver_connected;
 
-      float localization_confidence;
+      LocalizationMetrics localization_metrics;
 
       //When adding extra fields, update toJsonString method to serialize and add additional capacity
 
@@ -75,9 +71,6 @@ class StatusUpdater
       vel_x(0.0),
       vel_y(0.0),
       vel_a(0.0),
-      confidence_x(0),
-      confidence_y(0),
-      confidence_a(0),
       controller_loop_ms(999),
       position_loop_ms(999),
       in_progress(false),
@@ -85,14 +78,14 @@ class StatusUpdater
       counter(0),
       motor_driver_connected(false),
       lifter_driver_connected(false),
-      localization_confidence(0.0)
+      localization_metrics()
       {
       }
 
       std::string toJsonString()
       {
         // Size the object correctly
-        const size_t capacity = JSON_OBJECT_SIZE(22); // Update when adding new fields
+        const size_t capacity = JSON_OBJECT_SIZE(25); // Update when adding new fields
         DynamicJsonDocument root(capacity);
 
         // Format to match messages sent by server
@@ -106,9 +99,6 @@ class StatusUpdater
         doc["vel_x"] = vel_x;
         doc["vel_y"] = vel_y;
         doc["vel_a"] = vel_a;
-        doc["confidence_x"] = confidence_x;
-        doc["confidence_y"] = confidence_y;
-        doc["confidence_a"] = confidence_a;
         doc["controller_loop_ms"] = controller_loop_ms;
         doc["position_loop_ms"] = position_loop_ms;
         doc["in_progress"] = in_progress;
@@ -116,7 +106,11 @@ class StatusUpdater
         doc["counter"] = counter++;
         doc["motor_driver_connected"] = motor_driver_connected;
         doc["lifter_driver_connected"] = lifter_driver_connected;
-        doc["localization_confidence"] = localization_confidence;
+        doc["localization_confidence"] = localization_metrics.confidence;
+        doc["localization_last_reading_reliability"] = localization_metrics.last_reading_reliability;
+        doc["localization_last_reading_update_fraction"] = localization_metrics.last_reading_update_fraction;
+        doc["localization_seconds_since_last_valid_reading"] = localization_metrics.seconds_since_last_valid_reading;
+        doc["localization_rolling_reading_filter_fraction"] = localization_metrics.rolling_reading_filter_fraction;
 
         // Serialize and return string
         std::string msg;

@@ -2,13 +2,21 @@
 #define Localization_h
 
 #include "utils.h"
-#include "StatusUpdater.h"
 #include <Eigen/Dense>
+
+struct LocalizationMetrics 
+{
+    float confidence;
+    float last_reading_reliability;
+    float last_reading_update_fraction;
+    float seconds_since_last_valid_reading;
+    float rolling_reading_filter_fraction;
+};
 
 class Localization
 {
   public:
-    Localization(StatusUpdater& statusUpdater);
+    Localization();
 
     void updatePositionReading(Point global_position);
 
@@ -23,22 +31,26 @@ class Localization
     // Force the position to a specific value, bypassing localization algorithms (used for testing/debugging)
     void force_set_position(Point global_position) {pos_ = global_position;};
 
+    LocalizationMetrics getLocalizationMetrics() { return metrics_; };
+
   private:
 
     // Convert position reading from marvelmind frame to robot frame
-    Eigen::Vector3f marvelmindToRobotFrame(Eigen::Vector3f mm_global_position);
+    Eigen::Vector3f marvelmindToRobotCenter(Eigen::Vector3f mm_global_position);
 
     // Compute a multiplier based on the current velocity that informs how trustworthy the current reading might be
     float computeVelocityUpdateFraction();
 
     // Compute a position reliability multiplier based on previously observed readings
     float computePositionReadingReliability(Eigen::Vector3f position);
+
+    // Update localization metrics based on latest position reading
+    void updateMetricsForPosition(float update_fraction, float reading_reliability);
     
     // Current position and velocity
     Point pos_;
     Velocity vel_;
-    float localization_confidence_;
-
+    
     // Parameters for localization algorithms
     float update_fraction_at_zero_vel_;
     float val_for_zero_update_;
@@ -50,8 +62,9 @@ class Localization
 
     CircularBuffer<Eigen::Vector3f> prev_positions_raw_;
     CircularBuffer<Eigen::Vector3f> prev_positions_filtered_;
-
-    StatusUpdater& statusUpdater_;
+    LocalizationMetrics metrics_;
+    Timer last_valid_reading_timer_; 
+    CircularBuffer<float> reading_validity_buffer_;
 
 
 };

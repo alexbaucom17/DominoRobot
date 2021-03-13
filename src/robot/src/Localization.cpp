@@ -1,13 +1,13 @@
 #include "Localization.h"
 
 #include <math.h>
+#include <algorithm> 
 #include <plog/Log.h>
 #include "constants.h"
 
-Localization::Localization(StatusUpdater& statusUpdater)
+Localization::Localization()
 : pos_(0,0,0),
   vel_(0,0,0),
-  localization_confidence_(1.0),
   update_fraction_at_zero_vel_(cfg.lookup("localization.update_fraction_at_zero_vel")),
   val_for_zero_update_(cfg.lookup("localization.val_for_zero_update")),
   mm_x_offset_(cfg.lookup("localization.mm_x_offset")),
@@ -17,7 +17,9 @@ Localization::Localization(StatusUpdater& statusUpdater)
   position_reliability_max_stddev_ang_(cfg.lookup("localization.position_reliability_max_stddev_ang")),
   prev_positions_raw_(cfg.lookup("localization.position_reliability_buffer_size")),
   prev_positions_filtered_(cfg.lookup("localization.position_reliability_buffer_size")),
-  statusUpdater_(statusUpdater)
+  metrics_(),
+  last_valid_reading_timer_(),
+  reading_validity_buffer_(cfg.lookup("localization.position_reliability_buffer_size"))
 {}
 
 void Localization::updatePositionReading(Point global_position)
@@ -31,11 +33,12 @@ void Localization::updatePositionReading(Point global_position)
     // The x,y,a here is from the center of the marvlemind pair, so we need to transform it to the actual center of the
     // robot (i.e. center of rotation)
     Eigen::Vector3f raw_measured_position = {global_position.x, global_position.y, global_position.a};
-    Eigen::Vector3f adjusted_measured_position = marvelmindToRobotFrame(raw_measured_position);
+    Eigen::Vector3f adjusted_measured_position = marvelmindToRobotCenter(raw_measured_position);
     
     // Generate an update fraction based on the current velocity since we know the beacons are less accurate when moving
     const float update_fraction = computeVelocityUpdateFraction();
     const float reading_reliability = computePositionReadingReliability(adjusted_measured_position);
+    updateMetricsForPosition(update_fraction, reading_reliability);
     
     // Actually update the position based on the observed position and the update fraction
     pos_.x += update_fraction * reading_reliability * (adjusted_measured_position(0) - pos_.x);
@@ -49,10 +52,6 @@ void Localization::updatePositionReading(Point global_position)
         adjusted_measured_position(0), adjusted_measured_position(1), adjusted_measured_position(2));
     PLOGI_(LOCALIZATION_LOG_ID).printf("  vel_fraction: %4.3f, reliability: %4.3f", update_fraction, reading_reliability);
     PLOGI_(LOCALIZATION_LOG_ID).printf("  Current position: %s\n", pos_.toString().c_str());
-
-    // TODO: Merge all reliability into a single score
-    // TODO: Report additional metrics - last reading used, current reading reliability, overall position reliability
-    // TODO: Consider if this warrents using a kalman filter again - reading reliability could factor into update covariance matrix?
 }
 
 void Localization::updateVelocityReading(Velocity local_cart_vel, float dt)
@@ -68,9 +67,16 @@ void Localization::updateVelocityReading(Velocity local_cart_vel, float dt)
     pos_.x += vel_.vx * dt;
     pos_.y += vel_.vy * dt;
     pos_.a = wrap_angle(pos_.a + vel_.va * dt);
+
+    // Update metric confidence based on velocity reading
+    Eigen::Vector3f v = {vel_.vx, vel_.vy, vel_.va};
+    float total_v = v.norm();
+    float delta_confidence = total_v * dt * 0.01;
+    metrics_.confidence -= delta_confidence;
+    metrics_.confidence = std::max(metrics_.confidence, 0.0f);
 }
 
-Eigen::Vector3f Localization::marvelmindToRobotFrame(Eigen::Vector3f mm_global_position) 
+Eigen::Vector3f Localization::marvelmindToRobotCenter(Eigen::Vector3f mm_global_position) 
 {
     Eigen::Vector3f local_offset = {mm_x_offset_/1000.0f, mm_y_offset_/1000.0f, 0.0f};
     float cA = cos(mm_global_position(2));
@@ -179,4 +185,28 @@ float Localization::computePositionReadingReliability(Eigen::Vector3f position)
     {
         return 0.0;
     }
+}
+
+void Localization::updateMetricsForPosition(float update_fraction, float reading_reliability)
+{
+    float reading_validity = update_fraction * reading_reliability;
+    if(reading_validity > 0) 
+    {
+        metrics_.last_reading_reliability = reading_reliability;
+        metrics_.last_reading_update_fraction = update_fraction;
+        metrics_.confidence = reading_validity;
+        last_valid_reading_timer_.reset();
+    }
+    
+    reading_validity_buffer_.insert(reading_validity);
+    std::vector<float> buffer_contents = reading_validity_buffer_.get_contents();
+    float mean = 0.0;
+    for (const auto& val : buffer_contents) 
+    {
+        mean += val;
+    }
+    mean /= buffer_contents.size();
+
+    metrics_.seconds_since_last_valid_reading = last_valid_reading_timer_.dt_s();
+    metrics_.rolling_reading_filter_fraction = mean;
 }

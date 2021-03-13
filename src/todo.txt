@@ -17,8 +17,7 @@ Robot controller:
         - Rated accuracy looks to be about 1-3mm
 
 Robot SW:
-- Consider using marvelmind position confidence metric as part of localization reliability
-- Improve general position localization algorithm/metric
+- Convert localization to KalmanFilter?
 
 Robot HW:
 

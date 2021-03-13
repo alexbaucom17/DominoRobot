@@ -12,7 +12,7 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
 : trajGen_(),
   statusUpdater_(statusUpdater),
   serial_to_motor_driver_(SerialCommsFactory::getFactoryInstance()->get_serial_comms(CLEARCORE_USB)),
-  localization_(statusUpdater),
+  localization_(),
   prevControlLoopTimer_(),
   prevOdomLoopTimer_(),
   trajStartTimer_(),
@@ -172,6 +172,7 @@ void RobotController::update()
     statusUpdater_.updateVelocity(cartVel_.vx, cartVel_.vy, cartVel_.va);
     loop_time_averager_.mark_point();
     statusUpdater_.updateControlLoopTime(loop_time_averager_.get_ms());
+    statusUpdater_.updateLocalizationMetrics(localization_.getLocalizationMetrics());
 }
 
 
