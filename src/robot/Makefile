@@ -17,7 +17,7 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP
 CXXFLAGS ?= -std=c++17 -Wall -Wextra -Wwrite-strings -Wno-parentheses -pthread -g
-LDFLAGS += -ldl -lconfig++ -lstdc++fs
+LDFLAGS += -ldl -lconfig++ -lstdc++fs -lpigpiod_if2 -lrt
 LIBS += /usr/local/lib/libserial.a ./lib/marvelmind/marvelmind.a
 
 TEST_SRCS := $(shell find $(TEST_DIRS) -name *.cpp -or -name *.c -or -name *.s)

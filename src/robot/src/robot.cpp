@@ -42,11 +42,13 @@ Robot::Robot()
   controller_(statusUpdater_),
   tray_controller_(),
   mm_wrapper_(),
+  distance_(),
   position_time_averager_(20),
   wait_for_localize_helper_(statusUpdater_, cfg.lookup("localization.max_wait_time"), cfg.lookup("localization.confidence_for_wait")),
   curCmd_(COMMAND::NONE)
 {
     PLOGI.printf("Robot starting");
+    distance_.start();
 }
 
 void Robot::run()
@@ -94,6 +96,8 @@ void Robot::runOnce()
 
     // Update loop time and status updater
     statusUpdater_.updatePositionLoopTime(position_time_averager_.get_ms());
+
+    PLOGI.printf("Current distance: %4.1f mm", distance_.getDistance());
 }
 
 

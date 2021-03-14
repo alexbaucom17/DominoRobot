@@ -13,3 +13,7 @@ Required libraries at /usr/local/lib
 
 Required libraries installed with apt-get
  - libconfig++-dev
+
+Other libraries
+ - pigpio library - instructions at: http://abyz.me.uk/rpi/pigpio/download.html
+ - Needs pigpiod set to run at boot
