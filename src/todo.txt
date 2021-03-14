@@ -18,8 +18,16 @@ Robot controller:
 
 Robot SW:
 - Convert localization to KalmanFilter?
+    - At the very least, use mean rolling position for location rather than delta update based on latest
+- Prototype a front facing distance sensor positioning algorithm
 
 Robot HW:
+- Prototype single front facing US sensor
+    - Dims: Holes + width of 2020 from marvelmind mount
+    - Ground to center of front 2020 is 230 mm
+    - Clearance b/w lifter is 75 mm
+    - Width available b/w wheel and center is 200mm
+- Connect via arduino or can I go directly to raspi or clearcore?
 
 Master:
 

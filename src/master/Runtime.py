@@ -32,7 +32,7 @@ class RobotInterface:
 
     def get_robot_metrics(self):
         metrics = copy.copy(self.last_status)
-        if metrics and type(metric) is dict:
+        if metrics and type(metrics) is dict:
             metrics['current_action'] = str(self.current_action)
             metrics['current_move_data'] = self.current_move_data
         return metrics
