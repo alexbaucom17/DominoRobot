@@ -114,7 +114,7 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     if (cmd == COMMAND::SET_POSE)
     {
         RobotServer::PositionData data = server_.getPositionData();
-        controller_.force_set_position(data.x, data.y, data.a);
+        controller_.forceSetPosition(data.x, data.y, data.a);
         return false;
     }
     // Same with ESTOP

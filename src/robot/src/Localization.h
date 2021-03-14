@@ -29,7 +29,7 @@ class Localization
     void forceZeroVelocity() {vel_ = {0,0,0}; };
     
     // Force the position to a specific value, bypassing localization algorithms (used for testing/debugging)
-    void force_set_position(Point global_position) {pos_ = global_position;};
+    void forceSetPosition(Point global_position) {pos_ = global_position;};
 
     LocalizationMetrics getLocalizationMetrics() { return metrics_; };
 

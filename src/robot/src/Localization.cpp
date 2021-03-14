@@ -42,7 +42,7 @@ void Localization::updatePositionReading(Point global_position)
     updateBuffersForPositionReading(adjusted_measured_position);
     const float reading_reliability = computePositionReliability();
     updateMetricsForPosition(update_fraction, reading_reliability);
-    
+
     // Update based on the mean - but should use the update fraction and maybe a time decay?
     pos_.x = filtered_positions_mean_[0];
     pos_.y = filtered_positions_mean_[1];
@@ -122,7 +122,7 @@ void Localization::updateBuffersForPositionReading(Eigen::Vector3f position)
 
     if(previous_readings.size() < 3)
     {
-        PLOGD_(LOCALIZATION_LOG_ID).printf("  Skipped - not enough points");
+        prev_positions_filtered_.insert(position);
         return;
     }
 

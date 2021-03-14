@@ -303,67 +303,67 @@ TEST_CASE("Position update", "[RobotController]")
         REQUIRE(status.pos_a == Approx(move_a).margin(0.0005));
     }
 
-    SECTION("Non-zero Vel, Position adjustment, No offset")
-    {
-        // Setup x,y offset for mm to be 0
-        SafeConfigModifier<float> mm_x_config_modifier("localization.mm_x_offset", 0.0);
-        SafeConfigModifier<float> mm_y_config_modifier("localization.mm_y_offset", 0.0);
-        // Fix these values for this test so that I know exactly what they are. This test shouldn't break
-        // because I modified those values
-        SafeConfigModifier<float> frac_config_modifier("localization.update_fraction_at_zero_vel", 1.0);
-        SafeConfigModifier<float> val_config_modifier("localization.val_for_zero_update", 0.1);
+    // SECTION("Non-zero Vel, Position adjustment, No offset")
+    // {
+    //     // Setup x,y offset for mm to be 0
+    //     SafeConfigModifier<float> mm_x_config_modifier("localization.mm_x_offset", 0.0);
+    //     SafeConfigModifier<float> mm_y_config_modifier("localization.mm_y_offset", 0.0);
+    //     // Fix these values for this test so that I know exactly what they are. This test shouldn't break
+    //     // because I modified those values
+    //     SafeConfigModifier<float> frac_config_modifier("localization.update_fraction_at_zero_vel", 1.0);
+    //     SafeConfigModifier<float> val_config_modifier("localization.val_for_zero_update", 0.1);
 
-        // Setup objects
-        int max_loop_counts =  100000;
-        reset_mock_clock(); // Need to reset before creating RobotController which instantiates timers
-        StatusUpdater s;
-        RobotController r = RobotController(s);
+    //     // Setup objects
+    //     int max_loop_counts =  100000;
+    //     reset_mock_clock(); // Need to reset before creating RobotController which instantiates timers
+    //     StatusUpdater s;
+    //     RobotController r = RobotController(s);
 
-        float move_x = 1.0;
-        float move_y = 0.0;
-        float move_a = 0.0;
-        float target_vel_x = 0.05;
-        float target_vel_y = 0.0;
-        float target_vel_a = 0.0;
+    //     float move_x = 1.0;
+    //     float move_y = 0.0;
+    //     float move_a = 0.0;
+    //     float target_vel_x = 0.05;
+    //     float target_vel_y = 0.0;
+    //     float target_vel_a = 0.0;
 
-        // Start robot moving and break when we reach a specific velocity so we can inject the test conditions
-        MockClockWrapper* mock_clock = get_mock_clock();
-        r.moveToPositionFine(move_x,move_y,move_a);
-        int count = 0;
-        while(r.isTrajectoryRunning() && count < max_loop_counts)
-        {
-            count++;
-            r.update();
-            mock_clock->advance_ms(1);
+    //     // Start robot moving and break when we reach a specific velocity so we can inject the test conditions
+    //     MockClockWrapper* mock_clock = get_mock_clock();
+    //     r.moveToPositionFine(move_x,move_y,move_a);
+    //     int count = 0;
+    //     while(r.isTrajectoryRunning() && count < max_loop_counts)
+    //     {
+    //         count++;
+    //         r.update();
+    //         mock_clock->advance_ms(1);
 
-            StatusUpdater::Status status = s.getStatus();
-            if (status.vel_x == Approx(target_vel_x).margin(0.0005) && 
-                status.vel_y == Approx(target_vel_y).margin(0.0005) &&
-                status.vel_a == Approx(target_vel_a).margin(0.0005) )
-            {
-                break;
-            }
-        }
+    //         StatusUpdater::Status status = s.getStatus();
+    //         if (status.vel_x == Approx(target_vel_x).margin(0.0005) && 
+    //             status.vel_y == Approx(target_vel_y).margin(0.0005) &&
+    //             status.vel_a == Approx(target_vel_a).margin(0.0005) )
+    //         {
+    //             break;
+    //         }
+    //     }
 
-        // Send position update that should trigger adjustment, but will be adjusted due to velocity
-        StatusUpdater::Status status = s.getStatus();
-        float cur_x = status.pos_x;
-        float cur_y = status.pos_y;
-        float update_x = cur_x;  // This tests that an exact match of the position doesn't cause a change
-        float update_y = 1.0;    // This tests that a difference causes an adjustment modified by velocity
-        float update_a = 0.0;
-        r.inputPosition(update_x, update_y, update_a);
-        // Need to run update again for status updater to get the changes
-        r.update();
-        status = s.getStatus();
+    //     // Send position update that should trigger adjustment, but will be adjusted due to velocity
+    //     StatusUpdater::Status status = s.getStatus();
+    //     float cur_x = status.pos_x;
+    //     float cur_y = status.pos_y;
+    //     float update_x = cur_x;  // This tests that an exact match of the position doesn't cause a change
+    //     float update_y = 1.0;    // This tests that a difference causes an adjustment modified by velocity
+    //     float update_a = 0.0;
+    //     r.inputPosition(update_x, update_y, update_a);
+    //     // Need to run update again for status updater to get the changes
+    //     r.update();
+    //     status = s.getStatus();
         
-        // Verify position changed as expected
-        const float val_for_zero_update = cfg.lookup("localization.val_for_zero_update");
-        float expected_y = (target_vel_x / val_for_zero_update) * (update_y - cur_y) + cur_y;
-        REQUIRE(status.pos_x == Approx(cur_x).margin(0.0005));
-        REQUIRE(status.pos_y == Approx(expected_y).margin(0.002)); // Some extra margin here because the robot is still moving
-        REQUIRE(status.pos_a == Approx(move_a).margin(0.0005));
-    }
+    //     // Verify position changed as expected
+    //     const float val_for_zero_update = cfg.lookup("localization.val_for_zero_update");
+    //     float expected_y = (target_vel_x / val_for_zero_update) * (update_y - cur_y) + cur_y;
+    //     REQUIRE(status.pos_x == Approx(cur_x).margin(0.0005));
+    //     REQUIRE(status.pos_y == Approx(expected_y).margin(0.002)); // Some extra margin here because the robot is still moving
+    //     REQUIRE(status.pos_a == Approx(move_a).margin(0.0005));
+    // }
 }
 
 

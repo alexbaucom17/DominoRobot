@@ -39,7 +39,7 @@ class RobotController
     void inputPosition(float x, float y, float a);
 
     // Force the position to a specific value, bypassing localization algorithms (used for testing/debugging)
-    void force_set_position(float x, float y, float a);
+    void forceSetPosition(float x, float y, float a);
 
     // Indicates if a trajectory is currently active
     bool isTrajectoryRunning() { return trajRunning_; };

@@ -274,9 +274,9 @@ void RobotController::inputPosition(float x, float y, float a)
     }
 }
 
-void RobotController::force_set_position(float x, float y, float a)
+void RobotController::forceSetPosition(float x, float y, float a)
 {
-    localization_.force_set_position({x,y,a});
+    localization_.forceSetPosition({x,y,a});
     cartPos_ = localization_.getPosition();
 }
 

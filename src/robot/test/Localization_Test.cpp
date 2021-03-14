@@ -6,12 +6,6 @@
 #include "StatusUpdater.h"
 #include "test-utils.h"
 
-void moveToPositionWithVelOnly(Localization& L, Point target)
-{
-    Velocity v{target.x, target.y, target.a};
-    L.updateVelocityReading(v, 1);
-    L.forceZeroVelocity();
-}
 
 
 TEST_CASE("Simple velocity only", "[Localization]")
@@ -44,7 +38,7 @@ TEST_CASE("Simple position adjustment", "[Localization]")
         float move_y = 0.0;
         float move_a = 0.0;
         Point move_target = {move_x, move_y, move_a};
-        moveToPositionWithVelOnly(L, move_target);
+        L.forceSetPosition(move_target);
 
         // Verify robot is in expected position
         Point position = L.getPosition();
@@ -74,7 +68,7 @@ TEST_CASE("Simple position adjustment", "[Localization]")
         float move_y = 0.0;
         float move_a = 0.0;
         Point move_target = {move_x, move_y, move_a};
-        moveToPositionWithVelOnly(L, move_target);
+        L.forceSetPosition(move_target);
 
         // Verify robot is in expected position
         Point position = L.getPosition();
@@ -112,7 +106,7 @@ TEST_CASE("Position update with MM offset", "[Localization]")
     float move_y = 0.0;
     float move_a = 3.14;
     Point move_target = {move_x, move_y, move_a};
-    moveToPositionWithVelOnly(L, move_target);
+    L.forceSetPosition(move_target);
 
     // Verify robot is in expected position
     Point position = L.getPosition();
@@ -136,41 +130,42 @@ TEST_CASE("Position update with MM offset", "[Localization]")
 }
 
 
-TEST_CASE("Position update with velocity adjustment", "[Localization]") 
-{
+// TODO: Re-enable once velocity adjustments are turned back on
+// TEST_CASE("Position update with velocity adjustment", "[Localization]") 
+// {
 
-    // Setup x,y offset for mm to be 0
-    SafeConfigModifier<float> mm_x_config_modifier("localization.mm_x_offset", 0.0);
-    SafeConfigModifier<float> mm_y_config_modifier("localization.mm_y_offset", 0.0);
-    // Fix these values for this test so that I know exactly what they are. This test shouldn't break
-    // because I modified those values in the config
-    SafeConfigModifier<float> frac_config_modifier("localization.update_fraction_at_zero_vel", 1.0);
-    SafeConfigModifier<float> val_config_modifier("localization.val_for_zero_update", 0.1);
-    Localization L;
+//     // Setup x,y offset for mm to be 0
+//     SafeConfigModifier<float> mm_x_config_modifier("localization.mm_x_offset", 0.0);
+//     SafeConfigModifier<float> mm_y_config_modifier("localization.mm_y_offset", 0.0);
+//     // Fix these values for this test so that I know exactly what they are. This test shouldn't break
+//     // because I modified those values in the config
+//     SafeConfigModifier<float> frac_config_modifier("localization.update_fraction_at_zero_vel", 1.0);
+//     SafeConfigModifier<float> val_config_modifier("localization.val_for_zero_update", 0.1);
+//     Localization L;
 
-    // Start 'robot' moving at specific velocity so we can inject the test conditions
-    float target_vel_x = 0.05;
-    float target_vel_y = 0.0;
-    float target_vel_a = 0.0;
-    L.updateVelocityReading({target_vel_x,target_vel_y,target_vel_a}, 1);
+//     // Start 'robot' moving at specific velocity so we can inject the test conditions
+//     float target_vel_x = 0.05;
+//     float target_vel_y = 0.0;
+//     float target_vel_a = 0.0;
+//     L.updateVelocityReading({target_vel_x,target_vel_y,target_vel_a}, 1);
 
-    // Send position update that should trigger adjustment, but will be adjusted due to velocity
-    Point position = L.getPosition();
-    float cur_x = position.x;
-    float cur_y = position.y;
-    float update_x = cur_x;  // This tests that an exact match of the position doesn't cause a change
-    float update_y = 1.0;    // This tests that a difference causes an adjustment modified by velocity
-    float update_a = 0.0;
-    L.updatePositionReading({update_x, update_y, update_a});
+//     // Send position update that should trigger adjustment, but will be adjusted due to velocity
+//     Point position = L.getPosition();
+//     float cur_x = position.x;
+//     float cur_y = position.y;
+//     float update_x = cur_x;  // This tests that an exact match of the position doesn't cause a change
+//     float update_y = 1.0;    // This tests that a difference causes an adjustment modified by velocity
+//     float update_a = 0.0;
+//     L.updatePositionReading({update_x, update_y, update_a});
     
-    // Verify position changed as expected
-    position = L.getPosition();
-    const float val_for_zero_update = cfg.lookup("localization.val_for_zero_update");
-    float expected_y = (target_vel_x / val_for_zero_update) * (update_y - cur_y) + cur_y;
-    REQUIRE(position.x == Approx(cur_x).margin(0.0005));
-    REQUIRE(position.y == Approx(expected_y).margin(0.002)); // Some extra margin here because the robot is still moving
-    REQUIRE(position.a == Approx(update_a).margin(0.0005));
-}
+//     // Verify position changed as expected
+//     position = L.getPosition();
+//     const float val_for_zero_update = cfg.lookup("localization.val_for_zero_update");
+//     float expected_y = (target_vel_x / val_for_zero_update) * (update_y - cur_y) + cur_y;
+//     REQUIRE(position.x == Approx(cur_x).margin(0.0005));
+//     REQUIRE(position.y == Approx(expected_y).margin(0.002)); // Some extra margin here because the robot is still moving
+//     REQUIRE(position.a == Approx(update_a).margin(0.0005));
+// }
 
 TEST_CASE("Test reading reliability filter", "[Localization]")
 {
@@ -240,7 +235,7 @@ TEST_CASE("Test reading reliability filter", "[Localization]")
         REQUIRE(position.a == Approx(update_a).margin(0.0005));
 
         // After many updates, the position should change
-        for (int i = 0; i < n_loops ; i++)
+        for (int i = 0; i < 2*n_loops ; i++)
         {
             float noise = distribution(generator);
             L.updatePositionReading({new_update_x+noise, new_update_y+noise, new_update_a+noise});
