@@ -17,17 +17,11 @@ Robot controller:
         - Rated accuracy looks to be about 1-3mm
 
 Robot SW:
-- Convert localization to KalmanFilter?
-    - Add tests for utils and localization updates if I keep them around
+- Convert localization to KalmanFilter
 - Prototype a front facing distance sensor positioning algorithm
 
 Robot HW:
-- Prototype single front facing US sensor
-    - Dims: Holes + width of 2020 from marvelmind mount
-    - Ground to center of front 2020 is 230 mm
-    - Clearance b/w lifter is 75 mm
-    - Width available b/w wheel and center is 200mm
-- Connect via arduino or can I go directly to raspi or clearcore?
+- Connect via arduino - raspi timing is too variable and loses accuracy
 
 Master:
 
