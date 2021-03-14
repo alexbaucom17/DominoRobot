@@ -292,5 +292,15 @@ class PositionController
 };
 
 
+//*******************************************
+//           Misc math
+//*******************************************
+
+float vectorMean(const std::vector<float>& data);
+
+float vectorStddev(const std::vector<float>& data, float mean);
+
+float zScore(float mean, float stddev, float reading);
+
 
 #endif

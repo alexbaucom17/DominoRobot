@@ -17,6 +17,8 @@ Localization::Localization()
   position_reliability_max_stddev_ang_(cfg.lookup("localization.position_reliability_max_stddev_ang")),
   prev_positions_raw_(cfg.lookup("localization.position_reliability_buffer_size")),
   prev_positions_filtered_(cfg.lookup("localization.position_reliability_buffer_size")),
+  filtered_positions_mean_(),
+  filtered_positions_stddev_(),
   metrics_(),
   last_valid_reading_timer_(),
   reading_validity_buffer_(cfg.lookup("localization.position_reliability_buffer_size"))
@@ -37,13 +39,14 @@ void Localization::updatePositionReading(Point global_position)
     
     // Generate an update fraction based on the current velocity since we know the beacons are less accurate when moving
     const float update_fraction = computeVelocityUpdateFraction();
-    const float reading_reliability = computePositionReadingReliability(adjusted_measured_position);
+    updateBuffersForPositionReading(adjusted_measured_position);
+    const float reading_reliability = computePositionReliability();
     updateMetricsForPosition(update_fraction, reading_reliability);
     
-    // Actually update the position based on the observed position and the update fraction
-    pos_.x += update_fraction * reading_reliability * (adjusted_measured_position(0) - pos_.x);
-    pos_.y += update_fraction * reading_reliability * (adjusted_measured_position(1) - pos_.y);
-    pos_.a = wrap_angle(pos_.a + update_fraction * reading_reliability * (angle_diff(adjusted_measured_position(2), pos_.a)));
+    // Update based on the mean - but should use the update fraction and maybe a time decay?
+    pos_.x = filtered_positions_mean_[0];
+    pos_.y = filtered_positions_mean_[1];
+    pos_.a = wrap_angle(filtered_positions_mean_[2]);
 
     PLOGI_(LOCALIZATION_LOG_ID).printf("\nPosition update:");
     PLOGI_(LOCALIZATION_LOG_ID).printf("  Raw input: [%4.3f, %4.3f, %4.3f]", 
@@ -110,81 +113,98 @@ float Localization::computeVelocityUpdateFraction()
     return update_fraction;
 }
 
-float Localization::computePositionReadingReliability(Eigen::Vector3f position) 
+void Localization::updateBuffersForPositionReading(Eigen::Vector3f position)
 {
-    std::vector<Eigen::Vector3f> previous_readings = prev_positions_raw_.get_contents();
     prev_positions_raw_.insert(position);
-
+    std::vector<Eigen::Vector3f> previous_readings = prev_positions_raw_.get_contents();
     PLOGD_(LOCALIZATION_LOG_ID).printf("\nPosition reliability:");
+    PLOGD_(LOCALIZATION_LOG_ID).printf("  Num points: %i", previous_readings.size());
 
-    // Hacky algorithm to calculate standard deviation in each dimension
-    // Partially borrowed from https://stackoverflow.com/questions/33268513/calculating-standard-deviation-variance-in-c
-    bool all_valid = true;
-    const int num_points = previous_readings.size();
-    PLOGD_(LOCALIZATION_LOG_ID).printf("  Num points: %i", num_points);
-    if(num_points > 3)
+    if(previous_readings.size() < 3)
     {
-        for(int i = 0; i < 3; i++) 
-        {
-            PLOGD_(LOCALIZATION_LOG_ID).printf("  Axis: %i", i);
-            // Compute mean of previous samples
-            float mean = 0;
-            for (const auto& reading : previous_readings)
-            {
-                mean += reading(i);
-            }
-            mean /= num_points; 
-            PLOGD_(LOCALIZATION_LOG_ID).printf("    Mean: %4.3f", mean);
-
-            // Compute standard deviation of previous samples
-            float variance = 0;
-            for (const auto& reading : previous_readings)
-            {
-                variance += (reading(i) - mean) * (reading(i) - mean);
-            }
-            variance /= num_points;
-            const float stddev = sqrt(variance);
-            PLOGD_(LOCALIZATION_LOG_ID).printf("    Stddev: %4.3f", stddev);
-
-            // If stddev of population is too high, don't consider it
-            float max_stddev = (i < 2) ? position_reliability_max_stddev_pos_ : position_reliability_max_stddev_ang_;
-            if (stddev > max_stddev)
-            {
-                all_valid = false;
-                PLOGD_(LOCALIZATION_LOG_ID).printf("    Invalid stddev");
-                break;
-            }
-
-            // Make sure we don't get a divide by zero error
-            if (stddev < 0.0001) 
-            {
-                PLOGD_(LOCALIZATION_LOG_ID).printf("    Skipped zcore check due to small stddev");
-                continue;
-            }
-
-            // Compute Z score of the current sample and check if it is in the range to keep
-            const float z_score = fabs((position(i) - mean)/stddev);
-            PLOGD_(LOCALIZATION_LOG_ID).printf("    Zscore: %4.3f", z_score);
-            if(z_score > position_reliability_zscore_thresh_)
-            {
-                PLOGD_(LOCALIZATION_LOG_ID).printf("    Invalid zscore");
-                all_valid = false;
-                break;
-            }
-        }
+        PLOGD_(LOCALIZATION_LOG_ID).printf("  Skipped - not enough points");
+        return;
     }
-    else { PLOGD_(LOCALIZATION_LOG_ID).printf("  Skipped - not enough points");}
 
-    // TODO: Make this more intelligent
+    std::vector<float> all_means;
+    all_means.reserve(3);
+    std::vector<float> all_stddevs;
+    all_stddevs.reserve(3);
+    std::vector<float> all_zscores;
+    all_zscores.reserve(3);
+
+    bool all_valid = true;
+    for (int i = 0; i < 3; i++)
+    {
+        // Convert from vector of poses over time to time vectors of component
+        std::vector<float> readings;
+        readings.reserve(previous_readings.size());
+        for (uint j = 0; j < previous_readings.size(); j++) 
+        {
+            readings.push_back(previous_readings[j](i));
+        }
+
+        // Compute various metrics
+        float mean = vectorMean(readings);
+        float stddev = vectorStddev(readings, mean);
+        float zscore = zScore(mean, stddev, position(i));
+        all_means.push_back(mean);
+        all_stddevs.push_back(stddev);
+        all_zscores.push_back(zscore);
+
+        // Change stddev limit for translation and rotation
+        float max_stddev = (i < 2) ? position_reliability_max_stddev_pos_ : position_reliability_max_stddev_ang_;
+        if(stddev > max_stddev || zscore > position_reliability_zscore_thresh_ )
+        {
+            all_valid = false;
+            PLOGD_(LOCALIZATION_LOG_ID).printf("    Invalid point due to stddev or zscore");
+        }
+        PLOGD_(LOCALIZATION_LOG_ID).printf("  Axis: %i", i);
+        PLOGD_(LOCALIZATION_LOG_ID).printf("    Mean: %4.3f", mean);
+        PLOGD_(LOCALIZATION_LOG_ID).printf("    Stddev: %4.3f", stddev);
+        PLOGD_(LOCALIZATION_LOG_ID).printf("    Zscore: %4.3f", zscore);
+    }
+
     if(all_valid)
     {
         prev_positions_filtered_.insert(position);
-        return 1.0;
     }
-    else
+}
+
+// TODO: add time decay and weighting for previous positions
+float Localization::computePositionReliability()
+{
+    std::vector<Eigen::Vector3f> previous_filtered_readings = prev_positions_filtered_.get_contents();
+    std::vector<float> all_means;
+    all_means.reserve(3);
+    std::vector<float> all_stddevs;
+    all_stddevs.reserve(3);
+    float max_stddev = 0;
+    for (int i = 0; i < 3; i++)
     {
-        return 0.0;
+        // Convert from vector of poses over time to time vectors of component
+        std::vector<float> readings;
+        readings.reserve(previous_filtered_readings.size());
+        for (uint j = 0; j < previous_filtered_readings.size(); j++) 
+        {
+            readings.push_back(previous_filtered_readings[j](i));
+        }
+        float mean = vectorMean(readings);
+        float stddev = vectorStddev(readings, mean);
+
+        all_means.push_back(mean);
+        all_stddevs.push_back(stddev);
+        if (stddev > max_stddev)
+        {
+            max_stddev = stddev;
+        }
     }
+    filtered_positions_mean_ = all_means;
+    filtered_positions_stddev_ = all_stddevs;
+
+    // Compute reliability score as worst stddev compared to threshold
+    return 1.0 - max_stddev/position_reliability_max_stddev_pos_;
+
 }
 
 void Localization::updateMetricsForPosition(float update_fraction, float reading_reliability)

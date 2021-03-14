@@ -18,7 +18,7 @@ Robot controller:
 
 Robot SW:
 - Convert localization to KalmanFilter?
-    - At the very least, use mean rolling position for location rather than delta update based on latest
+    - Add tests for utils and localization updates if I keep them around
 - Prototype a front facing distance sensor positioning algorithm
 
 Robot HW:

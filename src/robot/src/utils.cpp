@@ -247,3 +247,35 @@ float PositionController::compute(float target_position, float actual_position, 
     float output_velocity = target_velocity + gains_.kp * pos_err + gains_.kd * vel_err + gains_.ki * error_sum_;
     return output_velocity;
 }
+
+
+float vectorMean(const std::vector<float>& data)
+{
+    if(data.empty()) return 0;
+
+    float sum = 0.0;
+    for (const auto& val : data)
+    {
+        sum += val;
+    }
+    return sum/data.size();
+}
+
+float vectorStddev(const std::vector<float>& data, float mean)
+{
+    if(data.empty()) return 0;
+    
+    float variance = 0;
+    for (const auto& val : data)
+    {
+        variance += (val - mean) * (val - mean);
+    }
+    variance /= data.size();
+    return sqrt(variance);
+}
+
+float zScore(float mean, float stddev, float reading)
+{
+    if (stddev < 0.0001) return 0;
+    return fabs((reading - mean)/stddev);
+}

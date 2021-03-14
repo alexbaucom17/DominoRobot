@@ -42,7 +42,10 @@ class Localization
     float computeVelocityUpdateFraction();
 
     // Compute a position reliability multiplier based on previously observed readings
-    float computePositionReadingReliability(Eigen::Vector3f position);
+    float computePositionReliability();
+
+    // Update internal buffers with the new position
+    void updateBuffersForPositionReading(Eigen::Vector3f position);
 
     // Update localization metrics based on latest position reading
     void updateMetricsForPosition(float update_fraction, float reading_reliability);
@@ -62,6 +65,8 @@ class Localization
 
     CircularBuffer<Eigen::Vector3f> prev_positions_raw_;
     CircularBuffer<Eigen::Vector3f> prev_positions_filtered_;
+    std::vector<float> filtered_positions_mean_;
+    std::vector<float> filtered_positions_stddev_;
     LocalizationMetrics metrics_;
     Timer last_valid_reading_timer_; 
     CircularBuffer<float> reading_validity_buffer_;
