@@ -2,6 +2,7 @@
 #define Distance_h
 
 #include <thread>
+#include "utils.h"
 
 class Distance
 {
@@ -26,6 +27,7 @@ class Distance
     float doMeasurement();
 
     float current_distance_mm_;
+    CircularBuffer<float> distance_buffer_;
     bool running_;
     int trigger_pin_;
     int echo_pin_;

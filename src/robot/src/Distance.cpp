@@ -11,6 +11,7 @@ std::mutex mutex;
 
 Distance::Distance()
 : current_distance_mm_(0.0),
+  distance_buffer_(20),
   running_(false),
   trigger_pin_(cfg.lookup("distance.trigger_pin")),
   echo_pin_(cfg.lookup("distance.echo_pin"))
@@ -63,8 +64,12 @@ void Distance::measurementLoop()
         while(isRunning())
         {
             float new_measurement = doMeasurement();
+            if (new_measurement < 0) continue;
+            distance_buffer_.insert(new_measurement);
+            const std::vector<float> data = distance_buffer_.get_contents();
+            float new_mean = vectorMean(data);
             std::lock_guard<std::mutex> lock(mutex);
-            current_distance_mm_ = new_measurement;
+            current_distance_mm_ = new_mean;
         }
 
     }
@@ -73,7 +78,10 @@ void Distance::measurementLoop()
 
 float Distance::doMeasurement()
 {
+    // TODO: move these to class so I don't have to re-allocate memory every time in loop
     Timer timer;
+    Timer timeout_timer;
+    constexpr int timeout_us = 15000;
 
     // Trigger by pulsing for 10 us
     gpio_write(gpio_id_,trigger_pin_, HIGH);
@@ -82,8 +90,22 @@ float Distance::doMeasurement()
 
     // Wait for echo and measure pulse time
     int pulse_time_us = 0;
-    while(!gpio_read(gpio_id_,echo_pin_)) timer.reset();
-    while(gpio_read(gpio_id_, echo_pin_)) pulse_time_us = timer.dt_us();
+    while(!gpio_read(gpio_id_,echo_pin_)) 
+    {
+        timer.reset();
+        if(timeout_timer.dt_us() > timeout_us)
+        {
+            return -1.0;
+        }
+    }
+    while(gpio_read(gpio_id_, echo_pin_))
+    {
+        pulse_time_us = timer.dt_us();
+        if(timeout_timer.dt_us() > timeout_us)
+        {
+            return -1.0;
+        }
+    }
     
     // Compute distance - 0.343 is speed of sound in millimeters per microsecond
     // Divide by 2 is to compensate for there and back.

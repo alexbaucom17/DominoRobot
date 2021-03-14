@@ -45,6 +45,7 @@ Robot::Robot()
   distance_(),
   position_time_averager_(20),
   wait_for_localize_helper_(statusUpdater_, cfg.lookup("localization.max_wait_time"), cfg.lookup("localization.confidence_for_wait")),
+  dist_print_rate_(1),
   curCmd_(COMMAND::NONE)
 {
     PLOGI.printf("Robot starting");
@@ -97,7 +98,10 @@ void Robot::runOnce()
     // Update loop time and status updater
     statusUpdater_.updatePositionLoopTime(position_time_averager_.get_ms());
 
-    PLOGI.printf("Current distance: %4.1f mm", distance_.getDistance());
+    if(dist_print_rate_.ready()) 
+    {
+        PLOGI.printf("Current distance: %4.1f mm", distance_.getDistance());
+    }
 }
 
 
