@@ -3,13 +3,13 @@
 
 #include <thread>
 #include "utils.h"
+#include "serial/SerialComms.h"
 
 class Distance
 {
 
   public:
     Distance();
-    ~Distance();
 
     // Start measurement loop
     void start();
@@ -24,16 +24,14 @@ class Distance
 
     void measurementLoop();
     bool isRunning();
-    float doMeasurement();
+    float getMeasurement();
 
     float current_distance_mm_;
     CircularBuffer<float> distance_buffer_;
     bool running_;
-    int trigger_pin_;
-    int echo_pin_;
-    int gpio_id_;
 
     std::thread run_thread_;
+    SerialCommsBase* serial_to_arduino_; 
 };
 
 

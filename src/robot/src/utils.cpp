@@ -6,6 +6,7 @@
 #include <chrono>
 #include <plog/Log.h>
 #include <iostream>
+#include <sstream>
 
 #include "constants.h"
 
@@ -278,4 +279,19 @@ float zScore(float mean, float stddev, float reading)
 {
     if (stddev < 0.0001) return 0;
     return fabs((reading - mean)/stddev);
+}
+
+
+// From: https://www.tutorialspoint.com/parsing-a-comma-delimited-std-string-in-cplusplus
+std::vector<std::string> parseCommaDelimitedString(const std::string& str_in)
+{
+   std::vector<std::string> result;
+   std::stringstream s_stream(str_in); //create string stream from the string
+   while(s_stream.good()) 
+   {
+      std::string substr;
+      getline(s_stream, substr, ','); //get first string delimited by comma
+      result.push_back(substr);
+   }
+   return result;
 }

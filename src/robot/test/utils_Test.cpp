@@ -379,3 +379,60 @@ TEST_CASE("PositionController", "[utils]")
     }
 
 }
+
+
+TEST_CASE("VectorMath", "[utils]")
+{
+    SECTION("Simple data")
+    {
+        std::vector<float> data = {1,2,3,4,5,6,7,8,9,10};
+        float mean = vectorMean(data);
+        float stddev = vectorStddev(data, mean);
+        float zscore = zScore(mean, stddev, 11);
+        REQUIRE(mean == 5.5);
+        REQUIRE(stddev == Approx(2.8723).margin(0.001));
+        REQUIRE(zscore == Approx(1.9148).margin(0.001));
+    }
+    SECTION("No data")
+    {
+        std::vector<float> data = {};
+        float mean = vectorMean(data);
+        float stddev = vectorStddev(data, mean);
+        float zscore = zScore(mean, stddev, 11);
+        REQUIRE(mean == 0);
+        REQUIRE(stddev == 0);
+        REQUIRE(zscore == 0);
+    }
+}
+
+TEST_CASE("StringParse", "[utils]")
+{
+    SECTION("Empty string")
+    {
+        std::string test_string = "";
+        std::vector<std::string> result = parseCommaDelimitedString(test_string);
+        REQUIRE(result.size() == 1);
+        REQUIRE(result[0].empty());
+    }
+    SECTION("Normal string, no trailing comma")
+    {
+        std::string test_string = "asdf,1234,hello";
+        std::vector<std::string> result = parseCommaDelimitedString(test_string);
+        REQUIRE(result.size() == 3);
+        REQUIRE_THAT(result, Catch::Matchers::Equals(std::vector<std::string>{"asdf", "1234", "hello"}));
+    }
+    SECTION("Normal string, with trailing comma")
+    {
+        std::string test_string = "asdf,1234,hello,";
+        std::vector<std::string> result = parseCommaDelimitedString(test_string);
+        REQUIRE(result.size() == 4);
+        REQUIRE_THAT(result, Catch::Matchers::Equals(std::vector<std::string>{"asdf", "1234", "hello", ""}));
+    }
+    SECTION("String with whitespace")
+    {
+        std::string test_string = "as df,1234  ,  hello";
+        std::vector<std::string> result = parseCommaDelimitedString(test_string);
+        REQUIRE(result.size() == 3);
+        REQUIRE_THAT(result, Catch::Matchers::Equals(std::vector<std::string>{"as df", "1234  ", "  hello"}));
+    }
+}

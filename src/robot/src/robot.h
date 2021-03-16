@@ -8,7 +8,7 @@
 #include "TrayController.h"
 #include "utils.h"
 
-#include "Distance.h"
+// #include "Distance.h"
 
 class WaitForLocalizeHelper 
 {
@@ -49,7 +49,7 @@ class Robot
     RobotController controller_;
     TrayController tray_controller_;
     MarvelmindWrapper mm_wrapper_;
-    Distance distance_;
+    // Distance distance_;
 
     TimeRunningAverage position_time_averager_;    // Handles keeping average of the position update timing
     WaitForLocalizeHelper wait_for_localize_helper_;

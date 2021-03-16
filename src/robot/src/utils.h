@@ -303,4 +303,11 @@ float vectorStddev(const std::vector<float>& data, float mean);
 float zScore(float mean, float stddev, float reading);
 
 
+//*******************************************
+//           Strings
+//*******************************************
+
+std::vector<std::string> parseCommaDelimitedString(const std::string& str_in);
+
+
 #endif
