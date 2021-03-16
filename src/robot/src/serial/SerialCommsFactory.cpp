@@ -52,7 +52,7 @@ void SerialCommsFactory::build_serial_comms(std::string portName)
     else if (mode_ == SERIAL_FACTORY_MODE::MOCK)
     {
         serial_comms = std::make_unique<MockSerialComms>(portName);
-        PLOGI << "Built MockSerialComms";
+        PLOGI << "Built MockSerialComms for " << portName;
     }
 
     comms_objects_[portName] = std::move(serial_comms);

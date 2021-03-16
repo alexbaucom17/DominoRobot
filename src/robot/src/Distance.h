@@ -1,7 +1,7 @@
 #ifndef Distance_h
 #define Distance_h
 
-#include <thread>
+// #include <thread>
 #include "utils.h"
 #include "serial/SerialComms.h"
 
@@ -20,9 +20,9 @@ class Distance
     // Get latest distance values
     float getDistance();
 
+    void checkForMeasurement();
   private:
 
-    void measurementLoop();
     bool isRunning();
     float getMeasurement();
 
@@ -30,7 +30,7 @@ class Distance
     CircularBuffer<float> distance_buffer_;
     bool running_;
 
-    std::thread run_thread_;
+    // std::thread run_thread_;
     SerialCommsBase* serial_to_arduino_; 
 };
 
