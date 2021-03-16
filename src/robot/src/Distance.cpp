@@ -80,11 +80,8 @@ float Distance::getMeasurement()
         }
     }
     if(msg.empty()) return -1;
-    std::vector<std::string> values = parseCommaDelimitedString(msg);
-    if(values.empty()) return -1;
-    if(values.size() != 2) return -1;
+    std::vector<float> values = parseCommaDelimitedStringToFloat(msg);
+    if(values.size() != 1) return -1;
 
-    float distance = std::stof(values[0]);
-
-    return distance;
+    return values[0];
 }

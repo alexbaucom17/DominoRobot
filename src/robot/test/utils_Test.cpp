@@ -436,3 +436,34 @@ TEST_CASE("StringParse", "[utils]")
         REQUIRE_THAT(result, Catch::Matchers::Equals(std::vector<std::string>{"as df", "1234  ", "  hello"}));
     }
 }
+
+TEST_CASE("StringToFloatParse", "[utils]")
+{
+    SECTION("Empty string")
+    {
+        std::string test_string = "";
+        std::vector<float> result = parseCommaDelimitedStringToFloat(test_string);
+        REQUIRE(result.empty());
+    }
+    SECTION("Normal string, no trailing comma")
+    {
+        std::string test_string = "1.0,2.345,-1.2363";
+        std::vector<float> result = parseCommaDelimitedStringToFloat(test_string);
+        REQUIRE(result.size() == 3);
+        REQUIRE_THAT(result, Catch::Matchers::Equals(std::vector<float>{1.0, 2.345, -1.2363}));
+    }
+    SECTION("Normal string, with trailing comma")
+    {
+        std::string test_string = "1.0,2.345,-1.2363,";
+        std::vector<float> result = parseCommaDelimitedStringToFloat(test_string);
+        REQUIRE(result.size() == 3);
+        REQUIRE_THAT(result, Catch::Matchers::Equals(std::vector<float>{1.0, 2.345, -1.2363}));
+    }
+    SECTION("String with whitespace")
+    {
+        std::string test_string = "1.0   ,2.345  ,  -1.2363";
+        std::vector<float> result = parseCommaDelimitedStringToFloat(test_string);
+        REQUIRE(result.size() == 3);
+        REQUIRE_THAT(result, Catch::Matchers::Equals(std::vector<float>{1.0, 2.345, -1.2363}));
+    }
+}

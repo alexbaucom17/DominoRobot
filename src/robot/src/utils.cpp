@@ -295,3 +295,16 @@ std::vector<std::string> parseCommaDelimitedString(const std::string& str_in)
    }
    return result;
 }
+
+std::vector<float> parseCommaDelimitedStringToFloat(const std::string& str_in)
+{
+    std::vector<std::string> str_parsed = parseCommaDelimitedString(str_in);
+    std::vector<float> result;
+    result.reserve(str_parsed.size());
+    for(const auto& val : str_parsed)
+    {
+        if(val.empty()) continue;
+        result.push_back(std::stof(val));
+    }
+    return result;
+}

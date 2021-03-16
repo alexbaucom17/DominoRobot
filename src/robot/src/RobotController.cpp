@@ -299,23 +299,8 @@ bool RobotController::readMsgFromMotorDriver(Velocity* decodedVelocity)
     }
     else
     {
-        int prev_idx = 0;
-        int j = 0;
-        for(uint i = 0; i < msg.length(); i++)
-        {
-            if(msg[i] == ',')
-            {
-                tmpVelocity[j] = std::stof(msg.substr(prev_idx, i - prev_idx));
-                j++;
-                prev_idx = i+1;
-            }
-
-            if (i == msg.length()-1)
-            {
-                tmpVelocity[j] = std::stof(msg.substr(prev_idx, std::string::npos));
-            }
-        }
-        if(j != 2)
+        tmpVelocity = parseCommaDelimitedStringToFloat(msg);
+        if(tmpVelocity.size() != 3)
         {
             PLOGW.printf("Decode failed");
             return false;
