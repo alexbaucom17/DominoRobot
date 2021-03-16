@@ -1,11 +1,11 @@
 #include "SerialComms.h"
 
 #define NUM_SENSORS 1
-#define TRIGGER_PIN_1 9
-#define ECHO_PIN_1 10
+#define TRIGGER_PIN_1 10
+#define ECHO_PIN_1 9
 
 #define MICROSECONDS_TO_MILLIMETERS 0.343
-#define PULSE_IN_TIMEOUT_US 1000
+#define PULSE_IN_TIMEOUT_US 100000
 
 SerialComms comm(Serial);
 int distances[NUM_SENSORS];
@@ -53,6 +53,9 @@ void sendDistances()
         msg.concat(',');
     }
     comm.send(msg);
+
+   // For debugging
+//   Serial.println(' ');
 }
 
 
