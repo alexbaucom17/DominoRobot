@@ -45,11 +45,21 @@ Robot::Robot()
   distance_(),
   position_time_averager_(20),
   wait_for_localize_helper_(statusUpdater_, cfg.lookup("localization.max_wait_time"), cfg.lookup("localization.confidence_for_wait")),
-  dist_print_rate_(1),
+  dist_print_rate_(10),
   curCmd_(COMMAND::NONE)
 {
     PLOGI.printf("Robot starting");
+
+    Timer pausetimer;
+    while (pausetimer.dt_s() < 2.0) continue;
+
     distance_.start();
+}
+
+Robot::~Robot()
+{
+    PLOGW << "Robot dtor";
+    distance_.stop();
 }
 
 void Robot::run()
@@ -101,7 +111,7 @@ void Robot::runOnce()
 
     if(dist_print_rate_.ready()) 
     {
-        PLOGI.printf("Current distance: %4.1f mm", distance_.getDistance());
+        PLOGI.printf("Current distance: %4.0f mm", distance_.getDistance());
     }
 }
 

@@ -21,11 +21,15 @@ class MockSerialComms : public SerialCommsBase
 
     std::string rcv_lift() override;
 
+    std::string rcv_distance() override;
+
     void mock_send(std::string msg);
     
     std::string mock_rcv_lift();
     
     std::string mock_rcv_base();
+
+    std::string mock_rcv_distance();
 
     void purge_data();
 
@@ -33,8 +37,10 @@ class MockSerialComms : public SerialCommsBase
 
     std::queue<std::string> send_base_data_;
     std::queue<std::string> send_lift_data_;
+    std::queue<std::string> send_distance_data_;
     std::queue<std::string> rcv_base_data_;
     std::queue<std::string> rcv_lift_data_;
+    std::queue<std::string> rcv_distance_data_;
     std::string port_;
     
 

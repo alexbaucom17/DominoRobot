@@ -15,6 +15,11 @@ std::string SerialCommsBase::rcv_lift()
     return "";
 } 
 
+std::string SerialCommsBase::rcv_distance()
+{
+    return "";
+} 
+
 void SerialCommsBase::send(std::string msg)
 {
     (void) msg; // Silence warnings

@@ -7,8 +7,10 @@ MockSerialComms::MockSerialComms(std::string portName)
 : SerialCommsBase(),
   send_base_data_(),
   send_lift_data_(),
+  send_distance_data_(),
   rcv_base_data_(),
   rcv_lift_data_(),
+  rcv_distance_data_(),
   port_(portName)
 {
     connected_ = true;
@@ -56,6 +58,17 @@ std::string MockSerialComms::rcv_lift()
     return outdata;
 }
 
+std::string MockSerialComms::rcv_distance()
+{
+    if(rcv_distance_data_.empty())
+    {
+        return "";
+    }
+    std::string outdata = rcv_distance_data_.front();
+    rcv_distance_data_.pop();
+    return outdata;
+}
+
 void MockSerialComms::mock_send(std::string msg)
 {
     if (msg.rfind("base:", 0) == 0)
@@ -94,6 +107,17 @@ std::string MockSerialComms::mock_rcv_lift()
     return outdata;
 }
 
+std::string MockSerialComms::mock_rcv_distance()
+{
+    if(send_distance_data_.empty())
+    {
+        return "";
+    }
+    std::string outdata = send_distance_data_.front();
+    send_distance_data_.pop();
+    return outdata;
+}
+
 void MockSerialComms::purge_data()
 {
     while(!send_lift_data_.empty())
@@ -104,6 +128,10 @@ void MockSerialComms::purge_data()
     {
         send_base_data_.pop();
     }
+    while(!send_distance_data_.empty())
+    {
+        send_distance_data_.pop();
+    }
     while(!rcv_base_data_.empty())
     {
         rcv_base_data_.pop();
@@ -111,5 +139,9 @@ void MockSerialComms::purge_data()
     while(!rcv_lift_data_.empty())
     {
         rcv_lift_data_.pop();
+    }
+    while(!rcv_distance_data_.empty())
+    {
+        rcv_distance_data_.pop();
     }
 }

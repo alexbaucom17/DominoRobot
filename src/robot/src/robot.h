@@ -31,6 +31,7 @@ class Robot
   public:
 
     Robot();
+    ~Robot();
 
     void run();
     void runOnce();

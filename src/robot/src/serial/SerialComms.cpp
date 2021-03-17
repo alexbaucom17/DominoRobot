@@ -9,7 +9,8 @@ SerialComms::SerialComms(std::string portName)
   recvIdx_(0),
   buffer_(""),
   base_data_(),
-  lift_data_()
+  lift_data_(),
+  distance_data_()
 {
     // If we get here, that means serial_ was constructed correctly which means 
     // we have a valid connection
@@ -45,6 +46,17 @@ std::string SerialComms::rcv_lift()
     return outdata;
 }
 
+std::string SerialComms::rcv_distance()
+{
+    rcv();
+    if(distance_data_.empty())
+    {
+        return "";
+    }
+    std::string outdata = distance_data_.front();
+    distance_data_.pop();
+    return outdata;
+}
 
 void SerialComms::rcv()
 {
@@ -106,6 +118,10 @@ void SerialComms::rcv()
     else if (new_msg.rfind("lift:", 0) == 0)
     {
         lift_data_.push(new_msg.substr(5, std::string::npos));
+    }
+    else if (new_msg.rfind("dist:", 0) == 0)
+    {
+        distance_data_.push(new_msg.substr(5, std::string::npos));
     }
     else if (new_msg.empty())
     {

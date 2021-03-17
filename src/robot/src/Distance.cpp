@@ -6,12 +6,10 @@
 #include "serial/SerialCommsFactory.h"
 
 // std::mutex mutex;
-#define HIGH 1
-#define LOW 0
 
 Distance::Distance()
 : current_distance_mm_(0.0),
-  distance_buffer_(20),
+  distance_buffer_(10),
   running_(false),
   serial_to_arduino_(SerialCommsFactory::getFactoryInstance()->get_serial_comms(ARDUINO_USB))
 {
@@ -26,6 +24,7 @@ void Distance::start()
     if (serial_to_arduino_->isConnected())
     {
         serial_to_arduino_->send("start");
+        PLOGI << "Sent distance start";
     }
 }
 void Distance::stop()
@@ -34,7 +33,8 @@ void Distance::stop()
     running_ = false;
     if (serial_to_arduino_->isConnected())
     {
-        serial_to_arduino_->send("start");
+        serial_to_arduino_->send("stop");
+        PLOGI << "Sent distance stop";
     }
 }
 
@@ -70,7 +70,7 @@ float Distance::getMeasurement()
     std::string msg = "";
     if (serial_to_arduino_->isConnected())
     {
-        msg = serial_to_arduino_->rcv_base();
+        msg = serial_to_arduino_->rcv_distance();
     }
     if(msg.empty()) return -1;
     std::vector<float> values = parseCommaDelimitedStringToFloat(msg);
