@@ -17,9 +17,9 @@ inline MockSocketMultiThreadWrapper* build_and_get_mock_socket()
     return mock_socket;
 }
 
-inline MockSerialComms* build_and_get_mock_serial()
+inline MockSerialComms* build_and_get_mock_serial(const std::string& portName)
 {
-    SerialCommsBase* base_serial = SerialCommsFactory::getFactoryInstance()->get_serial_comms(CLEARCORE_USB);
+    SerialCommsBase* base_serial = SerialCommsFactory::getFactoryInstance()->get_serial_comms(portName);
     // Slightly dangerous....
     MockSerialComms* mock_serial = dynamic_cast<MockSerialComms*>(base_serial);
     mock_serial->purge_data();

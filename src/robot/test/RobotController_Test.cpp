@@ -9,7 +9,7 @@
 // Returns the number of loops run before the robot either stopped or max_loops was hit
 int moveToPositionHelper(RobotController& r, float x, float y, float a, int max_loops)
 {
-    MockSerialComms* mock_serial = build_and_get_mock_serial();
+    MockSerialComms* mock_serial = build_and_get_mock_serial(CLEARCORE_USB);;
     MockClockWrapper* mock_clock = get_mock_clock();
     
     mock_serial->purge_data();
@@ -72,7 +72,7 @@ TEST_CASE("RobotController class", "[RobotController]")
 
 TEST_CASE("Motor enable and disable", "[RobotController]")
 {
-    MockSerialComms* mock_serial = build_and_get_mock_serial();
+    MockSerialComms* mock_serial = build_and_get_mock_serial(CLEARCORE_USB);;
     StatusUpdater s;
     RobotController r = RobotController(s);
 
@@ -113,7 +113,7 @@ TEST_CASE("Simple coarse motion", "[RobotController]")
 void fakeMotionHelper(float x, float y, float a, int max_loops, StatusUpdater& s)
 {
     MockClockWrapper* mock_clock = get_mock_clock_and_reset();
-    MockSerialComms* mock_serial = build_and_get_mock_serial();
+    MockSerialComms* mock_serial = build_and_get_mock_serial(CLEARCORE_USB);;
     mock_serial->purge_data();
     RobotController r = RobotController(s);
     r.moveToPosition(x,y,a);
@@ -370,7 +370,7 @@ TEST_CASE("Position update", "[RobotController]")
 // Trajectory generation can no longer trigger an error. Re-enable this test once something can trigger errors again
 // TEST_CASE("Block on error", "[RobotController]")
 // {
-//     MockSerialComms* mock_serial = build_and_get_mock_serial();
+//     MockSerialComms* mock_serial = build_and_get_mock_serial(CLEARCORE_USB);;
 //     StatusUpdater s;
 //     RobotController r = RobotController(s);
 
@@ -388,7 +388,7 @@ TEST_CASE("Position update", "[RobotController]")
 
 // TEST_CASE("Benchmarking motion", "[RobotController]")
 // {
-//     MockSerialComms* mock_serial = build_and_get_mock_serial();
+//     MockSerialComms* mock_serial = build_and_get_mock_serial(CLEARCORE_USB);;
 //     StatusUpdater s;
 //     RobotController r = RobotController(s);
 

@@ -1,7 +1,6 @@
 #ifndef Distance_h
 #define Distance_h
 
-// #include <thread>
 #include "utils.h"
 #include "serial/SerialComms.h"
 
@@ -17,20 +16,24 @@ class Distance
     // Stop measurement loop
     void stop();
 
-    // Get latest distance values
-    float getDistance();
-
+    // Main 'update' function that must be called regularly
     void checkForMeasurement();
+
+    // Get latest distance values
+    float getDistance() {return current_distance_mm_;};
+
+    // Returns bool indicating if distance measurements are running
+    bool isRunning() { return running_;};
+
   private:
 
-    bool isRunning();
+    // Handles getting measurements from serial port and parsing into number
     float getMeasurement();
 
     float current_distance_mm_;
     CircularBuffer<float> distance_buffer_;
     bool running_;
 
-    // std::thread run_thread_;
     SerialCommsBase* serial_to_arduino_; 
 };
 

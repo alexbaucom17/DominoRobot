@@ -1,6 +1,7 @@
 #include "MockSerialComms.h"
 
 #include <plog/Log.h> 
+#include <iostream>
 
 
 MockSerialComms::MockSerialComms(std::string portName)
@@ -32,7 +33,8 @@ void MockSerialComms::send(std::string msg)
     }
     else
     {
-        PLOGE << "Unknown message type, skipping: " << msg;
+        // Distance send from pi -> arduino doesn't have dist prefix
+        send_distance_data_.push(msg);
     }
 }
 
@@ -78,6 +80,10 @@ void MockSerialComms::mock_send(std::string msg)
     else if (msg.rfind("lift:", 0) == 0)
     {
         rcv_lift_data_.push(msg.substr(5, std::string::npos));
+    }
+    else if (msg.rfind("dist:", 0) == 0)
+    {
+        rcv_distance_data_.push(msg.substr(5, std::string::npos));
     }
     else
     {

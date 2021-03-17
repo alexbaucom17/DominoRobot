@@ -1,5 +1,5 @@
 #include "Distance.h"
-// #include <mutex>
+
 #include "utils.h"
 #include <plog/Log.h> 
 #include "constants.h"
@@ -13,53 +13,38 @@ Distance::Distance()
   running_(false),
   serial_to_arduino_(SerialCommsFactory::getFactoryInstance()->get_serial_comms(ARDUINO_USB))
 {
-    // run_thread_ = std::thread(&Distance::measurementLoop, this);
-    // run_thread_.detach();
 }
 
 void Distance::start()
 {
-    // std::lock_guard<std::mutex> lock(mutex);
     running_ = true;
     if (serial_to_arduino_->isConnected())
     {
         serial_to_arduino_->send("start");
-        PLOGI << "Sent distance start";
+        PLOGI << "Distnace measurement starting";
     }
 }
+
 void Distance::stop()
 {
-    // std::lock_guard<std::mutex> lock(mutex);
     running_ = false;
     if (serial_to_arduino_->isConnected())
     {
         serial_to_arduino_->send("stop");
-        PLOGI << "Sent distance stop";
+        PLOGI << "Distance measurement stopped";
     }
 }
 
-float Distance::getDistance()
-{
-    // std::lock_guard<std::mutex> lock(mutex);
-    return current_distance_mm_;
-}
-
-bool Distance::isRunning() 
-{
-    // std::lock_guard<std::mutex> lock(mutex);
-    return running_;
-}
 
 void Distance::checkForMeasurement()
 {
-    if(isRunning())
+    if(running_)
     {
         float new_measurement = getMeasurement();
         if (new_measurement < 0) return;
         distance_buffer_.insert(new_measurement);
         const std::vector<float> data = distance_buffer_.get_contents();
         float new_mean = vectorMean(data);
-        // std::lock_guard<std::mutex> lock(mutex);
         current_distance_mm_ = new_mean;
     }
 }

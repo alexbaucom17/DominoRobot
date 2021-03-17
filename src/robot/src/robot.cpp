@@ -49,11 +49,6 @@ Robot::Robot()
   curCmd_(COMMAND::NONE)
 {
     PLOGI.printf("Robot starting");
-
-    Timer pausetimer;
-    while (pausetimer.dt_s() < 2.0) continue;
-
-    distance_.start();
 }
 
 Robot::~Robot()
@@ -93,7 +88,7 @@ void Robot::runOnce()
         controller_.inputPosition(positions[0], positions[1], angle_rad);
     }
 
-    // Service controllers
+    // Service various modules
     controller_.update();
     tray_controller_.update();
     distance_.checkForMeasurement();
@@ -108,11 +103,6 @@ void Robot::runOnce()
 
     // Update loop time and status updater
     statusUpdater_.updatePositionLoopTime(position_time_averager_.get_ms());
-
-    if(dist_print_rate_.ready()) 
-    {
-        PLOGI.printf("Current distance: %4.0f mm", distance_.getDistance());
-    }
 }
 
 
