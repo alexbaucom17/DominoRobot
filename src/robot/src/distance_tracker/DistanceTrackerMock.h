@@ -18,12 +18,13 @@ class DistanceTrackerMock : public DistanceTrackerBase
     // Main 'update' function that must be called regularly
     void checkForMeasurement() override {};
 
-    // Get latest distance values
+    // Get latest distance values in meters
     float getDistance() override {return mock_distance_;};
 
     // Returns bool indicating if distance measurements are running
     bool isRunning() override {return running_;};
 
+    // Set mock distance value (meters)
     void setMockDistance(float distance) {mock_distance_ = distance;};
 
   private:

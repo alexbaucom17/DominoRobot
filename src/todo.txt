@@ -18,7 +18,6 @@ Robot controller:
 
 Robot SW:
 - Convert localization to KalmanFilter
-- Prototype a front facing distance sensor positioning algorithm
 
 Robot HW:
 

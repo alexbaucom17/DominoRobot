@@ -20,8 +20,8 @@ class DistanceTracker : public DistanceTrackerBase
     // Main 'update' function that must be called regularly
     void checkForMeasurement() override;
 
-    // Get latest distance values
-    float getDistance() override {return current_distance_mm_;};
+    // Get latest distance values in meters
+    float getDistance() override {return current_distance_mm_/1000.0f;};
 
     // Returns bool indicating if distance measurements are running
     bool isRunning() override { return running_;};

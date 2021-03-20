@@ -44,8 +44,8 @@ bool RobotControllerModeDistance::startMove(Point goal_distance)
 
 void RobotControllerModeDistance::actuallyStartTheMove()
 {
-    float cur_x_dist_mm = distance_tracker_->getDistance();
-    current_distance_ = {cur_x_dist_mm/1000.0f,0,0};
+    float cur_x_dist = distance_tracker_->getDistance();
+    current_distance_ = {cur_x_dist,0,0};
     move_started_for_real_ = traj_gen_.generatePointToPointTrajectory(current_distance_, goal_distance_, /*fine_mode=*/true);
     if(!move_started_for_real_) PLOGE << "Failed to start distance move";
 }
@@ -63,8 +63,8 @@ Velocity RobotControllerModeDistance::computeTargetVelocity(Point current_positi
     PVTPoint current_target_ = traj_gen_.lookup(dt_from_traj_start);
 
     // Get the current distance measurements from the sensors
-    float cur_x_dist_mm = distance_tracker_->getDistance();
-    current_distance_ = {cur_x_dist_mm/1000.0f,0,0};
+    float cur_x_dist = distance_tracker_->getDistance();
+    current_distance_ = {cur_x_dist,0,0};
 
     // Print motion estimates to log
     PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "\nTarget: " << current_target_.toString();
