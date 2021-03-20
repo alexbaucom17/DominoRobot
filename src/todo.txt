@@ -19,9 +19,9 @@ Robot controller:
 Robot SW:
 - Convert localization to KalmanFilter
 - Prototype a front facing distance sensor positioning algorithm
+    - Do a refactor of RobotController to more easily support different controller modes (position, velocity, relative, etc)
 
 Robot HW:
-- Connect via arduino - raspi timing is too variable and loses accuracy
 
 Master:
 

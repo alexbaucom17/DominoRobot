@@ -6,6 +6,8 @@
 #include "serial/SerialComms.h"
 #include "utils.h"
 #include "Localization.h"
+#include "Distance.h"
+#include "robot_controller_modes/RobotControllerModeBase.h"
 
 class RobotController
 {
@@ -25,6 +27,8 @@ class RobotController
 
     // Command robot to move with a constant velocity for some amount of time
     void moveConstVel(float vx , float vy, float va, float t);
+
+    void moveWithDistance(float x_dist, float y_dist, float a_dist, const Distance& dist);
 
     // Main update loop. Should be called as fast as possible
     void update();
@@ -84,6 +88,7 @@ class RobotController
     bool trajRunning_;                     // If a trajectory is currently active
     bool fineMode_;                        // If fine positioning mode is enabled or not.
     bool velOnlyMode_;                     // If we are only interested in velocity and not goal position
+    bool distanceMode_;
     RateController controller_rate_;       // Rate limit controller loops
     RateController logging_rate_ ;         // Rate limit logging to file
     bool log_this_cycle_;                  // Trigger for logging this cycle
@@ -104,6 +109,8 @@ class RobotController
     PositionController x_controller_;
     PositionController y_controller_;
     PositionController a_controller_;
+
+    std::unique_ptr<RobotControllerModeBase> controller_mode_;
 
 };
 

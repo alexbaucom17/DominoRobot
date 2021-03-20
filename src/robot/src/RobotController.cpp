@@ -6,6 +6,7 @@
 
 #include "constants.h"
 #include "serial/SerialCommsFactory.h"
+#include "robot_controller_modes/RobotControllerModePosition.h"
 
 
 RobotController::RobotController(StatusUpdater& statusUpdater)
@@ -22,6 +23,7 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
   trajRunning_(false),
   fineMode_(true),
   velOnlyMode_(false),
+  distanceMode_(false),
   controller_rate_(cfg.lookup("motion.controller_frequency")),
   logging_rate_(cfg.lookup("motion.log_frequency")),
   log_this_cycle_(false),
@@ -59,9 +61,19 @@ void RobotController::moveToPosition(float x, float y, float a)
 {
     fineMode_ = false;
     velOnlyMode_ = false;
+    distanceMode_ = false;
     goalPos_ = Point(x,y,a);
-    bool ok = trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
-    if (ok) { startTraj(); }
+
+    auto position_mode = std::make_unique<RobotControllerModePosition>(fake_perfect_motion_);
+    bool ok = position_mode->startMove(cartPos_, goalPos_, fineMode_);
+   
+    if (ok) 
+    { 
+        startTraj(); 
+        controller_mode_ = std::move(position_mode);
+    }
+    // bool ok = trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
+    // if (ok) { startTraj(); }
     else { statusUpdater_.setErrorStatus(); }
 }
 
@@ -69,6 +81,7 @@ void RobotController::moveToPositionRelative(float dx_local, float dy_local, flo
 {
     fineMode_ = false;
     velOnlyMode_ = false;
+    distanceMode_ = false;
     float dx_global =  cos(cartPos_.a) * dx_local - sin(cartPos_.a) * dy_local;
     float dy_global =  sin(cartPos_.a) * dx_local + cos(cartPos_.a) * dy_local;
     float da_global = da_local;
@@ -82,6 +95,7 @@ void RobotController::moveToPositionFine(float x, float y, float a)
 {
     fineMode_ = true;
     velOnlyMode_ = false;
+    distanceMode_ = false;
     goalPos_ = Point(x,y,a);
     bool ok = trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
     if (ok) { startTraj(); }
@@ -92,7 +106,20 @@ void RobotController::moveConstVel(float vx , float vy, float va, float t)
 {
     fineMode_ = false;
     velOnlyMode_ = true;
+    distanceMode_ = false;
     bool ok = trajGen_.generateConstVelTrajectory(cartPos_, {vx, vy, va}, t, fineMode_);
+    if (ok) { startTraj(); }
+    else { statusUpdater_.setErrorStatus(); }
+}
+
+void RobotController::moveWithDistance(float x_dist, float y_dist, float a_dist, const Distance& dist)
+{
+    (void) dist;
+    fineMode_ = true;
+    velOnlyMode_ = false;
+    distanceMode_ = true;
+    goalPos_ = Point(x_dist, y_dist, a_dist);
+    bool ok = trajGen_.generatePointToPointTrajectory(cartPos_, goalPos_, fineMode_);
     if (ok) { startTraj(); }
     else { statusUpdater_.setErrorStatus(); }
 }
@@ -125,30 +152,51 @@ void RobotController::update()
     log_this_cycle_ = logging_rate_.ready();
     
     // Create a command based on the trajectory or not moving
-    PVTPoint cmd;
+    Velocity target_vel;
     if(trajRunning_)
     {
-        cmd = generateCommandFromTrajectory();
-        
-        // Print motion estimates to log
-        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_) << "\nTarget: " << cmd.toString();
-        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_) << "Est Vel: " << cartVel_.toString();
-        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_) << "Est Pos: " << cartPos_.toString();
-
-        // Check if we are finished with the trajectory
-        if (checkForCompletedTrajectory(cmd))
+        if(controller_mode_)
         {
-            PLOGI.printf("Reached goal");
-            PLOGD_(MOTION_LOG_ID) << "Trajectory complete";
-            disableAllMotors();
-            trajRunning_ = false;
-            // Re-enable fine mode at the end of a trajectory
-            fineMode_ = true;
+            target_vel = controller_mode_->computeTargetVelocity(cartPos_, cartVel_);
+            // Check if we are finished with the trajectory
+            if (controller_mode_->checkForMoveComplete(cartPos_, cartVel_))
+            {
+                PLOGI.printf("Reached goal");
+                PLOGD_(MOTION_LOG_ID) << "Trajectory complete";
+                disableAllMotors();
+                trajRunning_ = false;
+                // Re-enable fine mode at the end of a trajectory
+                fineMode_ = true;
+            }
+        }
+        else
+        {
+            
+            PVTPoint cmd = generateCommandFromTrajectory();
+            target_vel = computeControl(cmd);
+            
+            // Print motion estimates to log
+            PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_) << "\nTarget: " << cmd.toString();
+            PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_) << "Est Vel: " << cartVel_.toString();
+            PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_) << "Est Pos: " << cartPos_.toString();
+
+
+            // Check if we are finished with the trajectory
+            if (checkForCompletedTrajectory(cmd))
+            {
+                PLOGI.printf("Reached goal");
+                PLOGD_(MOTION_LOG_ID) << "Trajectory complete";
+                disableAllMotors();
+                trajRunning_ = false;
+                // Re-enable fine mode at the end of a trajectory
+                fineMode_ = true;
+            }
         }
     }
     else
     {       
-        cmd = generateStationaryCommand();
+        PVTPoint cmd = generateStationaryCommand();
+        target_vel = computeControl(cmd);
         
         // Force current velocity to 0
         localization_.forceZeroVelocity();
@@ -163,7 +211,6 @@ void RobotController::update()
     }
 
     // Run controller and odometry update
-    Velocity target_vel = computeControl(cmd);
     setCartVelCommand(target_vel);
     computeOdometry();
 
@@ -233,6 +280,11 @@ bool RobotController::checkForCompletedTrajectory(const PVTPoint cmd)
     // within the correct tolerance and we are either within position tolerance or in velocity
     // only mode where we don't care about the final position.
     bool trajComplete = zeroCmdVel && vel_in_tolerance && (velOnlyMode_ || pos_in_tolerance);
+
+    if(trajComplete)
+    {
+        PLOGI << "Done";
+    }
 
     return trajComplete;   
 }
