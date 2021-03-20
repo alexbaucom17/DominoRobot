@@ -1,5 +1,6 @@
 #include "RobotControllerModeDistance.h"
 #include "constants.h"
+#include <plog/Log.h>
 
 RobotControllerModeDistance::RobotControllerModeDistance(bool fake_perfect_motion, Distance& distance_tracker)
 : RobotControllerModeBase(fake_perfect_motion),
@@ -37,12 +38,18 @@ bool RobotControllerModeDistance::startMove(Point goal_distance)
     return ok;
 }
 
-Velocity RobotControllerModeDistance::computeTargetVelocity(Point current_position, Velocity current_velocity)
+Velocity RobotControllerModeDistance::computeTargetVelocity(Point current_position, Velocity current_velocity, bool log_this_cycle)
 {
     (void) current_position; // Don't need global position for local driving
     float dt_from_traj_start = move_start_timer_.dt_s();
     PVTPoint current_target_ = traj_gen_.lookup(dt_from_traj_start);
     current_distance_ = {0,0,0}; // TODO: Populate this
+
+    // Print motion estimates to log
+    PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "\nTarget: " << current_target_.toString();
+    PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "Est Vel: " << current_velocity.toString();
+    PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "Est Dist: " << current_distance_.toString();
+
     Velocity output;
     if(fake_perfect_motion_)
     {

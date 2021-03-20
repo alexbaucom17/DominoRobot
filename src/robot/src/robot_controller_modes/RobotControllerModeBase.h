@@ -11,7 +11,7 @@ class RobotControllerModeBase
 
     RobotControllerModeBase(bool fake_perfect_motion);
 
-    virtual Velocity computeTargetVelocity(Point current_position, Velocity current_velocity) = 0;
+    virtual Velocity computeTargetVelocity(Point current_position, Velocity current_velocity, bool log_this_cycle) = 0;
 
     virtual bool checkForMoveComplete(Point current_position, Velocity current_velocity) = 0;
 

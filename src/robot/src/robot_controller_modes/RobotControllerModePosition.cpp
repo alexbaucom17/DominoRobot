@@ -1,5 +1,6 @@
 #include "RobotControllerModePosition.h"
 #include "constants.h"
+#include <plog/Log.h>
 
 RobotControllerModePosition::RobotControllerModePosition(bool fake_perfect_motion)
 : RobotControllerModeBase(fake_perfect_motion),
@@ -41,10 +42,15 @@ bool RobotControllerModePosition::startMove(Point current_position, Point target
     return ok;
 }
 
-Velocity RobotControllerModePosition::computeTargetVelocity(Point current_position, Velocity current_velocity)
+Velocity RobotControllerModePosition::computeTargetVelocity(Point current_position, Velocity current_velocity, bool log_this_cycle)
 {
     float dt_from_traj_start = move_start_timer_.dt_s();
     current_target_ = traj_gen_.lookup(dt_from_traj_start);
+
+    // Print motion estimates to log
+    PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "\nTarget: " << current_target_.toString();
+    PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "Est Vel: " << current_velocity.toString();
+    PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "Est Pos: " << current_position.toString();
     
     Velocity output;
     if(fake_perfect_motion_)

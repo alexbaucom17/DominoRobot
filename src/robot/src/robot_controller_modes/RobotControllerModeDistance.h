@@ -15,7 +15,7 @@ class RobotControllerModeDistance : public RobotControllerModeBase
 
     bool startMove(Point goal_distance);
 
-    virtual Velocity computeTargetVelocity(Point current_position, Velocity current_velocity) override;
+    virtual Velocity computeTargetVelocity(Point current_position, Velocity current_velocity, bool log_this_cycle) override;
 
     virtual bool checkForMoveComplete(Point current_position, Velocity current_velocity) override;
 
