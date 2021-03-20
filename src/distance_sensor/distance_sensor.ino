@@ -1,9 +1,9 @@
 #include "SerialComms.h"
 
 #define NUM_SENSORS 1
-#define TRIGGER_PIN_1 10
-#define ECHO_PIN_1 9
-#define LED_PIN 3
+#define TRIGGER_PIN_1 6
+#define ECHO_PIN_1 7 
+#define LED_PIN LED_BUILTIN
 
 #define MICROSECONDS_TO_MILLIMETERS 0.343
 #define PULSE_IN_TIMEOUT_US 100000
