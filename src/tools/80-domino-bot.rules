@@ -1,3 +1,4 @@
 SUBSYSTEM=="tty", ATTRS{idVendor}=="2890", ATTRS{idProduct}=="8022", SYMLINK+="clearcore"
 SUBSYSTEM=="tty", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="5740", SYMLINK+="marvelmind%n"
 SUBSYSTEM=="tty", ATTRS{idVendor}=="2341", ATTRS{idProduct}=="0043", SYMLINK+="arduino"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="2341", ATTRS{idProduct}=="0042", SYMLINK+="arduino"
