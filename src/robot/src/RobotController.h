@@ -6,7 +6,6 @@
 #include "serial/SerialComms.h"
 #include "utils.h"
 #include "Localization.h"
-#include "DistanceTracker.h"
 #include "robot_controller_modes/RobotControllerModeBase.h"
 
 class RobotController
@@ -28,7 +27,7 @@ class RobotController
     // Command robot to move with a constant velocity for some amount of time
     void moveConstVel(float vx , float vy, float va, float t);
 
-    void moveWithDistance(float x_dist, float y_dist, float a_dist, DistanceTracker& distance_tracker);
+    void moveWithDistance(float x_dist, float y_dist, float a_dist);
 
     // Main update loop. Should be called as fast as possible
     void update();

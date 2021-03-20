@@ -2,8 +2,7 @@
 
 #include <plog/Log.h> 
 #include "utils.h"
-
-#include <iostream>
+#include "distance_tracker/DistanceTrackerFactory.h"
 
 
 WaitForLocalizeHelper::WaitForLocalizeHelper(const StatusUpdater& statusUpdater, float max_timeout, float confidence_threshold) 
@@ -42,7 +41,7 @@ Robot::Robot()
   controller_(statusUpdater_),
   tray_controller_(),
   mm_wrapper_(),
-  distance_tracker_(),
+  distance_tracker_(DistanceTrackerFactory::getFactoryInstance()->get_distance_tracker()),
   position_time_averager_(20),
   wait_for_localize_helper_(statusUpdater_, cfg.lookup("localization.max_wait_time"), cfg.lookup("localization.confidence_for_wait")),
   dist_print_rate_(10),
@@ -85,7 +84,7 @@ void Robot::runOnce()
     // Service various modules
     controller_.update();
     tray_controller_.update();
-    distance_tracker_.checkForMeasurement();
+    distance_tracker_->checkForMeasurement();
 
     // Check if the current command has finished
     bool done = checkForCmdComplete(curCmd_);

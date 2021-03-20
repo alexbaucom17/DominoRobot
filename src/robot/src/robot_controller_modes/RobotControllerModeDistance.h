@@ -4,14 +4,14 @@
 #include "RobotControllerModeBase.h"
 #include "SmoothTrajectoryGenerator.h"
 #include "utils.h"
-#include "DistanceTracker.h"
+#include "distance_tracker/DistanceTrackerBase.h"
 
 class RobotControllerModeDistance : public RobotControllerModeBase
 {
 
   public:
 
-    RobotControllerModeDistance(bool fake_perfect_motion, DistanceTracker& distance_tracker);
+    RobotControllerModeDistance(bool fake_perfect_motion);
 
     bool startMove(Point goal_distance);
 
@@ -27,7 +27,7 @@ class RobotControllerModeDistance : public RobotControllerModeBase
     Point goal_distance_;
     Point current_distance_;
     PVTPoint current_target_;
-    DistanceTracker& distance_tracker_;
+    DistanceTrackerBase* distance_tracker_;
     bool move_started_for_real_;
     float move_start_delay_sec_;
 

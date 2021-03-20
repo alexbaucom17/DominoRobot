@@ -3,27 +3,28 @@
 
 #include "utils.h"
 #include "serial/SerialComms.h"
+#include "DistanceTrackerBase.h"
 
-class DistanceTracker
+class DistanceTracker : public DistanceTrackerBase
 {
 
   public:
     DistanceTracker();
 
     // Start measurement loop
-    void start();
+    void start() override;
 
     // Stop measurement loop
-    void stop();
+    void stop() override;
 
     // Main 'update' function that must be called regularly
-    void checkForMeasurement();
+    void checkForMeasurement() override;
 
     // Get latest distance values
-    float getDistance() {return current_distance_mm_;};
+    float getDistance() override {return current_distance_mm_;};
 
     // Returns bool indicating if distance measurements are running
-    bool isRunning() { return running_;};
+    bool isRunning() override { return running_;};
 
   private:
 
