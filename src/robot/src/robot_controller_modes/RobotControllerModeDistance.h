@@ -21,11 +21,15 @@ class RobotControllerModeDistance : public RobotControllerModeBase
 
   protected:
 
+    void actuallyStartTheMove();
+
     SmoothTrajectoryGenerator traj_gen_; 
     Point goal_distance_;
     Point current_distance_;
     PVTPoint current_target_;
     DistanceTracker& distance_tracker_;
+    bool move_started_for_real_;
+    float move_start_delay_sec_;
 
     TrajectoryTolerances distance_tolerances_;
 
