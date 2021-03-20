@@ -1,14 +1,14 @@
-#ifndef Distance_h
-#define Distance_h
+#ifndef DistanceTracker_h
+#define DistanceTracker_h
 
 #include "utils.h"
 #include "serial/SerialComms.h"
 
-class Distance
+class DistanceTracker
 {
 
   public:
-    Distance();
+    DistanceTracker();
 
     // Start measurement loop
     void start();
@@ -38,4 +38,4 @@ class Distance
 };
 
 
-#endif //Distance_h
+#endif //DistanceTracker_h

@@ -2,7 +2,7 @@
 #include "constants.h"
 #include <plog/Log.h>
 
-RobotControllerModeDistance::RobotControllerModeDistance(bool fake_perfect_motion, Distance& distance_tracker)
+RobotControllerModeDistance::RobotControllerModeDistance(bool fake_perfect_motion, DistanceTracker& distance_tracker)
 : RobotControllerModeBase(fake_perfect_motion),
   traj_gen_(),
   goal_distance_(0,0,0),

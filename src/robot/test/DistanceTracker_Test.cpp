@@ -1,33 +1,33 @@
 #include <Catch/catch.hpp>
 
-#include "Distance.h"
+#include "DistanceTracker.h"
 #include "test-utils.h"
 
 
-TEST_CASE("Distance start", "[distance]")
+TEST_CASE("DistanceTracker start", "[distance]")
 {
     MockSerialComms* mock_serial = build_and_get_mock_serial(ARDUINO_USB);;
-    Distance d;
+    DistanceTracker d;
 
     d.start();
     REQUIRE(d.isRunning() == true);
     REQUIRE(mock_serial->mock_rcv_distance() == "start");
 }
 
-TEST_CASE("Distance stop", "[distance]")
+TEST_CASE("DistanceTracker stop", "[distance]")
 {
     MockSerialComms* mock_serial = build_and_get_mock_serial(ARDUINO_USB);;
-    Distance d;
+    DistanceTracker d;
 
     d.stop();
     REQUIRE(d.isRunning() == false);
     REQUIRE(mock_serial->mock_rcv_distance() == "stop");
 }
 
-TEST_CASE("Distance runninng nominal", "[distance]")
+TEST_CASE("DistanceTracker runninng nominal", "[distance]")
 {
     MockSerialComms* mock_serial = build_and_get_mock_serial(ARDUINO_USB);;
-    Distance d;
+    DistanceTracker d;
 
     d.start();
     REQUIRE(d.isRunning() == true);
@@ -46,10 +46,10 @@ TEST_CASE("Distance runninng nominal", "[distance]")
     REQUIRE(mock_serial->mock_rcv_distance() == "stop");
 }
 
-TEST_CASE("Distance runninng bad input", "[distance]")
+TEST_CASE("DistanceTracker runninng bad input", "[distance]")
 {
     MockSerialComms* mock_serial = build_and_get_mock_serial(ARDUINO_USB);;
-    Distance d;
+    DistanceTracker d;
 
     d.start();
     REQUIRE(d.isRunning() == true);

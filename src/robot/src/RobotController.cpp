@@ -91,11 +91,11 @@ void RobotController::moveConstVel(float vx , float vy, float va, float t)
     PLOGE << "Not implimented";
 }
 
-void RobotController::moveWithDistance(float x_dist, float y_dist, float a_dist, Distance& dist)
+void RobotController::moveWithDistance(float x_dist, float y_dist, float a_dist, DistanceTracker& distance_tracker)
 {
     Point goal_dist = Point(x_dist,y_dist,a_dist);
 
-    auto distance_mode = std::make_unique<RobotControllerModeDistance>(fake_perfect_motion_, dist);
+    auto distance_mode = std::make_unique<RobotControllerModeDistance>(fake_perfect_motion_, distance_tracker);
     bool ok = distance_mode->startMove(goal_dist);
    
     if (ok) 

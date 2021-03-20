@@ -1,13 +1,11 @@
-#include "Distance.h"
+#include "DistanceTracker.h"
 
 #include "utils.h"
 #include <plog/Log.h> 
 #include "constants.h"
 #include "serial/SerialCommsFactory.h"
 
-// std::mutex mutex;
-
-Distance::Distance()
+DistanceTracker::DistanceTracker()
 : current_distance_mm_(0.0),
   distance_buffer_(10),
   running_(false),
@@ -15,7 +13,7 @@ Distance::Distance()
 {
 }
 
-void Distance::start()
+void DistanceTracker::start()
 {
     running_ = true;
     if (serial_to_arduino_->isConnected())
@@ -25,7 +23,7 @@ void Distance::start()
     }
 }
 
-void Distance::stop()
+void DistanceTracker::stop()
 {
     running_ = false;
     if (serial_to_arduino_->isConnected())
@@ -36,7 +34,7 @@ void Distance::stop()
 }
 
 
-void Distance::checkForMeasurement()
+void DistanceTracker::checkForMeasurement()
 {
     if(running_)
     {
@@ -50,7 +48,7 @@ void Distance::checkForMeasurement()
 }
 
 
-float Distance::getMeasurement()
+float DistanceTracker::getMeasurement()
 {
     std::string msg = "";
     if (serial_to_arduino_->isConnected())

@@ -42,19 +42,13 @@ Robot::Robot()
   controller_(statusUpdater_),
   tray_controller_(),
   mm_wrapper_(),
-  distance_(),
+  distance_tracker_(),
   position_time_averager_(20),
   wait_for_localize_helper_(statusUpdater_, cfg.lookup("localization.max_wait_time"), cfg.lookup("localization.confidence_for_wait")),
   dist_print_rate_(10),
   curCmd_(COMMAND::NONE)
 {
     PLOGI.printf("Robot starting");
-}
-
-Robot::~Robot()
-{
-    PLOGW << "Robot dtor";
-    distance_.stop();
 }
 
 void Robot::run()
@@ -91,7 +85,7 @@ void Robot::runOnce()
     // Service various modules
     controller_.update();
     tray_controller_.update();
-    distance_.checkForMeasurement();
+    distance_tracker_.checkForMeasurement();
 
     // Check if the current command has finished
     bool done = checkForCmdComplete(curCmd_);
