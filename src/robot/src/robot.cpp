@@ -165,8 +165,9 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     }
     else if(cmd == COMMAND::MOVE_CONST_VEL)
     {
+        // Temporary hack
         RobotServer::VelocityData data = server_.getVelocityData();
-        controller_.moveConstVel(data.vx, data.vy, data.va, data.t);
+        controller_.moveWithDistance(data.vx, data.vy, data.va);
     }
     else if(cmd == COMMAND::PLACE_TRAY)
     {

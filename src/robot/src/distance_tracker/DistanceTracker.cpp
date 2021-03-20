@@ -19,7 +19,7 @@ void DistanceTracker::start()
     if (serial_to_arduino_->isConnected())
     {
         serial_to_arduino_->send("start");
-        PLOGI << "Distnace measurement starting";
+        PLOGI << "Distance measurement starting";
     }
 }
 
