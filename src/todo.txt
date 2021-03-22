@@ -18,6 +18,7 @@ Robot controller:
 
 Robot SW:
 - Convert localization to KalmanFilter
+- Fix whatever bug is going on with fine motion not working
 
 Robot HW:
 

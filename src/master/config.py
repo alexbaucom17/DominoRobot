@@ -5,7 +5,7 @@ class Config:
 
     # Various debug/test flags
     # Set to override config values for home network
-    USING_HOME_NETWORK = True
+    USING_HOME_NETWORK = False
     # Set to override config values for small scale testing
     USE_SMALL_TESTING_CONFIG = True
     # Set to skip connecting to robot
@@ -50,8 +50,8 @@ class Config:
     desired_width_dominos = 30
     desired_height_dominos = 40
     if USE_SMALL_TESTING_CONFIG:
-        desired_width_dominos = 30
-        desired_height_dominos = 40
+        desired_width_dominos = 15
+        desired_height_dominos = 60
     dominos = np.array(
                 [('black', (0,0,0)),
                 ('red',   (1,0,0)),
@@ -101,7 +101,7 @@ class Config:
         load_pose = np.array([8,-4,90])            
         domino_field_origin = np.array([8,-3])  
         domino_field_angle = 0 
-        tile_placement_coarse_offset = np.array([-0.3,0.3])
+        tile_placement_coarse_offset = np.array([-0.3,0.0])
         tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])                                    
 
     # Computed - don't change
