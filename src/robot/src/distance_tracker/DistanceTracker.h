@@ -21,7 +21,7 @@ class DistanceTracker : public DistanceTrackerBase
     void checkForMeasurement() override;
 
     // Get latest distance values in meters
-    float getDistance() override {return current_distance_mm_/1000.0f;};
+    Point getDistancePose() override {return current_distance_pose_;};
 
     // Returns bool indicating if distance measurements are running
     bool isRunning() override { return running_;};
@@ -29,10 +29,13 @@ class DistanceTracker : public DistanceTrackerBase
   private:
 
     // Handles getting measurements from serial port and parsing into number
-    float getMeasurement();
+    std::vector<float> getMeasurement();
 
-    float current_distance_mm_;
-    CircularBuffer<float> distance_buffer_;
+    // Computes the current pose from the buffered distances
+    void computePoseFromDistances();
+
+    Point current_distance_pose_;
+    std::vector<CircularBuffer<float>> distance_buffers_;
     bool running_;
 
     SerialCommsBase* serial_to_arduino_; 

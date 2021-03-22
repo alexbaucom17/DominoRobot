@@ -44,16 +44,13 @@ bool RobotControllerModeDistance::startMove(Point goal_distance)
 
 void RobotControllerModeDistance::actuallyStartTheMove()
 {
-    float cur_x_dist = distance_tracker_->getDistance();
-    current_distance_ = {cur_x_dist,0,0};
+    current_distance_ = distance_tracker_->getDistancePose();
     move_started_for_real_ = traj_gen_.generatePointToPointTrajectory(current_distance_, goal_distance_, /*fine_mode=*/true);
     if(!move_started_for_real_) PLOGE << "Failed to start distance move";
 }
 
 Velocity RobotControllerModeDistance::computeTargetVelocity(Point current_position, Velocity current_velocity, bool log_this_cycle)
-{
-    (void) current_position; // Don't need global position for local driving
-    
+{    
     // Check if we should actually start the move or not
     if(move_start_timer_.dt_s() < move_start_delay_sec_) return {0,0,0};
     else if (!move_started_for_real_) actuallyStartTheMove();
@@ -63,34 +60,35 @@ Velocity RobotControllerModeDistance::computeTargetVelocity(Point current_positi
     PVTPoint current_target_ = traj_gen_.lookup(dt_from_traj_start);
 
     // Get the current distance measurements from the sensors
-    float cur_x_dist = distance_tracker_->getDistance();
-    current_distance_ = {cur_x_dist,0,0};
+    current_distance_ = distance_tracker_->getDistancePose();
 
     // Print motion estimates to log
     PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "\nTarget: " << current_target_.toString();
     PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "Est Vel: " << current_velocity.toString();
     PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "Est Dist: " << current_distance_.toString();
 
-    Velocity output;
+    Velocity output_local;
     if(fake_perfect_motion_)
     {
-        output = current_target_.velocity;
+        output_local = current_target_.velocity;
     }
     else
     {
         float dt_since_last_loop = loop_timer_.dt_s();
         loop_timer_.reset();
-        output.vx =  x_controller_.compute(current_target_.position.x, current_distance_.x, current_target_.velocity.vx, current_velocity.vx, dt_since_last_loop);
-        output.vy =  y_controller_.compute(current_target_.position.y, current_distance_.y, current_target_.velocity.vy, current_velocity.vy, dt_since_last_loop);
-        output.va =  a_controller_.compute(current_target_.position.a, current_distance_.a, current_target_.velocity.va, current_velocity.va, dt_since_last_loop);
+        output_local.vx =  x_controller_.compute(current_target_.position.x, current_distance_.x, current_target_.velocity.vx, current_velocity.vx, dt_since_last_loop);
+        output_local.vy =  y_controller_.compute(current_target_.position.y, current_distance_.y, current_target_.velocity.vy, current_velocity.vy, dt_since_last_loop);
+        output_local.va =  a_controller_.compute(current_target_.position.a, current_distance_.a, current_target_.velocity.va, current_velocity.va, dt_since_last_loop);
     }
 
     // Need to flip the velocity sign because the distance frame is techncially flipped
-    output.vx *= -1;
-    output.vy *= -1;
-    output.va *= -1;
+    // Also need to rotate this into global frame because currently it is in the local robot frame
+    Velocity output_global;
+    output_global.vx = -1 * (cos(current_position.a) * output_local.vx - sin(current_position.a) * output_local.vy);
+    output_global.vy = -1 * (sin(current_position.a) * output_local.vx + cos(current_position.a) * output_local.vy);
+    output_global.va = -1 * output_local.va;
 
-    return output;
+    return output_global;
 }
 
 bool RobotControllerModeDistance::checkForMoveComplete(Point current_position, Velocity current_velocity)

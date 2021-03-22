@@ -18,7 +18,7 @@ class DistanceTrackerBase
     virtual void checkForMeasurement() = 0;
 
     // Get latest distance values
-    virtual float getDistance() = 0;
+    virtual Point getDistancePose() = 0;
 
     // Returns bool indicating if distance measurements are running
     virtual bool isRunning() = 0;

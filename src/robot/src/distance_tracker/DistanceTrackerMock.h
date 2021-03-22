@@ -19,18 +19,18 @@ class DistanceTrackerMock : public DistanceTrackerBase
     void checkForMeasurement() override {};
 
     // Get latest distance values in meters
-    float getDistance() override {return mock_distance_;};
+    Point getDistancePose() override {return mock_distance_pose_;};
 
     // Returns bool indicating if distance measurements are running
     bool isRunning() override {return running_;};
 
     // Set mock distance value (meters)
-    void setMockDistance(float distance) {mock_distance_ = distance;};
+    void setMockDistancePose(Point distance_pose) {mock_distance_pose_ = distance_pose;};
 
   private:
 
     bool running_;
-    float mock_distance_;
+    Point mock_distance_pose_;
 
 };
 
