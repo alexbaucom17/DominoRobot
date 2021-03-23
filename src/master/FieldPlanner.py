@@ -297,6 +297,7 @@ class ActionTypes(enum.Enum):
     CLEAR_ERROR = 11,
     NONE = 12,
     SET_POSE = 13,
+    MOVE_WITH_DISTANCE = 14,
 
 class Action:
 
@@ -364,6 +365,9 @@ class MoveAction(Action):
         return self.a
 
     def draw(self, ax):
+
+        if self.action_type == ActionType.MOVE_WITH_DISTANCE:
+            return
 
         # Base triangle at 0 degrees
         scale = 0.3
@@ -507,7 +511,7 @@ def generate_small_testing_action_sequence(cfg, tile):
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle))
 
     name = "Move to place - super fine"
-    actions.append(MoveConstVelAction(ActionTypes.MOVE_CONST_VEL, name, 0.85, 0, 0, 0))
+    actions.append(MoveAction(ActionTypes.MOVE_WITH_DISTANCE, name, 0.85, 0.85, 0))
 
     name = "Place tile"
     actions.append(Action(ActionTypes.PLACE, name))
