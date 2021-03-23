@@ -44,11 +44,11 @@ class DistanceTracker : public DistanceTrackerBase
     SerialCommsBase* serial_to_arduino_; 
 
     // Various constant parameters
-    int forward_left_id_;
-    int forward_right_id_;
+    int fwd_left_id_;
+    int fwd_right_id_;
     int angled_left_id_;
     int angled_right_id_;
-    float angle_from_forward_radians_;
+    float angle_from_fwd_radians_;
     float left_fwd_offset_;                   
     float right_fwd_offset_;
     float left_angle_offset_;

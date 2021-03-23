@@ -240,7 +240,7 @@ class CircularBuffer
         full_ = false;
     }
 
-    std::vector<T> get_contents()
+    std::vector<T> get_contents() const
     {
       if(!full_ || idx_ == 0)
       {
@@ -255,7 +255,7 @@ class CircularBuffer
       }
     }
 
-    bool isFull() { return full_;}
+    bool isFull() const { return full_;}
     
   private:
     std::unique_ptr<std::vector<T>> data_;
