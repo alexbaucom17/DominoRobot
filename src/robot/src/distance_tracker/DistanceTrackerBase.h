@@ -22,6 +22,9 @@ class DistanceTrackerBase
 
     // Returns bool indicating if distance measurements are running
     virtual bool isRunning() = 0;
+
+    // How long the time delay between measurements is
+    virtual float getAverageMeasurementTimeSeconds() = 0;
 };
 
 #endif //DistanceTrackerBase_h

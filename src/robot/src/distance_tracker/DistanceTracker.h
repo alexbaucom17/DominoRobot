@@ -26,6 +26,9 @@ class DistanceTracker : public DistanceTrackerBase
     // Returns bool indicating if distance measurements are running
     bool isRunning() override { return running_;};
 
+    // How long the time delay between measurements is
+    float getAverageMeasurementTimeSeconds() override {return measurement_time_averager_.get_sec();};
+
   private:
 
     // Handles getting measurements from serial port and parsing into number
@@ -37,8 +40,21 @@ class DistanceTracker : public DistanceTrackerBase
     Point current_distance_pose_;
     std::vector<CircularBuffer<float>> distance_buffers_;
     bool running_;
-
+    TimeRunningAverage measurement_time_averager_;
     SerialCommsBase* serial_to_arduino_; 
+
+    // Various constant parameters
+    int forward_left_id_;
+    int forward_right_id_;
+    int angled_left_id_;
+    int angled_right_id_;
+    float angle_from_forward_radians_;
+    float left_fwd_offset_;                   
+    float right_fwd_offset_;
+    float left_angle_offset_;
+    float right_angle_offset_;
+    uint num_sensors_;
+
 };
 
 

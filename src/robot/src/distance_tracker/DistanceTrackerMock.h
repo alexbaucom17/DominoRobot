@@ -27,6 +27,9 @@ class DistanceTrackerMock : public DistanceTrackerBase
     // Set mock distance value (meters)
     void setMockDistancePose(Point distance_pose) {mock_distance_pose_ = distance_pose;};
 
+    // How long the time delay between measurements is
+    float getAverageMeasurementTimeSeconds() override {return 0.0;};
+
   private:
 
     bool running_;
