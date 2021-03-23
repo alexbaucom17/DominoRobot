@@ -24,7 +24,7 @@ class DistanceTrackerBase
     virtual bool isRunning() = 0;
 
     // How long the time delay between measurements is
-    virtual float getAverageMeasurementTimeSeconds() = 0;
+    virtual int getAverageMeasurementTimeMs() = 0;
 };
 
 #endif //DistanceTrackerBase_h

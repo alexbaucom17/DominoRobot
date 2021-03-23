@@ -96,6 +96,7 @@ void Robot::runOnce()
 
     // Update loop time and status updater
     statusUpdater_.updatePositionLoopTime(position_time_averager_.get_ms());
+    statusUpdater_.updateDistanceLoopTime(distance_tracker_->getAverageMeasurementTimeMs());
 }
 
 
@@ -165,9 +166,13 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     }
     else if(cmd == COMMAND::MOVE_CONST_VEL)
     {
-        // Temporary hack
         RobotServer::VelocityData data = server_.getVelocityData();
-        controller_.moveWithDistance(data.vx, data.vy, data.va);
+        controller_.moveConstVel(data.vx, data.vy, data.va, data.t);
+    }
+    else if (cmd == COMMAND::MOVE_WITH_DISTANCE)
+    {
+        RobotServer::PositionData data = server_.getMoveData();
+        controller_.moveWithDistance(data.x, data.y, data.a);
     }
     else if(cmd == COMMAND::PLACE_TRAY)
     {

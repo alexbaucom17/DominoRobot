@@ -21,6 +21,8 @@ class StatusUpdater
 
     void updatePositionLoopTime(int position_loop_ms);
 
+    void updateDistanceLoopTime(int distance_loop_ms);
+
     void updateInProgress(bool in_progress);
 
     bool getInProgress() const { return currentStatus_.in_progress; };
@@ -52,6 +54,7 @@ class StatusUpdater
       // Loop times
       int controller_loop_ms;
       int position_loop_ms;
+      int distance_loop_ms;
 
       bool in_progress;
       bool error_status;
@@ -73,6 +76,7 @@ class StatusUpdater
       vel_a(0.0),
       controller_loop_ms(999),
       position_loop_ms(999),
+      distance_loop_ms(999),
       in_progress(false),
       error_status(false),
       counter(0),
@@ -101,6 +105,7 @@ class StatusUpdater
         doc["vel_a"] = vel_a;
         doc["controller_loop_ms"] = controller_loop_ms;
         doc["position_loop_ms"] = position_loop_ms;
+        doc["distance_loop_ms"] = distance_loop_ms;
         doc["in_progress"] = in_progress;
         doc["error_status"] = error_status;
         doc["counter"] = counter++;

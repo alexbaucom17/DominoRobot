@@ -27,7 +27,7 @@ class DistanceTracker : public DistanceTrackerBase
     bool isRunning() override { return running_;};
 
     // How long the time delay between measurements is
-    float getAverageMeasurementTimeSeconds() override {return measurement_time_averager_.get_sec();};
+    int getAverageMeasurementTimeMs() override {return measurement_time_averager_.get_ms();};
 
   private:
 

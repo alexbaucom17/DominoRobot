@@ -40,6 +40,11 @@ void StatusUpdater::updatePositionLoopTime(int position_loop_ms)
     currentStatus_.position_loop_ms = position_loop_ms;
 }
 
+void StatusUpdater::updateDistanceLoopTime(int distance_loop_ms)
+{
+    currentStatus_.distance_loop_ms = distance_loop_ms;
+}
+
 void StatusUpdater::updateLocalizationMetrics(LocalizationMetrics localization_metrics)
 {
     currentStatus_.localization_metrics = localization_metrics;
