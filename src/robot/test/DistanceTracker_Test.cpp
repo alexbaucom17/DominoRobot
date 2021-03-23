@@ -59,7 +59,7 @@ TEST_CASE("DistanceTracker runninng nominal", "[distance]")
     Point pose = d.getDistancePose();
     REQUIRE(pose.x == Approx(1.0).margin(0.001));
     REQUIRE(pose.y == Approx(-1.0).margin(0.001));
-    REQUIRE(pose.a == Approx(0.0).margin(0.001));
+    REQUIRE(pose.a == Approx(0.0).margin(0.01));
     
     d.stop();
     REQUIRE(d.isRunning() == false);

@@ -177,7 +177,7 @@ TEST_CASE("Distance controller simple", "[RobotController]")
     float initial_distance = 1.0;
     r.moveWithDistance(dist_x, dist_y, dist_a);
     REQUIRE(distance_tracker_mock->isRunning() == true);
-    distance_tracker_mock->setMockDistance(initial_distance);
+    distance_tracker_mock->setMockDistancePose({initial_distance,0,0});
 
     // Movement should not have started yet as it is waiting for distance values
     mock_clock->advance_ms(1);
@@ -192,7 +192,7 @@ TEST_CASE("Distance controller simple", "[RobotController]")
     for (int i = 0; i < 1000; i++) 
     {
         float new_dist = std::max(dist_x + (1-i/200.0f)*(initial_distance-dist_x), dist_x);
-        distance_tracker_mock->setMockDistance(new_dist);
+        distance_tracker_mock->setMockDistancePose({new_dist,0,0});
         r.update();
         mock_clock->advance_ms(5);
 
