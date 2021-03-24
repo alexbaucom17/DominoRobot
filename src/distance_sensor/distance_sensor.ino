@@ -1,14 +1,14 @@
 #include "SerialComms.h"
 
 #define NUM_SENSORS 4
-#define TRIGGER_PIN_1 6
-#define TRIGGER_PIN_2 7
-#define TRIGGER_PIN_3 8
-#define TRIGGER_PIN_4 9
-#define ECHO_PIN_1 10 
-#define ECHO_PIN_2 11 
-#define ECHO_PIN_3 12 
-#define ECHO_PIN_4 13 
+#define TRIGGER_PIN_1 11
+#define TRIGGER_PIN_2 8
+#define TRIGGER_PIN_3 5
+#define TRIGGER_PIN_4 2
+#define ECHO_PIN_1 12 
+#define ECHO_PIN_2 9 
+#define ECHO_PIN_3 6 
+#define ECHO_PIN_4 3 
 #define LED_PIN LED_BUILTIN
 
 #define MICROSECONDS_TO_MILLIMETERS 0.343
