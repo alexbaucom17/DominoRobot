@@ -82,6 +82,32 @@ std::vector<float> DistanceTracker::getMeasurement()
     return values;
 }
 
+
+// d(1|2) is distance measurement (meters)
+// o(1|2) is offset in y dimension of sensor (meters)
+// Returns <distance_x, angle from y axis> in <meters, rads> of line
+std::pair<float, float> distAndAngleFromPairedDistanceFront(float d1, float o1, float d2, float o2)
+{
+    float dx = (d1 + d2) / 2.0;
+    float a = atan2(d1-d2, o1-o2);
+    return {dx, a};
+}
+
+// d(1|2) is distance measurement (meters)
+// o(1|2) is offset in y dimension of sensor (meters)
+// a(1|2) is angle of sensor from x axis (radians)
+// Returns <distance_y, angle from x axis> in <meters, rads> of line
+std::pair<float, float> distAndAngleFromPairedDistanceSide(float d1, float o1, float a1, float d2, float o2, float a2)
+{
+    float p1x = d1*cos(a1);
+    float p1y = d1*sin(a1) + o1;
+    float p2x = d2*cos(a2);
+    float p2y = d2*sin(a2) + o2;
+    float dy = (p1y + p2y) / 2.0;
+    float a = atan2(p1y-p2y, p1x-p2x);
+    return {dy, a};
+}
+
 void DistanceTracker::computePoseFromDistances()
 {
     // First, compute running average of all distance buffers
@@ -92,21 +118,20 @@ void DistanceTracker::computePoseFromDistances()
         mean_distances.push_back(vectorMean(buf.get_contents()));
     }
 
-    // Forward distance is easy - just average the two measurements
-    Point new_pose;
-    new_pose.x = (mean_distances[fwd_left_id_] + mean_distances[fwd_right_id_]) / 2.0;
+    // Using forward measurements
+    auto [x_dist, fwd_angle] = distAndAngleFromPairedDistanceFront(
+        mean_distances[fwd_left_id_], left_fwd_offset_, 
+        mean_distances[fwd_right_id_], right_fwd_offset_);
 
-    // Side distance is a little bit harder - need to average projection of measurements and add offset from center
-    float y_projection_left = mean_distances[angled_left_id_] * sin(angle_from_fwd_radians_) + left_angle_offset_;
-    float y_projection_right = mean_distances[angled_right_id_] * sin(angle_from_fwd_radians_) + right_angle_offset_;
-    new_pose.y = (y_projection_left + y_projection_right) / 2.0;
+    auto [y_dist, side_angle] = distAndAngleFromPairedDistanceSide(
+        mean_distances[angled_left_id_], left_angle_offset_, angle_from_fwd_radians_, 
+        mean_distances[angled_right_id_], right_angle_offset_, angle_from_fwd_radians_);
 
-    // Angle is the hardest - need to average angle made by front and side measurements
-    float x_projection_left = mean_distances[angled_left_id_] * cos(angle_from_fwd_radians_);
-    float x_projection_right = mean_distances[angled_right_id_] * cos(angle_from_fwd_radians_);
-    float fwd_angle = atan2(right_fwd_offset_ + left_fwd_offset_, mean_distances[fwd_left_id_] - mean_distances[fwd_right_id_]);
-    float side_angle = atan2(y_projection_left-y_projection_right,x_projection_left-x_projection_right);
-    new_pose.a = (fwd_angle + side_angle) / 2.0;
-
-    current_distance_pose_ = new_pose;
+    // Grab final measurements
+    // X dist is from forward sensors
+    // Y dist is from angled sensors
+    // Angle is average of forward and angled measurements
+    current_distance_pose_.x = x_dist;
+    current_distance_pose_.y = y_dist;
+    current_distance_pose_.a = (fwd_angle + side_angle)/2.0;
 }
