@@ -3,15 +3,7 @@
 
 #include "utils.h"
 #include <Eigen/Dense>
-
-struct LocalizationMetrics 
-{
-    float confidence;
-    float last_reading_reliability;
-    float last_reading_update_fraction;
-    float seconds_since_last_valid_reading;
-    float rolling_reading_filter_fraction;
-};
+#include "kalman_filters/kalman_filter.h"
 
 class Localization
 {
@@ -70,6 +62,13 @@ class Localization
     LocalizationMetrics metrics_;
     Timer last_valid_reading_timer_; 
     CircularBuffer<float> reading_validity_buffer_;
+    bool use_kf_;
+    arma::mat A_;
+    arma::mat B_;
+    arma::mat C_;
+    arma::mat Q_;
+    arma::mat R_;
+    kf::KalmanFilter kf_;
 
 
 };

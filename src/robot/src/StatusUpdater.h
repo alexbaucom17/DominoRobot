@@ -3,8 +3,7 @@
 #define StatusUpdater_h
 
 #include <ArduinoJson/ArduinoJson.h>
-#include "Localization.h"
-
+#include "utils.h"
 
 class StatusUpdater
 {

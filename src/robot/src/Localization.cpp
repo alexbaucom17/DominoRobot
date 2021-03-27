@@ -21,8 +21,33 @@ Localization::Localization()
   filtered_positions_stddev_(),
   metrics_(),
   last_valid_reading_timer_(),
-  reading_validity_buffer_(cfg.lookup("localization.position_reliability_buffer_size"))
-{}
+  reading_validity_buffer_(cfg.lookup("localization.position_reliability_buffer_size")),
+  use_kf_(cfg.lookup("localization.use_kf")),
+  A_({{1,0,0}, 
+     {0,1,0},
+     {0,0,1}}),
+  B_({{1.0/20,0,0}, 
+     {0,1.0/20,0},
+     {0,0,1.0/20}}),
+  C_({{1,0,0}, 
+     {0,1,0},
+     {0,0,1}}),
+  Q_({{1,0,0}, 
+     {0,1,0},
+     {0,0,1}}),
+  R_({{cfg.lookup("localization.kf_trans_cov"),0,0}, 
+      {0,cfg.lookup("localization.kf_trans_cov"),0},
+      {0,0,cfg.lookup("localization.kf_angle_cov")}}),
+  kf_(A_,B_,C_)
+{
+    kf_.setProcessCovariance(Q_);
+    kf_.setOutputCovariance(R_);
+    // PLOGI << "A: " << A_;
+    // PLOGI << "B: " << B_;
+    // PLOGI << "C: " << C_;
+    // PLOGI << "Q: " << Q_;
+    // PLOGI << "R: " << R_;
+}
 
 void Localization::updatePositionReading(Point global_position)
 {
@@ -43,10 +68,23 @@ void Localization::updatePositionReading(Point global_position)
     const float reading_reliability = computePositionReliability();
     updateMetricsForPosition(update_fraction, reading_reliability);
 
-    // Update based on the mean - but should use the update fraction and maybe a time decay?
-    pos_.x = filtered_positions_mean_[0];
-    pos_.y = filtered_positions_mean_[1];
-    pos_.a = wrap_angle(filtered_positions_mean_[2]);
+    if(use_kf_) 
+    {
+        arma::vec y = {adjusted_measured_position[0], adjusted_measured_position[1], adjusted_measured_position[2]};
+        kf_.correctState(y);
+        arma::vec est = kf_.getEstimate();
+        pos_.x = est[0];
+        pos_.y = est[1];
+        pos_.a = wrap_angle(est[2]);
+    } 
+    else 
+    {
+        // Update based on the mean - but should use the update fraction and maybe a time decay?
+        pos_.x = filtered_positions_mean_[0];
+        pos_.y = filtered_positions_mean_[1];
+        pos_.a = wrap_angle(filtered_positions_mean_[2]);
+    }
+
 
     PLOGI_(LOCALIZATION_LOG_ID).printf("\nPosition update:");
     PLOGI_(LOCALIZATION_LOG_ID).printf("  Raw input: [%4.3f, %4.3f, %4.3f]", 
@@ -66,10 +104,29 @@ void Localization::updateVelocityReading(Velocity local_cart_vel, float dt)
     vel_.vy = sA * local_cart_vel.vx + cA * local_cart_vel.vy;
     vel_.va = local_cart_vel.va;
 
-    // Compute new position estimate
-    pos_.x += vel_.vx * dt;
-    pos_.y += vel_.vy * dt;
-    pos_.a = wrap_angle(pos_.a + vel_.va * dt);
+    if(use_kf_) 
+    {
+        B_ = arma::mat( {{dt,0,0}, 
+                         {0,dt,0},
+                         {0,0,dt}});
+        // PLOGI << "B: " << B_;
+        arma::vec u = {vel_.vx, vel_.vy, vel_.va};
+        PLOGI << "u: " << u;
+        kf_.predictState(u);
+        arma::vec est = kf_.getPrediction();
+        PLOGI << "est: " << est;
+        pos_.x = est[0];
+        pos_.y = est[1];
+        pos_.a = wrap_angle(est[2]);
+    }
+    else
+    {
+        // Compute new position estimate
+        pos_.x += vel_.vx * dt;
+        pos_.y += vel_.vy * dt;
+        pos_.a = wrap_angle(pos_.a + vel_.va * dt);
+    }
+
 
     // Update metric confidence based on velocity reading
     Eigen::Vector3f v = {vel_.vx, vel_.vy, vel_.va};
