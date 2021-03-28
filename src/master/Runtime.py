@@ -260,8 +260,8 @@ class RuntimeManager:
         # Check the status of initialization
         self._check_initialization_status()
         if self.initialization_status != RuntimeManager.STATUS_FULLY_INITIALIZED:
-            self.initialization_timer = NonBlockingTimer(10)
-            logging.info("Unable to fully initialize RuntimeManager, will try again in 10 seconds")
+            self.initialization_timer = NonBlockingTimer(3)
+            logging.info("Unable to fully initialize RuntimeManager, will try again in 3 seconds")
             logging.info("Current componenent initialization status:")
             logging.info(pprint.pformat(self.component_initialization_status, indent=2, width=10))
 
