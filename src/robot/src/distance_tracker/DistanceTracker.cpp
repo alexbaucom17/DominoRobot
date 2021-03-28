@@ -12,6 +12,7 @@ DistanceTracker::DistanceTracker()
   running_(false),
   measurement_time_averager_(10),
   serial_to_arduino_(SerialCommsFactory::getFactoryInstance()->get_serial_comms(ARDUINO_USB)),
+  kf_(3,3),
   fwd_left_id_(cfg.lookup("distance_tracker.mapping.fwd_left")),
   fwd_right_id_(cfg.lookup("distance_tracker.mapping.fwd_right")),
   angled_left_id_(cfg.lookup("distance_tracker.mapping.angled_left")),
@@ -71,6 +72,7 @@ std::vector<float> DistanceTracker::getMeasurement()
         msg = serial_to_arduino_->rcv_distance();
     }
     if(msg.empty()) return {};
+    // PLOGI << msg;
     std::vector<float> values = parseCommaDelimitedStringToFloat(msg);
     if(values.size() != num_sensors_) return {};
 
@@ -132,6 +134,24 @@ void DistanceTracker::computePoseFromDistances()
     // Y dist is from angled sensors
     // Angle is average of forward and angled measurements
     current_distance_pose_.x = x_dist;
-    current_distance_pose_.y = y_dist;
-    current_distance_pose_.a = (fwd_angle + side_angle)/2.0;
+    current_distance_pose_.y = 0; //y_dist;
+    current_distance_pose_.a = 0; //(fwd_angle + side_angle)/2.0;
+}
+
+std::vector<float> DistanceTracker::getRawDistances() 
+{
+    if(running_)
+    {
+        std::vector<float> mean_distances;
+        mean_distances.reserve(num_sensors_);
+        for (const auto& buf : distance_buffers_) 
+        {
+            mean_distances.push_back(vectorMean(buf.get_contents()));
+        }
+        return mean_distances; 
+    }
+    else
+    {
+        return std::vector<float>(num_sensors_, 0.0);
+    }
 }

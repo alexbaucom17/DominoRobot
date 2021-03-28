@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "serial/SerialComms.h"
 #include "DistanceTrackerBase.h"
+#include "KalmanFilter.h"
 
 class DistanceTracker : public DistanceTrackerBase
 {
@@ -29,6 +30,8 @@ class DistanceTracker : public DistanceTrackerBase
     // How long the time delay between measurements is
     int getAverageMeasurementTimeMs() override {return measurement_time_averager_.get_ms();};
 
+    std::vector<float> getRawDistances() override;
+
   private:
 
     // Handles getting measurements from serial port and parsing into number
@@ -42,6 +45,7 @@ class DistanceTracker : public DistanceTrackerBase
     bool running_;
     TimeRunningAverage measurement_time_averager_;
     SerialCommsBase* serial_to_arduino_; 
+    KalmanFilter kf_;
 
     // Various constant parameters
     int fwd_left_id_;

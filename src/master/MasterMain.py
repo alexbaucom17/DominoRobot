@@ -18,7 +18,7 @@ STATUS_PANEL_BAD_COLOR = "red"
 
 def status_panel(name):
     width = 40
-    height = 10
+    height = 14
     return [[sg.Text("{} status".format(name))], [sg.Text("{} offline".format(name), size=(width, height), \
         relief=sg.RELIEF_RIDGE, key='_{}_STATUS_'.format(name.upper()), background_color=STATUS_PANEL_BAD_COLOR) ]]
 
@@ -71,7 +71,7 @@ class CmdGui:
         sg.change_look_and_feel('DarkBlack')
 
         panel_names = ["{}".format(n) for n in self.config.ip_map]
-        panel_names += ['base', 'plan', 'mm']
+        panel_names += ['base', 'plan']
         target_names = copy.deepcopy(panel_names)
         target_names.remove('plan')
         layout = setup_gui_layout(config, panel_names, target_names)
@@ -137,7 +137,7 @@ class CmdGui:
     def update_status_panels(self, metrics):
         for key, metric in metrics.items():
             if key == 'mm':
-                self._update_marvelmind_panel(metric)
+                continue
             elif key == 'plan':
                 self._update_plan_panel(metric)
             elif key == 'base':
@@ -153,7 +153,7 @@ class CmdGui:
         name = 'ManualAction'
 
         action = None
-        if action_type in [ActionTypes.MOVE_COARSE, ActionTypes.MOVE_REL, ActionTypes.MOVE_FINE]:
+        if action_type in [ActionTypes.MOVE_COARSE, ActionTypes.MOVE_REL, ActionTypes.MOVE_FINE, ActionTypes.MOVE_WITH_DISTANCE]:
             data = data_str.split(',')
             data = [x.strip() for x in data]
             if len(data) != 3:
@@ -178,21 +178,6 @@ class CmdGui:
             action = Action(action_type, name)
 
         return (target, action)
-
-    def _update_marvelmind_panel(self, status_dict):
-        status_str = "Cannot get marvelmind status"
-        color_str = STATUS_PANEL_BAD_COLOR
-        if status_dict:
-            try:
-                status_str = ""
-                status_str = "Connected devices:\n"
-                for addr, data in status_dict:
-                    status_str += "  Address: {} | Sleep: {}\n".format(addr, data['sleep'])
-                color_str = STATUS_PANEL_OK_COLOR
-            except Exception as e:
-                status_str = "Bad dict: " + str(status_dict)
-
-        self.window['_MM_STATUS_'].update(status_str, background_color=color_str)
 
     def _update_plan_button_status(self, plan_status):
         if plan_status == PlanStatus.NONE or plan_status == PlanStatus.ABORTED:
@@ -278,9 +263,13 @@ class CmdGui:
                 status_str = ""
                 status_str += "Position: [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(robot_pose[0], robot_pose[1], robot_pose[2])
                 status_str += "Velocity: [{0:.3f} m/s, {1:.3f} m/s, {2:.2f} deg/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], math.degrees(status_dict['vel_a']))
+                status_str += "Distance Pose : [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(status_dict['dist_x'],status_dict['dist_y'], math.degrees(status_dict['dist_a']))
+                status_str += "Raw Distance: FL: {0:.3f} m, FR: {1:.3f} m\n                      AL: {2:.3f} m, AR: {3:.3f} m\n".format(\
+                    status_dict['dist_fl'],status_dict['dist_fr'], status_dict['dist_al'], status_dict['dist_ar'])
                 status_str += "Localization:\n  Confidence: {:.1f}% Time since last valid: {:.2f}s\n".format(status_dict['localization_confidence']*100, status_dict['localization_seconds_since_last_valid_reading'])
                 status_str += "Controller timing: {} ms\n".format(status_dict['controller_loop_ms'])
                 status_str += "Position timing:   {} ms\n".format(status_dict['position_loop_ms'])
+                status_str += "Distance timing:   {} ms\n".format(status_dict['distance_loop_ms'])
                 status_str += "Current action:   {}\n".format(status_dict['current_action'].split('.')[-1])
                 status_str += "Motion in progress: {}\n".format(status_dict["in_progress"])
                 status_str += "Has error: {}\n".format(status_dict["error_status"])

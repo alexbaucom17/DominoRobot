@@ -3,7 +3,7 @@
 
 #include "utils.h"
 #include <Eigen/Dense>
-#include "kalman_filters/kalman_filter.h"
+#include "KalmanFilter.h"
 
 class Localization
 {
@@ -63,14 +63,7 @@ class Localization
     Timer last_valid_reading_timer_; 
     CircularBuffer<float> reading_validity_buffer_;
     bool use_kf_;
-    arma::mat A_;
-    arma::mat B_;
-    arma::mat C_;
-    arma::mat Q_;
-    arma::mat R_;
-    kf::KalmanFilter kf_;
-
-
+    KalmanFilter kf_;
 };
 
 #endif //Localization_h

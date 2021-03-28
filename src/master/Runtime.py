@@ -46,6 +46,7 @@ class RobotInterface:
             ActionTypes.ESTOP: self.robot_client.estop,
             ActionTypes.CLEAR_ERROR: self.robot_client.clear_error,
             ActionTypes.WAIT_FOR_LOCALIZATION: self.robot_client.wait_for_localization,
+            ActionTypes.TOGGLE_DISTANCE: self.robot_client.toggle_distance,
         }
 
     def _bring_comms_online(self, use_mock=False):

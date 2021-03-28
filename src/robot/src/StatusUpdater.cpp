@@ -1,7 +1,12 @@
 #include "StatusUpdater.h"
+#include "constants.h"
 
 StatusUpdater::StatusUpdater() :
-  currentStatus_()
+  currentStatus_(),
+  fwd_left_id_(cfg.lookup("distance_tracker.mapping.fwd_left")),
+  fwd_right_id_(cfg.lookup("distance_tracker.mapping.fwd_right")),
+  angled_left_id_(cfg.lookup("distance_tracker.mapping.angled_left")),
+  angled_right_id_(cfg.lookup("distance_tracker.mapping.angled_right"))
 {
 }
 
@@ -58,4 +63,19 @@ void StatusUpdater::update_motor_driver_connected(bool connected)
 void StatusUpdater::update_lifter_driver_connected(bool connected)
 {
   currentStatus_.lifter_driver_connected = connected;
+}
+
+void StatusUpdater::updateRawDistances(std::vector<float> distances)
+{
+  currentStatus_.dist_fl = distances[fwd_left_id_];
+  currentStatus_.dist_fr = distances[fwd_right_id_];
+  currentStatus_.dist_al = distances[angled_left_id_];
+  currentStatus_.dist_ar = distances[angled_right_id_];
+}
+
+void StatusUpdater::updateDistancePose(Point pose)
+{
+  currentStatus_.dist_x = pose.x;
+  currentStatus_.dist_y = pose.y;
+  currentStatus_.dist_a = pose.a;
 }

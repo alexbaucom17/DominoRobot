@@ -5,6 +5,7 @@
 #include "SmoothTrajectoryGenerator.h"
 #include "utils.h"
 #include "distance_tracker/DistanceTrackerBase.h"
+#include "KalmanFilter.h"
 
 class RobotControllerModeDistance : public RobotControllerModeBase
 {
@@ -30,12 +31,14 @@ class RobotControllerModeDistance : public RobotControllerModeBase
     DistanceTrackerBase* distance_tracker_;
     bool move_started_for_real_;
     float move_start_delay_sec_;
+    Timer traj_done_timer_;
 
     TrajectoryTolerances distance_tolerances_;
 
     PositionController x_controller_;
     PositionController y_controller_;
     PositionController a_controller_;    
+    KalmanFilter kf_;
 
 };
 

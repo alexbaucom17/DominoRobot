@@ -23,25 +23,17 @@ Localization::Localization()
   last_valid_reading_timer_(),
   reading_validity_buffer_(cfg.lookup("localization.position_reliability_buffer_size")),
   use_kf_(cfg.lookup("localization.use_kf")),
-  A_({{1,0,0}, 
-     {0,1,0},
-     {0,0,1}}),
-  B_({{1.0/20,0,0}, 
-     {0,1.0/20,0},
-     {0,0,1.0/20}}),
-  C_({{1,0,0}, 
-     {0,1,0},
-     {0,0,1}}),
-  Q_({{1,0,0}, 
-     {0,1,0},
-     {0,0,1}}),
-  R_({{cfg.lookup("localization.kf_trans_cov"),0,0}, 
-      {0,cfg.lookup("localization.kf_trans_cov"),0},
-      {0,0,cfg.lookup("localization.kf_angle_cov")}}),
-  kf_(A_,B_,C_)
+  kf_(3,3)
 {
-    kf_.setProcessCovariance(Q_);
-    kf_.setOutputCovariance(R_);
+    Eigen::MatrixXf A = Eigen::MatrixXf::Identity(3,3);
+    Eigen::MatrixXf B = Eigen::MatrixXf::Identity(3,3);
+    Eigen::MatrixXf C = Eigen::MatrixXf::Identity(3,3);
+    Eigen::MatrixXf Q = Eigen::MatrixXf::Identity(3,3);
+    Eigen::MatrixXf R(3,3);
+    R << cfg.lookup("localization.kf_trans_cov"),0,0, 
+         0,cfg.lookup("localization.kf_trans_cov"),0,
+         0,0,cfg.lookup("localization.kf_angle_cov");
+    kf_ = KalmanFilter(A,B,C,Q,R);
     // PLOGI << "A: " << A_;
     // PLOGI << "B: " << B_;
     // PLOGI << "C: " << C_;
@@ -70,9 +62,8 @@ void Localization::updatePositionReading(Point global_position)
 
     if(use_kf_) 
     {
-        arma::vec y = {adjusted_measured_position[0], adjusted_measured_position[1], adjusted_measured_position[2]};
-        kf_.correctState(y);
-        arma::vec est = kf_.getEstimate();
+        kf_.update(adjusted_measured_position);
+        Eigen::VectorXf est = kf_.state();
         pos_.x = est[0];
         pos_.y = est[1];
         pos_.a = wrap_angle(est[2]);
@@ -106,15 +97,13 @@ void Localization::updateVelocityReading(Velocity local_cart_vel, float dt)
 
     if(use_kf_) 
     {
-        B_ = arma::mat( {{dt,0,0}, 
-                         {0,dt,0},
-                         {0,0,dt}});
-        // PLOGI << "B: " << B_;
-        arma::vec u = {vel_.vx, vel_.vy, vel_.va};
-        PLOGI << "u: " << u;
-        kf_.predictState(u);
-        arma::vec est = kf_.getPrediction();
-        PLOGI << "est: " << est;
+        Eigen::Vector3f u = {vel_.vx, vel_.vy, vel_.va};
+        Eigen::Vector3f udt = dt*u;
+        // PLOGI << "u: " << u.transpose();
+        // PLOGI << "udt: " << udt.transpose();
+        kf_.predict(udt);
+        Eigen::VectorXf est = kf_.state();
+        // PLOGI << "est: " << est.transpose();
         pos_.x = est[0];
         pos_.y = est[1];
         pos_.a = wrap_angle(est[2]);

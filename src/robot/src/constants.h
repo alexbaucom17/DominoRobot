@@ -45,6 +45,7 @@ enum class COMMAND
     CLEAR_ERROR,
     WAIT_FOR_LOCALIZATION,
     SET_POSE,
+    TOGGLE_DISTANCE,
 };
 
 #endif

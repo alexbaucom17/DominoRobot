@@ -97,6 +97,15 @@ void Robot::runOnce()
     // Update loop time and status updater
     statusUpdater_.updatePositionLoopTime(position_time_averager_.get_ms());
     statusUpdater_.updateDistanceLoopTime(distance_tracker_->getAverageMeasurementTimeMs());
+    statusUpdater_.updateRawDistances(distance_tracker_->getRawDistances());
+    statusUpdater_.updateDistancePose(distance_tracker_->getDistancePose());
+
+    // if(dist_print_rate_.ready())
+    // {
+    //     Point pose = distance_tracker_->getDistancePose();
+    //     PLOGI.printf("Cur dist: %s",pose.toString().c_str());
+    //     distance_tracker_->logDebug();
+    // }
 }
 
 
@@ -132,6 +141,17 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     {
         tray_controller_.setLoadComplete();
         return false;
+    }
+    if(cmd == COMMAND::TOGGLE_DISTANCE)
+    {
+        if(distance_tracker_->isRunning())
+        {
+            distance_tracker_->stop();
+        }
+        else
+        {
+            distance_tracker_->start();
+        }
     }
 
     // Just do nothing for NONE
@@ -208,9 +228,10 @@ bool Robot::checkForCmdComplete(COMMAND cmd)
     else if(cmd == COMMAND::MOVE || 
             cmd == COMMAND::MOVE_REL ||
             cmd == COMMAND::MOVE_FINE ||
-            cmd == COMMAND::MOVE_CONST_VEL)
+            cmd == COMMAND::MOVE_CONST_VEL ||
+            cmd == COMMAND::MOVE_WITH_DISTANCE)
     {
-        return !controller_.isTrajectoryRunning();;
+        return !controller_.isTrajectoryRunning();
     }
     else if(cmd == COMMAND::PLACE_TRAY ||
             cmd == COMMAND::LOAD_TRAY ||
@@ -224,7 +245,7 @@ bool Robot::checkForCmdComplete(COMMAND cmd)
     }
     else
     {
-        PLOGI.printf("Completion check not implimented for command: %i",cmd);
+        PLOGE.printf("Completion check not implimented for command: %i",cmd);
         return true;
     }
         

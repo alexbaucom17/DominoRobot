@@ -246,6 +246,11 @@ class RobotClient(ClientBase):
         msg = {'type': 'set_pose', 'data': {'x': x, 'y': y, 'a': a}}
         self.send_msg_and_wait_for_ack(msg)
 
+    def toggle_distance(self):
+        """ Tell robot to toggle distance measurement"""
+        msg = {'type': 'toggle_dist'}
+        self.send_msg_and_wait_for_ack(msg)
+
 class BaseStationClient(ClientBase):
     
     def __init__(self, cfg):
@@ -293,6 +298,9 @@ class MockRobotClient:
         pass
 
     def wait_for_localization(self):
+        pass
+
+    def toggle_distance(self):
         pass
 
 class MockBaseStationClient:
