@@ -1,14 +1,14 @@
 #include "SerialComms.h"
 
 #define NUM_SENSORS 4
-#define TRIGGER_PIN_1 11
-#define TRIGGER_PIN_2 8
-#define TRIGGER_PIN_3 5
-#define TRIGGER_PIN_4 2
-#define ECHO_PIN_1 12 
-#define ECHO_PIN_2 9 
-#define ECHO_PIN_3 6 
-#define ECHO_PIN_4 3 
+#define TRIGGER_PIN_1 36
+#define ECHO_PIN_1    37 
+#define TRIGGER_PIN_2 28
+#define ECHO_PIN_2    29
+#define TRIGGER_PIN_3 48
+#define ECHO_PIN_3    49
+#define TRIGGER_PIN_4 44
+#define ECHO_PIN_4    45 
 #define LED_PIN LED_BUILTIN
 
 #define MICROSECONDS_TO_MILLIMETERS 0.343
@@ -100,5 +100,5 @@ void loop()
             distances[i] = takeMeasurement(i);
         }
         sendDistances();
-    }
+    }    
 }
