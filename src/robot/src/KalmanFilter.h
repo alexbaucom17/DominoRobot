@@ -23,11 +23,11 @@ class KalmanFilter
         const Eigen::MatrixXd& R
     );
 
-    // Default constructor to simplify initializing in a class
-    KalmanFilter();
+    // Size only simplify initializing in a class
+    KalmanFilter(int n, int m);
 
     // Prediction step with input u
-    void predict(const Eigen::VectorXd& u)
+    void predict(const Eigen::VectorXd& u);
 
     // Update the estimated state based on measured values.
     void update(const Eigen::VectorXd& y);
@@ -39,14 +39,15 @@ class KalmanFilter
   private:
 
     // System dimensions
-    int m_, n_;
+    int n_;
+    int m_;
 
     // Matrices for computation
     Eigen::MatrixXd A_;
     Eigen::MatrixXd B_;
     Eigen::MatrixXd C_;
-    Eigen::MatrixXd K_;
     Eigen::MatrixXd I_;
+    Eigen::MatrixXd K_;
     Eigen::MatrixXd P_;
     Eigen::MatrixXd Q_;
     Eigen::MatrixXd R_;
