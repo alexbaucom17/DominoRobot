@@ -1,11 +1,11 @@
 #include "KalmanFilter.h"
 
 KalmanFilter::KalmanFilter(
-    const Eigen::MatrixXd& A,
-    const Eigen::MatrixXd& B,
-    const Eigen::MatrixXd& C,
-    const Eigen::MatrixXd& Q,
-    const Eigen::MatrixXd& R )
+    const Eigen::MatrixXf& A,
+    const Eigen::MatrixXf& B,
+    const Eigen::MatrixXf& C,
+    const Eigen::MatrixXf& Q,
+    const Eigen::MatrixXf& R )
 :  KalmanFilter(A.rows(), C.rows())
 {
     A_ = A; 
@@ -18,25 +18,25 @@ KalmanFilter::KalmanFilter(
 KalmanFilter::KalmanFilter(int n, int m) 
 : n_(n),
   m_(m),
-  A_(Eigen::MatrixXd::Identity(n,n)), 
-  B_(Eigen::MatrixXd::Zero(n,1)), 
-  C_(Eigen::MatrixXd::Zero(m,n)), 
-  I_(Eigen::MatrixXd::Identity(n,n)),
-  K_(Eigen::MatrixXd::Zero(n,m)),
-  P_(Eigen::MatrixXd::Identity(n,n)),
-  Q_(Eigen::MatrixXd::Identity(n,n)), 
-  R_(Eigen::MatrixXd::Identity(m,m)), 
-  S_(Eigen::MatrixXd::Identity(m,m)),
-  x_hat_(Eigen::VectorXd::Zero(n))
+  A_(Eigen::MatrixXf::Identity(n,n)), 
+  B_(Eigen::MatrixXf::Zero(n,n)), 
+  C_(Eigen::MatrixXf::Zero(m,n)), 
+  I_(Eigen::MatrixXf::Identity(n,n)),
+  K_(Eigen::MatrixXf::Zero(n,m)),
+  P_(Eigen::MatrixXf::Identity(n,n)),
+  Q_(Eigen::MatrixXf::Identity(n,n)), 
+  R_(Eigen::MatrixXf::Identity(m,m)), 
+  S_(Eigen::MatrixXf::Identity(m,m)),
+  x_hat_(Eigen::VectorXf::Zero(n))
 {}
 
-void KalmanFilter::predict(const Eigen::VectorXd& u)
+void KalmanFilter::predict(const Eigen::VectorXf& u)
 {
     x_hat_ = A_ * x_hat_ + B_ * u;
     P_ = A_ * P_ * A_.transpose() + Q_;
 }
 
-void KalmanFilter::update(const Eigen::VectorXd& y) 
+void KalmanFilter::update(const Eigen::VectorXf& y) 
 {
     S_ = C_ * P_ * C_.transpose() + R_;
     K_ = P_ * C_.transpose() * S_.inverse();
