@@ -29,6 +29,8 @@ class DistanceTracker : public DistanceTrackerBase
     // How long the time delay between measurements is
     int getAverageMeasurementTimeMs() override {return measurement_time_averager_.get_ms();};
 
+    std::vector<float> getRawDistances() override;
+
   private:
 
     // Handles getting measurements from serial port and parsing into number

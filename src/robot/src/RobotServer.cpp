@@ -145,6 +145,11 @@ COMMAND RobotServer::getCommand(std::string message)
             sendAck(type);
             cmd = COMMAND::WAIT_FOR_LOCALIZATION;
         }
+        else if (type == "toggle_dist")
+        {
+            sendAck(type);
+            cmd = COMMAND::TOGGLE_DISTANCE;
+        }
         else if(type == "")
         {
             printIncomingCommand(message);

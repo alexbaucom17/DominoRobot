@@ -40,6 +40,10 @@ class StatusUpdater
 
     void update_lifter_driver_connected(bool connected);
 
+    void updateRawDistances(std::vector<float> distances);
+
+    void updateDistancePose(Point pose);
+
     struct Status
     {
       // Current position and velocity
@@ -49,6 +53,15 @@ class StatusUpdater
       float vel_x;
       float vel_y;
       float vel_a;
+
+      // Distances
+      float dist_fl;
+      float dist_fr;
+      float dist_al;
+      float dist_ar;
+      float dist_x;
+      float dist_y;
+      float dist_a;
 
       // Loop times
       int controller_loop_ms;
@@ -73,6 +86,13 @@ class StatusUpdater
       vel_x(0.0),
       vel_y(0.0),
       vel_a(0.0),
+      dist_fl(0.0),
+      dist_fr(0.0),
+      dist_al(0.0),
+      dist_ar(0.0),
+      dist_x(0.0),
+      dist_y(0.0),
+      dist_a(0.0),
       controller_loop_ms(999),
       position_loop_ms(999),
       distance_loop_ms(999),
@@ -88,7 +108,7 @@ class StatusUpdater
       std::string toJsonString()
       {
         // Size the object correctly
-        const size_t capacity = JSON_OBJECT_SIZE(25); // Update when adding new fields
+        const size_t capacity = JSON_OBJECT_SIZE(30); // Update when adding new fields
         DynamicJsonDocument root(capacity);
 
         // Format to match messages sent by server
@@ -102,6 +122,13 @@ class StatusUpdater
         doc["vel_x"] = vel_x;
         doc["vel_y"] = vel_y;
         doc["vel_a"] = vel_a;
+        doc["dist_fl"] = dist_fl;
+        doc["dist_fr"] = dist_fr;
+        doc["dist_al"] = dist_al;
+        doc["dist_ar"] = dist_ar;
+        doc["dist_x"] = dist_x;
+        doc["dist_y"] = dist_y;
+        doc["dist_a"] = dist_a;
         doc["controller_loop_ms"] = controller_loop_ms;
         doc["position_loop_ms"] = position_loop_ms;
         doc["distance_loop_ms"] = distance_loop_ms;
@@ -127,6 +154,10 @@ class StatusUpdater
 
   private:
     Status currentStatus_;
+    int fwd_left_id_;
+    int fwd_right_id_;
+    int angled_left_id_;
+    int angled_right_id_;
 
 };
 

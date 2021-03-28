@@ -11,7 +11,8 @@ RobotControllerModeDistance::RobotControllerModeDistance(bool fake_perfect_motio
   current_target_(),
   distance_tracker_(DistanceTrackerFactory::getFactoryInstance()->get_distance_tracker()),
   move_started_for_real_(false),
-  move_start_delay_sec_(1.0)
+  move_start_delay_sec_(1.0),
+  traj_done_timer_()
 {
     distance_tolerances_.trans_pos_err = cfg.lookup("motion.translation.position_threshold.fine");
     distance_tolerances_.ang_pos_err = cfg.lookup("motion.rotation.position_threshold.fine");
@@ -19,16 +20,16 @@ RobotControllerModeDistance::RobotControllerModeDistance(bool fake_perfect_motio
     distance_tolerances_.ang_vel_err = cfg.lookup("motion.rotation.velocity_threshold.fine");
 
     PositionController::Gains position_gains;
-    position_gains.kp = cfg.lookup("motion.translation.gains.kp");
-    position_gains.ki = cfg.lookup("motion.translation.gains.ki");
-    position_gains.kd = cfg.lookup("motion.translation.gains.kd");
+    position_gains.kp = cfg.lookup("motion.translation.gains_distance.kp");
+    position_gains.ki = cfg.lookup("motion.translation.gains_distance.ki");
+    position_gains.kd = cfg.lookup("motion.translation.gains_distance.kd");
     x_controller_ = PositionController(position_gains);
     y_controller_ = PositionController(position_gains);
 
     PositionController::Gains angle_gains;
-    angle_gains.kp = cfg.lookup("motion.rotation.gains.kp");
-    angle_gains.ki = cfg.lookup("motion.rotation.gains.ki");
-    angle_gains.kd = cfg.lookup("motion.rotation.gains.kd");
+    angle_gains.kp = cfg.lookup("motion.rotation.gains_distance.kp");
+    angle_gains.ki = cfg.lookup("motion.rotation.gains_distance.ki");
+    angle_gains.kd = cfg.lookup("motion.rotation.gains_distance.kd");
     a_controller_ = PositionController(angle_gains);
 }
 
@@ -38,6 +39,7 @@ bool RobotControllerModeDistance::startMove(Point goal_distance)
     // So we will 'start' the move, but not actually start moving for a short period of time.
     goal_distance_ = goal_distance;
     distance_tracker_->start();
+    traj_done_timer_.reset();
     RobotControllerModeBase::startMove();
     return true;
 }
@@ -86,7 +88,7 @@ Velocity RobotControllerModeDistance::computeTargetVelocity(Point current_positi
     Velocity output_global;
     output_global.vx = -1 * (cos(current_position.a) * output_local.vx - sin(current_position.a) * output_local.vy);
     output_global.vy = -1 * (sin(current_position.a) * output_local.vx + cos(current_position.a) * output_local.vy);
-    output_global.va = -1 * output_local.va;
+    output_global.va = output_local.va;
 
     return output_global;
 }
@@ -109,13 +111,18 @@ bool RobotControllerModeDistance::checkForMoveComplete(Point current_position, V
 
     // Trajectory is done when we aren't commanding any velocity, our both our actual velocity and
     // position are within the correct tolerance.
-    bool traj_complete = zero_cmd_vel && vel_in_tolerance && pos_in_tolerance;
+    bool maybe_traj_complete = zero_cmd_vel && vel_in_tolerance && pos_in_tolerance;
 
-    if(traj_complete) 
+    if (!maybe_traj_complete) traj_done_timer_.reset();
+    else PLOGI_(MOTION_LOG_ID) << "Dist move maybe done";
+
+    if(maybe_traj_complete && traj_done_timer_.dt_s() > 0.5) 
     {
         move_running_ = false;
+        PLOGI_(MOTION_LOG_ID) << "Dist move done";
         distance_tracker_->stop();
+        return true;  
     }
 
-    return traj_complete;  
+    return false;  
 }

@@ -30,6 +30,8 @@ class DistanceTrackerMock : public DistanceTrackerBase
     // How long the time delay between measurements is
     int getAverageMeasurementTimeMs() override {return 0;};
 
+    std::vector<float> getRawDistances() override {return {0,0,0,0};};
+
   private:
 
     bool running_;

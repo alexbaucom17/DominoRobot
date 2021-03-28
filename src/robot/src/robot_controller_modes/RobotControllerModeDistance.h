@@ -30,6 +30,7 @@ class RobotControllerModeDistance : public RobotControllerModeBase
     DistanceTrackerBase* distance_tracker_;
     bool move_started_for_real_;
     float move_start_delay_sec_;
+    Timer traj_done_timer_;
 
     TrajectoryTolerances distance_tolerances_;
 

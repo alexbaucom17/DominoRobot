@@ -25,6 +25,8 @@ class DistanceTrackerBase
 
     // How long the time delay between measurements is
     virtual int getAverageMeasurementTimeMs() = 0;
+
+    virtual std::vector<float> getRawDistances() = 0;
 };
 
 #endif //DistanceTrackerBase_h

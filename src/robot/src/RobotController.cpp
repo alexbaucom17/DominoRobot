@@ -139,6 +139,7 @@ void RobotController::update()
         {
             PLOGI.printf("Reached goal");
             PLOGD_(MOTION_LOG_ID) << "Trajectory complete";
+            target_vel = {0,0,0};
             disableAllMotors();
             trajRunning_ = false;
             // Re-enable fine mode at the end of a trajectory
