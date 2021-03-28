@@ -64,8 +64,6 @@ class Localization
     CircularBuffer<float> reading_validity_buffer_;
     bool use_kf_;
     KalmanFilter kf_;
-
-
 };
 
 #endif //Localization_h

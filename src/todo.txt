@@ -1,9 +1,7 @@
 
 Robot SW:
-- Convert localization to KalmanFilter
 - Fix whatever bug is going on with fine motion not working
 - Distance tracking
-    - Convert to kalman filter
     - Fix distance controller oscillation
 - Update file logger to include timestamps
     - Fix pi datetime

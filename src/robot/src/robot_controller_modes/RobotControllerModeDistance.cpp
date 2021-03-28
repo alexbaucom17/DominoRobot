@@ -12,7 +12,8 @@ RobotControllerModeDistance::RobotControllerModeDistance(bool fake_perfect_motio
   distance_tracker_(DistanceTrackerFactory::getFactoryInstance()->get_distance_tracker()),
   move_started_for_real_(false),
   move_start_delay_sec_(1.0),
-  traj_done_timer_()
+  traj_done_timer_(),
+  kf_(3,3)
 {
     distance_tolerances_.trans_pos_err = cfg.lookup("motion.translation.position_threshold.fine");
     distance_tolerances_.ang_pos_err = cfg.lookup("motion.rotation.position_threshold.fine");
@@ -31,6 +32,16 @@ RobotControllerModeDistance::RobotControllerModeDistance(bool fake_perfect_motio
     angle_gains.ki = cfg.lookup("motion.rotation.gains_distance.ki");
     angle_gains.kd = cfg.lookup("motion.rotation.gains_distance.kd");
     a_controller_ = PositionController(angle_gains);
+
+    Eigen::MatrixXf A = Eigen::MatrixXf::Identity(3,3);
+    Eigen::MatrixXf B = Eigen::MatrixXf::Identity(3,3);
+    Eigen::MatrixXf C = Eigen::MatrixXf::Identity(3,3);
+    Eigen::MatrixXf Q = Eigen::MatrixXf::Identity(3,3);
+    Eigen::MatrixXf R(3,3);
+    R << cfg.lookup("motion.translation.distance_kf_cov"),0,0, 
+         0,cfg.lookup("motion.translation.distance_kf_cov"),0,
+         0,0,cfg.lookup("motion.rotation.distance_kf_cov");
+    kf_ = KalmanFilter(A,B,C,Q,R);
 }
 
 bool RobotControllerModeDistance::startMove(Point goal_distance)
@@ -57,18 +68,36 @@ Velocity RobotControllerModeDistance::computeTargetVelocity(Point current_positi
     if(move_start_timer_.dt_s() < move_start_delay_sec_) return {0,0,0};
     else if (!move_started_for_real_) actuallyStartTheMove();
     
-    // Get current target position and velocity according to the trajectory
+    // Get current target global position and global velocity according to the trajectory
     float dt_from_traj_start = move_start_timer_.dt_s() - move_start_delay_sec_;
     PVTPoint current_target_ = traj_gen_.lookup(dt_from_traj_start);
 
-    // Get the current distance measurements from the sensors
-    current_distance_ = distance_tracker_->getDistancePose();
+    // Get previous loop time
+    float dt_since_last_loop = loop_timer_.dt_s();
+    loop_timer_.reset();
+
+    // Convert global velocity into local relative velocity and use it to predict the filter
+    // Need to flip the velocity sign because the distance frame is techncially flipped
+    Eigen::Vector3f local_vel;
+    local_vel[0] = -1 * (cos(current_position.a) * current_velocity.vx + sin(current_position.a) * current_velocity.vy);
+    local_vel[1] = -1 * (sin(current_position.a) * current_velocity.vx + cos(current_position.a) * current_velocity.vy);
+    local_vel[2] = -1 * current_velocity.va;
+    Eigen::Vector3f udt = local_vel * dt_since_last_loop;
+    kf_.predict(udt);
+
+    // Get the current distance measurements from the sensors and update the filter
+    Point measured_distance = distance_tracker_->getDistancePose();
+    Eigen::Vector3f dist_vec = {measured_distance.x,measured_distance.y,measured_distance.a};
+    kf_.update(dist_vec);
+    Eigen::VectorXf state = kf_.state();
+    current_distance_ = {state[0], state[1], state[2]};
 
     // Print motion estimates to log
     PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "\nTarget: " << current_target_.toString();
     PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "Est Vel: " << current_velocity.toString();
     PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "Est Dist: " << current_distance_.toString();
 
+    // Compute control
     Velocity output_local;
     if(fake_perfect_motion_)
     {
@@ -76,11 +105,9 @@ Velocity RobotControllerModeDistance::computeTargetVelocity(Point current_positi
     }
     else
     {
-        float dt_since_last_loop = loop_timer_.dt_s();
-        loop_timer_.reset();
-        output_local.vx =  x_controller_.compute(current_target_.position.x, current_distance_.x, current_target_.velocity.vx, current_velocity.vx, dt_since_last_loop);
-        output_local.vy =  y_controller_.compute(current_target_.position.y, current_distance_.y, current_target_.velocity.vy, current_velocity.vy, dt_since_last_loop);
-        output_local.va =  a_controller_.compute(current_target_.position.a, current_distance_.a, current_target_.velocity.va, current_velocity.va, dt_since_last_loop);
+        output_local.vx =  x_controller_.compute(current_target_.position.x, current_distance_.x, current_target_.velocity.vx, local_vel[0], dt_since_last_loop);
+        output_local.vy =  y_controller_.compute(current_target_.position.y, current_distance_.y, current_target_.velocity.vy, local_vel[1], dt_since_last_loop);
+        output_local.va =  a_controller_.compute(current_target_.position.a, current_distance_.a, current_target_.velocity.va, local_vel[2], dt_since_last_loop);
     }
 
     // Need to flip the velocity sign because the distance frame is techncially flipped
@@ -88,7 +115,7 @@ Velocity RobotControllerModeDistance::computeTargetVelocity(Point current_positi
     Velocity output_global;
     output_global.vx = -1 * (cos(current_position.a) * output_local.vx - sin(current_position.a) * output_local.vy);
     output_global.vy = -1 * (sin(current_position.a) * output_local.vx + cos(current_position.a) * output_local.vy);
-    output_global.va = output_local.va;
+    output_global.va = -1 * output_local.va;
 
     return output_global;
 }
