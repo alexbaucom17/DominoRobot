@@ -1,34 +1,17 @@
 
-Robot controller:
-- Experimental localization ideas
-    - Use marvelmind during motion by measuring and compensating for latency
-        - Try disabling the various filtering windows to see what sort of latency reduction I can get. Note that this probably will come with an accuracy tradeoff. So maybe I impliment some sort of mode switch on my end to filter sometimes for more accuracy and not other times to get better speed.
-        - Could set up some sort of 'latency calibration' experiment and if the latency is consistent enough, this might be usable
-        - May also be able to find into about how much latency to expect with various marvelmind settings
-    - Use ultrasonic distance sensors to measure relative position
-        - These are cheap and should be easy to use.
-        - Might have interference with marvelmind
-        - Rated accuracy is ~3mm, but need to test if that will work with the spaced out domino configuration
-    - Use depth camera (like Astra)
-        - A little bit more expensive to buy, but adds a lot of complexity to setup (drivers/sdk/processing/etc.)
-        - Could maybe do something like only take a single depth line out of the image and treat it like a lidar for simplicity
-        - Need some specialized line/plane fitting algorithms to figure out distance to dominos
-        - Need to investigate installation and cpu/memory load of astra sdk and pcl.
-        - Rated accuracy looks to be about 1-3mm
-
 Robot SW:
 - Convert localization to KalmanFilter
 - Fix whatever bug is going on with fine motion not working
 - Distance tracking
     - Convert to kalman filter
-    - Add vertical blinders to sensors
-    - lower us sensors by 1 cm (make adjustable?)
-    - Make angle adjustable
     - Fix distance controller oscillation
 - Update file logger to include timestamps
     - Fix pi datetime
 
 Robot HW:
+- Add vertical blinders to sensors
+- lower us sensors by 1 cm (make adjustable?)
+- Make angle adjustable
 
 Master:
 - Fix that missing ack doesn't skip action
@@ -38,6 +21,19 @@ Base station HW:
 
 Purchase:
 
+
+Hardware info
+- Approx Dimensions:
+    - Distance between mm pair on robot - 570mm, dist from front - 245mm
+    - Wheel mount to center of wheel: FL: 44mm FR: 43mm RC: 44mm
+- Exact values from Josh:
+    - Center of rotation - 12 in from sides, 7.5 in from front of frame
+    - Wheel mounts - 14.22 in from COR to front face of wheel mounts
+- Controller battery - 2x 11.V battery - min safe charge voltage is ~21V
+- Other Dimensions
+    - Between tray and 80/20 - 7.5 cm
+    - Back of tray to dominos is 12 cm
+    - usable width for us offsets - 6-28cm
 
 Marvelmind notes:
     - About 70-80% of the time, accuracy looks great, but the rest of the time, the positions jump around wildly
@@ -68,15 +64,18 @@ Marvelmind notes:
     Additional questions with super beacons
         Pairing them seems to make the positions incorrect. Unpairing them resets to correct distance between
 
-Hardware info
-- Approx Dimensions:
-    - Distance between mm pair on robot - 570mm, dist from front - 245mm
-    - Wheel mount to center of wheel: FL: 44mm FR: 43mm RC: 44mm
-- Exact values from Josh:
-    - Center of rotation - 12 in from sides, 7.5 in from front of frame
-    - Wheel mounts - 14.22 in from COR to front face of wheel mounts
-- Controller battery - 2x 11.V battery - min safe charge voltage is ~21V
-- Other Dimensions
-    - Between tray and 80/20 - 7.5 cm
-    - Back of tray to dominos is 12 cm
-    - usable width for us offsets - 6-28cm
+- Experimental localization ideas
+    - Use marvelmind during motion by measuring and compensating for latency
+        - Try disabling the various filtering windows to see what sort of latency reduction I can get. Note that this probably will come with an accuracy tradeoff. So maybe I impliment some sort of mode switch on my end to filter sometimes for more accuracy and not other times to get better speed.
+        - Could set up some sort of 'latency calibration' experiment and if the latency is consistent enough, this might be usable
+        - May also be able to find into about how much latency to expect with various marvelmind settings
+    - Use ultrasonic distance sensors to measure relative position
+        - These are cheap and should be easy to use.
+        - Might have interference with marvelmind
+        - Rated accuracy is ~3mm, but need to test if that will work with the spaced out domino configuration
+    - Use depth camera (like Astra)
+        - A little bit more expensive to buy, but adds a lot of complexity to setup (drivers/sdk/processing/etc.)
+        - Could maybe do something like only take a single depth line out of the image and treat it like a lidar for simplicity
+        - Need some specialized line/plane fitting algorithms to figure out distance to dominos
+        - Need to investigate installation and cpu/memory load of astra sdk and pcl.
+        - Rated accuracy looks to be about 1-3mm
