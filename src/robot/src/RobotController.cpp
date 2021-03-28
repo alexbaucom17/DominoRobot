@@ -258,7 +258,7 @@ void RobotController::computeOdometry()
     Velocity zero = {0,0,0};
     if(trajRunning_ || !(local_cart_vel == zero))
     {
-        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_).printf("Decoded velocity: %.3f, %.3f, %.3f", local_cart_vel.vx, local_cart_vel.vy, local_cart_vel.va);
+        PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_).printf("Decoded velocity: %.3f, %.3f, %.3f\n", local_cart_vel.vx, local_cart_vel.vy, local_cart_vel.va);
     }
 
     // Compute time since last odom update

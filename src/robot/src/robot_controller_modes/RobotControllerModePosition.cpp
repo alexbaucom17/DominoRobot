@@ -48,7 +48,7 @@ Velocity RobotControllerModePosition::computeTargetVelocity(Point current_positi
     current_target_ = traj_gen_.lookup(dt_from_traj_start);
 
     // Print motion estimates to log
-    PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "\nTarget: " << current_target_.toString();
+    PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "Target: " << current_target_.toString();
     PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "Est Vel: " << current_velocity.toString();
     PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "Est Pos: " << current_position.toString();
     

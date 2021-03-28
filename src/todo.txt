@@ -3,13 +3,8 @@ Robot SW:
 - Fix whatever bug is going on with fine motion not working
 - Distance tracking
     - Fix distance controller oscillation
-- Update file logger to include timestamps
-    - Fix pi datetime
 
 Robot HW:
-- Add vertical blinders to sensors
-- lower us sensors by 1 cm (make adjustable?)
-- Make angle adjustable
 
 Master:
 - Fix that missing ack doesn't skip action

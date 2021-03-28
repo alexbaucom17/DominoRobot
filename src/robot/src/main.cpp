@@ -31,11 +31,11 @@ void configure_logger()
     plog::init(plog::info, &fileAppender).addAppender(&consoleAppender); 
 
     // Initialize motion logs to go to file
-    static plog::RollingFileAppender<plog::MessageOnlyFormatter> motionFileAppender(motion_log_file_name.c_str(), 1000000, 5);
+    static plog::RollingFileAppender<plog::TxtFormatter> motionFileAppender(motion_log_file_name.c_str(), 1000000, 5);
     plog::init<MOTION_LOG_ID>(plog::debug, &motionFileAppender);
 
     // Initialize localization logs to go to file
-    static plog::RollingFileAppender<plog::MessageOnlyFormatter> localizationFileAppender(localization_log_file_name.c_str(), 1000000, 5);
+    static plog::RollingFileAppender<plog::TxtFormatter> localizationFileAppender(localization_log_file_name.c_str(), 1000000, 5);
     plog::init<LOCALIZATION_LOG_ID>(plog::debug, &localizationFileAppender);
 
     PLOGI << "Logger ready";
