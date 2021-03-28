@@ -1,14 +1,18 @@
 
 Robot SW:
 - Fix whatever bug is going on with fine motion not working
+- Fix unknown command bug for toggle distacne?
 - Distance tracking
-    - Fix distance controller oscillation
+    - Ensure that start signal is resent every few seconds while distance is running
+    - Continue to imporve controller performance
+    - Increase robustness to noisy data
 
 Robot HW:
 
 Master:
 - Fix that missing ack doesn't skip action
 - Fix plan abort to not unload current plan
+- Fix move/current action disappearing from dashboard
 
 Base station HW:
 
