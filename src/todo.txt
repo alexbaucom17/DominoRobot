@@ -84,3 +84,9 @@ Marvelmind notes:
         - Need some specialized line/plane fitting algorithms to figure out distance to dominos
         - Need to investigate installation and cpu/memory load of astra sdk and pcl.
         - Rated accuracy looks to be about 1-3mm
+
+Side facing us sensor holder Dimensions
+- Height from ground side bar - 14.2cm
+- Total length available ~49 cm
+- Depth from next dominos ~15cm
+- (Make sure to measure accuracy/noise at correct range with domino spacing)
