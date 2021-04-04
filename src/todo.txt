@@ -1,6 +1,7 @@
 
 Robot SW:
-- Fix whatever bug is going on with fine motion not working
+- Fix fine motion to use kf with vel adjustment
+- Swap to only kf for localization
 - Fix unknown command bug for toggle distacne?
 - Distance tracking
     - Ensure that start signal is resent every few seconds while distance is running
@@ -10,7 +11,7 @@ Robot SW:
 Robot HW:
 
 Master:
-- Fix that missing ack doesn't skip action
+- Fix that missing ack skips current action during plan
 - Fix plan abort to not unload current plan
 - Fix move/current action disappearing from dashboard
 
@@ -26,7 +27,14 @@ Hardware info
 - Exact values from Josh:
     - Center of rotation - 12 in from sides, 7.5 in from front of frame
     - Wheel mounts - 14.22 in from COR to front face of wheel mounts
-- Controller battery - 2x 11.V battery - min safe charge voltage is ~21V
+- Controller battery 
+    - 2x 11.1V battery in series for 3x2.7V=22.2V 
+    - Min safe voltage is 3.4Vx6 = 20.5V 
+- Base battery 
+    - 2x 25.2V battery - 6x4.2V
+        - Min safe voltage is 3.4Vx6 = 20.4 V
+    - 2x 29.4V battery - 7x4.2V
+        - Min safe voltage is 3.4Vx7 = 23.8 V
 - Other Dimensions
     - Between tray and 80/20 - 7.5 cm
     - Back of tray to dominos is 12 cm
