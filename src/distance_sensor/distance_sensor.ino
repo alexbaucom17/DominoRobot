@@ -13,7 +13,7 @@
 
 #define MICROSECONDS_TO_MILLIMETERS 0.343
 #define PULSE_IN_TIMEOUT_US 100000
-#define US_TIMEOUT_SEC 30
+#define US_TIMEOUT_SEC 3000
 
 SerialComms comm(Serial);
 int distances[NUM_SENSORS];
@@ -73,7 +73,7 @@ void sendDistances()
     comm.send(msg);
 
    // For debugging
-//   Serial.println(' ');
+   Serial.println(' ');
 }
 
 

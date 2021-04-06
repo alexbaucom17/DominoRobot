@@ -7,6 +7,9 @@ Robot SW:
     - Ensure that start signal is resent every few seconds while distance is running
     - Continue to imporve controller performance
     - Increase robustness to noisy data
+        - Tentative plan - use 2x front, 2x side
+        - Side ones measure dist and angle since they are less likely to have issues with lifter
+        - Front ones both measure distacne, can try to come up with a way to chuck out bad data from one if it isn't reliable
 
 Robot HW:
 
@@ -87,6 +90,14 @@ Marvelmind notes:
 
 Side facing us sensor holder Dimensions
 - Height from ground side bar - 14.2cm
+    - Lower height by ~2.5 cm
 - Total length available ~49 cm
 - Depth from next dominos ~15cm
-- (Make sure to measure accuracy/noise at correct range with domino spacing)
+- (Make sure to measure accuracy/noise at correct range with domino spacing) 
+
+Requests for shop
+- Fixed table
+- Chair
+- Rolling table (show example)
+- Internet
+- Drop in T nuts for 80/20
