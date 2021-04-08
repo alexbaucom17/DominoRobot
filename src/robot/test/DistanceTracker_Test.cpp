@@ -39,23 +39,23 @@ TEST_CASE("DistanceTracker stop", "[distance]")
 
 TEST_CASE("DistanceTracker nominal", "[distance]")
 {
-    constexpr float left_fwd_offset = 0.1;
-    constexpr float right_fwd_offset = - 0.1;
-    constexpr float left_angle_offset = 0.1;
-    constexpr float right_angle_offset = - 0.1;
+    constexpr float fwd_left_offset = 0.1;
+    constexpr float fwd_right_offset = - 0.1;
+    constexpr float side_front_offset = 0.1;
+    constexpr float side_back_offset = - 0.1;
     constexpr float angle_from_fwd_degrees = -45;
     constexpr float angle_from_fwd_radians = angle_from_fwd_degrees * M_PI / 180.0;
     
     // Ensure config is known
     SafeConfigModifier<int> config_modifier_1("distance_tracker.mapping.fwd_left", 0);
     SafeConfigModifier<int> config_modifier_2("distance_tracker.mapping.fwd_right", 1);
-    SafeConfigModifier<int> config_modifier_3("distance_tracker.mapping.angled_left", 2);
-    SafeConfigModifier<int> config_modifier_4("distance_tracker.mapping.angled_right", 3);
+    SafeConfigModifier<int> config_modifier_3("distance_tracker.mapping.side_front", 2);
+    SafeConfigModifier<int> config_modifier_4("distance_tracker.mapping.side_back", 3);
     SafeConfigModifier<float> config_modifier_5("distance_tracker.dimensions.angle_from_fwd_degrees", angle_from_fwd_degrees);
-    SafeConfigModifier<float> config_modifier_6("distance_tracker.dimensions.left_fwd_offset", left_fwd_offset);
-    SafeConfigModifier<float> config_modifier_7("distance_tracker.dimensions.right_fwd_offset", right_fwd_offset);
-    SafeConfigModifier<float> config_modifier_8("distance_tracker.dimensions.left_angle_offset", left_angle_offset);
-    SafeConfigModifier<float> config_modifier_9("distance_tracker.dimensions.right_angle_offset", right_angle_offset);
+    SafeConfigModifier<float> config_modifier_6("distance_tracker.dimensions.fwd_left_offset", fwd_left_offset);
+    SafeConfigModifier<float> config_modifier_7("distance_tracker.dimensions.fwd_right_offset", fwd_right_offset);
+    SafeConfigModifier<float> config_modifier_8("distance_tracker.dimensions.side_front_offset", side_front_offset);
+    SafeConfigModifier<float> config_modifier_9("distance_tracker.dimensions.side_back_offset", side_back_offset);
     SafeConfigModifier<int> config_modifier_10("distance_tracker.num_sensors", 4);
     SafeConfigModifier<int> config_modifier_11("distance_tracker.samples_to_average", 10);
 
@@ -73,9 +73,9 @@ TEST_CASE("DistanceTracker nominal", "[distance]")
 
     // Compute required distances from target pose
     auto [d1_fwd, d2_fwd] = pairedDistFromDistAngleFront(
-        target_pose.x, target_pose.a, left_fwd_offset, right_fwd_offset);
+        target_pose.x, target_pose.a, fwd_left_offset, fwd_right_offset);
     auto [d1_ang, d2_ang] = pairedDistFromDistAngleSide(
-        target_pose.y, target_pose.a, left_angle_offset, right_angle_offset, angle_from_fwd_radians);
+        target_pose.y, target_pose.a, side_front_offset, side_back_offset, angle_from_fwd_radians);
     // Put distances in string to simulate message from sensors
     char buff[100];
     snprintf(buff, sizeof(buff), "dist:%i,%i,%i,%i,",
@@ -100,23 +100,23 @@ TEST_CASE("DistanceTracker nominal", "[distance]")
 
 TEST_CASE("DistanceTracker angled", "[distance]")
 {
-    constexpr float left_fwd_offset = 0.1;
-    constexpr float right_fwd_offset = - 0.1;
-    constexpr float left_angle_offset = 0.1;
-    constexpr float right_angle_offset = - 0.1;
+    constexpr float fwd_left_offset = 0.1;
+    constexpr float fwd_right_offset = - 0.1;
+    constexpr float side_front_offset = 0.1;
+    constexpr float side_back_offset = - 0.1;
     constexpr float angle_from_fwd_degrees = -45;
     constexpr float angle_from_fwd_radians = angle_from_fwd_degrees * M_PI / 180.0;
     
     // Ensure config is known
     SafeConfigModifier<int> config_modifier_1("distance_tracker.mapping.fwd_left", 0);
     SafeConfigModifier<int> config_modifier_2("distance_tracker.mapping.fwd_right", 1);
-    SafeConfigModifier<int> config_modifier_3("distance_tracker.mapping.angled_left", 2);
-    SafeConfigModifier<int> config_modifier_4("distance_tracker.mapping.angled_right", 3);
+    SafeConfigModifier<int> config_modifier_3("distance_tracker.mapping.side_front", 2);
+    SafeConfigModifier<int> config_modifier_4("distance_tracker.mapping.side_back", 3);
     SafeConfigModifier<float> config_modifier_5("distance_tracker.dimensions.angle_from_fwd_degrees", angle_from_fwd_degrees);
-    SafeConfigModifier<float> config_modifier_6("distance_tracker.dimensions.left_fwd_offset", left_fwd_offset);
-    SafeConfigModifier<float> config_modifier_7("distance_tracker.dimensions.right_fwd_offset", right_fwd_offset);
-    SafeConfigModifier<float> config_modifier_8("distance_tracker.dimensions.left_angle_offset", left_angle_offset);
-    SafeConfigModifier<float> config_modifier_9("distance_tracker.dimensions.right_angle_offset", right_angle_offset);
+    SafeConfigModifier<float> config_modifier_6("distance_tracker.dimensions.fwd_left_offset", fwd_left_offset);
+    SafeConfigModifier<float> config_modifier_7("distance_tracker.dimensions.fwd_right_offset", fwd_right_offset);
+    SafeConfigModifier<float> config_modifier_8("distance_tracker.dimensions.side_front_offset", side_front_offset);
+    SafeConfigModifier<float> config_modifier_9("distance_tracker.dimensions.side_back_offset", side_back_offset);
     SafeConfigModifier<int> config_modifier_10("distance_tracker.num_sensors", 4);
     SafeConfigModifier<int> config_modifier_11("distance_tracker.samples_to_average", 10);
 
@@ -134,9 +134,9 @@ TEST_CASE("DistanceTracker angled", "[distance]")
 
     // Compute required distances from target pose
     auto [d1_fwd, d2_fwd] = pairedDistFromDistAngleFront(
-        target_pose.x, target_pose.a, left_fwd_offset, right_fwd_offset);
+        target_pose.x, target_pose.a, fwd_left_offset, fwd_right_offset);
     auto [d1_ang, d2_ang] = pairedDistFromDistAngleSide(
-        target_pose.y, target_pose.a, left_angle_offset, right_angle_offset, angle_from_fwd_radians);
+        target_pose.y, target_pose.a, side_front_offset, side_back_offset, angle_from_fwd_radians);
     // Put distances in string to simulate message from sensors
     char buff[100];
     snprintf(buff, sizeof(buff), "dist:%i,%i,%i,%i,",
@@ -161,23 +161,23 @@ TEST_CASE("DistanceTracker angled", "[distance]")
 
 TEST_CASE("DistanceTracker angled2", "[distance]")
 {
-    constexpr float left_fwd_offset = 0.1;
-    constexpr float right_fwd_offset = - 0.1;
-    constexpr float left_angle_offset = 0.1;
-    constexpr float right_angle_offset = - 0.1;
+    constexpr float fwd_left_offset = 0.1;
+    constexpr float fwd_right_offset = - 0.1;
+    constexpr float side_front_offset = 0.1;
+    constexpr float side_back_offset = - 0.1;
     constexpr float angle_from_fwd_degrees = -45;
     constexpr float angle_from_fwd_radians = angle_from_fwd_degrees * M_PI / 180.0;
     
     // Ensure config is known
     SafeConfigModifier<int> config_modifier_1("distance_tracker.mapping.fwd_left", 0);
     SafeConfigModifier<int> config_modifier_2("distance_tracker.mapping.fwd_right", 1);
-    SafeConfigModifier<int> config_modifier_3("distance_tracker.mapping.angled_left", 2);
-    SafeConfigModifier<int> config_modifier_4("distance_tracker.mapping.angled_right", 3);
+    SafeConfigModifier<int> config_modifier_3("distance_tracker.mapping.side_front", 2);
+    SafeConfigModifier<int> config_modifier_4("distance_tracker.mapping.side_back", 3);
     SafeConfigModifier<float> config_modifier_5("distance_tracker.dimensions.angle_from_fwd_degrees", angle_from_fwd_degrees);
-    SafeConfigModifier<float> config_modifier_6("distance_tracker.dimensions.left_fwd_offset", left_fwd_offset);
-    SafeConfigModifier<float> config_modifier_7("distance_tracker.dimensions.right_fwd_offset", right_fwd_offset);
-    SafeConfigModifier<float> config_modifier_8("distance_tracker.dimensions.left_angle_offset", left_angle_offset);
-    SafeConfigModifier<float> config_modifier_9("distance_tracker.dimensions.right_angle_offset", right_angle_offset);
+    SafeConfigModifier<float> config_modifier_6("distance_tracker.dimensions.fwd_left_offset", fwd_left_offset);
+    SafeConfigModifier<float> config_modifier_7("distance_tracker.dimensions.fwd_right_offset", fwd_right_offset);
+    SafeConfigModifier<float> config_modifier_8("distance_tracker.dimensions.side_front_offset", side_front_offset);
+    SafeConfigModifier<float> config_modifier_9("distance_tracker.dimensions.side_back_offset", side_back_offset);
     SafeConfigModifier<int> config_modifier_10("distance_tracker.num_sensors", 4);
     SafeConfigModifier<int> config_modifier_11("distance_tracker.samples_to_average", 10);
 
@@ -195,9 +195,9 @@ TEST_CASE("DistanceTracker angled2", "[distance]")
 
     // Compute required distances from target pose
     auto [d1_fwd, d2_fwd] = pairedDistFromDistAngleFront(
-        target_pose.x, target_pose.a, left_fwd_offset, right_fwd_offset);
+        target_pose.x, target_pose.a, fwd_left_offset, fwd_right_offset);
     auto [d1_ang, d2_ang] = pairedDistFromDistAngleSide(
-        target_pose.y, target_pose.a, left_angle_offset, right_angle_offset, angle_from_fwd_radians);
+        target_pose.y, target_pose.a, side_front_offset, side_back_offset, angle_from_fwd_radians);
     // Put distances in string to simulate message from sensors
     char buff[100];
     snprintf(buff, sizeof(buff), "dist:%i,%i,%i,%i,",

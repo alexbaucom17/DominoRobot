@@ -156,8 +156,8 @@ class StatusUpdater
     Status currentStatus_;
     int fwd_left_id_;
     int fwd_right_id_;
-    int angled_left_id_;
-    int angled_right_id_;
+    int side_front_id_;
+    int side_back_id_;
 
 };
 

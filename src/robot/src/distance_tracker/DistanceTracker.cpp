@@ -15,13 +15,13 @@ DistanceTracker::DistanceTracker()
   kf_(3,3),
   fwd_left_id_(cfg.lookup("distance_tracker.mapping.fwd_left")),
   fwd_right_id_(cfg.lookup("distance_tracker.mapping.fwd_right")),
-  angled_left_id_(cfg.lookup("distance_tracker.mapping.angled_left")),
-  angled_right_id_(cfg.lookup("distance_tracker.mapping.angled_right")),
+  side_front_id_(cfg.lookup("distance_tracker.mapping.side_front")),
+  side_back_id_(cfg.lookup("distance_tracker.mapping.side_back")),
   angle_from_fwd_radians_(static_cast<float>(cfg.lookup("distance_tracker.dimensions.angle_from_fwd_degrees"))*M_PI/180.0),
-  left_fwd_offset_(cfg.lookup("distance_tracker.dimensions.left_fwd_offset")),               
-  right_fwd_offset_(cfg.lookup("distance_tracker.dimensions.right_fwd_offset")),   
-  left_angle_offset_(cfg.lookup("distance_tracker.dimensions.left_angle_offset")),   
-  right_angle_offset_(cfg.lookup("distance_tracker.dimensions.right_angle_offset")),   
+  fwd_left_offset_(cfg.lookup("distance_tracker.dimensions.fwd_left_offset")),               
+  fwd_right_offset_(cfg.lookup("distance_tracker.dimensions.fwd_right_offset")),   
+  side_front_offset_(cfg.lookup("distance_tracker.dimensions.side_front_offset")),   
+  side_back_offset_(cfg.lookup("distance_tracker.dimensions.side_back_offset")),   
   num_sensors_(cfg.lookup("distance_tracker.num_sensors"))
 {
     for (uint i = 0; i < num_sensors_; i++)
@@ -122,12 +122,12 @@ void DistanceTracker::computePoseFromDistances()
 
     // Using forward measurements
     auto [x_dist, fwd_angle] = distAndAngleFromPairedDistanceFront(
-        mean_distances[fwd_left_id_], left_fwd_offset_, 
-        mean_distances[fwd_right_id_], right_fwd_offset_);
+        mean_distances[fwd_left_id_], fwd_left_offset_, 
+        mean_distances[fwd_right_id_], fwd_right_offset_);
 
     auto [y_dist, side_angle] = distAndAngleFromPairedDistanceSide(
-        mean_distances[angled_left_id_], left_angle_offset_, angle_from_fwd_radians_, 
-        mean_distances[angled_right_id_], right_angle_offset_, angle_from_fwd_radians_);
+        mean_distances[side_front_id_], side_front_offset_, angle_from_fwd_radians_, 
+        mean_distances[side_back_id_], side_back_offset_, angle_from_fwd_radians_);
 
     // Grab final measurements
     // X dist is from forward sensors

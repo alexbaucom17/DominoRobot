@@ -50,13 +50,13 @@ class DistanceTracker : public DistanceTrackerBase
     // Various constant parameters
     int fwd_left_id_;
     int fwd_right_id_;
-    int angled_left_id_;
-    int angled_right_id_;
+    int side_front_id_;
+    int side_back_id_;
     float angle_from_fwd_radians_;
-    float left_fwd_offset_;                   
-    float right_fwd_offset_;
-    float left_angle_offset_;
-    float right_angle_offset_;
+    float fwd_left_offset_;                   
+    float fwd_right_offset_;
+    float side_front_offset_;
+    float side_back_offset_;
     uint num_sensors_;
 
 };

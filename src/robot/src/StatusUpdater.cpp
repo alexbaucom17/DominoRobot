@@ -5,8 +5,8 @@ StatusUpdater::StatusUpdater() :
   currentStatus_(),
   fwd_left_id_(cfg.lookup("distance_tracker.mapping.fwd_left")),
   fwd_right_id_(cfg.lookup("distance_tracker.mapping.fwd_right")),
-  angled_left_id_(cfg.lookup("distance_tracker.mapping.angled_left")),
-  angled_right_id_(cfg.lookup("distance_tracker.mapping.angled_right"))
+  side_front_id_(cfg.lookup("distance_tracker.mapping.side_front")),
+  side_back_id_(cfg.lookup("distance_tracker.mapping.side_back"))
 {
 }
 
@@ -69,8 +69,8 @@ void StatusUpdater::updateRawDistances(std::vector<float> distances)
 {
   currentStatus_.dist_fl = distances[fwd_left_id_];
   currentStatus_.dist_fr = distances[fwd_right_id_];
-  currentStatus_.dist_al = distances[angled_left_id_];
-  currentStatus_.dist_ar = distances[angled_right_id_];
+  currentStatus_.dist_al = distances[side_front_id_];
+  currentStatus_.dist_ar = distances[side_back_id_];
 }
 
 void StatusUpdater::updateDistancePose(Point pose)
