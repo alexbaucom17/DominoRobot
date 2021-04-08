@@ -17,7 +17,6 @@ DistanceTracker::DistanceTracker()
   fwd_right_id_(cfg.lookup("distance_tracker.mapping.fwd_right")),
   side_front_id_(cfg.lookup("distance_tracker.mapping.side_front")),
   side_back_id_(cfg.lookup("distance_tracker.mapping.side_back")),
-  angle_from_fwd_radians_(static_cast<float>(cfg.lookup("distance_tracker.dimensions.angle_from_fwd_degrees"))*M_PI/180.0),
   fwd_left_offset_(cfg.lookup("distance_tracker.dimensions.fwd_left_offset")),               
   fwd_right_offset_(cfg.lookup("distance_tracker.dimensions.fwd_right_offset")),   
   side_front_offset_(cfg.lookup("distance_tracker.dimensions.side_front_offset")),   
@@ -87,27 +86,12 @@ std::vector<float> DistanceTracker::getMeasurement()
 
 // d(1|2) is distance measurement (meters)
 // o(1|2) is offset in y dimension of sensor (meters)
-// Returns <distance_x, angle from y axis> in <meters, rads> of line
-std::pair<float, float> distAndAngleFromPairedDistanceFront(float d1, float o1, float d2, float o2)
+// Returns <distance, angle from forward> in <meters, rads> of line
+std::pair<float, float> distAndAngleFromPairedDistance(float d1, float o1, float d2, float o2)
 {
     float dx = (d1 + d2) / 2.0;
     float a = atan2(d1-d2, o1-o2);
     return {dx, a};
-}
-
-// d(1|2) is distance measurement (meters)
-// o(1|2) is offset in y dimension of sensor (meters)
-// a(1|2) is angle of sensor from x axis (radians)
-// Returns <distance_y, angle from x axis> in <meters, rads> of line
-std::pair<float, float> distAndAngleFromPairedDistanceSide(float d1, float o1, float a1, float d2, float o2, float a2)
-{
-    float p1x = d1*cos(a1);
-    float p1y = d1*sin(a1) + o1;
-    float p2x = d2*cos(a2);
-    float p2y = d2*sin(a2) + o2;
-    float dy = (p1y + p2y) / 2.0;
-    float a = atan2(p1y-p2y, p1x-p2x);
-    return {dy, a};
 }
 
 void DistanceTracker::computePoseFromDistances()
@@ -120,22 +104,22 @@ void DistanceTracker::computePoseFromDistances()
         mean_distances.push_back(vectorMean(buf.get_contents()));
     }
 
-    // Using forward measurements
-    auto [x_dist, fwd_angle] = distAndAngleFromPairedDistanceFront(
+    // Now compute distance and angles from US pairs
+    auto [x_dist, fwd_angle] = distAndAngleFromPairedDistance(
         mean_distances[fwd_left_id_], fwd_left_offset_, 
         mean_distances[fwd_right_id_], fwd_right_offset_);
-
-    auto [y_dist, side_angle] = distAndAngleFromPairedDistanceSide(
-        mean_distances[side_front_id_], side_front_offset_, angle_from_fwd_radians_, 
-        mean_distances[side_back_id_], side_back_offset_, angle_from_fwd_radians_);
+    auto [y_dist, side_angle] = distAndAngleFromPairedDistance(
+        mean_distances[side_front_id_], side_front_offset_, 
+        mean_distances[side_back_id_], side_back_offset_);
 
     // Grab final measurements
     // X dist is from forward sensors
-    // Y dist is from angled sensors
-    // Angle is average of forward and angled measurements
+    // Y dist is from side sensors
+    // Angle is just from side sensors (more reliable)
+    // If forward sensors can be made more reliable, angle can be averaged
     current_distance_pose_.x = x_dist;
-    current_distance_pose_.y = 0; //y_dist;
-    current_distance_pose_.a = 0; //(fwd_angle + side_angle)/2.0;
+    current_distance_pose_.y = y_dist;
+    current_distance_pose_.a = side_angle;
 }
 
 std::vector<float> DistanceTracker::getRawDistances() 

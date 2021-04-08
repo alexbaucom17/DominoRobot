@@ -52,7 +52,6 @@ class DistanceTracker : public DistanceTrackerBase
     int fwd_right_id_;
     int side_front_id_;
     int side_back_id_;
-    float angle_from_fwd_radians_;
     float fwd_left_offset_;                   
     float fwd_right_offset_;
     float side_front_offset_;

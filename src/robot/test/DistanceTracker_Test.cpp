@@ -51,7 +51,6 @@ TEST_CASE("DistanceTracker nominal", "[distance]")
     SafeConfigModifier<int> config_modifier_2("distance_tracker.mapping.fwd_right", 1);
     SafeConfigModifier<int> config_modifier_3("distance_tracker.mapping.side_front", 2);
     SafeConfigModifier<int> config_modifier_4("distance_tracker.mapping.side_back", 3);
-    SafeConfigModifier<float> config_modifier_5("distance_tracker.dimensions.angle_from_fwd_degrees", angle_from_fwd_degrees);
     SafeConfigModifier<float> config_modifier_6("distance_tracker.dimensions.fwd_left_offset", fwd_left_offset);
     SafeConfigModifier<float> config_modifier_7("distance_tracker.dimensions.fwd_right_offset", fwd_right_offset);
     SafeConfigModifier<float> config_modifier_8("distance_tracker.dimensions.side_front_offset", side_front_offset);
@@ -112,7 +111,6 @@ TEST_CASE("DistanceTracker angled", "[distance]")
     SafeConfigModifier<int> config_modifier_2("distance_tracker.mapping.fwd_right", 1);
     SafeConfigModifier<int> config_modifier_3("distance_tracker.mapping.side_front", 2);
     SafeConfigModifier<int> config_modifier_4("distance_tracker.mapping.side_back", 3);
-    SafeConfigModifier<float> config_modifier_5("distance_tracker.dimensions.angle_from_fwd_degrees", angle_from_fwd_degrees);
     SafeConfigModifier<float> config_modifier_6("distance_tracker.dimensions.fwd_left_offset", fwd_left_offset);
     SafeConfigModifier<float> config_modifier_7("distance_tracker.dimensions.fwd_right_offset", fwd_right_offset);
     SafeConfigModifier<float> config_modifier_8("distance_tracker.dimensions.side_front_offset", side_front_offset);
@@ -173,7 +171,6 @@ TEST_CASE("DistanceTracker angled2", "[distance]")
     SafeConfigModifier<int> config_modifier_2("distance_tracker.mapping.fwd_right", 1);
     SafeConfigModifier<int> config_modifier_3("distance_tracker.mapping.side_front", 2);
     SafeConfigModifier<int> config_modifier_4("distance_tracker.mapping.side_back", 3);
-    SafeConfigModifier<float> config_modifier_5("distance_tracker.dimensions.angle_from_fwd_degrees", angle_from_fwd_degrees);
     SafeConfigModifier<float> config_modifier_6("distance_tracker.dimensions.fwd_left_offset", fwd_left_offset);
     SafeConfigModifier<float> config_modifier_7("distance_tracker.dimensions.fwd_right_offset", fwd_right_offset);
     SafeConfigModifier<float> config_modifier_8("distance_tracker.dimensions.side_front_offset", side_front_offset);
