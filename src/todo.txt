@@ -8,9 +8,9 @@ Robot SW:
     - Ensure that start signal is resent every few seconds while distance is running
     - Continue to imporve controller performance
     - Increase robustness to noisy data
-        - Tentative plan - use 2x front, 2x side
-        - Side ones measure dist and angle since they are less likely to have issues with lifter
-        - Front ones both measure distacne, can try to come up with a way to chuck out bad data from one if it isn't reliable
+        - Tune hight of lifter for measurement - looks like there are spots I can move the lifter to that give pretty reliable readings
+        - Figure out how to handle side US having trouble measuring so close, maybe scoot sensors back
+        - Add speed limits to robot controller
 
 Robot HW:
 
