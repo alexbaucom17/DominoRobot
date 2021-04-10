@@ -16,7 +16,6 @@ Robot HW:
 
 Master:
 - Fix that missing ack skips current action during plan
-- Fix plan abort to not unload current plan
 - Fix move/current action disappearing from dashboard
 
 Base station HW:

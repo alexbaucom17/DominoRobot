@@ -180,7 +180,7 @@ class CmdGui:
         return (target, action)
 
     def _update_plan_button_status(self, plan_status):
-        if plan_status == PlanStatus.NONE or plan_status == PlanStatus.ABORTED:
+        if plan_status == PlanStatus.NONE:
             self.window['_RUN_PLAN_'].update(text='Run', disabled=True)
             self.window['_LOAD_PLAN_'].update(disabled=False)
             self.window['_PAUSE_PLAN_'].update(disabled=True)
@@ -200,6 +200,11 @@ class CmdGui:
             self.window['_LOAD_PLAN_'].update(disabled=True)
             self.window['_PAUSE_PLAN_'].update(disabled=True)
             self.window['_ABORT_PLAN_'].update(disabled=False)
+        elif plan_status == PlanStatus.ABORTED:
+            self.window['_RUN_PLAN_'].update(text='Restart', disabled=False)
+            self.window['_LOAD_PLAN_'].update(disabled=False)
+            self.window['_PAUSE_PLAN_'].update(disabled=True)
+            self.window['_ABORT_PLAN_'].update(disabled=True)
         else:
             logging.warning("Unhandled plan statusfor button state: {}".format(plan_status))
 
