@@ -69,8 +69,8 @@ void StatusUpdater::updateRawDistances(std::vector<float> distances)
 {
   currentStatus_.dist_fl = distances[fwd_left_id_];
   currentStatus_.dist_fr = distances[fwd_right_id_];
-  currentStatus_.dist_al = distances[side_front_id_];
-  currentStatus_.dist_ar = distances[side_back_id_];
+  currentStatus_.dist_sf = distances[side_front_id_];
+  currentStatus_.dist_sb = distances[side_back_id_];
 }
 
 void StatusUpdater::updateDistancePose(Point pose)

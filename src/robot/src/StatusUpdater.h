@@ -57,8 +57,8 @@ class StatusUpdater
       // Distances
       float dist_fl;
       float dist_fr;
-      float dist_al;
-      float dist_ar;
+      float dist_sf;
+      float dist_sb;
       float dist_x;
       float dist_y;
       float dist_a;
@@ -88,8 +88,8 @@ class StatusUpdater
       vel_a(0.0),
       dist_fl(0.0),
       dist_fr(0.0),
-      dist_al(0.0),
-      dist_ar(0.0),
+      dist_sf(0.0),
+      dist_sb(0.0),
       dist_x(0.0),
       dist_y(0.0),
       dist_a(0.0),
@@ -124,8 +124,8 @@ class StatusUpdater
         doc["vel_a"] = vel_a;
         doc["dist_fl"] = dist_fl;
         doc["dist_fr"] = dist_fr;
-        doc["dist_al"] = dist_al;
-        doc["dist_ar"] = dist_ar;
+        doc["dist_sf"] = dist_sf;
+        doc["dist_sb"] = dist_sb;
         doc["dist_x"] = dist_x;
         doc["dist_y"] = dist_y;
         doc["dist_a"] = dist_a;

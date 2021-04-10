@@ -2,10 +2,8 @@
 Robot SW:
 - Fix fine motion to use kf with vel adjustment
 - Swap to only kf for localization
-- Fix unknown command bug for toggle distacne?
 - Distance tracking
     - Fix distance tracker tests
-    - Ensure that start signal is resent every few seconds while distance is running
     - Continue to imporve controller performance
     - Increase robustness to noisy data - maybe some sort of clustering/gmm?
 

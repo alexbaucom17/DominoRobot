@@ -46,6 +46,7 @@ class DistanceTracker : public DistanceTrackerBase
     TimeRunningAverage measurement_time_averager_;
     SerialCommsBase* serial_to_arduino_; 
     KalmanFilter kf_;
+    Timer running_timer_;
 
     // Various constant parameters
     int fwd_left_id_;

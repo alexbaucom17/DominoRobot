@@ -152,6 +152,7 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
         {
             distance_tracker_->start();
         }
+        return false;
     }
 
     // Just do nothing for NONE

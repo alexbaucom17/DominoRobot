@@ -6,6 +6,14 @@
 #include "serial/SerialCommsFactory.h"
 #include <math.h>
 
+// TODO: convert to params
+constexpr float min_fwd_dist = 0.8;
+constexpr float max_fwd_dist = 1.2;
+constexpr float min_side_dist = 0.10;
+constexpr float max_side_dist = 0.25;
+constexpr float bad_angle = 1000;
+constexpr float bad_dist = 1000;
+
 DistanceTracker::DistanceTracker()
 : current_distance_pose_(0,0,0),
   distance_buffers_(),
@@ -31,12 +39,13 @@ DistanceTracker::DistanceTracker()
 
 void DistanceTracker::start()
 {
-    running_ = true;
     if (serial_to_arduino_->isConnected())
     {
         serial_to_arduino_->send("start");
-        PLOGI << "Distance measurement starting";
+        if(!running_) PLOGI << "Distance measurement starting";
     }
+    running_ = true;
+    running_timer_.reset();
 }
 
 void DistanceTracker::stop()
@@ -60,6 +69,9 @@ void DistanceTracker::checkForMeasurement()
             distance_buffers_[i].insert(new_measurement[i]);
         }
         computePoseFromDistances();
+
+        // Need to tell the arduino to reset its safety timer every so often.
+        if(running_timer_.dt_s() > 25) start();
     }
 }
 
@@ -87,11 +99,31 @@ std::vector<float> DistanceTracker::getMeasurement()
 // d(1|2) is distance measurement (meters)
 // o(1|2) is offset in y dimension of sensor (meters)
 // Returns <distance, angle from forward> in <meters, rads> of line
-std::pair<float, float> distAndAngleFromPairedDistance(float d1, float o1, float d2, float o2)
+std::pair<float, float> distAndAngleFromPairedDistance(float d1, float o1, float d2, float o2, float min_limit, float max_limit)
 {
-    float dx = (d1 + d2) / 2.0;
-    float a = atan2(d1-d2, o1-o2);
-    return {dx, a};
+    bool d1_okay = true;
+    bool d2_okay = true;
+    if(d1 < min_limit || d1 > max_limit) d1_okay = false;
+    if(d2 < min_limit || d2 > max_limit) d2_okay = false;
+    
+    if(d1_okay && d2_okay)
+    {
+        float dx = (d1 + d2) / 2.0;
+        float a = atan2(d1-d2, o1-o2);
+        return {dx, a};
+    } 
+    else if (d1_okay) 
+    {
+        return {d1,bad_angle};
+    }
+    else if (d2_okay)
+    {
+        return {d2, bad_angle};
+    }
+    else
+    {
+        return {bad_dist, bad_angle};
+    }
 }
 
 void DistanceTracker::computePoseFromDistances()
@@ -107,10 +139,21 @@ void DistanceTracker::computePoseFromDistances()
     // Now compute distance and angles from US pairs
     auto [x_dist, fwd_angle] = distAndAngleFromPairedDistance(
         mean_distances[fwd_left_id_], fwd_left_offset_, 
-        mean_distances[fwd_right_id_], fwd_right_offset_);
+        mean_distances[fwd_right_id_], fwd_right_offset_, min_fwd_dist, max_fwd_dist);
     auto [y_dist, side_angle] = distAndAngleFromPairedDistance(
         mean_distances[side_front_id_], side_front_offset_, 
-        mean_distances[side_back_id_], side_back_offset_);
+        mean_distances[side_back_id_], side_back_offset_, min_side_dist, max_side_dist);
+
+    if (x_dist == bad_dist)
+    {
+        PLOGW.printf("Invalid x distance. Raw values left: %.3f right: %.3f", mean_distances[fwd_left_id_], mean_distances[fwd_right_id_]);
+        x_dist = current_distance_pose_.x;
+    }
+    if (y_dist == bad_dist)
+    {
+        PLOGW.printf("Invalid y distance. Raw values front: %.3f back: %.3f", mean_distances[side_front_id_], mean_distances[side_back_id_]);
+        y_dist = current_distance_pose_.y;
+    }
 
     // Grab final measurements
     // X dist is from forward sensors

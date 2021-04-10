@@ -90,7 +90,7 @@ Velocity RobotControllerModeDistance::computeTargetVelocity(Point current_positi
     Eigen::Vector3f dist_vec = {measured_distance.x,measured_distance.y,measured_distance.a};
     kf_.update(dist_vec);
     Eigen::VectorXf state = kf_.state();
-    current_distance_ = {state[0], state[1], state[2]};
+    current_distance_ = {state[0], state[1], 0.0}; //state[2]};
 
     // Print motion estimates to log
     PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "\nTarget: " << current_target_.toString();
@@ -107,7 +107,7 @@ Velocity RobotControllerModeDistance::computeTargetVelocity(Point current_positi
     {
         output_local.vx =  x_controller_.compute(current_target_.position.x, current_distance_.x, current_target_.velocity.vx, local_vel[0], dt_since_last_loop);
         output_local.vy =  y_controller_.compute(current_target_.position.y, current_distance_.y, current_target_.velocity.vy, local_vel[1], dt_since_last_loop);
-        output_local.va =  a_controller_.compute(current_target_.position.a, current_distance_.a, current_target_.velocity.va, local_vel[2], dt_since_last_loop);
+        output_local.va =  0.0; //a_controller_.compute(current_target_.position.a, current_distance_.a, current_target_.velocity.va, local_vel[2], dt_since_last_loop);
     }
 
     // Need to flip the velocity sign because the distance frame is techncially flipped
