@@ -80,6 +80,7 @@ class RobotController
     bool log_this_cycle_;                  // Trigger for logging this cycle
     bool fake_perfect_motion_;             // Flag used for testing to enable perfect motion without clearcore
     Velocity fake_local_cart_vel_;         // Commanded local cartesian velocity used to fake perfect motion
+    const Velocity max_cart_vel_limit_;    // Maximum velocity allowed, used to limit commanded velocity
 
     TimeRunningAverage loop_time_averager_;        // Handles keeping average of the loop timing
 

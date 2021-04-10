@@ -7,10 +7,7 @@ Robot SW:
     - Fix distance tracker tests
     - Ensure that start signal is resent every few seconds while distance is running
     - Continue to imporve controller performance
-    - Increase robustness to noisy data
-        - Tune hight of lifter for measurement - looks like there are spots I can move the lifter to that give pretty reliable readings
-        - Figure out how to handle side US having trouble measuring so close, maybe scoot sensors back
-        - Add speed limits to robot controller
+    - Increase robustness to noisy data - maybe some sort of clustering/gmm?
 
 Robot HW:
 

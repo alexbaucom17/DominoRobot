@@ -42,6 +42,7 @@ void coarsePositionTest(float x, float y, float a)
     SafeConfigModifier<float> ang_kp_config_modifier("motion.rotation.gains.kp", 0.0);
     SafeConfigModifier<float> ang_ki_config_modifier("motion.rotation.gains.ki", 0.0);
     SafeConfigModifier<float> ang_kd_config_modifier("motion.rotation.gains.kd", 0.0);
+    SafeConfigModifier<float> limit_config_modifier("motion.limit_max_fraction", 0.8);
     
     int max_loop_counts =  100000;
     reset_mock_clock(); // Need to reset before creating RobotController which instantiates timers

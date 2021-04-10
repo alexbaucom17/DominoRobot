@@ -25,6 +25,9 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
   log_this_cycle_(false),
   fake_perfect_motion_(cfg.lookup("motion.fake_perfect_motion")),
   fake_local_cart_vel_(0,0,0),
+  max_cart_vel_limit_({cfg.lookup("motion.translation.max_vel.coarse"),
+                       cfg.lookup("motion.translation.max_vel.coarse"),
+                       cfg.lookup("motion.rotation.max_vel.coarse")}),
   loop_time_averager_(20)
 {    
     if(fake_perfect_motion_) PLOGW << "Fake robot motion enabled";
@@ -286,6 +289,27 @@ void RobotController::setCartVelCommand(Velocity target_vel)
     local_cart_vel.vy = -sA * target_vel.vx + cA * target_vel.vy;
     local_cart_vel.va = target_vel.va;
 
+    // Cap velocity for safety
+    if(fabs(local_cart_vel.vx) > max_cart_vel_limit_.vx) 
+    {
+        PLOGW.printf("Attempted to command X velocity of %.3f m/s, clamping to %.3f m/s", local_cart_vel.vx, max_cart_vel_limit_.vx);
+        PLOGW_(MOTION_LOG_ID).printf("Attempted to command X velocity of %.3f m/s, clamping to %.3f m/s", local_cart_vel.vx, max_cart_vel_limit_.vx);
+        local_cart_vel.vx = max_cart_vel_limit_.vx;
+    }
+    if(fabs(local_cart_vel.vy) > max_cart_vel_limit_.vy) 
+    {
+        PLOGW.printf("Attempted to command Y velocity of %.3f m/s, clamping to %.3f m/s", local_cart_vel.vy, max_cart_vel_limit_.vy);
+        PLOGW_(MOTION_LOG_ID).printf("Attempted to command Y velocity of %.3f m/s, clamping to %.3f m/s", local_cart_vel.vy, max_cart_vel_limit_.vy);
+        local_cart_vel.vy = max_cart_vel_limit_.vy;
+    }
+    if(fabs(local_cart_vel.va) > max_cart_vel_limit_.va) 
+    {
+        PLOGW.printf("Attempted to command A velocity of %.3f rad/s, clamping to %.3f rad/s", local_cart_vel.va, max_cart_vel_limit_.va);
+        PLOGW_(MOTION_LOG_ID).printf("Attempted to command A velocity of %.3f rad/s, clamping to %.3f rad/s", local_cart_vel.va, max_cart_vel_limit_.va);
+        local_cart_vel.va = max_cart_vel_limit_.va;
+    }
+
+    // Prep velocity data to send to motor driver
     char buff[100];
     sprintf(buff, "base:%.4f,%.4f,%.4f",local_cart_vel.vx, local_cart_vel.vy, local_cart_vel.va);
     std::string s = buff;
