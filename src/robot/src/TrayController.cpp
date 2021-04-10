@@ -26,7 +26,7 @@ void TrayController::initialize()
 
 bool TrayController::place()
 {
-    if(!is_initialized_) 
+    if(!is_initialized_ && !fake_tray_motion_) 
     {
         PLOGE << "Tray is not initialized, aborting action";
         return false;
@@ -40,7 +40,7 @@ bool TrayController::place()
 
 bool TrayController::load()
 {
-    if(!is_initialized_) 
+    if(!is_initialized_ && !fake_tray_motion_) 
     {
         PLOGE << "Tray is not initialized, aborting action";
         return false;

@@ -198,11 +198,15 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     }
     else if(cmd == COMMAND::PLACE_TRAY)
     {
-        return tray_controller_.place();
+        bool ok = tray_controller_.place();
+        if(!ok) statusUpdater_.setErrorStatus();
+        return ok;
     }
     else if(cmd == COMMAND::LOAD_TRAY)
     {
-        return tray_controller_.load();
+        bool ok = tray_controller_.load();
+        if(!ok) statusUpdater_.setErrorStatus();
+        return ok;
     }
     else if(cmd == COMMAND::INITIALIZE_TRAY)
     {
