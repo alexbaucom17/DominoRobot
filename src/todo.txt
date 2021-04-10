@@ -17,10 +17,9 @@ Master:
 Robustify:
 - Fix that missing ack skips current action during plan
 - Fix that resume after estop during place action immediately drops dominos
-    
-Base station HW:
 
-Purchase:
+Nice to haves:
+- Remove base station stuff from master gui
 
 
 Hardware info
