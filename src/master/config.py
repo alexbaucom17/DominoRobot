@@ -50,7 +50,7 @@ class Config:
     desired_width_dominos = 30
     desired_height_dominos = 40
     if USE_SMALL_TESTING_CONFIG:
-        desired_width_dominos = 15
+        desired_width_dominos = 45
         desired_height_dominos = 60
     dominos = np.array(
                 [('black', (0,0,0)),
@@ -93,16 +93,16 @@ class Config:
     domino_field_angle = 90                                     # Domino field angle (deg), global frame
     tile_placement_coarse_offset = np.array([0.3,-0.3])         # Offset position for tile placement [x,y], in robot coordinate frame
     tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])  # Offset from bottom left of tile to robot center [x,y], in robot coordinate frame
-    distance_placement_pose = np.array([0.86,0,0])              # Target distance values for fine placement       
+    distance_placement_pose = np.array([0.86,0.20,0])              # Target distance values for fine placement       
     prep_position_distance = 1                                  # How far out of field boundaries to do robot prep move
     exit_position_distance = 1                                  # How far out of the field boundaries to move to exit
     field_to_robot_frame_angle = 90                             # In case robot frame and field frame ever need to be rotated relative to each other
 
     if USE_SMALL_TESTING_CONFIG:  
-        load_pose = np.array([8,-4,90])            
-        domino_field_origin = np.array([8,-3])  
+        load_pose = np.array([9,-8,90])            
+        domino_field_origin = np.array([7.65,-6])  
         domino_field_angle = 0 
-        tile_placement_coarse_offset = np.array([-0.3,0.0])
+        tile_placement_coarse_offset = np.array([-0.3,-0.3])
         tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])                                    
 
     # Computed - don't change

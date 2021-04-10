@@ -87,7 +87,10 @@ class DominoField:
 
         # Build array of order to show and write
         order_array = np.zeros((self.n_tiles_x,self.n_tiles_y))
+        print(self.n_tiles_x)
+        print(self.n_tiles_y)
         for tile in self.tiles:
+            print(tile.coordinate)
             order_array[tile.coordinate] = tile.order
 
         # Modify array to show image correctly
@@ -144,11 +147,6 @@ class DominoField:
         new_tile = Tile(self.cfg, tile_coordinate, tile_values, tile_order)
         self.tiles.append(new_tile)
 
-        if tile_coordinate[0] > self.n_tiles_x:
-            self.n_tiles_x = tile_coordinate[0] + 1
-        if tile_coordinate[1] > self.n_tiles_y:
-            self.n_tiles_y = tile_coordinate[1] + 1
-
     def _generateTiles(self):
 
         # Check sizes and make sure things line up
@@ -158,17 +156,18 @@ class DominoField:
             raise ValueError('Field width is not evenly divisible by tile width!')
 
         # Determine number of tiles needed in x and y
-        n_tiles_x = int(self.cfg.desired_width_dominos / self.cfg.tile_width)
-        n_tiles_y = int(self.cfg.desired_height_dominos / self.cfg.tile_height)
+        self.n_tiles_x = int(self.cfg.desired_width_dominos / self.cfg.tile_width)
+        self.n_tiles_y = int(self.cfg.desired_height_dominos / self.cfg.tile_height)
+        print("Generating tiles {} x {}".format(self.n_tiles_x, self.n_tiles_y))
 
-        order_map = self._generateTileOrdering(n_tiles_x, n_tiles_y)
+        order_map = self._generateTileOrdering(self.n_tiles_x, self.n_tiles_y)
 
         # Loop over tiles and assign id and colors to each
-        for i in range(n_tiles_x):
+        for i in range(self.n_tiles_x):
             x_start_idx = i * self.cfg.tile_width
             x_end_idx = (i + 1) * self.cfg.tile_width
 
-            for j in range(n_tiles_y):
+            for j in range(self.n_tiles_y):
                 # Need to account for flipped y axis with array
                 y_start_idx =  - j * self.cfg.tile_height - 1
                 y_end_idx = - (j + 1) * self.cfg.tile_height - 1
@@ -186,6 +185,20 @@ class DominoField:
         """
         Generates and ordering that maps x y tile coordinate -> order number
         """
+
+        # return cls._generateTileOrderingDiagonal(num_x, num_y)
+        return cls._generateTileOrderingColumns(num_x, num_y)
+
+    @classmethod
+    def _generateTileOrderingColumns(cls, num_x, num_y):
+        def coordToOrder(coord, num_y):
+            return coord[0]*num_y + num_y - coord[1] -1
+        all_coords = [(x,y) for x in range(num_x) for y in range(num_y)]
+        order_map = {coord: coordToOrder(coord, num_y) for coord in all_coords}
+        return order_map
+
+    @classmethod
+    def _generateTileOrderingDiagonal(cls, num_x, num_y):
 
         coord = [num_x - 1, num_y - 1] # Starting at top right
         order = 0
@@ -492,6 +505,7 @@ def generate_small_testing_action_sequence(cfg, tile):
     robot_field_angle = cfg.domino_field_angle + cfg.field_to_robot_frame_angle
 
     print(tile.order)
+    print(tile.coordinate)
     print(tile_pos_in_field_frame)
     print(tile_pos_in_global_frame)
     print(robot_placement_coarse_pos_global_frame)
@@ -673,7 +687,7 @@ if __name__ == '__main__':
     # plan.field.printStats()
     # plan.field.show_image_parsing()
     # plan.field.render_domino_image_tiles()
-    # plan.field.show_tile_ordering()
+    plan.field.show_tile_ordering()
     plan.draw_cycle(2)
 
 
