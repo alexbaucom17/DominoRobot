@@ -2,9 +2,10 @@
 Robot SW:
 - Fix fine motion to use kf with vel adjustment
 - Swap to only kf for localization
+- Propogate error for tray not initialized to master/plan
 - Distance tracking
     - Fix distance tracker tests
-    - Continue to imporve controller performance
+    - Continue to imporve controller performance - need to add angle handling
     - Increase robustness to noisy data - maybe some sort of clustering/gmm?
 
 Robot HW:
@@ -12,6 +13,7 @@ Robot HW:
 Master:
 - Fix that missing ack skips current action during plan
 - Fix move/current action disappearing from dashboard
+- Change domino field start to top corner
 
 Base station HW:
 

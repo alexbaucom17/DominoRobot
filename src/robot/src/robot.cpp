@@ -134,6 +134,7 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     {
         controller_.estop();
         tray_controller_.estop();
+        distance_tracker_->stop();
         return false;
     }
     // Same with LOAD_COMPLETE
