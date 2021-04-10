@@ -101,9 +101,9 @@ class Config:
 
     if USE_SMALL_TESTING_CONFIG:  
         load_pose = np.array([9,-8,90])            
-        domino_field_top_left = np.array([8,-6])  
-        domino_field_angle = 90
-        tile_placement_coarse_offset = np.array([-0.3,-0.3])
+        domino_field_top_left = np.array([7.8,-4.1])  
+        domino_field_angle = 0
+        tile_placement_coarse_offset = np.array([-0.5,-0.5])
         tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])                                    
 
     # Computed - don't change

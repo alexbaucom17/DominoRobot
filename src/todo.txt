@@ -8,12 +8,16 @@ Robot SW:
     - Increase robustness to noisy data - maybe some sort of clustering/gmm?
 
 Robot HW:
+- Figure out how to get front left us sensor working (tape? Other shrouds? Re-glue at different angle?)
 
 Master:
-- Fix that missing ack skips current action during plan
 - Fix move/current action disappearing from dashboard (only during plan I think, and I guess on actual robot?)
 - Make a tentative schedule/goals for next couple days
 
+Robustify:
+- Fix that missing ack skips current action during plan
+- Fix that resume after estop during place action immediately drops dominos
+    
 Base station HW:
 
 Purchase:
