@@ -378,7 +378,7 @@ class MoveAction(Action):
     def getAngleRadians(self):
         return self.a
 
-    def draw(self, ax):
+    def draw(self, ax, show_label=True):
 
         if self.action_type == ActionTypes.MOVE_WITH_DISTANCE:
             return
@@ -409,7 +409,8 @@ class MoveAction(Action):
                                     edgecolor='c',
                                     facecolor='c'))
         text_point = points[0]
-        ax.annotate(self.name, xy=text_point[:2], xytext=[1, 1], textcoords="offset points", fontsize=8, color="green")
+        if show_label:
+            ax.annotate(self.name, xy=text_point[:2], xytext=[1, 1], textcoords="offset points", fontsize=8, color="green")
 
 
 def generate_full_action_sequence(cfg, tile):
@@ -556,8 +557,8 @@ def draw_env(cfg):
 
     # Draw field boundaries
     ax.add_patch(patches.Rectangle(cfg.domino_field_origin,
-                                    cfg.field_width,
-                                    cfg.field_height,
+                                    cfg.domino_field_top_right[0] - cfg.domino_field_origin[0],
+                                    cfg.domino_field_top_right[1] - cfg.domino_field_origin[1],
                                     fill=False,
                                     edgecolor='r'))
 
@@ -590,6 +591,9 @@ class Cycle:
     def draw_cycle(self, ax):
         for action in self.action_sequence:
             action.draw(ax)
+
+    def draw_action(self, ax, idx):
+        self.action_sequence[idx].draw(ax)
 
 
 def generate_standard_cycles(cfg, field, cycle_generator_fn):
@@ -645,6 +649,31 @@ class Plan(BasePlan):
         self.get_cycle(cycle_num).draw_cycle(ax)
         plt.show()
 
+    def draw_all_tile_poses(self):
+        # Figure out what id the tile pose is
+        cycle = self.get_cycle(0)
+        place_idx = -1
+        for i,action in enumerate(cycle.action_sequence):
+            if action.action_type == ActionTypes.PLACE:
+                place_idx = i
+                break
+        if place_idx == -1:
+            raise ValueError("Couldn't find placement index")
+        print(place_idx)
+        tile_pose_move_idx = -1
+        for j in range(place_idx, 0, -1):
+            action = self.get_action(0, j)
+            if action.action_type == ActionTypes.MOVE_FINE or action.action_type == ActionTypes.MOVE_COARSE :
+                tile_pose_move_idx = j
+                break
+        if tile_pose_move_idx == -1:
+            raise ValueError("Couldn't find movement index")
+            
+        ax = draw_env(self.cfg)
+        for cycle in self.cycles:
+            cycle.draw_action(ax, tile_pose_move_idx)
+        plt.show()
+
 
 class TestPlan(BasePlan):
     """
@@ -687,8 +716,9 @@ if __name__ == '__main__':
     # plan.field.printStats()
     # plan.field.show_image_parsing()
     # plan.field.render_domino_image_tiles()
-    plan.field.show_tile_ordering()
-    plan.draw_cycle(2)
+    # plan.field.show_tile_ordering()
+    # plan.draw_cycle(2)
+    plan.draw_all_tile_poses()
 
 
     sg.change_look_and_feel('Dark Blue 3')

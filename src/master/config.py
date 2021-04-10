@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import Utils
 
 class Config:
 
@@ -89,7 +90,7 @@ class Config:
     base_station_target_pos = np.array([0.5, 1.5])              # Target position for robot to be under base station [x,y], in global frame
     base_station_target_angle = 180                             # Target angle (deg) for base station in global frame
     base_station_coarse_pose_offset = np.array([-1.5, 0])       # Offset from base station to use for apprach [x,y] in robot frame
-    domino_field_origin = np.array([3,3])                       # Bottom left corner of domino field in global frame
+    domino_field_top_left = np.array([3,3])                       # Top left corner of domino field in global frame
     domino_field_angle = 90                                     # Domino field angle (deg), global frame
     tile_placement_coarse_offset = np.array([0.3,-0.3])         # Offset position for tile placement [x,y], in robot coordinate frame
     tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])  # Offset from bottom left of tile to robot center [x,y], in robot coordinate frame
@@ -100,15 +101,23 @@ class Config:
 
     if USE_SMALL_TESTING_CONFIG:  
         load_pose = np.array([9,-8,90])            
-        domino_field_origin = np.array([7.65,-6])  
-        domino_field_angle = 0 
+        domino_field_top_left = np.array([8,-6])  
+        domino_field_angle = 90
         tile_placement_coarse_offset = np.array([-0.3,-0.3])
         tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])                                    
 
     # Computed - don't change
     field_width = tile_size_width_meters * desired_width_dominos/tile_width
     field_height = tile_size_height_meters * desired_height_dominos/tile_height
-    domino_field_boundaries = np.array([domino_field_origin,domino_field_origin + np.array([field_width,field_height])])
+    domino_field_origin = domino_field_top_left + Utils.TransformPos(np.array([0,-field_height]), [0,0], domino_field_angle)
+    domino_field_top_right = domino_field_origin + Utils.TransformPos(np.array([field_width,field_height]), [0,0], domino_field_angle)
+    domino_field_boundaries = np.array([domino_field_origin, domino_field_top_right])
+
+    print(domino_field_top_left)
+    print(domino_field_angle)
+    print(domino_field_origin)
+    print(domino_field_top_right)
+    
 
     # ====== GUI CONFIGURATION ========
     graph_padding = 0.5                          # How many meters of padding to have around edge of graph
