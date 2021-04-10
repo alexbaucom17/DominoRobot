@@ -269,8 +269,8 @@ class CmdGui:
                 status_str += "Position: [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(robot_pose[0], robot_pose[1], robot_pose[2])
                 status_str += "Velocity: [{0:.3f} m/s, {1:.3f} m/s, {2:.2f} deg/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], math.degrees(status_dict['vel_a']))
                 status_str += "Distance Pose : [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(status_dict['dist_x'],status_dict['dist_y'], math.degrees(status_dict['dist_a']))
-                status_str += "Raw Distance: FL: {0:.3f} m, FR: {1:.3f} m\n                      AL: {2:.3f} m, AR: {3:.3f} m\n".format(\
-                    status_dict['dist_fl'],status_dict['dist_fr'], status_dict['dist_al'], status_dict['dist_ar'])
+                status_str += "Raw Distance: FL: {0:.3f} m, FR: {1:.3f} m\n                      SF: {2:.3f} m, SB: {3:.3f} m\n".format(\
+                    status_dict['dist_fl'],status_dict['dist_fr'], status_dict['dist_sf'], status_dict['dist_sb'])
                 status_str += "Localization:\n  Confidence: {:.1f}% Time since last valid: {:.2f}s\n".format(status_dict['localization_confidence']*100, status_dict['localization_seconds_since_last_valid_reading'])
                 status_str += "Controller timing: {} ms\n".format(status_dict['controller_loop_ms'])
                 status_str += "Position timing:   {} ms\n".format(status_dict['position_loop_ms'])
