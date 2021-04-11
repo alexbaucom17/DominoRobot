@@ -1,26 +1,29 @@
 
 Robot SW:
-- Fix fine motion to use kf with vel adjustment
-- Swap to only kf for localization
-- Distance tracking
-    - Fix distance tracker tests
-    - Continue to imporve controller performance - need to add angle handling
-    - Increase robustness to noisy data - maybe some sort of clustering/gmm?
+- Fix localization tests
+- Continue to imporve controller performance - need to add angle handling
+- Increase robustness to noisy data - maybe some sort of clustering/gmm?
 
 Robot HW:
 - Figure out how to get front left us sensor working (tape? Other shrouds? Re-glue at different angle?)
 
 Master:
-- Fix move/current action disappearing from dashboard (only during plan I think, and I guess on actual robot?)
-- Make a tentative schedule/goals for next couple days
+- Add method to start plan at various places
 
 Robustify:
+- Verify that fix for plan target move disappearing worked
 - Fix that missing ack skips current action during plan
 - Fix that resume after estop during place action immediately drops dominos
 
 Nice to haves:
 - Remove base station stuff from master gui
+- Better utility/method to plot motion/controller logs
+- Master gui controls to easily step back and forth between plan steps
+- Increase robot coarse motion speed
+- Decrease wait for localization time
 
+
+Misc notes:
 
 Hardware info
 - Approx Dimensions:
@@ -100,3 +103,29 @@ Requests for shop
 - Rolling table (show example)
 - Internet
 - Drop in T nuts for 80/20
+
+Goals/Milestones for hackathon weekend:
+- Functional US distance tracking with angle
+- 3x3 test fully complete
+- 3x3 test 3x in a row
+- 20x in a row blank placements from various starting locations
+- 20x in a row docking with base station
+
+Progress from Saturday:
+- Hooked up and tested side mounted US sensors
+    - Discovered that gap in dominos can cause problems at the short range (not enough spread of US wave)
+    - Tested various mounting locations and configurations, couldn't find any better positions
+    - Tried adding some filtering logic to code to ignore bad values, works okay for now, but I'm a bit nervous about the reliabilty long term
+- Ran into problems with one of the front mounted US sensors always reflecting from the tray
+    - Spent some time trying to adjust placement, tray height, blinder positions, swapped sensors, etc.
+    - Unable to fix and decided to move on, will try again tomorrow
+    - Added filtering logic in software to handle this as well
+- Set up 3x3 tile test with US sensors only correcting x and y positions (not angles)
+    - Marvelmind sensors seemed much noisier/less accuracte today for some reason
+    - Able to get test running and tiles being placed at reasonable x,y locations
+    - But it is clear that the placement angle will also be critical, tile position/angle can be quite off when only adjusted for x and y at one point
+        - This means I need to get all the US sensors working well, I have an algorithm that will give x, y, and angle from 4 sensors and can handle 1 bad data point
+- Refactored and cleaned up a number of hacks/bugs in the master software and localization logic that was giving me trouble/slowing me down during testing today
+
+Progress from Sunday
+        

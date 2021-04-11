@@ -23,6 +23,7 @@ class RobotInterface:
         self.simple_action_map = {}
         self.current_action = ActionTypes.NONE
         self.current_move_data = []
+        self.current_action_timer = None
 
     def bring_online(self, use_mock=False):
         self._bring_comms_online(use_mock)
@@ -72,7 +73,7 @@ class RobotInterface:
         
         # Reset current action and move data if the robot finished an action
         if self.current_action != ActionTypes.NONE and self.last_status is not None and \
-            'in_progress' in self.last_status.keys() and not self.last_status['in_progress']:
+            'in_progress' in self.last_status.keys() and not self.last_status['in_progress'] and self.current_action_timer.check():
             self.current_action = ActionTypes.NONE
             self.current_move_data = []
 
@@ -122,6 +123,8 @@ class RobotInterface:
                 self.simple_action_map[action.action_type]()
             else:
                 logging.info("Unknown action: {}".format(action.action_type))
+
+            self.current_action_timer = NonBlockingTimer(self.config.robot_next_action_wait_time)
         except RuntimeError:
             logging.info("Network connection with {} lost".format(self.robot_id))
             self.comms_online = False
