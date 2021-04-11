@@ -56,7 +56,7 @@ float MOTOR_REAR_CENTER_FAKE = 0;
 
 #define LIFTER_HOMING_VEL 3 // revs/sec
 
-#define SAFETY_MAX_POS 70  // Revs, Sanity check on desired position to make sure it isn't larger than this
+#define SAFETY_MAX_POS 70*LIFTER_STEPS_PER_REV  // Revs, Sanity check on desired position to make sure it isn't larger than this
 #define SAFETY_MIN_POS 0 // Revs, Sanity check on desired position to make sure it isn't less than this
 
 #define LATCH_ACTIVE_MS 1000
@@ -302,7 +302,7 @@ void lifter_update(String msg)
                 activeMode = MODE::AUTO_POS;
                 long target = inputCommand.abs_pos;
                 LIFTER_MOTOR.EnableRequest(true);
-                LIFTER_MOTOR.Move(target*LIFTER_STEPS_PER_REV, StepGenerator::MOVE_TARGET_ABSOLUTE);
+                LIFTER_MOTOR.Move(target, StepGenerator::MOVE_TARGET_ABSOLUTE);
             }
         }
     }    
