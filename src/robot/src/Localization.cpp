@@ -12,8 +12,8 @@ Localization::Localization()
   mm_y_offset_(cfg.lookup("localization.mm_y_offset")),
   variance_ref_trans_(cfg.lookup("localization.variance_ref_trans")),
   variance_ref_angle_(cfg.lookup("localization.variance_ref_angle")),
-  localization_trans_cov_(cfg.lookup("localization.kf_trans_cov")),
-  localization_angle_cov_(cfg.lookup("localization.kf_angle_cov")),
+  meas_trans_cov_(cfg.lookup("localization.kf_meas_trans_cov")),
+  meas_angle_cov_(cfg.lookup("localization.kf_meas_angle_cov")),
   localization_uncertainty_scale_(cfg.lookup("localization.kf_uncertainty_scale")),
   min_vel_uncertainty_(cfg.lookup("localization.min_vel_uncertainty")),
   vel_uncertainty_slope_(cfg.lookup("localization.vel_uncertainty_slope")),
@@ -26,11 +26,16 @@ Localization::Localization()
     Eigen::MatrixXf A = Eigen::MatrixXf::Identity(3,3);
     Eigen::MatrixXf B = Eigen::MatrixXf::Identity(3,3);
     Eigen::MatrixXf C = Eigen::MatrixXf::Identity(3,3);
-    Eigen::MatrixXf Q = Eigen::MatrixXf::Identity(3,3);
+    Eigen::MatrixXf Q(3,3);
+    float predict_trans_cov = cfg.lookup("localization.kf_predict_trans_cov");
+    float predict_angle_cov = cfg.lookup("localization.kf_predict_angle_cov");
+    Q << predict_trans_cov,0,0, 
+         0,predict_trans_cov,0,
+         0,0,predict_angle_cov;
     Eigen::MatrixXf R(3,3);
-    R << localization_trans_cov_,0,0, 
-         0,localization_trans_cov_,0,
-         0,0,localization_angle_cov_;
+    R << meas_trans_cov_,0,0, 
+         0,meas_trans_cov_,0,
+         0,0,meas_angle_cov_;
     kf_ = KalmanFilter(A,B,C,Q,R);
 }
 
@@ -51,15 +56,21 @@ void Localization::updatePositionReading(Point global_position)
     const float position_uncertainty = computePositionUncertainty();
     metrics_.last_position_uncertainty = position_uncertainty;
     Eigen::MatrixXf R(3,3);
-    R << localization_trans_cov_ + position_uncertainty*localization_uncertainty_scale_,0,0, 
-         0,localization_trans_cov_+ position_uncertainty*localization_uncertainty_scale_,0,
-         0,0,localization_angle_cov_+ position_uncertainty*localization_uncertainty_scale_;
+    R << meas_trans_cov_ + position_uncertainty*localization_uncertainty_scale_,0,0, 
+         0,meas_trans_cov_+ position_uncertainty*localization_uncertainty_scale_,0,
+         0,0,meas_angle_cov_+ position_uncertainty*localization_uncertainty_scale_;
+
+    // PLOGI << "position_uncertainty: " << position_uncertainty;
+    // PLOGI << "R: " << R;
+    // PLOGI << "cov1: " << kf_.covariance();
 
     kf_.update(adjusted_measured_position, R);
     Eigen::VectorXf est = kf_.state();
     pos_.x = est[0];
     pos_.y = est[1];
     pos_.a = wrap_angle(est[2]);
+    
+    // PLOGI << "cov2: " << kf_.covariance();
 
     PLOGI_(LOCALIZATION_LOG_ID).printf("\nPosition update:");
     PLOGI_(LOCALIZATION_LOG_ID).printf("  Raw input: [%4.3f, %4.3f, %4.3f]", 
@@ -82,7 +93,12 @@ void Localization::updateVelocityReading(Velocity local_cart_vel, float dt)
     // Apply prediction step with velocity to get estimated position
     Eigen::Vector3f u = {vel_.vx, vel_.vy, vel_.va};
     Eigen::Vector3f udt = dt*u;
-    kf_.predict(udt);
+    if(udt.norm() > 0)
+    {
+        kf_.predict(udt);
+        // PLOGI << "cov3: " << kf_.covariance();
+        time_since_last_motion_.reset();
+    }
     Eigen::VectorXf est = kf_.state();
     pos_.x = est[0];
     pos_.y = est[1];
@@ -94,9 +110,9 @@ void Localization::updateVelocityReading(Velocity local_cart_vel, float dt)
 
     // Compute inverse confidence. As long as the variance isn't larger than the reference values
     // these will be between 0-1 with 0 being more confident in the positioning
-    metrics_.confidence_x = 1-cov(0,0)/variance_ref_trans_;
-    metrics_.confidence_y = 1-cov(1,1)/variance_ref_trans_;
-    metrics_.confidence_a = 1-cov(2,2)/variance_ref_angle_;
+    metrics_.confidence_x = std::max(1-cov(0,0)/variance_ref_trans_, 0.0f);
+    metrics_.confidence_y = std::max(1-cov(1,1)/variance_ref_trans_, 0.0f);
+    metrics_.confidence_a = std::max(1-cov(2,2)/variance_ref_angle_, 0.0f);
     metrics_.total_confidence = (metrics_.confidence_x + metrics_.confidence_y + metrics_.confidence_a)/3;
 }
 
@@ -129,7 +145,6 @@ float Localization::computePositionUncertainty()
     if(total_v > 0.01)
     {
         position_uncertainty = std::max(min_vel_uncertainty_ + vel_uncertainty_slope_*total_v, max_vel_uncetainty_);
-        time_since_last_motion_.reset();
     }
     else 
     {

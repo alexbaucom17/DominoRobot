@@ -43,8 +43,8 @@ class Localization
     float mm_y_offset_;
     float variance_ref_trans_;
     float variance_ref_angle_;
-    float localization_trans_cov_;
-    float localization_angle_cov_;
+    float meas_trans_cov_;
+    float meas_angle_cov_;
     float localization_uncertainty_scale_;
     float min_vel_uncertainty_;
     float vel_uncertainty_slope_;
