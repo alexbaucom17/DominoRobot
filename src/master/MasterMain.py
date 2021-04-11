@@ -18,7 +18,7 @@ STATUS_PANEL_BAD_COLOR = "red"
 
 def status_panel(name):
     width = 40
-    height = 14
+    height = 20
     return [[sg.Text("{} status".format(name))], [sg.Text("{} offline".format(name), size=(width, height), \
         relief=sg.RELIEF_RIDGE, key='_{}_STATUS_'.format(name.upper()), background_color=STATUS_PANEL_BAD_COLOR) ]]
 
@@ -71,7 +71,7 @@ class CmdGui:
         sg.change_look_and_feel('DarkBlack')
 
         panel_names = ["{}".format(n) for n in self.config.ip_map]
-        panel_names += ['base', 'plan']
+        panel_names += ['plan']
         target_names = copy.deepcopy(panel_names)
         target_names.remove('plan')
         layout = setup_gui_layout(config, panel_names, target_names)
@@ -136,12 +136,10 @@ class CmdGui:
     
     def update_status_panels(self, metrics):
         for key, metric in metrics.items():
-            if key == 'mm':
+            if key == 'mm' or key == 'base':
                 continue
             elif key == 'plan':
                 self._update_plan_panel(metric)
-            elif key == 'base':
-                self._update_base_panel(metric)
             else:
                 self._update_robot_panel(key, metric) 
         
@@ -240,25 +238,6 @@ class CmdGui:
 
         self.window['_PLAN_STATUS_'].update(status_str, background_color=color_str)
 
-    def _update_base_panel(self, status_dict):
-        status_str = "Cannot get base status"
-        color_str = STATUS_PANEL_BAD_COLOR
-        if status_dict:
-            try:
-                status_str = ""
-                status_str += "Sensors: [{}, {}, {}, {}]\n".format(
-                    status_dict['sensor_1'],status_dict['sensor_2'],status_dict['sensor_3'],status_dict['sensor_4'])
-                status_str += "Action in Progress: {}\n".format(status_dict['in_progress'])
-                status_str += "Counter: {}\n".format(status_dict['counter'])
-                color_str = STATUS_PANEL_OK_COLOR
-            except Exception as e:
-                if "offline" in str(status_dict):
-                    status_str = str(status_dict)
-                else:
-                    status_str = "Bad dict: " + str(status_dict)
-
-        self.window['_BASE_STATUS_'].update(status_str, background_color=color_str)
-
     def _update_robot_panel(self, robot_id, status_dict):
         status_str = "Cannot get {} status".format(robot_id)
         color_str = STATUS_PANEL_BAD_COLOR
@@ -271,7 +250,10 @@ class CmdGui:
                 status_str += "Distance Pose : [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(status_dict['dist_x'],status_dict['dist_y'], math.degrees(status_dict['dist_a']))
                 status_str += "Raw Distance: FL: {0:.3f} m, FR: {1:.3f} m\n                      SF: {2:.3f} m, SB: {3:.3f} m\n".format(\
                     status_dict['dist_fl'],status_dict['dist_fr'], status_dict['dist_sf'], status_dict['dist_sb'])
-                status_str += "Localization:\n  Confidence: {:.1f}% Time since last valid: {:.2f}s\n".format(status_dict['localization_confidence']*100, status_dict['localization_seconds_since_last_valid_reading'])
+                status_str += "Localization total confidence: {:.1f}%\n".format(status_dict['localization_total_confidence']*100)
+                status_str += "  Axes confidence: [{:.1f}%, {:.1f}%, {:.1f}%]\n".format(
+                    status_dict['localization_confidence_x']*100,status_dict['localization_confidence_y']*100,status_dict['localization_confidence_a']*100)
+                status_str += "Localization position uncertainty: {:.2f}\n".format(status_dict['last_position_uncertainty'])
                 status_str += "Controller timing: {} ms\n".format(status_dict['controller_loop_ms'])
                 status_str += "Position timing:   {} ms\n".format(status_dict['position_loop_ms'])
                 status_str += "Distance timing:   {} ms\n".format(status_dict['distance_loop_ms'])

@@ -524,7 +524,7 @@ def generate_small_testing_action_sequence(cfg, tile):
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle))
 
     name = "Move to place - super fine"
     actions.append(MoveAction(ActionTypes.MOVE_WITH_DISTANCE, name, cfg.distance_placement_pose[0], cfg.distance_placement_pose[1], cfg.distance_placement_pose[2]))
@@ -533,7 +533,7 @@ def generate_small_testing_action_sequence(cfg, tile):
     actions.append(Action(ActionTypes.PLACE, name))
 
     name = "Move away from place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
 
     name = "Move to near load - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_pose[0], cfg.load_pose[1], cfg.load_pose[2]))

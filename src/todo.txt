@@ -21,6 +21,7 @@ Nice to haves:
 - Master gui controls to easily step back and forth between plan steps
 - Increase robot coarse motion speed
 - Decrease wait for localization time
+- Add a "Generate plan and auto load into master" function
 
 
 Misc notes:
@@ -128,4 +129,10 @@ Progress from Saturday:
 - Refactored and cleaned up a number of hacks/bugs in the master software and localization logic that was giving me trouble/slowing me down during testing today
 
 Progress from Sunday
-        
+- Finished refactor of localization, fine motion and position confidence metrics working much better now.
+- Gui updated with better info for easier debugging.
+- Marvelmind giving TONS of problems today
+    - Thinks the robot is spinning in circles when it is stationary
+    - Had to re-configure a bunch of stuff with the map to try and fix it, marginally successful
+    - Maybe work chatting with Mark and Bozak to see if they can work their magic to get some support from them, even a 1-2 hour remote help session to configure things would be huge
+- 

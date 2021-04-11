@@ -101,7 +101,7 @@ class Config:
 
     if USE_SMALL_TESTING_CONFIG:  
         load_pose = np.array([9,-8,90])            
-        domino_field_top_left = np.array([7.8,-4.1])  
+        domino_field_top_left = np.array([8.3,-4.1])  
         domino_field_angle = 0
         tile_placement_coarse_offset = np.array([-0.5,-0.5])
         tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])                                    
@@ -111,13 +111,7 @@ class Config:
     field_height = tile_size_height_meters * desired_height_dominos/tile_height
     domino_field_origin = domino_field_top_left + Utils.TransformPos(np.array([0,-field_height]), [0,0], domino_field_angle)
     domino_field_top_right = domino_field_origin + Utils.TransformPos(np.array([field_width,field_height]), [0,0], domino_field_angle)
-    domino_field_boundaries = np.array([domino_field_origin, domino_field_top_right])
-
-    print(domino_field_top_left)
-    print(domino_field_angle)
-    print(domino_field_origin)
-    print(domino_field_top_right)
-    
+    domino_field_boundaries = np.array([domino_field_origin, domino_field_top_right])  
 
     # ====== GUI CONFIGURATION ========
     graph_padding = 0.5                          # How many meters of padding to have around edge of graph
