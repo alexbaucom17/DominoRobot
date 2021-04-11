@@ -204,7 +204,7 @@ void RobotController::disableAllMotors()
 
 void RobotController::inputPosition(float x, float y, float a)
 {
-    if (fineMode_)
+    if(fineMode_)
     {
         localization_.updatePositionReading({x,y,a});
         cartPos_ = localization_.getPosition();

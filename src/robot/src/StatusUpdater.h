@@ -34,7 +34,7 @@ class StatusUpdater
 
     void updateLocalizationMetrics(LocalizationMetrics localization_metrics);
 
-    float getLocalizationConfidence() const {return currentStatus_.localization_metrics.confidence;};
+    float getLocalizationConfidence() const {return currentStatus_.localization_metrics.total_confidence;};
 
     void update_motor_driver_connected(bool connected);
 
@@ -137,11 +137,11 @@ class StatusUpdater
         doc["counter"] = counter++;
         doc["motor_driver_connected"] = motor_driver_connected;
         doc["lifter_driver_connected"] = lifter_driver_connected;
-        doc["localization_confidence"] = localization_metrics.confidence;
-        doc["localization_last_reading_reliability"] = localization_metrics.last_reading_reliability;
-        doc["localization_last_reading_update_fraction"] = localization_metrics.last_reading_update_fraction;
-        doc["localization_seconds_since_last_valid_reading"] = localization_metrics.seconds_since_last_valid_reading;
-        doc["localization_rolling_reading_filter_fraction"] = localization_metrics.rolling_reading_filter_fraction;
+        doc["localization_confidence_x"] = localization_metrics.confidence_x;
+        doc["localization_confidence_y"] = localization_metrics.confidence_y;
+        doc["localization_confidence_a"] = localization_metrics.confidence_a;
+        doc["localization_total_confidence"] = localization_metrics.total_confidence;
+        doc["last_position_uncertainty"] = localization_metrics.last_position_uncertainty;
 
         // Serialize and return string
         std::string msg;

@@ -1,11 +1,11 @@
 #include "KalmanFilter.h"
 
 KalmanFilter::KalmanFilter(
-    const Eigen::MatrixXf& A,
-    const Eigen::MatrixXf& B,
-    const Eigen::MatrixXf& C,
-    const Eigen::MatrixXf& Q,
-    const Eigen::MatrixXf& R )
+    Eigen::MatrixXf A,
+    Eigen::MatrixXf B,
+    Eigen::MatrixXf C,
+    Eigen::MatrixXf Q,
+    Eigen::MatrixXf R )
 :  KalmanFilter(A.rows(), C.rows())
 {
     A_ = A; 
@@ -34,6 +34,12 @@ void KalmanFilter::predict(const Eigen::VectorXf& u)
 {
     x_hat_ = A_ * x_hat_ + B_ * u;
     P_ = A_ * P_ * A_.transpose() + Q_;
+}
+
+void KalmanFilter::update(const Eigen::VectorXf& y, Eigen::MatrixXf R) 
+{
+    R_ = R;
+    update(y);
 }
 
 void KalmanFilter::update(const Eigen::VectorXf& y) 

@@ -293,11 +293,11 @@ class PositionController
 
 struct LocalizationMetrics 
 {
-    float confidence;
-    float last_reading_reliability;
-    float last_reading_update_fraction;
-    float seconds_since_last_valid_reading;
-    float rolling_reading_filter_fraction;
+    float last_position_uncertainty;
+    float confidence_x;
+    float confidence_y;
+    float confidence_a;
+    float total_confidence;
 };
 
 //*******************************************

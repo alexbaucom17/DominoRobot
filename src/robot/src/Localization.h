@@ -31,38 +31,28 @@ class Localization
     Eigen::Vector3f marvelmindToRobotCenter(Eigen::Vector3f mm_global_position);
 
     // Compute a multiplier based on the current velocity that informs how trustworthy the current reading might be
-    float computeVelocityUpdateFraction();
+    float computePositionUncertainty();
 
-    // Compute a position reliability multiplier based on previously observed readings
-    float computePositionReliability();
-
-    // Update internal buffers with the new position
-    void updateBuffersForPositionReading(Eigen::Vector3f position);
-
-    // Update localization metrics based on latest position reading
-    void updateMetricsForPosition(float update_fraction, float reading_reliability);
     
     // Current position and velocity
     Point pos_;
     Velocity vel_;
     
     // Parameters for localization algorithms
-    float update_fraction_at_zero_vel_;
-    float val_for_zero_update_;
     float mm_x_offset_;
     float mm_y_offset_;
-    float position_reliability_zscore_thresh_;
-    float position_reliability_max_stddev_pos_;
-    float position_reliability_max_stddev_ang_;
+    float variance_ref_trans_;
+    float variance_ref_angle_;
+    float localization_trans_cov_;
+    float localization_angle_cov_;
+    float localization_uncertainty_scale_;
+    float min_vel_uncertainty_;
+    float vel_uncertainty_slope_;
+    float max_vel_uncetainty_;
+    float vel_uncertainty_decay_time_;
 
-    CircularBuffer<Eigen::Vector3f> prev_positions_raw_;
-    CircularBuffer<Eigen::Vector3f> prev_positions_filtered_;
-    std::vector<float> filtered_positions_mean_;
-    std::vector<float> filtered_positions_stddev_;
     LocalizationMetrics metrics_;
-    Timer last_valid_reading_timer_; 
-    CircularBuffer<float> reading_validity_buffer_;
-    bool use_kf_;
+    Timer time_since_last_motion_; 
     KalmanFilter kf_;
 };
 

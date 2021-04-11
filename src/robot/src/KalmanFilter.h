@@ -16,11 +16,11 @@ class KalmanFilter
   public:
 
     KalmanFilter(
-        const Eigen::MatrixXf& A,
-        const Eigen::MatrixXf& B,
-        const Eigen::MatrixXf& C,
-        const Eigen::MatrixXf& Q,
-        const Eigen::MatrixXf& R
+        Eigen::MatrixXf A,
+        Eigen::MatrixXf B,
+        Eigen::MatrixXf C,
+        Eigen::MatrixXf Q,
+        Eigen::MatrixXf R
     );
 
     // Size only simplify initializing in a class
@@ -31,6 +31,7 @@ class KalmanFilter
 
     // Update the estimated state based on measured values.
     void update(const Eigen::VectorXf& y);
+    void update(const Eigen::VectorXf& y, Eigen::MatrixXf R);
 
     // Get current state estimate
     Eigen::VectorXf state() { return x_hat_; };
