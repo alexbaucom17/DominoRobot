@@ -6,11 +6,6 @@
 #include "serial/SerialCommsFactory.h"
 #include <math.h>
 
-// TODO: convert to params
-constexpr float min_fwd_dist = 0.8;
-constexpr float max_fwd_dist = 1.2;
-constexpr float min_side_dist = 0.10;
-constexpr float max_side_dist = 0.25;
 constexpr float bad_angle = 1000;
 constexpr float bad_dist = 1000;
 
@@ -28,7 +23,11 @@ DistanceTracker::DistanceTracker()
   fwd_left_offset_(cfg.lookup("distance_tracker.dimensions.fwd_left_offset")),               
   fwd_right_offset_(cfg.lookup("distance_tracker.dimensions.fwd_right_offset")),   
   side_front_offset_(cfg.lookup("distance_tracker.dimensions.side_front_offset")),   
-  side_back_offset_(cfg.lookup("distance_tracker.dimensions.side_back_offset")),   
+  side_back_offset_(cfg.lookup("distance_tracker.dimensions.side_back_offset")),  
+  min_fwd_dist_(cfg.lookup("distance_tracker.limits.min_fwd_dist")),
+  max_fwd_dist_(cfg.lookup("distance_tracker.limits.max_fwd_dist")),
+  min_side_dist_(cfg.lookup("distance_tracker.limits.min_side_dist")),
+  max_side_dist_(cfg.lookup("distance_tracker.limits.max_side_dist")),
   num_sensors_(cfg.lookup("distance_tracker.num_sensors"))
 {
     for (uint i = 0; i < num_sensors_; i++)
@@ -139,10 +138,10 @@ void DistanceTracker::computePoseFromDistances()
     // Now compute distance and angles from US pairs
     auto [x_dist, fwd_angle] = distAndAngleFromPairedDistance(
         mean_distances[fwd_left_id_], fwd_left_offset_, 
-        mean_distances[fwd_right_id_], fwd_right_offset_, min_fwd_dist, max_fwd_dist);
+        mean_distances[fwd_right_id_], fwd_right_offset_, min_fwd_dist_, max_fwd_dist_);
     auto [y_dist, side_angle] = distAndAngleFromPairedDistance(
         mean_distances[side_front_id_], side_front_offset_, 
-        mean_distances[side_back_id_], side_back_offset_, min_side_dist, max_side_dist);
+        mean_distances[side_back_id_], side_back_offset_, min_side_dist_, max_side_dist_);
 
     if (x_dist == bad_dist)
     {

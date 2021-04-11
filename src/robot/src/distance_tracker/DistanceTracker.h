@@ -57,6 +57,10 @@ class DistanceTracker : public DistanceTrackerBase
     float fwd_right_offset_;
     float side_front_offset_;
     float side_back_offset_;
+    float min_fwd_dist_;
+    float max_fwd_dist_;
+    float min_side_dist_;
+    float max_side_dist_;
     uint num_sensors_;
 
 };
