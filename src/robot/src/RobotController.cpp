@@ -292,21 +292,24 @@ void RobotController::setCartVelCommand(Velocity target_vel)
     // Cap velocity for safety
     if(fabs(local_cart_vel.vx) > max_cart_vel_limit_.vx) 
     {
-        PLOGW.printf("Attempted to command X velocity of %.3f m/s, clamping to %.3f m/s", local_cart_vel.vx, max_cart_vel_limit_.vx);
-        PLOGW_(MOTION_LOG_ID).printf("Attempted to command X velocity of %.3f m/s, clamping to %.3f m/s", local_cart_vel.vx, max_cart_vel_limit_.vx);
-        local_cart_vel.vx = max_cart_vel_limit_.vx;
+        float clamped_vel = sgn(local_cart_vel.vx) * max_cart_vel_limit_.vx;
+        PLOGW.printf("Attempted to command X velocity of %.3f m/s, clamping to %.3f m/s", local_cart_vel.vx, clamped_vel);
+        PLOGW_(MOTION_LOG_ID).printf("Attempted to command X velocity of %.3f m/s, clamping to %.3f m/s", local_cart_vel.vx, clamped_vel);
+        local_cart_vel.vx = clamped_vel;
     }
     if(fabs(local_cart_vel.vy) > max_cart_vel_limit_.vy) 
     {
-        PLOGW.printf("Attempted to command Y velocity of %.3f m/s, clamping to %.3f m/s", local_cart_vel.vy, max_cart_vel_limit_.vy);
-        PLOGW_(MOTION_LOG_ID).printf("Attempted to command Y velocity of %.3f m/s, clamping to %.3f m/s", local_cart_vel.vy, max_cart_vel_limit_.vy);
-        local_cart_vel.vy = max_cart_vel_limit_.vy;
+        float clamped_vel = sgn(local_cart_vel.vy) * max_cart_vel_limit_.vy;
+        PLOGW.printf("Attempted to command Y velocity of %.3f m/s, clamping to %.3f m/s", local_cart_vel.vy, clamped_vel);
+        PLOGW_(MOTION_LOG_ID).printf("Attempted to command Y velocity of %.3f m/s, clamping to %.3f m/s", local_cart_vel.vy, clamped_vel);
+        local_cart_vel.vy = clamped_vel;
     }
     if(fabs(local_cart_vel.va) > max_cart_vel_limit_.va) 
     {
-        PLOGW.printf("Attempted to command A velocity of %.3f rad/s, clamping to %.3f rad/s", local_cart_vel.va, max_cart_vel_limit_.va);
-        PLOGW_(MOTION_LOG_ID).printf("Attempted to command A velocity of %.3f rad/s, clamping to %.3f rad/s", local_cart_vel.va, max_cart_vel_limit_.va);
-        local_cart_vel.va = max_cart_vel_limit_.va;
+        float clamped_vel = sgn(local_cart_vel.va) * max_cart_vel_limit_.va;
+        PLOGW.printf("Attempted to command A velocity of %.3f rad/s, clamping to %.3f rad/s", local_cart_vel.va, clamped_vel);
+        PLOGW_(MOTION_LOG_ID).printf("Attempted to command A velocity of %.3f rad/s, clamping to %.3f rad/s", local_cart_vel.va, clamped_vel);
+        local_cart_vel.va = clamped_vel;
     }
 
     // Prep velocity data to send to motor driver

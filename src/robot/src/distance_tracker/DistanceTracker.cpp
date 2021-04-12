@@ -138,10 +138,12 @@ void DistanceTracker::computePoseFromDistances()
     // Now compute distance and angles from US pairs
     auto [x_dist, fwd_angle] = distAndAngleFromPairedDistance(
         mean_distances[fwd_left_id_], fwd_left_offset_, 
-        mean_distances[fwd_right_id_], fwd_right_offset_, min_fwd_dist_, max_fwd_dist_);
+        mean_distances[fwd_right_id_], fwd_right_offset_, 
+        min_fwd_dist_, max_fwd_dist_);
     auto [y_dist, side_angle] = distAndAngleFromPairedDistance(
+        mean_distances[side_back_id_], side_back_offset_, 
         mean_distances[side_front_id_], side_front_offset_, 
-        mean_distances[side_back_id_], side_back_offset_, min_side_dist_, max_side_dist_);
+        min_side_dist_, max_side_dist_);
 
     if (x_dist == bad_dist)
     {
@@ -154,14 +156,34 @@ void DistanceTracker::computePoseFromDistances()
         y_dist = current_distance_pose_.y;
     }
 
+    float angle = current_distance_pose_.a;
+    if (fwd_angle == bad_angle && side_angle == bad_angle)
+    {
+        PLOGW.printf("Both angles invalid");
+    }
+    else if (fwd_angle != bad_angle && side_angle != bad_angle)
+    {
+        PLOGI.printf("Both angles valid! side: %.3f front: %.3f", side_angle, fwd_angle);
+        angle = (fwd_angle + side_angle) / 2.0;
+    }
+    else if (fwd_angle != bad_angle) 
+    {
+        angle = fwd_angle;
+        PLOGI.printf("Using fwd angle: %.3f, dl: %.3f, dr: %.3f",fwd_angle, mean_distances[fwd_left_id_], mean_distances[fwd_right_id_]);
+    }
+    else 
+    {
+        angle = side_angle;
+        PLOGI << "Using side angle";
+    }
+
     // Grab final measurements
     // X dist is from forward sensors
     // Y dist is from side sensors
-    // Angle is just from side sensors (more reliable)
-    // If forward sensors can be made more reliable, angle can be averaged
+    // Angle is from wherever we can get a valid reading
     current_distance_pose_.x = x_dist;
     current_distance_pose_.y = y_dist;
-    current_distance_pose_.a = side_angle;
+    current_distance_pose_.a = angle;
 }
 
 std::vector<float> DistanceTracker::getRawDistances() 
