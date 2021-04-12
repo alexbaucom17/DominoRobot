@@ -174,7 +174,7 @@ void DistanceTracker::computePoseFromDistances()
     else 
     {
         angle = side_angle;
-        PLOGI << "Using side angle";
+        PLOGI.printf("Using side angle: %.3f, df: %.3f, db: %.3f",side_angle, mean_distances[side_front_id_], mean_distances[side_back_id_]);
     }
 
     // Grab final measurements
@@ -188,18 +188,11 @@ void DistanceTracker::computePoseFromDistances()
 
 std::vector<float> DistanceTracker::getRawDistances() 
 {
-    if(running_)
+    std::vector<float> mean_distances;
+    mean_distances.reserve(num_sensors_);
+    for (const auto& buf : distance_buffers_) 
     {
-        std::vector<float> mean_distances;
-        mean_distances.reserve(num_sensors_);
-        for (const auto& buf : distance_buffers_) 
-        {
-            mean_distances.push_back(vectorMean(buf.get_contents()));
-        }
-        return mean_distances; 
+        mean_distances.push_back(vectorMean(buf.get_contents()));
     }
-    else
-    {
-        return std::vector<float>(num_sensors_, 0.0);
-    }
+    return mean_distances; 
 }
