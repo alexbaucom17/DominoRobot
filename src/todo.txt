@@ -1,27 +1,24 @@
 
 Robot SW:
+- Increase robustness to noisy data
+    - Consider aggressively filtering distance measurements and relying more on odom. Then if I get a few good measurements here and there, it might still work.
 - Fix localization tests
-- Continue to imporve controller performance - need to add angle handling
-- Increase robustness to noisy data - maybe some sort of clustering/gmm?
 
 Robot HW:
-- Figure out how to get front left us sensor working (tape? Other shrouds? Re-glue at different angle?)
+- Keep working to get better US data
 
 Master:
-- Add method to start plan at various places
+- Add method to start plan at various places (maybe merge with method below to adjust plan steps?)
 
 Robustify:
-- Verify that fix for plan target move disappearing worked
 - Fix that missing ack skips current action during plan
 - Fix that resume after estop during place action immediately drops dominos
 
 Nice to haves:
-- Remove base station stuff from master gui
 - Better utility/method to plot motion/controller logs
 - Master gui controls to easily step back and forth between plan steps
-- Increase robot coarse motion speed
-- Decrease wait for localization time
 - Add a "Generate plan and auto load into master" function
+- Add better logging for distance tracker
 
 
 Misc notes:
@@ -135,4 +132,18 @@ Progress from Sunday
     - Thinks the robot is spinning in circles when it is stationary
     - Had to re-configure a bunch of stuff with the map to try and fix it, marginally successful
     - Maybe work chatting with Mark and Bozak to see if they can work their magic to get some support from them, even a 1-2 hour remote help session to configure things would be huge
-- 
+- Able to fanangle front US sensor to work, but it's quite finiky. 
+    - Makes me nervous that it could just stop working randomly and need to be adjusted.
+    - Also makes me want to never touch the one that is working currently since it seems pretty solid.
+    - Replaced this sensor again later in the day, maybe got a slightly better configuration, still not great.
+- Lots of attempts at a 3x3 grid, not yet able to reliabily complete second column (US sensor on dominos instead of reference plane)
+    - Fixed a variety of bugs and other small issues that came up
+    - Some tweaks to approach positioning made US sensors marginally more reliable
+    - Common failure mode is that 2 US sensors (1 side 1 front) give bad readings for extended period of time and robot can't recover/gets too close to dominos
+    - Possible option is to add more US sensors to sides and front to increase chances of good reading. 
+        - Possible problem here is sometimes the reading looks valid but isn't, and more sensors giving bad readings that look plausible won't help this.
+    - Another possible option is to use difference sensors
+        - But from my research, I haven't found any sensor that will easily do what we are trying to accompish.
+    - Third possible options is a more complex software approach that fuses global and local positions of dominos to better predict if given reading is actually correct or not.
+        - This would be rather complex, and I don't think it gives a solid guarentee to work
+- Things are in a state where if I could get accurate sensor readings, I believe the robot would fully work.
