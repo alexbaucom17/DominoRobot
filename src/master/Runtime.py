@@ -9,7 +9,7 @@ import copy
 
 from MarvelMindHandler import MarvelmindWrapper, MockMarvelmindWrapper
 from RobotClient import RobotClient, BaseStationClient, MockRobotClient, MockBaseStationClient
-from FieldPlanner import ActionTypes, Action, TestPlan
+from FieldPlanner import ActionTypes, Action, TestPlan, RunFieldPlanning
 from Utils import write_file, NonBlockingTimer
 
 class RobotInterface:
@@ -237,6 +237,13 @@ class RuntimeManager:
         self.plan_status = PlanStatus.NONE
         if self.config.USE_TEST_PLAN:
             self._load_plan_from_file('')
+        elif self.config.REGEN_PLAN:
+            logging.info("Regenerating and loading plan")
+            plan = RunFieldPlanning(autosave=True)
+            self._load_plan_from_object(plan, "autogen")
+        elif self.config.AUTO_LOAD_PLAN and self.config.AUTO_LOAD_PLAN_NAME:
+            plan_path = os.path.join(self.config.plans_dir, self.config.AUTO_LOAD_PLAN_NAME)
+            self._load_plan_from_file(plan_path)
 
     def initialize(self):
 
@@ -332,17 +339,19 @@ class RuntimeManager:
     def get_plan_status(self):
         return self.plan_status
 
+    def _load_plan_from_object(self, plan, plan_path=""):
+        self.plan = plan
+        self.plan_status = PlanStatus.LOADED
+        self.plan_path = plan_path
+
     def _load_plan_from_file(self, plan_file):
         if self.config.USE_TEST_PLAN or plan_file == "testplan":
-            self.plan = TestPlan()
-            self.plan_status = PlanStatus.LOADED
-            self.plan_path = "testplan"
+            self._load_plan_from_object(TestPlan(), "testplan")
         else:
-            self.plan_path = plan_file
             with open(plan_file, 'rb') as f:
-                self.plan = pickle.load(f)
-                logging.info("Loaded plan from {}".format(plan_file))
-                self.plan_status = PlanStatus.LOADED    
+                plan = pickle.load(f)
+                self._load_plan_from_object(plan, plan_file)
+                logging.info("Loaded plan from {}".format(plan_file))  
 
     def _update_plan(self):
         # If we have an idle robot, send it the next cycle to execute

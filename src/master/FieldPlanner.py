@@ -8,6 +8,8 @@ import enum
 import logging
 import os
 import Utils
+import config
+import pickle
 
 
 class DominoField:
@@ -700,12 +702,7 @@ class TestPlan(BasePlan):
         super().__init__(cycles)
 
 
-
-if __name__ == '__main__':
-
-    import PySimpleGUI as sg
-    import config
-    import pickle
+def RunFieldPlanning(autosave=False):
     cfg = config.Config()
 
     logging.basicConfig(
@@ -722,6 +719,22 @@ if __name__ == '__main__':
         plan = Plan(cfg, generate_small_testing_action_sequence)
     else:
         plan = Plan(cfg, generate_full_action_sequence)
+
+    if autosave:
+        fname = os.path.join(cfg.plans_dir,"autosaved.p")
+        with open(fname, 'wb') as f:
+            pickle.dump(plan, f)
+            logging.info("Saved plan to {}".format(fname))
+
+    return plan
+    
+
+
+if __name__ == '__main__':
+
+    import PySimpleGUI as sg
+
+    plan = RunFieldPlanning(autosave=False)
 
     # plan.field.printStats()
     # plan.field.show_image_parsing()

@@ -17,6 +17,11 @@ class Config:
     SKIP_MARVELMIND = True
     # Set to use fake plan instead of loading a generated one
     USE_TEST_PLAN = False
+    # Set to auto-load this plan on master startup
+    AUTO_LOAD_PLAN = True
+    AUTO_LOAD_PLAN_NAME = "AccuracyTesting_3x3_withdistance_2axis.p"
+    # Set to regenerate and auto load plan on master startup
+    REGEN_PLAN = False
 
     # ====== PATHS ========
     
@@ -27,7 +32,8 @@ class Config:
     config_dir_path = os.path.dirname(os.path.realpath(__file__))
     mm_api_path = os.path.join(root_path, mm_api_relative_path)
     log_folder = os.path.join(root_path, 'log')
-    cycle_state_file = os.path.join(config_dir_path, 'plans', 'previous_plan_state.json')
+    plans_dir = os.path.join(config_dir_path, 'plans')
+    cycle_state_file = os.path.join(plans_dir, 'previous_plan_state.json')
 
 
     # ====== ROBOT CONFIG ========

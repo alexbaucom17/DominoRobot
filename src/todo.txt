@@ -17,7 +17,6 @@ Robustify:
 Nice to haves:
 - Better utility/method to plot motion/controller logs
 - Master gui controls to easily step back and forth between plan steps
-- Add a "Generate plan and auto load into master" function
 - Add better logging for distance tracker
 
 
@@ -136,6 +135,7 @@ Progress from Sunday
     - Makes me nervous that it could just stop working randomly and need to be adjusted.
     - Also makes me want to never touch the one that is working currently since it seems pretty solid.
     - Replaced this sensor again later in the day, maybe got a slightly better configuration, still not great.
+- Got US angle tracking working. If I get reliable sensor data, it works great.
 - Lots of attempts at a 3x3 grid, not yet able to reliabily complete second column (US sensor on dominos instead of reference plane)
     - Fixed a variety of bugs and other small issues that came up
     - Some tweaks to approach positioning made US sensors marginally more reliable
