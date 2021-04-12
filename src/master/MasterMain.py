@@ -24,10 +24,21 @@ def status_panel(name):
 
 
 def setup_gui_layout(config, panel_names, target_names):
+    plan_button_size = [10,2]
+    plan_button_pad = (2, 10)
+
     # Left hand column with status panels
     col1 = []
     for name in panel_names:
         col1 += status_panel(name)
+
+    # Plan cycle/action modification buttons
+    incremenet_cycle_button = sg.Button('Cycle +', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_INC_CYCLE_', disabled=True) 
+    decremenet_cycle_button = sg.Button('Cycle -', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_DEC_CYCLE_', disabled=True) 
+    incremenet_action_button = sg.Button('Action +', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_INC_ACTION_', disabled=True) 
+    decremenet_action_button = sg.Button('Action -', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_DEC_ACTION_', disabled=True) 
+    cycle_buttons = [[sg.Column([[incremenet_cycle_button], [decremenet_cycle_button]]), sg.Column([[incremenet_action_button], [decremenet_action_button]])]]
+    col1 += cycle_buttons
 
     # Middle column with plot and buttons
     target_element = [ [sg.Text("Target: ")], [sg.Combo(target_names, key='_TARGET_', default_value='robot1')] ]
@@ -37,8 +48,6 @@ def setup_gui_layout(config, panel_names, target_names):
 
     data_element = [ [sg.Text('Data:')], [sg.Input(key='_ACTION_DATA_')] ]
 
-    plan_button_size = [10,2]
-    plan_button_pad = (2, 10)
     plan_file_field = sg.Input(key='_PLAN_FILE_', visible=False, enable_events=True)
     load_plan_button = sg.FileBrowse(button_text='Load Plan', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, \
         key='_LOAD_PLAN_', file_types=(('Robot Plans', ('*.json','*.p')),)) 
@@ -129,6 +138,9 @@ class CmdGui:
             if clicked_value == "Yes":
                 return "Abort", None
 
+        if event in ["_INC_CYCLE_","_DEC_CYCLE_","_INC_ACTION_","_DEC_ACTION_"]:
+            return event, None
+
         if event == "ESTOP":
             return "ESTOP", None
 
@@ -177,32 +189,43 @@ class CmdGui:
 
         return (target, action)
 
+    def _udpate_cycle_button_status(self, disabled):
+        self.window['_INC_CYCLE_'].update(disabled=disabled)
+        self.window['_DEC_CYCLE_'].update(disabled=disabled)
+        self.window['_INC_ACTION_'].update(disabled=disabled)
+        self.window['_DEC_ACTION_'].update(disabled=disabled)
+
     def _update_plan_button_status(self, plan_status):
         if plan_status == PlanStatus.NONE:
             self.window['_RUN_PLAN_'].update(text='Run', disabled=True)
             self.window['_LOAD_PLAN_'].update(disabled=False)
             self.window['_PAUSE_PLAN_'].update(disabled=True)
             self.window['_ABORT_PLAN_'].update(disabled=True)
+            self._udpate_cycle_button_status(disabled=True)
         elif plan_status == PlanStatus.LOADED or plan_status == PlanStatus.DONE:
             self.window['_RUN_PLAN_'].update(text='Run', disabled=False)
             self.window['_LOAD_PLAN_'].update(disabled=False)
             self.window['_PAUSE_PLAN_'].update(disabled=True)
             self.window['_ABORT_PLAN_'].update(disabled=True)
+            self._udpate_cycle_button_status(disabled=False)
         elif plan_status == PlanStatus.RUNNING:
             self.window['_RUN_PLAN_'].update(text='Run', disabled=True)
             self.window['_LOAD_PLAN_'].update(disabled=True)
             self.window['_PAUSE_PLAN_'].update(disabled=False)
             self.window['_ABORT_PLAN_'].update(disabled=False)
+            self._udpate_cycle_button_status(disabled=True)
         elif plan_status == PlanStatus.PAUSED:
             self.window['_RUN_PLAN_'].update(text='Resume', disabled=False)
             self.window['_LOAD_PLAN_'].update(disabled=True)
             self.window['_PAUSE_PLAN_'].update(disabled=True)
             self.window['_ABORT_PLAN_'].update(disabled=False)
+            self._udpate_cycle_button_status(disabled=False)
         elif plan_status == PlanStatus.ABORTED:
             self.window['_RUN_PLAN_'].update(text='Restart', disabled=False)
             self.window['_LOAD_PLAN_'].update(disabled=False)
             self.window['_PAUSE_PLAN_'].update(disabled=True)
             self.window['_ABORT_PLAN_'].update(disabled=True)
+            self._udpate_cycle_button_status(disabled=False)
         else:
             logging.warning("Unhandled plan statusfor button state: {}".format(plan_status))
 
@@ -458,6 +481,14 @@ class Master:
             self.runtime_manager.set_plan_status(PlanStatus.ABORTED)
         if event_type == "Action":
             self.runtime_manager.run_manual_action(event_data)
+        if event_type == "_INC_CYCLE_":
+            self.runtime_manager.increment_robot_cycle("robot1")
+        if event_type == "_DEC_CYCLE_":
+            self.runtime_manager.decrement_robot_cycle("robot1")
+        if event_type == "_INC_ACTION_":
+            self.runtime_manager.increment_robot_action("robot1")
+        if event_type == "_DEC_ACTION_":
+            self.runtime_manager.decrement_robot_action("robot1")
         if event_type == "ESTOP":
             self.runtime_manager.estop()
             if self.runtime_manager.get_plan_status() == PlanStatus.RUNNING:

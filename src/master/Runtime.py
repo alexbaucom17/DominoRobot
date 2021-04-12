@@ -336,6 +336,18 @@ class RuntimeManager:
 
         self.plan_status = status
 
+    def increment_robot_cycle(self, target):
+        self._modify_cycle_state(target, 1, 0)
+    
+    def decrement_robot_cycle(self, target):
+        self._modify_cycle_state(target, - 1, 0)
+
+    def increment_robot_action(self, target):
+        self._modify_cycle_state(target, 0, 1)
+
+    def decrement_robot_action(self, target):
+        self._modify_cycle_state(target, 0, - 1)
+
     def get_plan_status(self):
         return self.plan_status
 
@@ -503,6 +515,42 @@ class RuntimeManager:
         for robot, data in self.cycle_tracker.items():
             if data['action_id'] == None and data['cycle_id'] == None:
                 self.idle_bots.add(robot)
+
+    def _modify_cycle_state(self, target, add_cycle_id, add_action_id):
+        if self.plan_status == PlanStatus.RUNNING:
+            logging.warning("Cannot update cycle state while plan is running.")
+            return
+        if target not in self.cycle_tracker.keys():
+            logging.warning("Invalid target: {}".format(target))
+            return
+
+        cur_cycle_id = self.cycle_tracker[target]["cycle_id"]
+        if cur_cycle_id is None:
+            cur_cycle_id = 0
+        new_cycle_id = cur_cycle_id + add_cycle_id
+        if self.plan and new_cycle_id >= len(self.plan.cycles) or new_cycle_id < 0:
+            logging.warning("Cycle id {} out of bounds".format(new_cycle_id))
+            return
+
+        cur_action_id = self.cycle_tracker[target]["action_id"]
+        if cur_action_id is None:
+            cur_action_id = 0
+        new_action_id = cur_action_id + add_action_id    
+        if self.plan and new_action_id >= len(self.plan.get_cycle(new_cycle_id).action_sequence) or new_action_id < 0:
+            logging.warning("Action id {} out of bounds".format(new_action_id))
+            return
+
+        data = self.cycle_tracker[target]
+        data['action_id'] = new_action_id
+        data['cycle_id'] = new_cycle_id
+        data['timer'] = None
+        data['needs_restart'] = True
+        self.next_cycle_number = new_cycle_id + 1
+        try:
+            self.idle_bots.remove(target)
+        except:
+            pass
+
 
     def _cycle_state_to_file(self):
         if self.plan_status == PlanStatus.RUNNING:

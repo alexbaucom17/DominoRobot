@@ -3,12 +3,12 @@ Robot SW:
 - Increase robustness to noisy data
     - Consider aggressively filtering distance measurements and relying more on odom. Then if I get a few good measurements here and there, it might still work.
 - Fix localization tests
+- Investigate feasbility of fiducial tracking (opencv)
 
 Robot HW:
 - Keep working to get better US data
 
 Master:
-- Add method to start plan at various places (maybe merge with method below to adjust plan steps?)
 
 Robustify:
 - Fix that missing ack skips current action during plan
@@ -16,7 +16,6 @@ Robustify:
 
 Nice to haves:
 - Better utility/method to plot motion/controller logs
-- Master gui controls to easily step back and forth between plan steps
 - Add better logging for distance tracker
 
 
