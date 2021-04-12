@@ -18,20 +18,25 @@ void configure_logger()
     // Get current date/time
     const std::time_t datetime =  std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     char datetime_str[50];
-    std::strftime(datetime_str, sizeof(datetime_str), "%Y%m%d-%H%M%S", std::localtime(&datetime));
+    std::strftime(datetime_str, sizeof(datetime_str), "%Y%m%d_%H%M%S", std::localtime(&datetime));
 
     // Make file names
     std::string robot_log_file_name = std::string("log/robot_log_") + std::string(datetime_str) + std::string(".txt");
     std::string motion_log_file_name = std::string("log/motion_log_") + std::string(datetime_str) + std::string(".txt");
+    std::string localization_log_file_name = std::string("log/localization_log_") + std::string(datetime_str) + std::string(".txt");
 
     // Initialize robot logs to to go file and console
-    static plog::RollingFileAppender<plog::TxtFormatter> fileAppender(robot_log_file_name.c_str(), 0, 0);
+    static plog::RollingFileAppender<plog::TxtFormatter> fileAppender(robot_log_file_name.c_str(), 1000000, 5);
     static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
     plog::init(plog::info, &fileAppender).addAppender(&consoleAppender); 
 
     // Initialize motion logs to go to file
-    static plog::RollingFileAppender<plog::MessageOnlyFormatter> motionFileAppender(motion_log_file_name.c_str(), 100000, 0);
+    static plog::RollingFileAppender<plog::TxtFormatter> motionFileAppender(motion_log_file_name.c_str(), 1000000, 5);
     plog::init<MOTION_LOG_ID>(plog::debug, &motionFileAppender);
+
+    // Initialize localization logs to go to file
+    static plog::RollingFileAppender<plog::TxtFormatter> localizationFileAppender(localization_log_file_name.c_str(), 1000000, 5);
+    plog::init<LOCALIZATION_LOG_ID>(plog::debug, &localizationFileAppender);
 
     PLOGI << "Logger ready";
 }

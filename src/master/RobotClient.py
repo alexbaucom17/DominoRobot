@@ -201,6 +201,11 @@ class RobotClient(ClientBase):
         msg = {'type': 'move_fine', 'data': {'x': x, 'y': y, 'a': a}}
         self.send_msg_and_wait_for_ack(msg)
 
+    def move_with_distance(self, x, y, a):
+        """ Tell robot to move to a location relative to the distance measurements from ultrasonic sensors """
+        msg = {'type': 'move_dist', 'data': {'x': x, 'y': y, 'a': a}}
+        self.send_msg_and_wait_for_ack(msg)
+
     def move_const_vel(self, vx, vy, va, t):
         """ Tell robot to move at constant velocity for a specific amount of time"""
         msg = {'type': 'move_const_vel', 'data': {'vx': vx, 'vy': vy, 'va': va, 't': t}}
@@ -229,6 +234,21 @@ class RobotClient(ClientBase):
     def clear_error(self):
         """ Tell robot to clear an existing error """
         msg = {'type': 'clear_error'}
+        self.send_msg_and_wait_for_ack(msg)
+
+    def wait_for_localization(self):
+        """ Tell robot to wait for localization"""
+        msg = {'type': 'wait_for_loc'}
+        self.send_msg_and_wait_for_ack(msg)
+
+    def set_pose(self, x, y, a):
+        """ Sets the pose of the robot explicity bypassing any localization code """
+        msg = {'type': 'set_pose', 'data': {'x': x, 'y': y, 'a': a}}
+        self.send_msg_and_wait_for_ack(msg)
+
+    def toggle_distance(self):
+        """ Tell robot to toggle distance measurement"""
+        msg = {'type': 'toggle_dist'}
         self.send_msg_and_wait_for_ack(msg)
 
 class BaseStationClient(ClientBase):
@@ -275,6 +295,12 @@ class MockRobotClient:
         return {"in_progress": False, "pos_x": 1, "pos_y": 2, "pos_a": 0}
     
     def clear_error(self):
+        pass
+
+    def wait_for_localization(self):
+        pass
+
+    def toggle_distance(self):
         pass
 
 class MockBaseStationClient:

@@ -24,6 +24,8 @@ class SerialComms : public SerialCommsBase
 
     std::string rcv_lift() override;
 
+    std::string rcv_distance() override;
+
   protected:
 
     void rcv();
@@ -36,6 +38,7 @@ class SerialComms : public SerialCommsBase
     
     std::queue<std::string> base_data_;
     std::queue<std::string> lift_data_;
+    std::queue<std::string> distance_data_;
     
 
 };

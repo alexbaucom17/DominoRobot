@@ -14,6 +14,7 @@ extern libconfig::Config cfg;
 
 // USB devices
 #define CLEARCORE_USB "/dev/clearcore"
+#define ARDUINO_USB "/dev/arduino"
 #define MARVELMIND_USB_0 "/dev/marvelmind0" //Marvelminds could show up at any of these three links
 #define MARVELMIND_USB_1 "/dev/marvelmind1"
 #define MARVELMIND_USB_2 "/dev/marvelmind2"
@@ -24,6 +25,7 @@ extern libconfig::Config cfg;
 
 // Log file ID for motion specific stuff
 #define MOTION_LOG_ID 2
+#define LOCALIZATION_LOG_ID 3
 
 // Commands use to communicate about behavior specified from master
 enum class COMMAND
@@ -33,6 +35,7 @@ enum class COMMAND
     MOVE_REL,
     MOVE_FINE,
     MOVE_CONST_VEL,
+    MOVE_WITH_DISTANCE,
     PLACE_TRAY,
     LOAD_TRAY,
     INITIALIZE_TRAY,
@@ -40,6 +43,9 @@ enum class COMMAND
     ESTOP,
     LOAD_COMPLETE,
     CLEAR_ERROR,
+    WAIT_FOR_LOCALIZATION,
+    SET_POSE,
+    TOGGLE_DISTANCE,
 };
 
 #endif

@@ -1,11 +1,14 @@
 #define _USE_MATH_DEFINES
  
-#include <cmath>
 #include "utils.h"
+
+#include <cmath>
 #include <chrono>
 #include <plog/Log.h>
-
 #include <iostream>
+#include <sstream>
+
+#include "constants.h"
 
 float wrap_angle(float a)
 {
@@ -33,13 +36,14 @@ float angle_diff(float a1, float a2)
 
 RateController::RateController(int hz)
 : timer_(),
-  dt_us_(1000000 / hz)
+  dt_us_(1000000 / hz),
+  always_ready_(cfg.lookup("motion.rate_always_ready"))
 {
 }
 
 bool RateController::ready()
 {
-  if(timer_.dt_us() > dt_us_)
+  if(always_ready_ || timer_.dt_us() > dt_us_)
   {
     timer_.reset();
     return true;
@@ -92,6 +96,7 @@ void TimeRunningAverage::mark_point()
     {
         timer_.reset();
         started_ = true;
+        return;
     }
 
     buf_[buf_idx_] = timer_.dt_ms();
@@ -223,3 +228,83 @@ ClockFactory::ClockFactory()
 : mode_(CLOCK_FACTORY_MODE::STANDARD),
   clock_instance_()
 {}
+
+
+PositionController::PositionController(Gains gains) 
+: gains_(gains),
+  error_sum_(0.0)
+{ }
+
+void PositionController::reset()
+{
+    error_sum_ = 0.0;
+}
+
+float PositionController::compute(float target_position, float actual_position, float target_velocity, float actual_velocity, float dt)
+{
+    float pos_err = target_position - actual_position;
+    float vel_err = target_velocity - actual_velocity;
+    error_sum_ += pos_err * dt;
+    float output_velocity = target_velocity + gains_.kp * pos_err + gains_.kd * vel_err + gains_.ki * error_sum_;
+    return output_velocity;
+}
+
+
+float vectorMean(const std::vector<float>& data)
+{
+    if(data.empty()) return 0;
+
+    float sum = 0.0;
+    for (const auto& val : data)
+    {
+        sum += val;
+    }
+    return sum/data.size();
+}
+
+float vectorStddev(const std::vector<float>& data, float mean)
+{
+    if(data.empty()) return 0;
+    
+    float variance = 0;
+    for (const auto& val : data)
+    {
+        variance += (val - mean) * (val - mean);
+    }
+    variance /= data.size();
+    return sqrt(variance);
+}
+
+float zScore(float mean, float stddev, float reading)
+{
+    if (stddev < 0.0001) return 0;
+    return fabs((reading - mean)/stddev);
+}
+
+
+// From: https://www.tutorialspoint.com/parsing-a-comma-delimited-std-string-in-cplusplus
+std::vector<std::string> parseCommaDelimitedString(const std::string& str_in)
+{
+   std::vector<std::string> result;
+   std::stringstream s_stream(str_in); //create string stream from the string
+   while(s_stream.good()) 
+   {
+      std::string substr;
+      getline(s_stream, substr, ','); //get first string delimited by comma
+      result.push_back(substr);
+   }
+   return result;
+}
+
+std::vector<float> parseCommaDelimitedStringToFloat(const std::string& str_in)
+{
+    std::vector<std::string> str_parsed = parseCommaDelimitedString(str_in);
+    std::vector<float> result;
+    result.reserve(str_parsed.size());
+    for(const auto& val : str_parsed)
+    {
+        if(val.empty()) continue;
+        result.push_back(std::stof(val));
+    }
+    return result;
+}

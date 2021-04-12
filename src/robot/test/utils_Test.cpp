@@ -40,7 +40,7 @@ TEST_CASE("TimeRunningAverage - Test constant time pauses", "[utils]")
     int window = 10;
     int sleep_time_us = 2000;
     TimeRunningAverage T = TimeRunningAverage(window);
-    MockClockWrapper* mock_clock = get_mock_clock();
+    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
 
     for(int i = 0; i < window+1; i++)
     {
@@ -69,7 +69,7 @@ TEST_CASE("TimeRunningAverage - Test larger buffer", "[utils]")
     int window = 100;
     int sleep_time_us = 1000;
     TimeRunningAverage T = TimeRunningAverage(window);
-    MockClockWrapper* mock_clock = get_mock_clock();
+    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
 
     for(int i = 0; i < window+1; i++)
     {
@@ -105,7 +105,7 @@ TEST_CASE("TimeRunningAverage - Variable timing", "[utils]")
     int window = 10;
     int sleep_time_us = 2000;
     TimeRunningAverage T = TimeRunningAverage(window);
-    MockClockWrapper* mock_clock = get_mock_clock();
+    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
 
     SECTION("Partial buffer")
     {
@@ -116,7 +116,7 @@ TEST_CASE("TimeRunningAverage - Variable timing", "[utils]")
             mock_clock->advance_us(sleep_time_us);
             sleep_time_us += 2000;
         }
-        REQUIRE(T.get_ms() == 5);
+        REQUIRE(T.get_ms() == 6);
 
         SECTION("Full buffer")
         {
@@ -134,34 +134,37 @@ TEST_CASE("TimeRunningAverage - Variable timing", "[utils]")
 
 TEST_CASE("Rate controller - slow", "[utils]")
 {
-    MockClockWrapper* mock_clock = get_mock_clock();
-    RateController r(1);
-    REQUIRE(r.ready() == false);
-    mock_clock->advance_sec(0.5);
-    REQUIRE(r.ready() == false);
-    mock_clock->advance_sec(0.55);
-    REQUIRE(r.ready() == true);
-    REQUIRE(r.ready() == false);
-}
-
-TEST_CASE("Rate controller - fast", "[utils]")
-{
-    MockClockWrapper* mock_clock = get_mock_clock();
-    RateController r(1000);
-    REQUIRE(r.ready() == false);
-    mock_clock->advance_us(500);
-    REQUIRE(r.ready() == false);
-    mock_clock->advance_us(600);
-    REQUIRE(r.ready() == true);
-    REQUIRE(r.ready() == false);
-    mock_clock->advance_us(1100);
-    REQUIRE(r.ready() == true);
+    SafeConfigModifier<bool> config_modifier("motion.rate_always_ready", false);
+    SECTION("Slow")
+    {
+        MockClockWrapper* mock_clock = get_mock_clock_and_reset();
+        RateController r(1);
+        REQUIRE(r.ready() == false);
+        mock_clock->advance_sec(0.5);
+        REQUIRE(r.ready() == false);
+        mock_clock->advance_sec(0.55);
+        REQUIRE(r.ready() == true);
+        REQUIRE(r.ready() == false);
+    }
+    SECTION("Fast")
+    {
+        MockClockWrapper* mock_clock = get_mock_clock_and_reset();
+        RateController r(1000);
+        REQUIRE(r.ready() == false);
+        mock_clock->advance_us(500);
+        REQUIRE(r.ready() == false);
+        mock_clock->advance_us(600);
+        REQUIRE(r.ready() == true);
+        REQUIRE(r.ready() == false);
+        mock_clock->advance_us(1100);
+        REQUIRE(r.ready() == true);
+    }
 }
 
 
 TEST_CASE("MockClockWrapper", "[utils]")
 {
-    MockClockWrapper* mock_clock = get_mock_clock();
+    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
     SECTION("Microseconds")
     {
         int count = 100;
@@ -215,7 +218,7 @@ TEST_CASE("ClockWrapper", "[utils]")
 
 TEST_CASE("Timer", "[utils]")
 {
-    MockClockWrapper* mock_clock = get_mock_clock();
+    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
 
     Timer t;
     REQUIRE(t.dt_s() == 0);
@@ -251,4 +254,216 @@ TEST_CASE("Timer", "[utils]")
     REQUIRE(t.dt_s() == 0);
     REQUIRE(t.dt_ms() == 0);
     REQUIRE(t.dt_us() == 0);
+}
+
+TEST_CASE("CircularBuffer", "[utils]")
+{
+    SECTION("CheckFull")
+    {
+        CircularBuffer<int> buf(5);
+
+        buf.insert(1);
+        buf.insert(2);
+        buf.insert(3);
+        buf.insert(4);
+        REQUIRE(buf.isFull() == false);
+
+        buf.insert(1);
+        REQUIRE(buf.isFull() == true);
+
+        buf.insert(2);
+        REQUIRE(buf.isFull() == true);
+
+        buf.clear();
+        REQUIRE(buf.isFull() == false);
+    }
+    SECTION("CheckContents")
+    {
+        CircularBuffer<int> buf(5);
+
+        buf.insert(1);
+        buf.insert(2);
+        buf.insert(3);
+        buf.insert(4);
+        REQUIRE(buf.get_contents() == std::vector<int>{1,2,3,4});
+
+        buf.insert(5);
+        REQUIRE(buf.get_contents() == std::vector<int>{1,2,3,4,5});
+
+        buf.insert(6);
+        REQUIRE(buf.get_contents() == std::vector<int>{2,3,4,5,6});
+
+        buf.clear();
+        REQUIRE(buf.get_contents() == std::vector<int>{});
+
+    }
+    
+}
+
+
+TEST_CASE("PositionController", "[utils]")
+{
+
+    SECTION("P only")
+    {
+        PositionController::Gains gains {1,0,0};
+        PositionController controller(gains);
+
+        float target_pos = 1.0;
+        float actual_pos = 0.0;
+        float target_vel = 0.0;
+        float actual_vel = 0.0;
+        float dt = 0.1;
+        float cmd_vel = controller.compute(target_pos, actual_pos, target_vel, actual_vel, dt);
+
+        REQUIRE(cmd_vel == 1.0);
+    }
+
+    SECTION("PD")
+    {
+        PositionController::Gains gains {1,0,0.5};
+        PositionController controller(gains);
+
+        float target_pos = 1.0;
+        float actual_pos = 0.0;
+        float target_vel = 1.0;
+        float actual_vel = 0.0;
+        float dt = 0.1;
+        float cmd_vel = controller.compute(target_pos, actual_pos, target_vel, actual_vel, dt);
+
+        REQUIRE(cmd_vel == 2.5);
+    }
+
+    SECTION("PID")
+    {
+        PositionController::Gains gains {1,1,0.5};
+        PositionController controller(gains);
+
+        float target_pos = 1.0;
+        float actual_pos = 0.0;
+        float target_vel = 1.0;
+        float actual_vel = 0.0;
+        float dt = 0.1;
+        float cmd_vel = controller.compute(target_pos, actual_pos, target_vel, actual_vel, dt);
+
+        
+        // Compute again to get additive I gain
+        cmd_vel = controller.compute(target_pos, actual_pos, target_vel, actual_vel, dt);
+        REQUIRE(cmd_vel == 2.7f);
+
+        // Reset gain
+        controller.reset();
+        cmd_vel = controller.compute(target_pos, actual_pos, target_vel, actual_vel, dt);
+        REQUIRE(cmd_vel == 2.6f);
+    }
+
+    SECTION("PID step response no noise")
+    {
+        PositionController::Gains gains {2,1,0.01};
+        PositionController controller(gains);
+
+        float target_pos = 1.0;
+        float actual_pos = 0.0;
+        float target_vel = 0.0;
+        float actual_vel = 0.0;
+        float dt = 0.1;
+
+        for (int i = 0; i < 100; i++) 
+        {
+            actual_vel = controller.compute(target_pos, actual_pos, target_vel, actual_vel, dt);
+            actual_pos += actual_vel*dt;
+        }
+
+        REQUIRE(actual_vel == Approx(target_vel).margin(0.001));
+        REQUIRE(actual_pos == Approx(target_pos).margin(0.001));
+    }
+
+}
+
+
+TEST_CASE("VectorMath", "[utils]")
+{
+    SECTION("Simple data")
+    {
+        std::vector<float> data = {1,2,3,4,5,6,7,8,9,10};
+        float mean = vectorMean(data);
+        float stddev = vectorStddev(data, mean);
+        float zscore = zScore(mean, stddev, 11);
+        REQUIRE(mean == 5.5);
+        REQUIRE(stddev == Approx(2.8723).margin(0.001));
+        REQUIRE(zscore == Approx(1.9148).margin(0.001));
+    }
+    SECTION("No data")
+    {
+        std::vector<float> data = {};
+        float mean = vectorMean(data);
+        float stddev = vectorStddev(data, mean);
+        float zscore = zScore(mean, stddev, 11);
+        REQUIRE(mean == 0);
+        REQUIRE(stddev == 0);
+        REQUIRE(zscore == 0);
+    }
+}
+
+TEST_CASE("StringParse", "[utils]")
+{
+    SECTION("Empty string")
+    {
+        std::string test_string = "";
+        std::vector<std::string> result = parseCommaDelimitedString(test_string);
+        REQUIRE(result.size() == 1);
+        REQUIRE(result[0].empty());
+    }
+    SECTION("Normal string, no trailing comma")
+    {
+        std::string test_string = "asdf,1234,hello";
+        std::vector<std::string> result = parseCommaDelimitedString(test_string);
+        REQUIRE(result.size() == 3);
+        REQUIRE_THAT(result, Catch::Matchers::Equals(std::vector<std::string>{"asdf", "1234", "hello"}));
+    }
+    SECTION("Normal string, with trailing comma")
+    {
+        std::string test_string = "asdf,1234,hello,";
+        std::vector<std::string> result = parseCommaDelimitedString(test_string);
+        REQUIRE(result.size() == 4);
+        REQUIRE_THAT(result, Catch::Matchers::Equals(std::vector<std::string>{"asdf", "1234", "hello", ""}));
+    }
+    SECTION("String with whitespace")
+    {
+        std::string test_string = "as df,1234  ,  hello";
+        std::vector<std::string> result = parseCommaDelimitedString(test_string);
+        REQUIRE(result.size() == 3);
+        REQUIRE_THAT(result, Catch::Matchers::Equals(std::vector<std::string>{"as df", "1234  ", "  hello"}));
+    }
+}
+
+TEST_CASE("StringToFloatParse", "[utils]")
+{
+    SECTION("Empty string")
+    {
+        std::string test_string = "";
+        std::vector<float> result = parseCommaDelimitedStringToFloat(test_string);
+        REQUIRE(result.empty());
+    }
+    SECTION("Normal string, no trailing comma")
+    {
+        std::string test_string = "1.0,2.345,-1.2363";
+        std::vector<float> result = parseCommaDelimitedStringToFloat(test_string);
+        REQUIRE(result.size() == 3);
+        REQUIRE_THAT(result, Catch::Matchers::Equals(std::vector<float>{1.0, 2.345, -1.2363}));
+    }
+    SECTION("Normal string, with trailing comma")
+    {
+        std::string test_string = "1.0,2.345,-1.2363,";
+        std::vector<float> result = parseCommaDelimitedStringToFloat(test_string);
+        REQUIRE(result.size() == 3);
+        REQUIRE_THAT(result, Catch::Matchers::Equals(std::vector<float>{1.0, 2.345, -1.2363}));
+    }
+    SECTION("String with whitespace")
+    {
+        std::string test_string = "1.0   ,2.345  ,  -1.2363";
+        std::vector<float> result = parseCommaDelimitedStringToFloat(test_string);
+        REQUIRE(result.size() == 3);
+        REQUIRE_THAT(result, Catch::Matchers::Equals(std::vector<float>{1.0, 2.345, -1.2363}));
+    }
 }

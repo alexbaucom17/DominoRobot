@@ -62,6 +62,15 @@ COMMAND RobotServer::getCommand(std::string message)
             printIncomingCommand(message);
             sendAck(type);
         }
+        else if(type == "move_dist")
+        {
+            cmd = COMMAND::MOVE_WITH_DISTANCE;
+            moveData_.x = doc["data"]["x"];
+            moveData_.y = doc["data"]["y"];
+            moveData_.a = doc["data"]["a"];
+            printIncomingCommand(message);
+            sendAck(type);
+        }
         else if(type == "move_const_vel")
         {
             cmd = COMMAND::MOVE_CONST_VEL;
@@ -98,6 +107,14 @@ COMMAND RobotServer::getCommand(std::string message)
             positionData_.a = doc["data"]["a"];
             sendAck(type);
         }
+        else if(type == "set_pose")
+        {
+            cmd = COMMAND::SET_POSE;
+            positionData_.x = doc["data"]["x"];
+            positionData_.y = doc["data"]["y"];
+            positionData_.a = doc["data"]["a"];
+            sendAck(type);
+        }
         else if(type == "estop")
         {
             cmd = COMMAND::ESTOP;
@@ -122,6 +139,16 @@ COMMAND RobotServer::getCommand(std::string message)
         {
             statusUpdater_.clearErrorStatus();
             sendAck(type);
+        }
+        else if (type == "wait_for_loc")
+        {
+            sendAck(type);
+            cmd = COMMAND::WAIT_FOR_LOCALIZATION;
+        }
+        else if (type == "toggle_dist")
+        {
+            sendAck(type);
+            cmd = COMMAND::TOGGLE_DISTANCE;
         }
         else if(type == "")
         {

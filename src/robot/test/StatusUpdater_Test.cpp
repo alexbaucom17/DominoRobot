@@ -31,7 +31,8 @@ TEST_CASE("Velocity", "[StatusUpdater]")
 TEST_CASE("LoopTimes", "[StatusUpdater]")
 {
     StatusUpdater s;
-    s.updateLoopTimes(1,2);
+    s.updateControlLoopTime(1);
+    s.updatePositionLoopTime(2);
 
     StatusUpdater::Status status = s.getStatus();
     REQUIRE(status.controller_loop_ms == 1);
@@ -58,7 +59,8 @@ TEST_CASE("JSON", "[StatusUpdater]")
     StatusUpdater s;
     s.updatePosition(1,2,3);
     s.updateVelocity(4,5,6);
-    s.updateLoopTimes(7,8);
+    s.updateControlLoopTime(7);
+    s.updatePositionLoopTime(8);
     s.updateInProgress(true);
 
     std::string json_string = s.getStatusJsonString();

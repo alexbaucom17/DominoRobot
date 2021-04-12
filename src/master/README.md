@@ -146,5 +146,5 @@ If something goes wrong, you can use the big red ESTOP button on the command win
 |TRAY_INIT | robot | Run the tray intialization sequence on the robot. | None|
 |LOAD_COMPLETE|robot| Indicate to the robot that the base station has completed the loading process. | None |
 |ESTOP|all| Tell the target to immediately stop any current action/motion. | None |
-|WAIT|N/A| Not yet implimented. | N/A|
+|WAIT_FOR_LOCALIZATION| robot | Tell the target to wait for the localization confidence to reach a good level. | None |
 |CLEAR_ERROR |all| Clear an error state that is preventing the target from starting a new action.| None |

@@ -3,15 +3,44 @@
 #include <plog/Log.h>
 #include "serial/SerialCommsFactory.h"
 
+enum class LifterPosType
+{
+    DEFAULT,
+    PLACE,
+    LOAD,
+};
+
+int getPos(LifterPosType pos_type)
+{
+    float revs = 0.0;
+    switch(pos_type)
+    {
+        case LifterPosType::DEFAULT:
+            revs = cfg.lookup("tray.default_pos_revs");
+            break;
+        case LifterPosType::PLACE:
+            revs = cfg.lookup("tray.place_pos_revs");
+            break;
+        case LifterPosType::LOAD:
+            revs = cfg.lookup("tray.load_pos_revs");
+            break;
+    }
+    int steps_per_rev = cfg.lookup("tray.steps_per_rev");
+    float steps = steps_per_rev * revs;
+    return static_cast<int>(steps);
+}
 
 TrayController::TrayController()
 : serial_to_lifter_driver_(SerialCommsFactory::getFactoryInstance()->get_serial_comms(CLEARCORE_USB)),
   action_step_running_(false),
   load_complete_(false),
   action_step_(0),
+  fake_tray_motion_(cfg.lookup("tray.fake_tray_motions")),
   cur_action_(ACTION::NONE),
-  controller_rate_(cfg.lookup("tray.controller_frequency"))
+  controller_rate_(cfg.lookup("tray.controller_frequency")),
+  is_initialized_(false)
 {
+    if(fake_tray_motion_) PLOGW << "Fake tray motion enabled";
 }
 
 void TrayController::initialize()
@@ -21,23 +50,38 @@ void TrayController::initialize()
     PLOGI << "Starting tray action INITIALIZE";
 }
 
-void TrayController::place()
+bool TrayController::place()
 {
+    if(!is_initialized_ && !fake_tray_motion_) 
+    {
+        PLOGE << "Tray is not initialized, aborting action";
+        return false;
+    }
+    
     cur_action_ = ACTION::PLACE;
     action_step_ = 0;
     PLOGI << "Starting tray action PLACE";
+    return true;
 }
 
-void TrayController::load()
+bool TrayController::load()
 {
+    if(!is_initialized_ && !fake_tray_motion_) 
+    {
+        PLOGE << "Tray is not initialized, aborting action";
+        return false;
+    }
+    
     cur_action_ = ACTION::LOAD;
     action_step_ = 0;
     PLOGI << "Starting tray action LOAD";
+    return true;
 }
 
 void TrayController::estop()
 {
     cur_action_ = ACTION::NONE;
+    PLOGW << "Estopping tray control";
     if (serial_to_lifter_driver_->isConnected())
     {
         serial_to_lifter_driver_->send("lift:stop");
@@ -74,10 +118,10 @@ void TrayController::runStepAndWaitForCompletion(std::string data, std::string d
         if (serial_to_lifter_driver_->isConnected())
         {
             serial_to_lifter_driver_->send(data);
-            action_step_running_ = true;
-            PLOGI << debug_print;
-            action_timer_.reset();
         }
+        action_step_running_ = true;
+        PLOGI << debug_print;
+        action_timer_.reset();
     }
     else
     {
@@ -89,7 +133,7 @@ void TrayController::runStepAndWaitForCompletion(std::string data, std::string d
             msg = serial_to_lifter_driver_->rcv_lift();
         }
         // Initial delay for action
-        if(action_timer_.dt_ms() > 1000 && msg == "none") {
+        if(action_timer_.dt_ms() > 1000 && (msg == "none" || fake_tray_motion_)) {
             action_step_running_ = false;
             action_step_++;
         }
@@ -122,7 +166,7 @@ void TrayController::updateInitialize()
     // 2 - Move to default location
     if(action_step_ == 2)
     {
-        int pos = cfg.lookup("tray.default_pos_steps");
+        int pos = getPos(LifterPosType::DEFAULT);
         std::string data = "lift:pos:" + std::to_string(pos);
         std::string debug = "Moving tray to default position";
         runStepAndWaitForCompletion(data, debug);
@@ -132,6 +176,7 @@ void TrayController::updateInitialize()
     {
         cur_action_ = ACTION::NONE;
         PLOGI << "Done with initialization";
+        is_initialized_ = true;
     }
 }
 
@@ -148,7 +193,7 @@ void TrayController::updatePlace()
     // 0 - Move tray to place
     if(action_step_ == 0)
     {
-        int pos = cfg.lookup("tray.place_pos_steps");
+        int pos = getPos(LifterPosType::PLACE);
         std::string data = "lift:pos:" + std::to_string(pos);
         std::string debug = "Moving tray to placement position";
         runStepAndWaitForCompletion(data, debug);
@@ -163,7 +208,7 @@ void TrayController::updatePlace()
     // 2 - Move tray to default
     if(action_step_ == 2)
     {
-        int pos = cfg.lookup("tray.default_pos_steps");
+        int pos = getPos(LifterPosType::DEFAULT);
         std::string data = "lift:pos:" + std::to_string(pos);
         std::string debug = "Moving tray to default position";
         runStepAndWaitForCompletion(data, debug);
@@ -195,7 +240,7 @@ void TrayController::updateLoad()
     // 0 - Move tray to load
     if(action_step_ == 0)
     {
-        int pos = cfg.lookup("tray.load_pos_steps");
+        int pos = getPos(LifterPosType::LOAD);
         std::string data = "lift:pos:" + std::to_string(pos);
         std::string debug = "Moving tray to load position";
         runStepAndWaitForCompletion(data, debug);
@@ -203,17 +248,26 @@ void TrayController::updateLoad()
     // 1 - Wait for load complete signal
     if(action_step_ == 1)
     {
-        if(load_complete_)
+        if(!action_step_running_) 
         {
-            action_step_++;
-            PLOGI << "Got load complete signal";
-            load_complete_ = false;
+            action_step_running_ = true;
+            PLOGI << "Waiting for load complete";
+        } 
+        else
+        {
+            if(load_complete_)
+            {
+                action_step_++;
+                PLOGI << "Got load complete signal";
+                load_complete_ = false;
+                action_step_running_ = false;
+            }
         }
     }
     // 2 - Move to default
     if(action_step_ == 2)
     {
-        int pos = cfg.lookup("tray.default_pos_steps");
+        int pos = getPos(LifterPosType::DEFAULT);
         std::string data = "lift:pos:" + std::to_string(pos);
         std::string debug = "Moving tray to default position";
         runStepAndWaitForCompletion(data, debug);

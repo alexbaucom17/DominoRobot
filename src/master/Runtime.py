@@ -9,15 +9,8 @@ import copy
 
 from MarvelMindHandler import MarvelmindWrapper, MockMarvelmindWrapper
 from RobotClient import RobotClient, BaseStationClient, MockRobotClient, MockBaseStationClient
-from FieldPlanner import ActionTypes, Action, TestPlan
+from FieldPlanner import ActionTypes, Action, TestPlan, RunFieldPlanning
 from Utils import write_file, NonBlockingTimer
-
-# Debugging flags
-# TODO: move these to centralized location like config
-OFFLINE_TESTING = False
-SKIP_BASE_STATION = True
-SKIP_MARVELMIND = True
-USE_TEST_PLAN = False
 
 class RobotInterface:
     def __init__(self, config, robot_id):
@@ -27,6 +20,10 @@ class RobotInterface:
         self.robot_id = robot_id
         self.last_status_time = 0
         self.last_status = None
+        self.simple_action_map = {}
+        self.current_action = ActionTypes.NONE
+        self.current_move_data = []
+        self.current_action_timer = None
 
     def bring_online(self, use_mock=False):
         self._bring_comms_online(use_mock)
@@ -34,8 +31,24 @@ class RobotInterface:
     def check_online(self):
         return self.comms_online
 
-    def get_last_status(self):
-        return self.last_status
+    def get_robot_metrics(self):
+        metrics = copy.copy(self.last_status)
+        if metrics and type(metrics) is dict:
+            metrics['current_action'] = str(self.current_action)
+            metrics['current_move_data'] = self.current_move_data
+        return metrics
+
+    def _setup_action_map(self):
+        self.simple_action_map = {
+            ActionTypes.LOAD: self.robot_client.load,
+            ActionTypes.PLACE: self.robot_client.place,
+            ActionTypes.TRAY_INIT: self.robot_client.tray_init,
+            ActionTypes.LOAD_COMPLETE: self.robot_client.load_complete,
+            ActionTypes.ESTOP: self.robot_client.estop,
+            ActionTypes.CLEAR_ERROR: self.robot_client.clear_error,
+            ActionTypes.WAIT_FOR_LOCALIZATION: self.robot_client.wait_for_localization,
+            ActionTypes.TOGGLE_DISTANCE: self.robot_client.toggle_distance,
+        }
 
     def _bring_comms_online(self, use_mock=False):
         try:
@@ -48,6 +61,7 @@ class RobotInterface:
 
             if self.robot_client.net_status():
                 self.comms_online = True
+                self._setup_action_map()
                 logging.info("Connected to {} over wifi".format(self.robot_id))
         except Exception as e:
             logging.info("Couldn't connect to {} over wifi".format(self.robot_id))
@@ -56,6 +70,13 @@ class RobotInterface:
     def _get_status_from_robot(self):
         self.last_status = self.robot_client.request_status()
         self.last_status_time = time.time()
+        
+        # Reset current action and move data if the robot finished an action
+        if self.current_action != ActionTypes.NONE and self.last_status is not None and \
+            'in_progress' in self.last_status.keys() and not self.last_status['in_progress'] and self.current_action_timer.check():
+            self.current_action = ActionTypes.NONE
+            self.current_move_data = []
+
 
     def update(self):
 
@@ -78,31 +99,32 @@ class RobotInterface:
         logging.info("Running {} on {}".format(action.action_type, self.robot_id))
 
         try:
+            if action.action_type is not None:
+                self.current_action = action.action_type
+            
             if action.action_type == ActionTypes.MOVE_COARSE:
                 self.robot_client.move(action.x, action.y, action.a)
+                self.current_move_data = [action.x, action.y, action.getAngleDegrees()]
             elif action.action_type == ActionTypes.MOVE_REL:
                 self.robot_client.move_rel(action.x, action.y, action.a)
             elif action.action_type == ActionTypes.MOVE_FINE:
                 self.robot_client.move_fine(action.x, action.y, action.a)
+                self.current_move_data = [action.x, action.y, action.getAngleDegrees()]
+            elif action.action_type == ActionTypes.MOVE_WITH_DISTANCE:
+                self.robot_client.move_with_distance(action.x, action.y, action.a)
+            elif action.action_type == ActionTypes.MOVE_CONST_VEL:
+                self.robot_client.move_const_vel(action.vx, action.vy, action.va, action.t)
+            elif action.action_type == ActionTypes.SET_POSE:
+                self.robot_client.set_pose(action.x, action.y, action.a)
             elif action.action_type == ActionTypes.NET:
                 status = self.robot_client.net_status()
                 logging.info("Robot {} network status is: {}".format(self.robot_id, status))
-            elif action.action_type == ActionTypes.LOAD:
-                self.robot_client.load()
-            elif action.action_type == ActionTypes.PLACE:
-                self.robot_client.place()
-            elif action.action_type == ActionTypes.TRAY_INIT:
-                self.robot_client.tray_init()
-            elif action.action_type == ActionTypes.LOAD_COMPLETE:
-                self.robot_client.load_complete()
-            elif action.action_type == ActionTypes.ESTOP:
-                self.robot_client.estop()
-            elif action.action_type == ActionTypes.MOVE_CONST_VEL:
-                self.robot_client.move_const_vel(action.vx, action.vy, action.va, action.t)
-            elif action.action_type == ActionTypes.CLEAR_ERROR:
-                self.robot_client.clear_error()
+            elif action.action_type in self.simple_action_map.keys():
+                self.simple_action_map[action.action_type]()
             else:
                 logging.info("Unknown action: {}".format(action.action_type))
+
+            self.current_action_timer = NonBlockingTimer(self.config.robot_next_action_wait_time)
         except RuntimeError:
             logging.info("Network connection with {} lost".format(self.robot_id))
             self.comms_online = False
@@ -199,7 +221,7 @@ class RuntimeManager:
         self.component_initialization_status['mm'] = False
         self.component_initialization_status['base_station'] = False
 
-        if OFFLINE_TESTING or SKIP_MARVELMIND:
+        if self.config.OFFLINE_TESTING or self.config.SKIP_MARVELMIND:
             self.mm_wrapper = MockMarvelmindWrapper(config)
         else:
             self.mm_wrapper = MarvelmindWrapper(config)
@@ -213,8 +235,15 @@ class RuntimeManager:
         self.plan = None
         self.plan_path = ""
         self.plan_status = PlanStatus.NONE
-        if USE_TEST_PLAN:
+        if self.config.USE_TEST_PLAN:
             self._load_plan_from_file('')
+        elif self.config.REGEN_PLAN:
+            logging.info("Regenerating and loading plan")
+            plan = RunFieldPlanning(autosave=True)
+            self._load_plan_from_object(plan, "autogen")
+        elif self.config.AUTO_LOAD_PLAN and self.config.AUTO_LOAD_PLAN_NAME:
+            plan_path = os.path.join(self.config.plans_dir, self.config.AUTO_LOAD_PLAN_NAME)
+            self._load_plan_from_file(plan_path)
 
     def initialize(self):
 
@@ -224,10 +253,10 @@ class RuntimeManager:
         # Handle testing/mock case
         use_base_station_mock = False
         use_robot_mock = False
-        if OFFLINE_TESTING:
+        if self.config.OFFLINE_TESTING:
             use_base_station_mock = True
             use_robot_mock = True
-        if SKIP_BASE_STATION:
+        if self.config.SKIP_BASE_STATION:
             use_base_station_mock = True
         
         # Bring everything online if needed
@@ -242,8 +271,8 @@ class RuntimeManager:
         # Check the status of initialization
         self._check_initialization_status()
         if self.initialization_status != RuntimeManager.STATUS_FULLY_INITIALIZED:
-            self.initialization_timer = NonBlockingTimer(10)
-            logging.info("Unable to fully initialize RuntimeManager, will try again in 10 seconds")
+            self.initialization_timer = NonBlockingTimer(3)
+            logging.info("Unable to fully initialize RuntimeManager, will try again in 3 seconds")
             logging.info("Current componenent initialization status:")
             logging.info(pprint.pformat(self.component_initialization_status, indent=2, width=10))
 
@@ -307,20 +336,34 @@ class RuntimeManager:
 
         self.plan_status = status
 
+    def increment_robot_cycle(self, target):
+        self._modify_cycle_state(target, 1, 0)
+    
+    def decrement_robot_cycle(self, target):
+        self._modify_cycle_state(target, - 1, 0)
+
+    def increment_robot_action(self, target):
+        self._modify_cycle_state(target, 0, 1)
+
+    def decrement_robot_action(self, target):
+        self._modify_cycle_state(target, 0, - 1)
+
     def get_plan_status(self):
         return self.plan_status
 
+    def _load_plan_from_object(self, plan, plan_path=""):
+        self.plan = plan
+        self.plan_status = PlanStatus.LOADED
+        self.plan_path = plan_path
+
     def _load_plan_from_file(self, plan_file):
-        if USE_TEST_PLAN or plan_file == "testplan":
-            self.plan = TestPlan()
-            self.plan_status = PlanStatus.LOADED
-            self.plan_path = "testplan"
+        if self.config.USE_TEST_PLAN or plan_file == "testplan":
+            self._load_plan_from_object(TestPlan(), "testplan")
         else:
-            self.plan_path = plan_file
             with open(plan_file, 'rb') as f:
-                self.plan = pickle.load(f)
-                logging.info("Loaded plan from {}".format(plan_file))
-                self.plan_status = PlanStatus.LOADED    
+                plan = pickle.load(f)
+                self._load_plan_from_object(plan, plan_file)
+                logging.info("Loaded plan from {}".format(plan_file))  
 
     def _update_plan(self):
         # If we have an idle robot, send it the next cycle to execute
@@ -379,7 +422,15 @@ class RuntimeManager:
         self.last_metrics['base'] = self.base_station.get_last_status()
         self.last_metrics['plan'] = self._get_plan_metrics()
         for robot in self.robots.values():
-            self.last_metrics[str(robot.robot_id)] = robot.get_last_status()
+            robot_metrics = robot.get_robot_metrics()
+            self.last_metrics[str(robot.robot_id)] = robot_metrics
+
+            # Check if the robot has an error that would require pausing the plan
+            robot_has_error = robot_metrics and "error_status" in robot_metrics and robot_metrics["error_status"]
+            plan_running = self.plan_status == PlanStatus.RUNNING
+            if plan_running and robot_has_error:
+                logging.warning("Pausing plan due to error on {}. Please address before proceeding.".format(robot.robot_id))
+                self.set_plan_status(PlanStatus.PAUSED)
 
     def _get_plan_metrics(self):
         plan_metrics = {}
@@ -465,6 +516,42 @@ class RuntimeManager:
             if data['action_id'] == None and data['cycle_id'] == None:
                 self.idle_bots.add(robot)
 
+    def _modify_cycle_state(self, target, add_cycle_id, add_action_id):
+        if self.plan_status == PlanStatus.RUNNING:
+            logging.warning("Cannot update cycle state while plan is running.")
+            return
+        if target not in self.cycle_tracker.keys():
+            logging.warning("Invalid target: {}".format(target))
+            return
+
+        cur_cycle_id = self.cycle_tracker[target]["cycle_id"]
+        if cur_cycle_id is None:
+            cur_cycle_id = 0
+        new_cycle_id = cur_cycle_id + add_cycle_id
+        if self.plan and new_cycle_id >= len(self.plan.cycles) or new_cycle_id < 0:
+            logging.warning("Cycle id {} out of bounds".format(new_cycle_id))
+            return
+
+        cur_action_id = self.cycle_tracker[target]["action_id"]
+        if cur_action_id is None:
+            cur_action_id = 0
+        new_action_id = cur_action_id + add_action_id    
+        if self.plan and new_action_id >= len(self.plan.get_cycle(new_cycle_id).action_sequence) or new_action_id < 0:
+            logging.warning("Action id {} out of bounds".format(new_action_id))
+            return
+
+        data = self.cycle_tracker[target]
+        data['action_id'] = new_action_id
+        data['cycle_id'] = new_cycle_id
+        data['timer'] = None
+        data['needs_restart'] = True
+        self.next_cycle_number = new_cycle_id + 1
+        try:
+            self.idle_bots.remove(target)
+        except:
+            pass
+
+
     def _cycle_state_to_file(self):
         if self.plan_status == PlanStatus.RUNNING:
             # Copy data and prepare to write
@@ -495,12 +582,6 @@ class RuntimeManager:
             # Need to re-add timer state and tell the controller the action needs to be restarted
             data['timer'] = None
             data['needs_restart'] = True
-
-            # Need to decrement action id so that the action it was stopped in the middle of will restart correctly
-            # if data['action_id'] == 0:
-            #     data['action_id'] = None
-            # elif data['action_id'] is not None:
-            #     data['action_id'] -= 1
 
             # Need to remove the robot from the idle list if it was actually doing something at the time it stopped
             if data['action_id'] is not None or data['cycle_id'] is not None:

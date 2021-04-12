@@ -1,8 +1,38 @@
 #include "robot.h"
 
 #include <plog/Log.h> 
+#include "utils.h"
+#include "distance_tracker/DistanceTrackerFactory.h"
 
-#include <iostream>
+
+WaitForLocalizeHelper::WaitForLocalizeHelper(const StatusUpdater& statusUpdater, float max_timeout, float confidence_threshold) 
+: statusUpdater_(statusUpdater),
+    timer_(),
+    max_timeout_(max_timeout),
+    confidence_threshold_(confidence_threshold)
+{}
+
+bool WaitForLocalizeHelper::isDone() 
+{
+    if(timer_.dt_s() > max_timeout_)
+    {
+        PLOGW.printf("Exiting wait for localize due to time");
+        return true;
+    }
+    float confidence = statusUpdater_.getLocalizationConfidence();
+    if(confidence > confidence_threshold_)
+    {
+        PLOGI.printf("Exiting wait for localize with confidence: %4.2f", confidence);
+        return true;
+    }
+    return false;
+}
+
+void WaitForLocalizeHelper::start()
+{
+    timer_.reset();
+}
+
 
 
 Robot::Robot()
@@ -11,8 +41,10 @@ Robot::Robot()
   controller_(statusUpdater_),
   tray_controller_(),
   mm_wrapper_(),
-  loop_time_averager_(20),
+  distance_tracker_(DistanceTrackerFactory::getFactoryInstance()->get_distance_tracker()),
   position_time_averager_(20),
+  wait_for_localize_helper_(statusUpdater_, cfg.lookup("localization.max_wait_time"), cfg.lookup("localization.confidence_for_wait")),
+  dist_print_rate_(10),
   curCmd_(COMMAND::NONE)
 {
     PLOGI.printf("Robot starting");
@@ -45,12 +77,14 @@ void Robot::runOnce()
     if (positions.size() == 3)
     {
         position_time_averager_.mark_point();
-        controller_.inputPosition(positions[0], positions[1], positions[2]);
+        float angle_rad = wrap_angle(positions[2] * M_PI / 180.0);
+        controller_.inputPosition(positions[0], positions[1], angle_rad);
     }
 
-    // Service controllers
+    // Service various modules
     controller_.update();
     tray_controller_.update();
+    distance_tracker_->checkForMeasurement();
 
     // Check if the current command has finished
     bool done = checkForCmdComplete(curCmd_);
@@ -61,8 +95,17 @@ void Robot::runOnce()
     }
 
     // Update loop time and status updater
-    loop_time_averager_.mark_point();
-    statusUpdater_.updateLoopTimes(loop_time_averager_.get_ms(), position_time_averager_.get_ms());
+    statusUpdater_.updatePositionLoopTime(position_time_averager_.get_ms());
+    statusUpdater_.updateDistanceLoopTime(distance_tracker_->getAverageMeasurementTimeMs());
+    statusUpdater_.updateRawDistances(distance_tracker_->getRawDistances());
+    statusUpdater_.updateDistancePose(distance_tracker_->getDistancePose());
+
+    // if(dist_print_rate_.ready())
+    // {
+    //     Point pose = distance_tracker_->getDistancePose();
+    //     PLOGI.printf("Cur dist: %s",pose.toString().c_str());
+    //     distance_tracker_->logDebug();
+    // }
 }
 
 
@@ -80,17 +123,36 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
 
         return false;
     }
+    if (cmd == COMMAND::SET_POSE)
+    {
+        RobotServer::PositionData data = server_.getPositionData();
+        controller_.forceSetPosition(data.x, data.y, data.a);
+        return false;
+    }
     // Same with ESTOP
     if (cmd == COMMAND::ESTOP)
     {
         controller_.estop();
         tray_controller_.estop();
+        distance_tracker_->stop();
         return false;
     }
     // Same with LOAD_COMPLETE
     if (cmd == COMMAND::LOAD_COMPLETE)
     {
         tray_controller_.setLoadComplete();
+        return false;
+    }
+    if(cmd == COMMAND::TOGGLE_DISTANCE)
+    {
+        if(distance_tracker_->isRunning())
+        {
+            distance_tracker_->stop();
+        }
+        else
+        {
+            distance_tracker_->start();
+        }
         return false;
     }
 
@@ -129,17 +191,30 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
         RobotServer::VelocityData data = server_.getVelocityData();
         controller_.moveConstVel(data.vx, data.vy, data.va, data.t);
     }
+    else if (cmd == COMMAND::MOVE_WITH_DISTANCE)
+    {
+        RobotServer::PositionData data = server_.getMoveData();
+        controller_.moveWithDistance(data.x, data.y, data.a);
+    }
     else if(cmd == COMMAND::PLACE_TRAY)
     {
-        tray_controller_.place();
+        bool ok = tray_controller_.place();
+        if(!ok) statusUpdater_.setErrorStatus();
+        return ok;
     }
     else if(cmd == COMMAND::LOAD_TRAY)
     {
-        tray_controller_.load();
+        bool ok = tray_controller_.load();
+        if(!ok) statusUpdater_.setErrorStatus();
+        return ok;
     }
     else if(cmd == COMMAND::INITIALIZE_TRAY)
     {
         tray_controller_.initialize();
+    }
+    else if (cmd == COMMAND::WAIT_FOR_LOCALIZATION)
+    {
+        wait_for_localize_helper_.start();
     }
     else
     {
@@ -159,9 +234,10 @@ bool Robot::checkForCmdComplete(COMMAND cmd)
     else if(cmd == COMMAND::MOVE || 
             cmd == COMMAND::MOVE_REL ||
             cmd == COMMAND::MOVE_FINE ||
-            cmd == COMMAND::MOVE_CONST_VEL)
+            cmd == COMMAND::MOVE_CONST_VEL ||
+            cmd == COMMAND::MOVE_WITH_DISTANCE)
     {
-        return !controller_.isTrajectoryRunning();;
+        return !controller_.isTrajectoryRunning();
     }
     else if(cmd == COMMAND::PLACE_TRAY ||
             cmd == COMMAND::LOAD_TRAY ||
@@ -169,9 +245,13 @@ bool Robot::checkForCmdComplete(COMMAND cmd)
     {
         return !tray_controller_.isActionRunning();
     }
+    else if (cmd == COMMAND::WAIT_FOR_LOCALIZATION) 
+    {
+        return wait_for_localize_helper_.isDone();
+    }
     else
     {
-        PLOGI.printf("Completion check not implimented for command: %i",cmd);
+        PLOGE.printf("Completion check not implimented for command: %i",cmd);
         return true;
     }
         

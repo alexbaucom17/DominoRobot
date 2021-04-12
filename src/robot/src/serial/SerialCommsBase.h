@@ -20,6 +20,8 @@ class SerialCommsBase
 
     virtual std::string rcv_lift();
 
+    virtual std::string rcv_distance();
+
     bool isConnected() {return connected_;};
 
   protected:

@@ -3,7 +3,7 @@
 #define StatusUpdater_h
 
 #include <ArduinoJson/ArduinoJson.h>
-
+#include "utils.h"
 
 class StatusUpdater
 {
@@ -16,23 +16,33 @@ class StatusUpdater
 
     void updateVelocity(float vx, float vy, float va);
 
-    void updatePositionConfidence(float cx, float cy, float ca);
+    void updateControlLoopTime(int controller_loop_ms);
 
-    void updateLoopTimes(int controller_loop_ms, int position_loop_ms);
+    void updatePositionLoopTime(int position_loop_ms);
+
+    void updateDistanceLoopTime(int distance_loop_ms);
 
     void updateInProgress(bool in_progress);
 
-    bool getInProgress() { return currentStatus_.in_progress; };
+    bool getInProgress() const { return currentStatus_.in_progress; };
     
     void setErrorStatus() { currentStatus_.error_status = true;}
 
     void clearErrorStatus() {currentStatus_.error_status = false;};
 
-    bool getErrorStatus() {return currentStatus_.error_status;}
+    bool getErrorStatus() const {return currentStatus_.error_status;}
+
+    void updateLocalizationMetrics(LocalizationMetrics localization_metrics);
+
+    float getLocalizationConfidence() const {return currentStatus_.localization_metrics.total_confidence;};
 
     void update_motor_driver_connected(bool connected);
 
     void update_lifter_driver_connected(bool connected);
+
+    void updateRawDistances(std::vector<float> distances);
+
+    void updateDistancePose(Point pose);
 
     struct Status
     {
@@ -43,13 +53,20 @@ class StatusUpdater
       float vel_x;
       float vel_y;
       float vel_a;
-      uint8_t confidence_x;
-      uint8_t confidence_y;
-      uint8_t confidence_a;
+
+      // Distances
+      float dist_fl;
+      float dist_fr;
+      float dist_sf;
+      float dist_sb;
+      float dist_x;
+      float dist_y;
+      float dist_a;
 
       // Loop times
       int controller_loop_ms;
       int position_loop_ms;
+      int distance_loop_ms;
 
       bool in_progress;
       bool error_status;
@@ -57,6 +74,8 @@ class StatusUpdater
 
       bool motor_driver_connected;
       bool lifter_driver_connected;
+
+      LocalizationMetrics localization_metrics;
 
       //When adding extra fields, update toJsonString method to serialize and add additional capacity
 
@@ -67,23 +86,29 @@ class StatusUpdater
       vel_x(0.0),
       vel_y(0.0),
       vel_a(0.0),
-      confidence_x(0),
-      confidence_y(0),
-      confidence_a(0),
+      dist_fl(0.0),
+      dist_fr(0.0),
+      dist_sf(0.0),
+      dist_sb(0.0),
+      dist_x(0.0),
+      dist_y(0.0),
+      dist_a(0.0),
       controller_loop_ms(999),
       position_loop_ms(999),
+      distance_loop_ms(999),
       in_progress(false),
       error_status(false),
       counter(0),
       motor_driver_connected(false),
-      lifter_driver_connected(false)
+      lifter_driver_connected(false),
+      localization_metrics()
       {
       }
 
       std::string toJsonString()
       {
         // Size the object correctly
-        const size_t capacity = JSON_OBJECT_SIZE(20); // Update when adding new fields
+        const size_t capacity = JSON_OBJECT_SIZE(30); // Update when adding new fields
         DynamicJsonDocument root(capacity);
 
         // Format to match messages sent by server
@@ -97,16 +122,26 @@ class StatusUpdater
         doc["vel_x"] = vel_x;
         doc["vel_y"] = vel_y;
         doc["vel_a"] = vel_a;
-        doc["confidence_x"] = confidence_x;
-        doc["confidence_y"] = confidence_y;
-        doc["confidence_a"] = confidence_a;
+        doc["dist_fl"] = dist_fl;
+        doc["dist_fr"] = dist_fr;
+        doc["dist_sf"] = dist_sf;
+        doc["dist_sb"] = dist_sb;
+        doc["dist_x"] = dist_x;
+        doc["dist_y"] = dist_y;
+        doc["dist_a"] = dist_a;
         doc["controller_loop_ms"] = controller_loop_ms;
         doc["position_loop_ms"] = position_loop_ms;
+        doc["distance_loop_ms"] = distance_loop_ms;
         doc["in_progress"] = in_progress;
         doc["error_status"] = error_status;
         doc["counter"] = counter++;
         doc["motor_driver_connected"] = motor_driver_connected;
         doc["lifter_driver_connected"] = lifter_driver_connected;
+        doc["localization_confidence_x"] = localization_metrics.confidence_x;
+        doc["localization_confidence_y"] = localization_metrics.confidence_y;
+        doc["localization_confidence_a"] = localization_metrics.confidence_a;
+        doc["localization_total_confidence"] = localization_metrics.total_confidence;
+        doc["last_position_uncertainty"] = localization_metrics.last_position_uncertainty;
 
         // Serialize and return string
         std::string msg;
@@ -119,6 +154,10 @@ class StatusUpdater
 
   private:
     Status currentStatus_;
+    int fwd_left_id_;
+    int fwd_right_id_;
+    int side_front_id_;
+    int side_back_id_;
 
 };
 

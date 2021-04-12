@@ -7,6 +7,22 @@
 #include "StatusUpdater.h"
 #include "TrayController.h"
 #include "utils.h"
+#include "distance_tracker/DistanceTrackerBase.h"
+
+class WaitForLocalizeHelper 
+{
+  public:
+    WaitForLocalizeHelper(const StatusUpdater& statusUpdater, float max_timeout, float confidence_threshold);
+    bool isDone();
+    void start();
+
+  private:
+    const StatusUpdater& statusUpdater_;
+    Timer timer_;
+    float max_timeout_;
+    float confidence_threshold_;
+};
+
 
 class Robot
 {
@@ -32,9 +48,11 @@ class Robot
     RobotController controller_;
     TrayController tray_controller_;
     MarvelmindWrapper mm_wrapper_;
+    DistanceTrackerBase* distance_tracker_;
 
-    TimeRunningAverage loop_time_averager_;        // Handles keeping average of the loop timing
     TimeRunningAverage position_time_averager_;    // Handles keeping average of the position update timing
+    WaitForLocalizeHelper wait_for_localize_helper_;
+    RateController dist_print_rate_;
 
     COMMAND curCmd_;
 };

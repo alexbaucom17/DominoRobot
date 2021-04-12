@@ -1,30 +1,176 @@
 
-Stepper controller:
-
-Robot controller:
-
-Robot SW::
-- Make estop print a warning to get color
-- Figure out why resuming with small angular motion causes trajectory generation error (might need threshold for when to generate nonzero trajectory)
-- Figure out how to test position update function
-- Debug why rotation motion didn't track correctly
-    - Looks like clearcore wasn't tracking correctly? Some sort of error in the kinematics is my guess
-    - Maybe not - looks like decoded velocity just lags by one iteration, maybe try to fix how that prints?
-    - Might take some more digging/testing - robot thought it was at 1.57 (pi/2), but actual robot was at like 1/3 rotation (so just past 90) whereas robot on gui showed like half rotation (pi) 
+Robot SW:
+- Increase robustness to noisy data
+    - Consider aggressively filtering distance measurements and relying more on odom. Then if I get a few good measurements here and there, it might still work.
+- Fix localization tests
+- Fix localization issue where it gets too confidence and doesn't accept any more updates
+- Investigate feasbility of fiducial tracking (opencv)
 
 Robot HW:
-- Try to estimate how long the controller batteries will last fully loaded
-    - Powering pi, clearcore, servo, and optoswitch
-- Try to estimate how long robot batteries will last (draw seems to be ~0.3-1 A)
-- Figure out and document safe low battery level before recharge is needed
+- Keep working to get better US data
 
 Master:
-- Ensure plan can handle when robot has error and gracefully recover
-- Figure out how to sequence loading between base and robot
-- Add unit tests (?)
 
-Base station HW:
-- Set up electronics
+Robustify:
+- Fix that missing ack skips current action during plan
+- Fix that resume after estop during place action immediately drops dominos
+
+Nice to haves:
+- Better utility/method to plot motion/controller logs
+- Add better logging for distance tracker
+- Detect when tray init needs to happen again after robot estop
+- Spacebar to trigger sw estop
 
 
-Purchase:
+Misc notes:
+
+Hardware info
+- Approx Dimensions:
+    - Distance between mm pair on robot - 570mm, dist from front - 245mm
+    - Wheel mount to center of wheel: FL: 44mm FR: 43mm RC: 44mm
+- Exact values from Josh:
+    - Center of rotation - 12 in from sides, 7.5 in from front of frame
+    - Wheel mounts - 14.22 in from COR to front face of wheel mounts
+- Controller battery 
+    - 2x 11.1V battery in series for 3x2.7V=22.2V 
+    - Min safe voltage is 3.4Vx6 = 20.5V 
+- Base battery 
+    - 2x 25.2V battery - 6x4.2V
+        - Min safe voltage is 3.4Vx6 = 20.4 V
+    - 2x 29.4V battery - 7x4.2V
+        - Min safe voltage is 3.4Vx7 = 23.8 V
+- Other Dimensions
+    - Between tray and 80/20 - 7.5 cm
+    - Back of tray to dominos is 12 cm
+    - usable width for us offsets - 6-28cm
+
+Marvelmind notes:
+    - About 70-80% of the time, accuracy looks great, but the rest of the time, the positions jump around wildly
+    - Raising hedges to give clear LOS didn't fix
+    - Raising stationary beacons up really high to help LOS didn't fix either (maybe slight improvement though)
+    - IMU fusion didn't help (but it's possible IMU wasn't calibrated)
+    - This was in mostly empty warehouse with stationary beacons about 9m apart and paired hedges 0.6 m apart on robot 
+        - No fluorescent lights on, barely any other equipment on in the area other than robot. Turning off robot didn't help either (maybe re-confirm this one?)
+    - Next steps:
+        - Maybe just buy newer set, should be better and less beat up. Maybe one of my beacons is too beat up or dirty and causing interference?
+        - Ask for help about jumping on forum, search around for other options to test
+        - Start researching alternative systems
+
+    Learnings from additional testing
+        The issue seems to be some sort of slight ultrasonic interference. I took a few screenshots.
+            I tested with the lights off and robot off - neither of those appear to be the source
+            It also isn't consistent between stationary/static beacons from what I can tell - seems somewhat location dependent in the warehouse
+        I was able to get the IMUs calibrated for the hedges and get fusion enabled, that seemed like it might have helped a little bit
+        I spent some time moving the stationary beacons around while looking at the osciloscope - this was informative as I was able to see places where there was more or less noise and there was a better signal
+            My theory is there was some reflections from the ceiling so I angled them down a little bit, that helped somewhat, but didn't fix the problem
+            Medium height was the best though - too high gave noise and too low gave poor signal - I think about halfway up the wall would be ideal (or maybe even on ceiling facing down? If we got a lift and permenant power lol)
+        The jumping was less common by the end of the testing, but still there. I think I could probably write a filter in SW, but would be nice if I didn't have to rely on that
+        I wonder if the extra stationary/redundant beacons would help - I could imagine the MM software being clever about dropping the noisiest measurement if there is redundancy, which might help the problem - could possibly test by getting more batteries to fix mini-RX beacons, but unclear if that is worth it if I will just get the newer ones anyways.
+        I took some screenshots and I can hopefully post with some questions
+        It still may be worth getting the newer beacons just to simply the distance setup - otherwise I have to manually calibrate distances all the time and I am worried about error from that.
+        Other than the jumping - the motion looked really nice and smooth and promising. Just need to fix the noise
+
+    Additional questions with super beacons
+        Pairing them seems to make the positions incorrect. Unpairing them resets to correct distance between
+
+- Experimental localization ideas
+    - Use marvelmind during motion by measuring and compensating for latency
+        - Try disabling the various filtering windows to see what sort of latency reduction I can get. Note that this probably will come with an accuracy tradeoff. So maybe I impliment some sort of mode switch on my end to filter sometimes for more accuracy and not other times to get better speed.
+        - Could set up some sort of 'latency calibration' experiment and if the latency is consistent enough, this might be usable
+        - May also be able to find into about how much latency to expect with various marvelmind settings
+    - Use ultrasonic distance sensors to measure relative position
+        - These are cheap and should be easy to use.
+        - Might have interference with marvelmind
+        - Rated accuracy is ~3mm, but need to test if that will work with the spaced out domino configuration
+    - Use depth camera (like Astra)
+        - A little bit more expensive to buy, but adds a lot of complexity to setup (drivers/sdk/processing/etc.)
+        - Could maybe do something like only take a single depth line out of the image and treat it like a lidar for simplicity
+        - Need some specialized line/plane fitting algorithms to figure out distance to dominos
+        - Need to investigate installation and cpu/memory load of astra sdk and pcl.
+        - Rated accuracy looks to be about 1-3mm
+
+Side facing us sensor holder Dimensions
+- Height from ground side bar - 14.2cm
+    - Lower height by ~2.5 cm
+- Total length available ~49 cm
+- Depth from next dominos ~15cm
+- (Make sure to measure accuracy/noise at correct range with domino spacing) 
+
+Requests for shop
+- Fixed table
+- Chair
+- Rolling table (show example)
+- Internet
+- Drop in T nuts for 80/20
+
+Goals/Milestones for hackathon weekend:
+- Functional US distance tracking with angle
+- 3x3 test fully complete
+- 3x3 test 3x in a row
+- 20x in a row blank placements from various starting locations
+- 20x in a row docking with base station
+
+Progress from Saturday:
+- Hooked up and tested side mounted US sensors
+    - Discovered that gap in dominos can cause problems at the short range (not enough spread of US wave)
+    - Tested various mounting locations and configurations, couldn't find any better positions
+    - Tried adding some filtering logic to code to ignore bad values, works okay for now, but I'm a bit nervous about the reliabilty long term
+- Ran into problems with one of the front mounted US sensors always reflecting from the tray
+    - Spent some time trying to adjust placement, tray height, blinder positions, swapped sensors, etc.
+    - Unable to fix and decided to move on, will try again tomorrow
+    - Added filtering logic in software to handle this as well
+- Set up 3x3 tile test with US sensors only correcting x and y positions (not angles)
+    - Marvelmind sensors seemed much noisier/less accuracte today for some reason
+    - Able to get test running and tiles being placed at reasonable x,y locations
+    - But it is clear that the placement angle will also be critical, tile position/angle can be quite off when only adjusted for x and y at one point
+        - This means I need to get all the US sensors working well, I have an algorithm that will give x, y, and angle from 4 sensors and can handle 1 bad data point
+- Refactored and cleaned up a number of hacks/bugs in the master software and localization logic that was giving me trouble/slowing me down during testing today
+
+Progress from Sunday
+- Finished refactor of localization, fine motion and position confidence metrics working much better now.
+- Gui updated with better info for easier debugging.
+- Marvelmind giving TONS of problems today
+    - Thinks the robot is spinning in circles when it is stationary
+    - Had to re-configure a bunch of stuff with the map to try and fix it, marginally successful
+    - Maybe work chatting with Mark and Bozak to see if they can work their magic to get some support from them, even a 1-2 hour remote help session to configure things would be huge
+- Able to fanangle front US sensor to work, but it's quite finiky. 
+    - Makes me nervous that it could just stop working randomly and need to be adjusted.
+    - Also makes me want to never touch the one that is working currently since it seems pretty solid.
+    - Replaced this sensor again later in the day, maybe got a slightly better configuration, still not great.
+- Got US angle tracking working. If I get reliable sensor data, it works great.
+- Lots of attempts at a 3x3 grid, not yet able to reliabily complete second column (US sensor on dominos instead of reference plane)
+    - Fixed a variety of bugs and other small issues that came up
+    - Some tweaks to approach positioning made US sensors marginally more reliable
+    - Common failure mode is that 2 US sensors (1 side 1 front) give bad readings for extended period of time and robot can't recover/gets too close to dominos
+    - Possible option is to add more US sensors to sides and front to increase chances of good reading. 
+        - Possible problem here is sometimes the reading looks valid but isn't, and more sensors giving bad readings that look plausible won't help this.
+    - Another possible option is to use difference sensors
+        - But from my research, I haven't found any sensor that will easily do what we are trying to accompish.
+    - Third possible options is a more complex software approach that fuses global and local positions of dominos to better predict if given reading is actually correct or not.
+        - This would be rather complex, and I don't think it gives a solid guarentee to work
+- Things are in a state where if I could get accurate sensor readings, I believe the robot would fully work.
+
+Notes From Monday:
+- Mervelmind seems to shift position frame by about 0.5m sometimes on start up...
+- Spent some time working to reporduce problems and document issues to send to marvelmind folks
+- More 3x3 testing and tweaks to US filtering. Sometimes it gets very close to working...
+- Chatted with Mark about various localization ideas
+    - Magnets on ground + hall effect sensors
+    - Laser sensors on robot measuring distance to wall
+    - Lasers/fiducials on ceiling
+    - Any of these have potential to work, but I think the time to validate these would be the bottleneck
+        - If we could parallelize that experimentation, that might work.
+        - Get a bunch of people to run experiments with these and figure out which one is the most likely to work prior to integrating with the robot
+- Got a response from the Marvelmind folks, experimented some with their suggestions
+    - Modified one parameter they suggested
+    - Check tracking performance of the beacons individually, looks pretty reasonable except for occasional blips where one beacon loses tracking, that is probably the problem.
+        - Not sure why a beacon is losing tracking in our space
+    - Further testing seems to indicate the parameter they asked to modify made a decent improvement. 
+        - This is workable for now, so I'm not going to mess with it too much more as some of their other suggestions are a bit more involved.
+- Did some more tweaking with fron left sensor, adding some tape seems to improve accuracy.
+    - Found a sneaky problem though, when the robot starts to rotate left, the left from beacon can sometimes start detecting the dominos on the side!
+    - This causes an instability effect because the angle is then incorrect with the wrong sign, so driving in the opposite direction just furthers the problem.
+        - May be able to correct for this by going back to robot being far from dominos in front and filtering anything less than length of tray
+- More chat with mark, going to try IR camera tracking of reflective spots on the floor
+    - Cameras and reflectors ordered
+    - My job in the short term is to get OpenCV up and running and get some tracking basics working

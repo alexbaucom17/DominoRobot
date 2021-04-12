@@ -17,8 +17,8 @@ SerialComms comm(Serial);
 // --------------------------------------------------
 
 // Constants
-#define WHEEL_RADIUS 0.0751
-#define WHEEL_DIST_FROM_CENTER 0.4794
+#define WHEEL_RADIUS 0.075
+#define WHEEL_DIST_FROM_CENTER 0.405
 #define BELT_RATIO 4
 #define STEPS_PER_REV 800
 #define MOTOR_MAX_VEL_STEPS_PER_SECOND 10000
@@ -56,7 +56,7 @@ float MOTOR_REAR_CENTER_FAKE = 0;
 
 #define LIFTER_HOMING_VEL 3 // revs/sec
 
-#define SAFETY_MAX_POS 70  // Revs, Sanity check on desired position to make sure it isn't larger than this
+#define SAFETY_MAX_POS 70*LIFTER_STEPS_PER_REV  // Revs, Sanity check on desired position to make sure it isn't larger than this
 #define SAFETY_MIN_POS 0 // Revs, Sanity check on desired position to make sure it isn't less than this
 
 #define LATCH_ACTIVE_MS 1000
@@ -248,7 +248,7 @@ void lifter_update(String msg)
     if (inputCommand.valid && inputCommand.stop)
     {
         activeMode = MODE::NONE;
-        LIFTER_MOTOR.EnableRequest(false);
+//        LIFTER_MOTOR.EnableRequest(false);
     }
     // For any other command, we will only handle it when there are no other active commands
     else if (activeMode == MODE::NONE)
@@ -302,7 +302,7 @@ void lifter_update(String msg)
                 activeMode = MODE::AUTO_POS;
                 long target = inputCommand.abs_pos;
                 LIFTER_MOTOR.EnableRequest(true);
-                LIFTER_MOTOR.Move(target*LIFTER_STEPS_PER_REV, StepGenerator::MOVE_TARGET_ABSOLUTE);
+                LIFTER_MOTOR.Move(target, StepGenerator::MOVE_TARGET_ABSOLUTE);
             }
         }
     }    
@@ -355,7 +355,7 @@ void lifter_update(String msg)
     else if (activeMode == MODE::NONE)
     {
         LIFTER_MOTOR.MoveStopAbrupt();
-        LIFTER_MOTOR.EnableRequest(false);
+//        LIFTER_MOTOR.EnableRequest(false);
     }
 
     // Will send back one of [none, manual, pos, homing, open, close]
