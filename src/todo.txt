@@ -3,6 +3,7 @@ Robot SW:
 - Increase robustness to noisy data
     - Consider aggressively filtering distance measurements and relying more on odom. Then if I get a few good measurements here and there, it might still work.
 - Fix localization tests
+- Fix localization issue where it gets too confidence and doesn't accept any more updates
 - Investigate feasbility of fiducial tracking (opencv)
 
 Robot HW:
@@ -17,6 +18,8 @@ Robustify:
 Nice to haves:
 - Better utility/method to plot motion/controller logs
 - Add better logging for distance tracker
+- Detect when tray init needs to happen again after robot estop
+- Spacebar to trigger sw estop
 
 
 Misc notes:
@@ -146,3 +149,28 @@ Progress from Sunday
     - Third possible options is a more complex software approach that fuses global and local positions of dominos to better predict if given reading is actually correct or not.
         - This would be rather complex, and I don't think it gives a solid guarentee to work
 - Things are in a state where if I could get accurate sensor readings, I believe the robot would fully work.
+
+Notes From Monday:
+- Mervelmind seems to shift position frame by about 0.5m sometimes on start up...
+- Spent some time working to reporduce problems and document issues to send to marvelmind folks
+- More 3x3 testing and tweaks to US filtering. Sometimes it gets very close to working...
+- Chatted with Mark about various localization ideas
+    - Magnets on ground + hall effect sensors
+    - Laser sensors on robot measuring distance to wall
+    - Lasers/fiducials on ceiling
+    - Any of these have potential to work, but I think the time to validate these would be the bottleneck
+        - If we could parallelize that experimentation, that might work.
+        - Get a bunch of people to run experiments with these and figure out which one is the most likely to work prior to integrating with the robot
+- Got a response from the Marvelmind folks, experimented some with their suggestions
+    - Modified one parameter they suggested
+    - Check tracking performance of the beacons individually, looks pretty reasonable except for occasional blips where one beacon loses tracking, that is probably the problem.
+        - Not sure why a beacon is losing tracking in our space
+    - Further testing seems to indicate the parameter they asked to modify made a decent improvement. 
+        - This is workable for now, so I'm not going to mess with it too much more as some of their other suggestions are a bit more involved.
+- Did some more tweaking with fron left sensor, adding some tape seems to improve accuracy.
+    - Found a sneaky problem though, when the robot starts to rotate left, the left from beacon can sometimes start detecting the dominos on the side!
+    - This causes an instability effect because the angle is then incorrect with the wrong sign, so driving in the opposite direction just furthers the problem.
+        - May be able to correct for this by going back to robot being far from dominos in front and filtering anything less than length of tray
+- More chat with mark, going to try IR camera tracking of reflective spots on the floor
+    - Cameras and reflectors ordered
+    - My job in the short term is to get OpenCV up and running and get some tracking basics working

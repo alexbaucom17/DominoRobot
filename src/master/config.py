@@ -18,10 +18,10 @@ class Config:
     # Set to use fake plan instead of loading a generated one
     USE_TEST_PLAN = False
     # Set to auto-load this plan on master startup
-    AUTO_LOAD_PLAN = True
+    AUTO_LOAD_PLAN = False
     AUTO_LOAD_PLAN_NAME = "AccuracyTesting_3x3_withdistance_2axis.p"
     # Set to regenerate and auto load plan on master startup
-    REGEN_PLAN = False
+    REGEN_PLAN = True
 
     # ====== PATHS ========
     
@@ -100,17 +100,17 @@ class Config:
     domino_field_angle = 90                                     # Domino field angle (deg), global frame
     tile_placement_coarse_offset = np.array([0.3,-0.3])         # Offset position for tile placement [x,y], in robot coordinate frame
     tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])  # Offset from bottom left of tile to robot center [x,y], in robot coordinate frame
-    distance_placement_pose = np.array([0.87,0.20,0])              # Target distance values for fine placement       
+    distance_placement_pose = np.array([0.865,0.20,0])              # Target distance values for fine placement       
     prep_position_distance = 1                                  # How far out of field boundaries to do robot prep move
     exit_position_distance = 1                                  # How far out of the field boundaries to move to exit
     field_to_robot_frame_angle = 90                             # In case robot frame and field frame ever need to be rotated relative to each other
 
     if USE_SMALL_TESTING_CONFIG:  
         load_pose = np.array([9,-8,90])            
-        domino_field_top_left = np.array([7.8,-4.1])  
+        domino_field_top_left = np.array([8.3,-4.1])  
         domino_field_angle = 0
         tile_placement_coarse_offset = np.array([-0.5,-0.5])
-        tile_to_robot_offset = np.array([-0.1, -tile_size_width_meters/2.0 - 0.1])    # Testing a hack - x tile offset smaller so tray goes slightly over dominos                               
+        tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0 - 0.1])    # Testing a hack - x tile offset smaller so tray goes slightly over dominos                               
 
     # Computed - don't change
     field_width = tile_size_width_meters * desired_width_dominos/tile_width
