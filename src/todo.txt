@@ -175,3 +175,6 @@ Notes From Monday:
 - Got OpenCV installed and configured on raspi
     - Able to load camera images and do simple blob detection on RGB camera
     - Wrote utility to copy images from raspi to computer for debugging since there is no screen on pi
+
+Notes from Tuesday:
+- Robustified and parametarized vision processing pipeline for point detection

@@ -23,13 +23,53 @@ def display_debug_image(local_path):
     figManager.window.state('zoomed')
     plt.show()
 
+def get_and_display_multiple_images(remote_ip, remote_path, local_path, img_data):
+    fig, axes = plt.subplots(nrows=2, ncols=2)
+    ax = axes.ravel()
+
+    for i,data in enumerate(img_data):
+        remote_path_to_file = remote_path + data['file']
+        local_path_to_file = os.path.join(local_path, data['file'])
+        scp_image(remote_ip, remote_path_to_file, local_path_to_file)
+        img = mpimg.imread(local_path_to_file)
+        if data["color"]:
+            ax[i].imshow(img)
+        else:
+            ax[i].imshow(img, cmap='gray', vmin=0, vmax=255)
+        ax[i].set_title(data['title'])
+    
+    plt.tight_layout()
+    figManager = plt.get_current_fig_manager()
+    figManager.window.state('zoomed')
+    plt.show()
+
 if __name__ == '__main__':
     cfg = config.Config()
 
     robot_ip = cfg.ip_map['robot1']
-    local_path = os.path.join(cfg.log_folder, "debug_img.jpg")
-    remote_path = "/home/pi/debug_img2.jpg"
+    remote_path = "/home/pi/"
+    local_path = cfg.log_folder
+    img_data = []
+    img_data.append({
+        "file": "img_raw.jpg",
+        "title": "raw",
+        "color": True
+    })
+    img_data.append({
+        "file": "img_grey.jpg",
+        "title": "grey",
+        "color": False
+    })
+    img_data.append({
+        "file": "img_thresh.jpg",
+        "title": "threshold",
+        "color": False
+    })
+    img_data.append({
+        "file": "img_keypoints.jpg",
+        "title": "detections",
+        "color": True
+    })
 
-    scp_image(robot_ip, remote_path, local_path)
-    display_debug_image(local_path)
+    get_and_display_multiple_images(robot_ip, remote_path, local_path, img_data)
 
