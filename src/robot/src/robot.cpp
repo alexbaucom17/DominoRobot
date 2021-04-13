@@ -3,6 +3,7 @@
 #include <plog/Log.h> 
 #include "utils.h"
 #include "distance_tracker/DistanceTrackerFactory.h"
+#include "camera_tracker/CameraTrackerFactory.h"
 
 
 WaitForLocalizeHelper::WaitForLocalizeHelper(const StatusUpdater& statusUpdater, float max_timeout, float confidence_threshold) 
@@ -45,7 +46,7 @@ Robot::Robot()
   position_time_averager_(20),
   wait_for_localize_helper_(statusUpdater_, cfg.lookup("localization.max_wait_time"), cfg.lookup("localization.confidence_for_wait")),
   dist_print_rate_(10),
-  camera_tracker_(),
+  camera_tracker_(CameraTrackerFactory::getFactoryInstance()->get_camera_tracker()),
   curCmd_(COMMAND::NONE)
 {
     PLOGI.printf("Robot starting");
@@ -53,7 +54,6 @@ Robot::Robot()
 
 void Robot::run()
 {
-    camera_tracker_.test_function();
     while(true)
     {
         runOnce();
@@ -198,6 +198,11 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
         RobotServer::PositionData data = server_.getMoveData();
         controller_.moveWithDistance(data.x, data.y, data.a);
     }
+    else if (cmd == COMMAND::MOVE_WITH_VISION)
+    {
+        RobotServer::PositionData data = server_.getMoveData();
+        controller_.moveWithVision(data.x, data.y, data.a);
+    }
     else if(cmd == COMMAND::PLACE_TRAY)
     {
         bool ok = tray_controller_.place();
@@ -237,7 +242,8 @@ bool Robot::checkForCmdComplete(COMMAND cmd)
             cmd == COMMAND::MOVE_REL ||
             cmd == COMMAND::MOVE_FINE ||
             cmd == COMMAND::MOVE_CONST_VEL ||
-            cmd == COMMAND::MOVE_WITH_DISTANCE)
+            cmd == COMMAND::MOVE_WITH_DISTANCE ||
+            cmd == COMMAND::MOVE_WITH_VISION)
     {
         return !controller_.isTrajectoryRunning();
     }

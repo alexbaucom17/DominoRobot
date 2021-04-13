@@ -29,6 +29,8 @@ class RobotController
 
     void moveWithDistance(float x_dist, float y_dist, float a_dist);
 
+    void moveWithVision(float x, float y, float a);
+
     // Main update loop. Should be called as fast as possible
     void update();
 

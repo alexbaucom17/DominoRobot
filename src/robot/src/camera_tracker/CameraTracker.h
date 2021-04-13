@@ -10,19 +10,27 @@ class CameraTracker : public CameraTrackerBase
   public:
     CameraTracker();
 
-    virtual void start() override;
+    virtual ~CameraTracker();
 
-    virtual void stop() override;
+    virtual void processImage() override;
 
-    virtual Point getPoseFromCamera() override; 
+    virtual Point getPoseFromCamera() override {return current_point_;}; 
 
     void test_function();   
 
   private:
+
+    std::vector<cv::KeyPoint> allKeypointsInImage(cv::Mat img_raw, bool output_debug);
+
     cv::VideoCapture camera_;
     cv::SimpleBlobDetector::Params blob_params_;
+    cv::Mat K_;
+    cv::Mat D_;
+    cv::Mat current_frame_;
     int threshold_;
+    bool use_debug_image_;
     bool running_;
+    Point current_point_;
     
 };
 

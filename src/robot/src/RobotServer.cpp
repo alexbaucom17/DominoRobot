@@ -71,6 +71,15 @@ COMMAND RobotServer::getCommand(std::string message)
             printIncomingCommand(message);
             sendAck(type);
         }
+        else if(type == "move_vision")
+        {
+            cmd = COMMAND::MOVE_WITH_VISION;
+            moveData_.x = doc["data"]["x"];
+            moveData_.y = doc["data"]["y"];
+            moveData_.a = doc["data"]["a"];
+            printIncomingCommand(message);
+            sendAck(type);
+        }
         else if(type == "move_const_vel")
         {
             cmd = COMMAND::MOVE_CONST_VEL;

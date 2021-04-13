@@ -8,6 +8,7 @@
 #include "serial/SerialCommsFactory.h"
 #include "robot_controller_modes/RobotControllerModePosition.h"
 #include "robot_controller_modes/RobotControllerModeDistance.h"
+#include "robot_controller_modes/RobotControllerModeVision.h"
 
 
 RobotController::RobotController(StatusUpdater& statusUpdater)
@@ -105,6 +106,20 @@ void RobotController::moveWithDistance(float x_dist, float y_dist, float a_dist)
     { 
         startTraj(); 
         controller_mode_ = std::move(distance_mode);
+    }
+    else { statusUpdater_.setErrorStatus(); }
+}
+
+void RobotController::moveWithVision(float x, float y, float a)
+{
+    Point goal = Point(x,y,a);
+    auto vision_mode = std::make_unique<RobotControllerModeVision>(fake_perfect_motion_);
+    bool ok = vision_mode->startMove(goal);
+   
+    if (ok) 
+    { 
+        startTraj(); 
+        controller_mode_ = std::move(vision_mode);
     }
     else { statusUpdater_.setErrorStatus(); }
 }
