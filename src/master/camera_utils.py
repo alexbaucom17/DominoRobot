@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     robot_ip = cfg.ip_map['robot1']
     local_path = os.path.join(cfg.log_folder, "debug_img.jpg")
-    remote_path = "/home/pi/debug_img.jpg"
+    remote_path = "/home/pi/debug_img2.jpg"
 
     scp_image(robot_ip, remote_path, local_path)
     display_debug_image(local_path)
