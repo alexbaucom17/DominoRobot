@@ -24,7 +24,7 @@ def display_debug_image(local_path):
     plt.show()
 
 def get_and_display_multiple_images(remote_ip, remote_path, local_path, img_data):
-    fig, axes = plt.subplots(nrows=2, ncols=2)
+    fig, axes = plt.subplots(nrows=2, ncols=3)
     ax = axes.ravel()
 
     for i,data in enumerate(img_data):
@@ -53,6 +53,11 @@ if __name__ == '__main__':
     img_data.append({
         "file": "img_raw.jpg",
         "title": "raw",
+        "color": True
+    })
+    img_data.append({
+        "file": "img_undistorted.jpg",
+        "title": "undistorted",
         "color": True
     })
     img_data.append({
