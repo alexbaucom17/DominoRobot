@@ -15,7 +15,6 @@ DistanceTracker::DistanceTracker()
   running_(false),
   measurement_time_averager_(10),
   serial_to_arduino_(SerialCommsFactory::getFactoryInstance()->get_serial_comms(ARDUINO_USB)),
-  kf_(3,3),
   fwd_left_id_(cfg.lookup("distance_tracker.mapping.fwd_left")),
   fwd_right_id_(cfg.lookup("distance_tracker.mapping.fwd_right")),
   side_front_id_(cfg.lookup("distance_tracker.mapping.side_front")),

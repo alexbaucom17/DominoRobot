@@ -45,6 +45,7 @@ Robot::Robot()
   position_time_averager_(20),
   wait_for_localize_helper_(statusUpdater_, cfg.lookup("localization.max_wait_time"), cfg.lookup("localization.confidence_for_wait")),
   dist_print_rate_(10),
+  camera_tracker_(),
   curCmd_(COMMAND::NONE)
 {
     PLOGI.printf("Robot starting");
@@ -52,6 +53,7 @@ Robot::Robot()
 
 void Robot::run()
 {
+    camera_tracker_.test_function();
     while(true)
     {
         runOnce();

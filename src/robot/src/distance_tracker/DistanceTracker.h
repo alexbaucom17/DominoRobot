@@ -4,7 +4,6 @@
 #include "utils.h"
 #include "serial/SerialComms.h"
 #include "DistanceTrackerBase.h"
-#include "KalmanFilter.h"
 
 class DistanceTracker : public DistanceTrackerBase
 {
@@ -45,7 +44,6 @@ class DistanceTracker : public DistanceTrackerBase
     bool running_;
     TimeRunningAverage measurement_time_averager_;
     SerialCommsBase* serial_to_arduino_; 
-    KalmanFilter kf_;
     Timer running_timer_;
 
     // Various constant parameters
