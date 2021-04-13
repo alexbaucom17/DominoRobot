@@ -7,6 +7,8 @@ class Config:
     # Various debug/test flags
     # Set to override config values for home network
     USING_HOME_NETWORK = True
+    # Set for laptop vs desktop
+    USING_DESKTOP = False
     # Set to override config values for small scale testing
     USE_SMALL_TESTING_CONFIG = True
     # Set to skip connecting to robot
@@ -26,7 +28,7 @@ class Config:
     # ====== PATHS ========
     
     root_path = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\"  # Laptop
-    if USING_HOME_NETWORK:
+    if USING_DESKTOP:
         root_path = "C:\\Users\\alexb\\Data\\Github\\DominoRobot\\"   # Desktop
     mm_api_relative_path = "marvelmind_SW_20202_04_19\\API\\api_windows_64bit\\dashapi.dll"
     config_dir_path = os.path.dirname(os.path.realpath(__file__))

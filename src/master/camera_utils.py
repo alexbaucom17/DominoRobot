@@ -47,7 +47,7 @@ if __name__ == '__main__':
     cfg = config.Config()
 
     robot_ip = cfg.ip_map['robot1']
-    remote_path = "/home/pi/"
+    remote_path = "/home/pi/images/debug/"
     local_path = cfg.log_folder
     img_data = []
     img_data.append({

@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import glob
 import argparse
+import os
 
 # termination criteria
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -19,13 +20,13 @@ def calibrate(dirpath, prefix, image_format, square_size, width=9, height=6):
     objpoints = []  # 3d point in real world space
     imgpoints = []  # 2d points in image plane.
 
-    if dirpath[-1:] == '/':
-        dirpath = dirpath[:-1]
-
-    images = glob.glob(dirpath+'/' + prefix + '*.' + image_format)
+    glob_str = os.path.join(dirpath, prefix + '*.' + image_format)
+    print("Looking for images that match: {}".format(glob_str))
+    images = glob.glob(glob_str)
 
     for fname in images:
         img = cv2.imread(fname)
+        print("Loading image from {}".format(fname))
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         # Find the chess board corners
@@ -40,8 +41,35 @@ def calibrate(dirpath, prefix, image_format, square_size, width=9, height=6):
 
             # Draw and display the corners
             img = cv2.drawChessboardCorners(img, (width, height), corners2, ret)
+            # cv2.imshow('img', img)
+            # cv2.waitKey(500)
+
+    cv2.destroyAllWindows()
 
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+
+    # Show calibrated images using last image
+    h,  w = img.shape[:2]
+    newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))
+    # undistort
+    dst = cv2.undistort(img, mtx, dist, None, newcameramtx)
+    # crop the image
+    x, y, w, h = roi
+    dst = dst[y:y+h, x:x+w]
+    cv2.imshow('raw', img)
+    cv2.waitKey(1000)
+    cv2.imshow('calibrated', dst)
+    cv2.waitKey(1000)
+    cv2.destroyAllWindows()
+
+    # reprojection error
+    mean_error = 0
+    for i in range(len(objpoints)):
+        imgpoints2, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)
+        error = cv2.norm(imgpoints[i], imgpoints2, cv2.NORM_L2)/len(imgpoints2)
+        mean_error += error
+    print( "total reprotjection error: {}".format(mean_error/len(objpoints)) )
+
 
     return [ret, mtx, dist, rvecs, tvecs]
 def save_coefficients(mtx, dist, path):
@@ -51,6 +79,7 @@ def save_coefficients(mtx, dist, path):
     cv_file.write("D", dist)
     # note you *release* you don't close() a FileStorage object
     cv_file.release()
+    print("Wrote calibration file to {}".format(path))
 def load_coefficients(path):
     """ Loads camera matrix and distortion coefficients. """
     # FILE_STORAGE_READ
@@ -67,10 +96,10 @@ def load_coefficients(path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Camera calibration')
-    parser.add_argument('--image_dir', type=str, default='', help='image directory path')
-    parser.add_argument('--image_format', type=str, default='.jpg',  help='image format, png/jpg')
-    parser.add_argument('--prefix', type=str, default='calibration_', help='image prefix')
-    parser.add_argument('--square_size', type=float, default=5, help='chessboard square size')
+    parser.add_argument('--image_dir', type=str, default='C:\\Users\\alexb\\Pictures\\Camera Roll', help='image directory path')
+    parser.add_argument('--image_format', type=str, default='jpg',  help='image format, png/jpg')
+    parser.add_argument('--prefix', type=str, default='', help='image prefix')
+    parser.add_argument('--square_size', type=float, default=0.023, help='chessboard square size')
     parser.add_argument('--width', type=int, default=9, help='chessboard width size, default is 9')
     parser.add_argument('--height', type=int, default=6, help='chessboard height size, default is 6')
     parser.add_argument('--save_file', type=str, default='calibration.yml', help='YML file to save calibration matrices')
