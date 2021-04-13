@@ -1,7 +1,5 @@
 
 Robot SW:
-- Increase robustness to noisy data
-    - Consider aggressively filtering distance measurements and relying more on odom. Then if I get a few good measurements here and there, it might still work.
 - Fix localization tests
 - Fix localization issue where it gets too confidence and doesn't accept any more updates
 - Investigate feasbility of fiducial tracking (opencv)
