@@ -2,10 +2,10 @@
 Robot SW:
 - Fix localization tests
 - Fix localization issue where it gets too confidence and doesn't accept any more updates
-- Investigate feasbility of fiducial tracking (opencv)
+- Get basic vision tracking working on robot
 
 Robot HW:
-- Keep working to get better US data
+- Mount camera to robot
 
 Master:
 
@@ -172,3 +172,6 @@ Notes From Monday:
 - More chat with mark, going to try IR camera tracking of reflective spots on the floor
     - Cameras and reflectors ordered
     - My job in the short term is to get OpenCV up and running and get some tracking basics working
+- Got OpenCV installed and configured on raspi
+    - Able to load camera images and do simple blob detection on RGB camera
+    - Wrote utility to copy images from raspi to computer for debugging since there is no screen on pi
