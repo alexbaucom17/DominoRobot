@@ -19,7 +19,9 @@ class CameraTracker : public CameraTrackerBase
     void test_function();   
 
   private:
-    cv::Ptr<cv::SimpleBlobDetector> blob_detector_;
+    cv::VideoCapture camera_;
+    cv::SimpleBlobDetector::Params blob_params_;
+    int threshold_;
     bool running_;
     
 };

@@ -1,36 +1,30 @@
 #include "CameraTracker.h"
 
 #include <plog/Log.h>
+#include <Eigen/Dense>
+#include "constants.h"
 
 CameraTracker::CameraTracker()
-: running_(false)
+: camera_(0),
+  running_(false)
 {
-    cv::SimpleBlobDetector::Params params;
-    
-    params.filterByColor = true;
-    params.blobColor = 0;
-    
-    // Change thresholds
-    params.minThreshold = 0;
-    params.maxThreshold = 200;
+    if (!camera_.isOpened()) {
+        PLOGE << "ERROR: Could not open camera";
+    }
+    PLOGI << "Opened camera";
 
-    // Filter by Area.
-    params.filterByArea = true;
-    params.minArea = 50;
-    params.maxArea = 100000;
+    // We are doing the thresholding manually
+    threshold_ = cfg.lookup("vision_tracker.threshold");
+    blob_params_.minThreshold = 0;
+    blob_params_.maxThreshold = 255;
 
-    // Filter by Circularity
-    params.filterByCircularity = false;
-    params.minCircularity = 0.5;
-
-    // Filter by Convexity
-    params.filterByConvexity = false;
-    params.minConvexity = 0.87;
-
-    // Filter by Inertia
-    params.filterByInertia = false;
-    params.minInertiaRatio = 0.01;
-    blob_detector_ = cv::SimpleBlobDetector::create(params);
+    blob_params_.filterByArea = cfg.lookup("vision_tracker.blob.use_area");
+    blob_params_.minArea = cfg.lookup("vision_tracker.blob.min_area");;
+    blob_params_.maxArea = cfg.lookup("vision_tracker.blob.max_area");;
+    blob_params_.filterByColor = false;
+    blob_params_.filterByCircularity = false;
+    blob_params_.filterByConvexity = false;
+    blob_params_.filterByInertia = false;
 }
 
 void CameraTracker::start()
@@ -49,39 +43,46 @@ Point CameraTracker::getPoseFromCamera()
     return {0,0,0};
 }
 
+Eigen::Vector2f pointInImage(cv::Mat img_raw, int threshold, cv::SimpleBlobDetector::Params params, bool output_debug)
+{
+
+    // Convert to greyscale
+    cv::Mat img_grey;
+    cv::cvtColor(img_raw, img_grey, cv::COLOR_RGB2GRAY);
+
+    // Threshold
+    cv::Mat img_thresh;
+    cv::threshold(img_grey, img_thresh, threshold, 255, cv::THRESH_BINARY);
+
+    // Blob detection
+    std::vector<cv::KeyPoint> keypoints;
+    cv::Ptr<cv::SimpleBlobDetector> blob_detector = cv::SimpleBlobDetector::create(params);
+    blob_detector->detect(img_thresh, keypoints);
+
+    for (const auto& k : keypoints) {
+        PLOGI << "Keypoint: " << k.class_id;
+        PLOGI << "Point: " << k.pt;
+        PLOGI << "Angle: " << k.angle;
+        PLOGI << "Size: " << k.size;
+    }
+
+    if(output_debug)
+    {
+        cv::imwrite("/home/pi/img_raw.jpg", img_raw);
+        cv::imwrite("/home/pi/img_grey.jpg", img_grey);
+        cv::imwrite("/home/pi/img_thresh.jpg", img_thresh);
+        cv::Mat img_with_keypoints;
+        cv::drawKeypoints(img_raw, keypoints, img_with_keypoints, cv::Scalar(0,0,255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+        cv::imwrite("/home/pi/img_keypoints.jpg", img_with_keypoints);
+    }
+
+    return {0,0};
+}
+
 void CameraTracker::test_function()
 {
-    cv::VideoCapture camera(0);
-    if (!camera.isOpened()) {
-        PLOGE << "ERROR: Could not open camera";
-        return;
-    }
-    PLOGI << "Opened camera";
     cv::Mat frame;
-    std::vector<cv::KeyPoint> keypoints;
-    cv::Mat img_with_keypoints;
-    PLOGI << "Allocated memory";
-
-    TimeRunningAverage averager(10);
-
-    for (int i = 0; i < 50; i++)
-    {
-        camera >> frame;
-        // PLOGI << "Got frame";
-        
-        // cv::imwrite("/home/pi/debug_img.jpg", frame);
-        blob_detector_->detect(frame, keypoints);
-        // PLOGI << "Got keypoints";
-
-        // cv::drawKeypoints(frame, keypoints, img_with_keypoints, cv::Scalar(0,0,255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-
-        // cv::imwrite("/home/pi/debug_img2.jpg", img_with_keypoints);
-        // PLOGI << "Wrote test images";
-        averager.mark_point();
-        
-        if (i%10 == 0)
-        {
-            PLOGI<< "Average ms for cycle: "<< averager.get_ms();
-        }
-    }
+    camera_ >> frame;
+    pointInImage(frame, threshold_, blob_params_, true);
+    PLOGI << "Done with image processing";
 }
