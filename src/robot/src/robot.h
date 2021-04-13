@@ -8,6 +8,7 @@
 #include "TrayController.h"
 #include "utils.h"
 #include "distance_tracker/DistanceTrackerBase.h"
+#include "camera_tracker/CameraTracker.h"
 
 class WaitForLocalizeHelper 
 {
@@ -53,6 +54,7 @@ class Robot
     TimeRunningAverage position_time_averager_;    // Handles keeping average of the position update timing
     WaitForLocalizeHelper wait_for_localize_helper_;
     RateController dist_print_rate_;
+    CameraTracker camera_tracker_;
 
     COMMAND curCmd_;
 };
