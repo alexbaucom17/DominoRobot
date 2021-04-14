@@ -54,6 +54,8 @@ Robot::Robot()
 
 void Robot::run()
 {
+    CameraTracker* actual_tracker_ = dynamic_cast<CameraTracker*>(camera_tracker_);
+    actual_tracker_->test_function();
     while(true)
     {
         runOnce();

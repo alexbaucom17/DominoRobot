@@ -22,6 +22,8 @@ class CameraTracker : public CameraTrackerBase
 
     std::vector<cv::KeyPoint> allKeypointsInImage(cv::Mat img_raw, bool output_debug);
 
+    cv::Point2f cameraToRobot(cv::Point2f cameraPt);
+
     cv::VideoCapture camera_;
     cv::SimpleBlobDetector::Params blob_params_;
     cv::Mat K_;
@@ -31,6 +33,8 @@ class CameraTracker : public CameraTrackerBase
     bool use_debug_image_;
     bool running_;
     Point current_point_;
+    float pixels_per_meter_u_;
+    float pixels_per_meter_v_;
     
 };
 
