@@ -53,16 +53,16 @@ if __name__ == '__main__':
     img_data.append({
         "file": "img_raw.jpg",
         "title": "raw",
-        "color": True
+        "color": False
     })
     img_data.append({
         "file": "img_undistorted.jpg",
         "title": "undistorted",
-        "color": True
+        "color": False
     })
     img_data.append({
-        "file": "img_grey.jpg",
-        "title": "grey",
+        "file": "img_cropped.jpg",
+        "title": "cropped",
         "color": False
     })
     img_data.append({
@@ -73,7 +73,12 @@ if __name__ == '__main__':
     img_data.append({
         "file": "img_keypoints.jpg",
         "title": "detections",
-        "color": True
+        "color": False
+    })
+    img_data.append({
+        "file": "img_best_keypoint.jpg",
+        "title": "best",
+        "color": False
     })
 
     get_and_display_multiple_images(robot_ip, remote_path, local_path, img_data)

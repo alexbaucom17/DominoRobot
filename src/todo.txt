@@ -2,10 +2,10 @@
 Robot SW:
 - Fix localization tests
 - Fix localization issue where it gets too confidence and doesn't accept any more updates
-- Get basic vision tracking working on robot
+- Fix vision pipeline to handle 2 cameras, undistort after detection, and use proper calibration
+- Fix vision tracker to handle pose from 2 cameras
 
 Robot HW:
-- Mount camera to robot
 
 Master:
 
@@ -177,4 +177,18 @@ Notes From Monday:
     - Wrote utility to copy images from raspi to computer for debugging since there is no screen on pi
 
 Notes from Tuesday:
-- Robustified and parametarized vision processing pipeline for point detection
+- Robustified and parametarized vision processing pipeline for marker detection
+- Set up camera calibration proces
+- Tested new IR cameras
+    - One was DOA, should get replacement
+    - Floor reflects IR LEDs quite a lot, need to cover/block them in order for it to work
+    - Floor also has pretty bright reflections from lights/skylights. 
+        - They are clearly different enough in shape to be filterable, but may cause problems if they end up in the same spot as a marker.
+        - We should think about how to mitigate this as we will be doing enough drops that this is certain to cause a problem at some point
+            - One option is to get some sort of covering that goes over a large part of the areas with the cameras to block out overhead reflections
+                - Quick test shows this does work, might need a large area to cover sources from multiple angles though
+    - Need to think carefully about marker placement and spacing, would be great if marker on side of robot could be shared with back of robot from another column
+        - At the very least, have to make sure that markers are far enough apart that robot will not see 2 of them in the same frame
+- Ghetto-mounted camera onto robot
+- Got super basic vision-based motion up and running for a single camera
+    - Appears to work quite well for the single camera

@@ -206,6 +206,11 @@ class RobotClient(ClientBase):
         msg = {'type': 'move_dist', 'data': {'x': x, 'y': y, 'a': a}}
         self.send_msg_and_wait_for_ack(msg)
 
+    def move_with_vision(self, x, y, a):
+        """ Tell robot to move to a location relative to the vision measurements from cameras"""
+        msg = {'type': 'move_vision', 'data': {'x': x, 'y': y, 'a': a}}
+        self.send_msg_and_wait_for_ack(msg)
+
     def move_const_vel(self, vx, vy, va, t):
         """ Tell robot to move at constant velocity for a specific amount of time"""
         msg = {'type': 'move_const_vel', 'data': {'vx': vx, 'vy': vy, 'va': va, 't': t}}

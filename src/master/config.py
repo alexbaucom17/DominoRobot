@@ -6,13 +6,13 @@ class Config:
 
     # Various debug/test flags
     # Set to override config values for home network
-    USING_HOME_NETWORK = True
+    USING_HOME_NETWORK = False
     # Set for laptop vs desktop
     USING_DESKTOP = False
     # Set to override config values for small scale testing
     USE_SMALL_TESTING_CONFIG = True
     # Set to skip connecting to robot
-    OFFLINE_TESTING = True
+    OFFLINE_TESTING = False
     # Set to skip connecting to base station
     SKIP_BASE_STATION = True
     # Set to skip connecting to Marvelmind

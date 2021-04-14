@@ -41,8 +41,8 @@ def calibrate(dirpath, prefix, image_format, square_size, width=9, height=6):
 
             # Draw and display the corners
             img = cv2.drawChessboardCorners(img, (width, height), corners2, ret)
-            # cv2.imshow('img', img)
-            # cv2.waitKey(500)
+            cv2.imshow('img', img)
+            cv2.waitKey(500)
 
     cv2.destroyAllWindows()
 
@@ -96,7 +96,7 @@ def load_coefficients(path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Camera calibration')
-    parser.add_argument('--image_dir', type=str, default='C:\\Users\\alexb\\Pictures\\Camera Roll', help='image directory path')
+    parser.add_argument('--image_dir', type=str, default='C:\\Users\\alexb\\Pictures\\DominoRobotIRCalibration', help='image directory path')
     parser.add_argument('--image_format', type=str, default='jpg',  help='image format, png/jpg')
     parser.add_argument('--prefix', type=str, default='', help='image prefix')
     parser.add_argument('--square_size', type=float, default=0.023, help='chessboard square size')

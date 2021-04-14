@@ -112,6 +112,8 @@ class RobotInterface:
                 self.current_move_data = [action.x, action.y, action.getAngleDegrees()]
             elif action.action_type == ActionTypes.MOVE_WITH_DISTANCE:
                 self.robot_client.move_with_distance(action.x, action.y, action.a)
+            elif action.action_type == ActionTypes.MOVE_WITH_VISION:
+                self.robot_client.move_with_vision(action.x, action.y, action.a)
             elif action.action_type == ActionTypes.MOVE_CONST_VEL:
                 self.robot_client.move_const_vel(action.vx, action.vy, action.va, action.t)
             elif action.action_type == ActionTypes.SET_POSE:

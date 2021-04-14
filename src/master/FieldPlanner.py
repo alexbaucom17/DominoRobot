@@ -314,6 +314,7 @@ class ActionTypes(enum.Enum):
     SET_POSE = 13,
     MOVE_WITH_DISTANCE = 14,
     TOGGLE_DISTANCE = 15,
+    MOVE_WITH_VISION = 16,
 
 class Action:
 
