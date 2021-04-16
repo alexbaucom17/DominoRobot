@@ -7,9 +7,13 @@ class CameraTrackerMock : public CameraTrackerBase
 {
   public:
 
-    virtual void processImages() override {};
+    virtual void start() override {};
 
-    virtual Point getPoseFromCamera() override {return {0,0,0}; };  
+    virtual void stop() override {};
+
+    virtual Point getPoseFromCamera() override { return {0,0,0};}; 
+
+    virtual int getLoopTimeMs() override {return 0;};
 };
 
 

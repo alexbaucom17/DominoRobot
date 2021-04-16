@@ -4,17 +4,22 @@
 #include "CameraTrackerBase.h"
 #include "utils.h"
 #include <opencv2/opencv.hpp>
+#include <thread>
 
 class CameraTracker : public CameraTrackerBase
 {
   public:
     CameraTracker();
-
+    
     virtual ~CameraTracker();
 
-    virtual void processImages() override;
+    virtual void start() override;
 
-    virtual Point getPoseFromCamera() override {return current_point_;}; 
+    virtual void stop() override;
+
+    virtual Point getPoseFromCamera() override; 
+
+    virtual int getLoopTimeMs() override;
 
     void test_function();   
 
@@ -26,6 +31,10 @@ class CameraTracker : public CameraTrackerBase
       SIDE
     };
 
+    void threadLoop();
+
+    bool isRunning();
+
     cv::Point2f processImage(CAMERA_ID id);
 
     std::vector<cv::KeyPoint> allKeypointsInImage(cv::Mat img_raw, bool output_debug);
@@ -36,18 +45,21 @@ class CameraTracker : public CameraTrackerBase
 
     cv::VideoCapture side_camera_;
     cv::VideoCapture rear_camera_;
-    cv::SimpleBlobDetector::Params blob_params_;
     cv::Mat K_;
     cv::Mat D_;
-    cv::Mat current_frame_;
-    int threshold_;
+    cv::Mat debug_frame_;
     bool use_debug_image_;
     bool running_;
     Point current_point_;
+    TimeRunningAverage camera_loop_time_averager_;
+    int loop_time_ms_;
+    std::thread thread_;
+    
+    // Params
+    cv::SimpleBlobDetector::Params blob_params_;
+    int threshold_;
     float pixels_per_meter_u_;
     float pixels_per_meter_v_;
-    TimeRunningAverage camera_loop_time_averager_;
-    
 };
 
 

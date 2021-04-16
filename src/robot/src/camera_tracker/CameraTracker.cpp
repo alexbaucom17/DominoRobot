@@ -2,15 +2,22 @@
 
 #include <plog/Log.h>
 #include "constants.h"
+#include <mutex>
+
+std::mutex pose_mutex;
+std::mutex loop_time_mutex;
+std::mutex running_mutex;
 
 CameraTracker::CameraTracker()
 : side_camera_(std::string(cfg.lookup("vision_tracker.side_camera_path"))),
   rear_camera_(std::string(cfg.lookup("vision_tracker.rear_camera_path"))),
   use_debug_image_(cfg.lookup("vision_tracker.use_debug_image")),
+  running_(false),
   current_point_({0,0,0}),
+  camera_loop_time_averager_(10),
+  loop_time_ms_(0),
   pixels_per_meter_u_(cfg.lookup("vision_tracker.pixels_per_meter_u")),
-  pixels_per_meter_v_(cfg.lookup("vision_tracker.pixels_per_meter_v")),
-  camera_loop_time_averager_(10)
+  pixels_per_meter_v_(cfg.lookup("vision_tracker.pixels_per_meter_v"))
 {
     // Load camera calibration parameters
     std::string calibration_path = cfg.lookup("vision_tracker.calibration");
@@ -42,8 +49,8 @@ CameraTracker::CameraTracker()
     else
     {
         std::string image_path = cfg.lookup("vision_tracker.debug_image");
-        current_frame_ = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
-        if(current_frame_.empty())
+        debug_frame_ = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
+        if(debug_frame_.empty())
         {
             PLOGE << "Could not read image from " << image_path;
             throw;
@@ -66,9 +73,37 @@ CameraTracker::CameraTracker()
     blob_params_.maxCircularity = cfg.lookup("vision_tracker.blob.max_circularity");
     blob_params_.filterByConvexity = false;
     blob_params_.filterByInertia = false;
+
+    // start thread
+    thread_ = std::thread(&CameraTracker::threadLoop, this);
+    thread_.detach();
 }
 
 CameraTracker::~CameraTracker() {}
+
+Point CameraTracker::getPoseFromCamera()
+{
+    std::lock_guard<std::mutex> read_lock(pose_mutex);
+    return current_point_;
+}
+
+int CameraTracker::getLoopTimeMs()
+{
+    std::lock_guard<std::mutex> read_lock(loop_time_mutex);
+    return loop_time_ms_;
+}
+
+void CameraTracker::start()
+{
+    std::lock_guard<std::mutex> read_lock(running_mutex);
+    running_ = true;
+}
+
+void CameraTracker::stop()
+{
+    std::lock_guard<std::mutex> read_lock(running_mutex);
+    running_ = false;
+}
 
 cv::Point2f getBestKeypoint(std::vector<cv::KeyPoint> keypoints)
 {
@@ -93,7 +128,7 @@ cv::Point2f getBestKeypoint(std::vector<cv::KeyPoint> keypoints)
 }
 
 std::vector<cv::KeyPoint> CameraTracker::allKeypointsInImage(cv::Mat img_raw, bool output_debug)
-{
+{   
     // Undistort and crop
     cv::Mat img_undistorted;
     cv::Rect validPixROI;
@@ -143,12 +178,19 @@ std::vector<cv::KeyPoint> CameraTracker::allKeypointsInImage(cv::Mat img_raw, bo
 
 void CameraTracker::test_function()
 {
+    if (isRunning()) 
+    {
+        PLOGE << "Skipping test function while background thread is running";
+        return;
+    }
+    
+    cv::Mat frame;
     Timer t0;
     {
         Timer t1;
-        if(!use_debug_image_) side_camera_ >> current_frame_;
+        if(!use_debug_image_) side_camera_ >> frame;
         PLOGI << "Side camera frame took " << t1.dt_ms() << "ms to get";
-        std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(current_frame_, true);
+        std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, true);
         cv::Point2f best_point_px = getBestKeypoint(keypoints);
         cv::Point2f best_point_m = cameraToRobot(best_point_px);
         PLOGI << "Best keypoint side at " << best_point_px << " px";
@@ -157,11 +199,11 @@ void CameraTracker::test_function()
     }
     {
         Timer t1;
-        if(!use_debug_image_) rear_camera_ >> current_frame_;
+        if(!use_debug_image_) rear_camera_ >> frame;
         PLOGI << "Rear camera frame took " << t1.dt_ms() << "ms to get";
-        if(!use_debug_image_) rear_camera_ >> current_frame_;
+        if(!use_debug_image_) rear_camera_ >> frame;
         PLOGI << "Rear camera 2nd frame took " << t1.dt_ms() << "ms to get";
-        std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(current_frame_, true);
+        std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, true);
         cv::Point2f best_point_px = getBestKeypoint(keypoints);
         cv::Point2f best_point_m = cameraToRobot(best_point_px);
         PLOGI << "Best keypoint rear at " << best_point_px << " px";
@@ -171,6 +213,36 @@ void CameraTracker::test_function()
 
     PLOGI << "Done with image processing";
     PLOGI << "Total image processing time: " << t0.dt_ms() << "ms";
+}
+
+bool CameraTracker::isRunning()
+{
+    std::lock_guard<std::mutex> read_lock(running_mutex);
+    return running_;
+}
+
+void CameraTracker::threadLoop()
+{
+    int hack = 0;
+    while(true)
+    {
+        if (isRunning())
+        {
+            cv::Point2f best_point_side = processImage(CAMERA_ID::SIDE);
+            cv::Point2f best_point_rear = processImage(CAMERA_ID::REAR);
+            Point pose = computeRobotPoseFromImagePoints(best_point_side, best_point_rear);
+            {
+                std::lock_guard<std::mutex> read_lock(pose_mutex);
+                current_point_ = pose;
+                current_point_.x = hack++;
+            }
+            {
+                camera_loop_time_averager_.mark_point();
+                std::lock_guard<std::mutex> read_lock(loop_time_mutex);
+                loop_time_ms_ = camera_loop_time_averager_.get_ms();
+            }
+        }
+    }
 }
 
 cv::Point2f CameraTracker::cameraToRobot(cv::Point2f cameraPt)
@@ -183,14 +255,13 @@ cv::Point2f CameraTracker::cameraToRobot(cv::Point2f cameraPt)
 
 cv::Point2f CameraTracker::processImage(CAMERA_ID id)
 {
-    if(!use_debug_image_)
-    {
-        if (id == CAMERA_ID::REAR) rear_camera_ >> current_frame_;
-        else if (id == CAMERA_ID::SIDE) rear_camera_ >> current_frame_;
-        else PLOGE << "Error: unknown camera id";
-    }
+    cv::Mat frame;
+    if(use_debug_image_) frame = debug_frame_;
+    else if (id == CAMERA_ID::REAR) rear_camera_ >> frame;
+    else if (id == CAMERA_ID::SIDE) rear_camera_ >> frame;
+    else PLOGE << "Error: unknown camera id";
 
-    std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(current_frame_, false);
+    std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, false);
     cv::Point2f best_point_px = getBestKeypoint(keypoints);
     cv::Point2f best_point_m = cameraToRobot(best_point_px);
     return best_point_m;
@@ -204,11 +275,3 @@ Point CameraTracker::computeRobotPoseFromImagePoints(cv::Point2f p_side, cv::Poi
     return {0,0,0};
 }
 
-void CameraTracker::processImages()
-{
-    cv::Point2f best_point_side = processImage(CAMERA_ID::SIDE);
-    cv::Point2f best_point_rear = processImage(CAMERA_ID::REAR);
-    current_point_ = computeRobotPoseFromImagePoints(best_point_side, best_point_rear);
-    camera_loop_time_averager_.mark_point();
-    PLOGI << "Camera loop time " << camera_loop_time_averager_.get_ms() << " ms";
-}
