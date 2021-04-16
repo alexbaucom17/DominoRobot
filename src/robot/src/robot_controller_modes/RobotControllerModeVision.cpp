@@ -47,7 +47,7 @@ RobotControllerModeVision::RobotControllerModeVision(bool fake_perfect_motion)
 
 bool RobotControllerModeVision::startMove(Point target_point)
 {
-    camera_tracker_->processImage();
+    camera_tracker_->processImages();
     current_point_ = camera_tracker_->getPoseFromCamera();
     goal_point_ = target_point;
     bool ok = traj_gen_.generatePointToPointTrajectory(current_point_, target_point, /*fine_mode*/ true);
@@ -58,7 +58,7 @@ bool RobotControllerModeVision::startMove(Point target_point)
 Velocity RobotControllerModeVision::computeTargetVelocity(Point current_position, Velocity current_velocity, bool log_this_cycle)
 {
     // Get latest image
-    camera_tracker_->processImage();
+    camera_tracker_->processImages();
     Point camera_measurement = camera_tracker_->getPoseFromCamera();
     
     // Get current target global position and global velocity according to the trajectory

@@ -7,7 +7,7 @@ class CameraTrackerBase
 {
   public:
 
-    virtual void processImage() = 0;
+    virtual void processImages() = 0;
 
     virtual Point getPoseFromCamera() = 0;    
 };

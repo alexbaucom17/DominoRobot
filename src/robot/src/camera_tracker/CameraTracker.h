@@ -12,7 +12,7 @@ class CameraTracker : public CameraTrackerBase
 
     virtual ~CameraTracker();
 
-    virtual void processImage() override;
+    virtual void processImages() override;
 
     virtual Point getPoseFromCamera() override {return current_point_;}; 
 
@@ -20,9 +20,19 @@ class CameraTracker : public CameraTrackerBase
 
   private:
 
+    enum class CAMERA_ID
+    {
+      REAR,
+      SIDE
+    };
+
+    cv::Point2f processImage(CAMERA_ID id);
+
     std::vector<cv::KeyPoint> allKeypointsInImage(cv::Mat img_raw, bool output_debug);
 
     cv::Point2f cameraToRobot(cv::Point2f cameraPt);
+
+    Point computeRobotPoseFromImagePoints(cv::Point2f p_side, cv::Point2f p_rear);
 
     cv::VideoCapture side_camera_;
     cv::VideoCapture rear_camera_;
@@ -36,6 +46,7 @@ class CameraTracker : public CameraTrackerBase
     Point current_point_;
     float pixels_per_meter_u_;
     float pixels_per_meter_v_;
+    TimeRunningAverage camera_loop_time_averager_;
     
 };
 

@@ -54,8 +54,8 @@ Robot::Robot()
 
 void Robot::run()
 {
-    CameraTracker* actual_tracker_ = dynamic_cast<CameraTracker*>(camera_tracker_);
-    actual_tracker_->test_function();
+    // CameraTracker* actual_tracker_ = dynamic_cast<CameraTracker*>(camera_tracker_);
+    // actual_tracker_->test_function();
     while(true)
     {
         runOnce();
@@ -89,6 +89,9 @@ void Robot::runOnce()
     controller_.update();
     tray_controller_.update();
     distance_tracker_->checkForMeasurement();
+
+    CameraTracker* actual_tracker_ = dynamic_cast<CameraTracker*>(camera_tracker_);
+    actual_tracker_->processImages();
 
     // Check if the current command has finished
     bool done = checkForCmdComplete(curCmd_);
