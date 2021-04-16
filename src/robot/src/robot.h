@@ -52,6 +52,7 @@ class Robot
     DistanceTrackerBase* distance_tracker_;
 
     TimeRunningAverage position_time_averager_;    // Handles keeping average of the position update timing
+    TimeRunningAverage robot_loop_time_averager_; 
     WaitForLocalizeHelper wait_for_localize_helper_;
     RateController dist_print_rate_;
     CameraTrackerBase* camera_tracker_;

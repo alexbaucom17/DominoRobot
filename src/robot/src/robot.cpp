@@ -44,6 +44,7 @@ Robot::Robot()
   mm_wrapper_(),
   distance_tracker_(DistanceTrackerFactory::getFactoryInstance()->get_distance_tracker()),
   position_time_averager_(20),
+  robot_loop_time_averager_(20),
   wait_for_localize_helper_(statusUpdater_, cfg.lookup("localization.max_wait_time"), cfg.lookup("localization.confidence_for_wait")),
   dist_print_rate_(10),
   camera_tracker_(CameraTrackerFactory::getFactoryInstance()->get_camera_tracker()),
@@ -106,6 +107,8 @@ void Robot::runOnce()
     statusUpdater_.updateDistanceLoopTime(distance_tracker_->getAverageMeasurementTimeMs());
     statusUpdater_.updateRawDistances(distance_tracker_->getRawDistances());
     statusUpdater_.updateDistancePose(distance_tracker_->getDistancePose());
+    robot_loop_time_averager_.mark_point();
+    // PLOGI << "Robot loop time: " << robot_loop_time_averager_.get_ms() << " ms";
 
     // if(dist_print_rate_.ready())
     // {
