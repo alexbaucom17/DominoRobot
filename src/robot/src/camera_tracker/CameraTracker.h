@@ -24,7 +24,8 @@ class CameraTracker : public CameraTrackerBase
 
     cv::Point2f cameraToRobot(cv::Point2f cameraPt);
 
-    cv::VideoCapture camera_;
+    cv::VideoCapture side_camera_;
+    cv::VideoCapture rear_camera_;
     cv::SimpleBlobDetector::Params blob_params_;
     cv::Mat K_;
     cv::Mat D_;

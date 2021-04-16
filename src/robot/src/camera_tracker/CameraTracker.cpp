@@ -4,7 +4,8 @@
 #include "constants.h"
 
 CameraTracker::CameraTracker()
-: camera_(0),
+: side_camera_(std::string(cfg.lookup("vision_tracker.side_camera_path"))),
+  rear_camera_(std::string(cfg.lookup("vision_tracker.rear_camera_path"))),
   use_debug_image_(cfg.lookup("vision_tracker.use_debug_image")),
   current_point_({0,0,0}),
   pixels_per_meter_u_(cfg.lookup("vision_tracker.pixels_per_meter_u")),
@@ -24,12 +25,18 @@ CameraTracker::CameraTracker()
 
     if(!use_debug_image_)
     {
-        if (!camera_.isOpened()) 
+        if (!side_camera_.isOpened()) 
         {
-            PLOGE << "ERROR: Could not open camera";
+            PLOGE << "ERROR: Could not open side camera";
             throw;
         }
-        PLOGI << "Opened camera";
+        PLOGI << "Opened side camera";
+        if (!rear_camera_.isOpened()) 
+        {
+            PLOGE << "ERROR: Could not open rear camera";
+            throw;
+        }
+        PLOGI << "Opened rear camera";
     }
     else
     {
@@ -135,7 +142,7 @@ std::vector<cv::KeyPoint> CameraTracker::allKeypointsInImage(cv::Mat img_raw, bo
 
 void CameraTracker::test_function()
 {
-    if(!use_debug_image_) camera_ >> current_frame_;
+    if(!use_debug_image_) side_camera_ >> current_frame_;
     std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(current_frame_, true);
     cv::Point2f best_point_px = getBestKeypoint(keypoints);
     cv::Point2f best_point_m = cameraToRobot(best_point_px);
@@ -155,7 +162,7 @@ cv::Point2f CameraTracker::cameraToRobot(cv::Point2f cameraPt)
 
 void CameraTracker::processImage()
 {
-    if(!use_debug_image_) camera_ >> current_frame_;
+    if(!use_debug_image_) side_camera_ >> current_frame_;
     std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(current_frame_, false);
     cv::Point2f best_point_px = getBestKeypoint(keypoints);
     cv::Point2f best_point_m = cameraToRobot(best_point_px);
