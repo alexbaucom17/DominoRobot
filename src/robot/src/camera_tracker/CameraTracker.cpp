@@ -37,6 +37,27 @@ CameraTracker::CameraTracker()
     blob_params_.filterByConvexity = false;
     blob_params_.filterByInertia = false;
 
+    // Transforms
+    float side_x_offset = cfg.lookup("vision_tracker.physical.side.x_offset");
+    float side_y_offset = cfg.lookup("vision_tracker.physical.side.y_offset");
+    float side_angle =  M_PI / 180.0 * float(cfg.lookup("vision_tracker.physical.side.angle"));
+    robot_T_side_cam_ << 
+      cos(side_angle), -sin(side_angle), side_x_offset,
+      sin(side_angle),  cos(side_angle), side_y_offset,
+      0,0,1;
+    robot_P_side_target_ = {cfg.lookup("vision_tracker.physical.side.target_x"), 
+                            cfg.lookup("vision_tracker.physical.side.target_y")};
+
+    float rear_x_offset = cfg.lookup("vision_tracker.physical.rear.x_offset");
+    float rear_y_offset = cfg.lookup("vision_tracker.physical.rear.y_offset");
+    float rear_angle =  M_PI / 180.0 * float(cfg.lookup("vision_tracker.physical.rear.angle"));
+    robot_T_rear_cam_ << 
+      cos(rear_angle), -sin(rear_angle), rear_x_offset,
+      sin(rear_angle),  cos(rear_angle), rear_y_offset,
+      0,0,1;
+    robot_P_rear_target_ = {cfg.lookup("vision_tracker.physical.rear.target_x"), 
+                            cfg.lookup("vision_tracker.physical.rear.target_y")};
+
     // Start thread
     thread_ = std::thread(&CameraTracker::threadLoop, this);
     thread_.detach();
@@ -176,8 +197,8 @@ std::vector<cv::KeyPoint> CameraTracker::allKeypointsInImage(cv::Mat img_raw, CA
     if(output_debug)
     {
         std::string debug_path = id == CAMERA_ID::SIDE ? 
-            cfg.lookup("vision_tracker.debug.side_debug_output_path") :
-            cfg.lookup("vision_tracker.debug.rear_debug_output_path");
+            cfg.lookup("vision_tracker.side.debug_output_path") :
+            cfg.lookup("vision_tracker.rear.debug_output_path");
         cv::imwrite(debug_path + "img_raw.jpg", img_raw);
         cv::imwrite(debug_path + "img_undistorted.jpg", img_undistorted);
         cv::imwrite(debug_path + "img_cropped.jpg", img_cropped);
@@ -300,7 +321,7 @@ cv::Point2f CameraTracker::processImage(CAMERA_ID id)
     }
     else PLOGE << "Error: unknown camera id";
 
-    std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, id, false);
+    std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, id, output_debug_images_);
     cv::Point2f best_point_px = getBestKeypoint(keypoints);
     cv::Point2f best_point_m = cameraToRobot(best_point_px);
     return best_point_m;
@@ -308,9 +329,31 @@ cv::Point2f CameraTracker::processImage(CAMERA_ID id)
 
 Point CameraTracker::computeRobotPoseFromImagePoints(cv::Point2f p_side, cv::Point2f p_rear)
 {
-    // TODO
-    (void) p_side;
-    (void) p_rear;
-    return {0,0,0};
+    // Transform points from camera frame to robot frame
+    Eigen::Vector3f cam_P_side = {p_side.x, p_side.y, 1};
+    Eigen::Vector3f robot_P_side = robot_T_side_cam_ * cam_P_side;
+    Eigen::Vector3f cam_P_rear = {p_rear.x, p_rear.y, 1};
+    Eigen::Vector3f robot_P_rear = robot_T_rear_cam_ * cam_P_rear;
+    
+    // Solve linear equations to get pose values
+    Eigen::Matrix4f A;
+    Eigen::Vector4f b;
+    A << 1, 0, -robot_P_rear[1], robot_P_rear[0],
+         0, 1,  robot_P_rear[0], robot_P_rear[1],
+         1, 0, -robot_P_side[1], robot_P_side[0],
+         0, 1,  robot_P_side[0], robot_P_side[1];
+    b << robot_P_rear_target_[0],
+         robot_P_rear_target_[1],
+         robot_P_side_target_[0],
+         robot_P_side_target_[1];
+    Eigen::Vector4f x = A.colPivHouseholderQr().solve(b);
+    
+    // Populate pose with angle averaging
+    float pose_x = x[0];
+    float pose_y = x[1];
+    float angle_1 = asin(x[2]);
+    float angle_2 = acos(x[3]);
+    float pose_a = (angle_1 + angle_2) / 2.0;
+    return {pose_x, pose_y, pose_a};
 }
 

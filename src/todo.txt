@@ -1,13 +1,12 @@
 
 Robot SW:
 - Fix vision pipeline to undistort after detection
-- Handle pose from 2 cameras
+- Test accuracy of pose from cameras (unit test?)
 - Fix localization tests
 - Add unit tests for camera and vision controller
 - Fix localization issue where it gets too confidence and doesn't accept any more updates
 - Use prop calibration matrix for cameras
 - Convert status/debug to output vision info and robot/vision loop times
-- Move camera processing to new thread
 
 Robot HW:
 

@@ -4,6 +4,7 @@
 #include "CameraTrackerBase.h"
 #include "utils.h"
 #include <opencv2/opencv.hpp>
+#include <Eigen/Dense>
 #include <thread>
 #include <map>
 
@@ -72,6 +73,10 @@ class CameraTracker : public CameraTrackerBase
     int threshold_;
     float pixels_per_meter_u_;
     float pixels_per_meter_v_;
+    Eigen::Matrix3f robot_T_side_cam_;
+    Eigen::Matrix3f robot_T_rear_cam_;
+    Eigen::Vector2f robot_P_side_target_;
+    Eigen::Vector2f robot_P_rear_target_;
 };
 
 
