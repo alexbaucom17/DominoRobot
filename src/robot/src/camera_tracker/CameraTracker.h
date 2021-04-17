@@ -5,6 +5,7 @@
 #include "utils.h"
 #include <opencv2/opencv.hpp>
 #include <thread>
+#include <map>
 
 class CameraTracker : public CameraTrackerBase
 {
@@ -31,24 +32,35 @@ class CameraTracker : public CameraTrackerBase
       SIDE
     };
 
+    std::string cameraIdToString(CAMERA_ID id);
+    
+    void initCamera(CAMERA_ID id);
+    
     void threadLoop();
 
     bool isRunning();
 
     cv::Point2f processImage(CAMERA_ID id);
 
-    std::vector<cv::KeyPoint> allKeypointsInImage(cv::Mat img_raw, bool output_debug);
+    std::vector<cv::KeyPoint> allKeypointsInImage(cv::Mat img_raw, CAMERA_ID id, bool output_debug);
 
     cv::Point2f cameraToRobot(cv::Point2f cameraPt);
 
     Point computeRobotPoseFromImagePoints(cv::Point2f p_side, cv::Point2f p_rear);
 
-    cv::VideoCapture side_camera_;
-    cv::VideoCapture rear_camera_;
-    cv::Mat K_;
-    cv::Mat D_;
-    cv::Mat debug_frame_;
+    struct CameraData 
+    {
+      CAMERA_ID id;
+      cv::VideoCapture capture;
+      cv::Mat K;
+      cv::Mat D;
+      cv::Mat debug_frame;
+      std::string debug_output_path;
+    };
+
+    std::map<CAMERA_ID, CameraData> cameras_;
     bool use_debug_image_;
+    bool output_debug_images_;
     bool running_;
     Point current_point_;
     TimeRunningAverage camera_loop_time_averager_;

@@ -3,6 +3,7 @@ Robot SW:
 - Fix vision pipeline to undistort after detection
 - Handle pose from 2 cameras
 - Fix localization tests
+- Add unit tests for camera and vision controller
 - Fix localization issue where it gets too confidence and doesn't accept any more updates
 - Use prop calibration matrix for cameras
 - Convert status/debug to output vision info and robot/vision loop times
@@ -21,6 +22,7 @@ Nice to haves:
 - Add better logging for distance tracker
 - Detect when tray init needs to happen again after robot estop
 - Spacebar to trigger sw estop
+- Change text color/highlighting on master for bad values (i.e. long loop times, error, etc)
 
 
 

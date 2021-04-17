@@ -9,74 +9,100 @@ std::mutex loop_time_mutex;
 std::mutex running_mutex;
 
 CameraTracker::CameraTracker()
-: side_camera_(std::string(cfg.lookup("vision_tracker.side_camera_path"))),
-  rear_camera_(std::string(cfg.lookup("vision_tracker.rear_camera_path"))),
-  use_debug_image_(cfg.lookup("vision_tracker.use_debug_image")),
+: use_debug_image_(cfg.lookup("vision_tracker.debug.use_debug_image")),
+  output_debug_images_(cfg.lookup("vision_tracker.debug.save_camera_debug")),
   running_(false),
   current_point_({0,0,0}),
   camera_loop_time_averager_(10),
   loop_time_ms_(0),
-  pixels_per_meter_u_(cfg.lookup("vision_tracker.pixels_per_meter_u")),
-  pixels_per_meter_v_(cfg.lookup("vision_tracker.pixels_per_meter_v"))
+  pixels_per_meter_u_(cfg.lookup("vision_tracker.physical.pixels_per_meter_u")),
+  pixels_per_meter_v_(cfg.lookup("vision_tracker.physical.pixels_per_meter_v"))
 {
-    // Load camera calibration parameters
-    std::string calibration_path = cfg.lookup("vision_tracker.calibration");
-    PLOGI << "Loading camera calibration from " << calibration_path;
-    cv::FileStorage fs(calibration_path, cv::FileStorage::READ);
-    if(fs["K"].isNone() || fs["D"].isNone()) 
-    {
-        PLOGE << "ERROR: Missing calibration data";
-        throw;
-    }
-    fs["K"] >> K_;
-    fs["D"] >> D_;
+    // Initialze cameras
+    initCamera(CAMERA_ID::REAR);
+    initCamera(CAMERA_ID::SIDE);
 
-    if(!use_debug_image_)
-    {
-        if (!side_camera_.isOpened()) 
-        {
-            PLOGE << "ERROR: Could not open side camera";
-            throw;
-        }
-        PLOGI << "Opened side camera";
-        if (!rear_camera_.isOpened()) 
-        {
-            PLOGE << "ERROR: Could not open rear camera";
-            throw;
-        }
-        PLOGI << "Opened rear camera";
-    }
-    else
-    {
-        std::string image_path = cfg.lookup("vision_tracker.debug_image");
-        debug_frame_ = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
-        if(debug_frame_.empty())
-        {
-            PLOGE << "Could not read image from " << image_path;
-            throw;
-        }
-        PLOGW << "Loading debug image from " << image_path;
-
-    }
-
-    // We are doing the thresholding manually
-    threshold_ = cfg.lookup("vision_tracker.threshold");
+    // Configure detection parameters
+    threshold_ = cfg.lookup("vision_tracker.detection.threshold");
     blob_params_.minThreshold = 10;
     blob_params_.maxThreshold = 200;
 
-    blob_params_.filterByArea = cfg.lookup("vision_tracker.blob.use_area");
-    blob_params_.minArea = cfg.lookup("vision_tracker.blob.min_area");
-    blob_params_.maxArea = cfg.lookup("vision_tracker.blob.max_area");
+    blob_params_.filterByArea = cfg.lookup("vision_tracker.detection.blob.use_area");
+    blob_params_.minArea = cfg.lookup("vision_tracker.detection.blob.min_area");
+    blob_params_.maxArea = cfg.lookup("vision_tracker.detection.blob.max_area");
     blob_params_.filterByColor = false;
-    blob_params_.filterByCircularity = cfg.lookup("vision_tracker.blob.use_circularity");
-    blob_params_.minCircularity = cfg.lookup("vision_tracker.blob.min_circularity");
-    blob_params_.maxCircularity = cfg.lookup("vision_tracker.blob.max_circularity");
+    blob_params_.filterByCircularity = cfg.lookup("vision_tracker.detection.blob.use_circularity");
+    blob_params_.minCircularity = cfg.lookup("vision_tracker.detection.blob.min_circularity");
+    blob_params_.maxCircularity = cfg.lookup("vision_tracker.detection.blob.max_circularity");
     blob_params_.filterByConvexity = false;
     blob_params_.filterByInertia = false;
 
-    // start thread
+    // Start thread
     thread_ = std::thread(&CameraTracker::threadLoop, this);
     thread_.detach();
+}
+
+void CameraTracker::initCamera(CAMERA_ID id)
+{
+    cameras_[id] = CameraData();
+    CameraData& camera_data = cameras_[id];
+
+    // Get config strings
+    std::string name = cameraIdToString(id);
+    std::string calibration_path_config_name = "vision_tracker." + name + ".calibration_file";
+    std::string camera_path_config_name = "vision_tracker." + name + ".camera_path";
+    std::string debug_output_path_config_name = "vision_tracker." + name + ".debug_output_path";
+    std::string debug_image_config_name = "vision_tracker." + name + ".debug_image";
+    
+    // Initialize camera calibration data
+    std::string calibration_path = cfg.lookup(calibration_path_config_name);
+    PLOGI.printf("Loading %s camera calibration from %s", name.c_str(), calibration_path.c_str());
+    cv::FileStorage fs(calibration_path, cv::FileStorage::READ);
+    if(fs["K"].isNone() || fs["D"].isNone()) 
+    {
+        PLOGE.printf("Missing %s calibration data", name.c_str());
+        throw;
+    }
+    fs["K"] >> camera_data.K;
+    fs["D"] >> camera_data.D;
+    
+    // Initialize camera calibration capture or debug data
+    if(!use_debug_image_)
+    {
+        std::string camera_path = cfg.lookup(camera_path_config_name);
+        camera_data.capture = cv::VideoCapture(camera_path);
+        if (!camera_data.capture.isOpened()) 
+        {
+            PLOGE.printf("Could not open %s camera at %s", name.c_str(), camera_path.c_str());
+            throw;
+        }
+        PLOGI.printf("Opened %s camera at %s", name.c_str(), camera_path.c_str());
+    } 
+    else 
+    {
+        std::string image_path = cfg.lookup(debug_image_config_name);
+        camera_data.debug_frame = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
+        if(camera_data.debug_frame.empty())
+        {
+            PLOGE.printf("Could not read %s debug image from %s", name.c_str(), image_path.c_str());
+            throw;
+        }
+        PLOGW.printf("Loading %s debug image from %s", name.c_str(), image_path.c_str());
+    }
+
+    // Initialze debug output path
+    if(output_debug_images_)
+    {
+        camera_data.debug_output_path = std::string(cfg.lookup(debug_output_path_config_name)); 
+    }
+}
+
+std::string CameraTracker::cameraIdToString(CAMERA_ID id)
+{
+    if(id == CAMERA_ID::REAR) return "rear";
+    if(id == CAMERA_ID::SIDE) return "side";
+    PLOGE << "Unknown camera id";
+    return "unk";
 }
 
 CameraTracker::~CameraTracker() {}
@@ -127,13 +153,13 @@ cv::Point2f getBestKeypoint(std::vector<cv::KeyPoint> keypoints)
     return best_keypoint.pt;
 }
 
-std::vector<cv::KeyPoint> CameraTracker::allKeypointsInImage(cv::Mat img_raw, bool output_debug)
+std::vector<cv::KeyPoint> CameraTracker::allKeypointsInImage(cv::Mat img_raw, CAMERA_ID id, bool output_debug)
 {   
     // Undistort and crop
     cv::Mat img_undistorted;
     cv::Rect validPixROI;
-    cv::Mat newcameramtx = cv::getOptimalNewCameraMatrix(K_, D_, img_raw.size(), /*alpha=*/1, img_raw.size(), &validPixROI);
-    cv::undistort(img_raw, img_undistorted, K_, D_);
+    cv::Mat newcameramtx = cv::getOptimalNewCameraMatrix(cameras_[id].K, cameras_[id].D, img_raw.size(), /*alpha=*/1, img_raw.size(), &validPixROI);
+    cv::undistort(img_raw, img_undistorted, cameras_[id].K, cameras_[id].D);
     cv::Mat img_cropped = img_undistorted(validPixROI);
 
     // Threshold
@@ -149,7 +175,9 @@ std::vector<cv::KeyPoint> CameraTracker::allKeypointsInImage(cv::Mat img_raw, bo
 
     if(output_debug)
     {
-        std::string debug_path = cfg.lookup("vision_tracker.debug_output_path");
+        std::string debug_path = id == CAMERA_ID::SIDE ? 
+            cfg.lookup("vision_tracker.debug.side_debug_output_path") :
+            cfg.lookup("vision_tracker.debug.rear_debug_output_path");
         cv::imwrite(debug_path + "img_raw.jpg", img_raw);
         cv::imwrite(debug_path + "img_undistorted.jpg", img_undistorted);
         cv::imwrite(debug_path + "img_cropped.jpg", img_cropped);
@@ -188,9 +216,9 @@ void CameraTracker::test_function()
     Timer t0;
     {
         Timer t1;
-        if(!use_debug_image_) side_camera_ >> frame;
+        if(!use_debug_image_) cameras_[CAMERA_ID::SIDE].capture >> frame;
         PLOGI << "Side camera frame took " << t1.dt_ms() << "ms to get";
-        std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, true);
+        std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, CAMERA_ID::SIDE, true);
         cv::Point2f best_point_px = getBestKeypoint(keypoints);
         cv::Point2f best_point_m = cameraToRobot(best_point_px);
         PLOGI << "Best keypoint side at " << best_point_px << " px";
@@ -199,11 +227,9 @@ void CameraTracker::test_function()
     }
     {
         Timer t1;
-        if(!use_debug_image_) rear_camera_ >> frame;
+        if(!use_debug_image_) cameras_[CAMERA_ID::REAR].capture >> frame;
         PLOGI << "Rear camera frame took " << t1.dt_ms() << "ms to get";
-        if(!use_debug_image_) rear_camera_ >> frame;
-        PLOGI << "Rear camera 2nd frame took " << t1.dt_ms() << "ms to get";
-        std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, true);
+        std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, CAMERA_ID::REAR, true);
         cv::Point2f best_point_px = getBestKeypoint(keypoints);
         cv::Point2f best_point_m = cameraToRobot(best_point_px);
         PLOGI << "Best keypoint rear at " << best_point_px << " px";
@@ -256,12 +282,25 @@ cv::Point2f CameraTracker::cameraToRobot(cv::Point2f cameraPt)
 cv::Point2f CameraTracker::processImage(CAMERA_ID id)
 {
     cv::Mat frame;
-    if(use_debug_image_) frame = debug_frame_;
-    else if (id == CAMERA_ID::REAR) rear_camera_ >> frame;
-    else if (id == CAMERA_ID::SIDE) rear_camera_ >> frame;
+    if (id == CAMERA_ID::REAR && use_debug_image_) 
+    {
+        frame = cameras_[CAMERA_ID::REAR].debug_frame;
+    }
+    else if (id == CAMERA_ID::REAR && !use_debug_image_) 
+    {
+        cameras_[CAMERA_ID::REAR].capture >> frame;
+    }
+    else if (id == CAMERA_ID::SIDE && use_debug_image_) 
+    {
+        frame = cameras_[CAMERA_ID::SIDE].debug_frame;
+    }
+    else if (id == CAMERA_ID::SIDE && !use_debug_image_) 
+    {
+        cameras_[CAMERA_ID::SIDE].capture >> frame;
+    }
     else PLOGE << "Error: unknown camera id";
 
-    std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, false);
+    std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, id, false);
     cv::Point2f best_point_px = getBestKeypoint(keypoints);
     cv::Point2f best_point_m = cameraToRobot(best_point_px);
     return best_point_m;
