@@ -113,14 +113,14 @@ void CameraTracker::initCamera(CAMERA_ID id)
     // Hardcoding rotation matrices here for simplicity
     if(id == CAMERA_ID::SIDE) 
     {
-        camera_rotation << -1,0,0, 0,1,0, 0,0,-1;
+        camera_rotation << 0,1,0, 1,0,0, 0,0,-1;
     }
     else
     {
-        camera_rotation << 0,1,0,  -1,0,0, 0,0,-1;
+        camera_rotation << 1,0,0,  0,-1,0, 0,0,-1;
     }
     // From https://ksimek.github.io/2012/08/22/extrinsic/
-    camera_data.t = -1 * camera_rotation.transpose() * camera_pose;
+    camera_data.t = -1 * camera_rotation * camera_pose;
     camera_data.R = camera_rotation.transpose();
 
     // Precompute some inverse values for later re-use
@@ -231,22 +231,55 @@ std::vector<cv::KeyPoint> CameraTracker::allKeypointsInImage(cv::Mat img_raw, CA
         cv::imwrite(debug_path + "img_raw.jpg", img_raw);
         cv::imwrite(debug_path + "img_undistorted.jpg", img_undistorted);
         cv::imwrite(debug_path + "img_thresh.jpg", img_thresh);
+
         cv::Mat img_with_keypoints;
-        cv::drawKeypoints(img_thresh, keypoints, img_with_keypoints, cv::Scalar(0,255,0), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+        cv::drawKeypoints(img_thresh, keypoints, img_with_keypoints, cv::Scalar(0,0,255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
         cv::imwrite(debug_path + "img_keypoints.jpg", img_with_keypoints);
+
         cv::Mat img_with_best_keypoint = img_undistorted;
         cv::Point2f best_keypoint = getBestKeypoint(keypoints);
-        cv::circle(img_with_best_keypoint, best_keypoint, 2, cv::Scalar(0,255,0), -1);
-        cv::circle(img_with_best_keypoint, best_keypoint, 20, cv::Scalar(0,255,0), 5);
+        cv::circle(img_with_best_keypoint, best_keypoint, 2, cv::Scalar(0,0,255), -1);
+        cv::circle(img_with_best_keypoint, best_keypoint, 20, cv::Scalar(0,0,255), 5);
         Eigen::Vector2f best_point_m = cameraToRobot(best_keypoint, id);
-        std::string label_text = std::to_string(best_point_m(0)) +" "+ std::to_string(best_point_m(1)) + " m";
+        std::string label_text = "Best point: " + std::to_string(best_point_m(0)) +"m, "+ std::to_string(best_point_m(1)) + " m";
         cv::putText(img_with_best_keypoint, //target image
                     label_text, //text
-                    cv::Point(best_keypoint.x+20, best_keypoint.y+20), //top-left position
+                    cv::Point(20, 20), //top-left position
+                    cv::FONT_HERSHEY_DUPLEX,
+                    0.8,
+                    CV_RGB(255,0,0), //font color
+                    2);
+        Eigen::Vector2f target_point_world;
+        if(id == CAMERA_ID::SIDE)
+        {
+            target_point_world << float(cfg.lookup("vision_tracker.physical.side.target_x")), float(cfg.lookup("vision_tracker.physical.side.target_y"));
+        }
+        else 
+        {
+            target_point_world << float(cfg.lookup("vision_tracker.physical.rear.target_x")), float(cfg.lookup("vision_tracker.physical.rear.target_y"));
+        }
+        Eigen::Vector2f target_point_camera = robotToCamera(target_point_world, id);
+        // int n_cols = img_with_best_keypoint.cols;
+        // int n_rows = img_with_best_keypoint.rows;
+        // if( target_point_camera[0] < 0 || target_point_camera[0] > n_cols || 
+        //     target_point_camera[1] < 0 || target_point_camera[1] > n_rows)
+        // {
+        //     PLOGW << "Target point " << target_point_camera.transpose() << " is outside image frame";
+        // }
+        // else 
+        // {
+            cv::Point2f pt{target_point_camera[0], target_point_camera[1]};
+            cv::circle(img_with_best_keypoint, pt, 5, cv::Scalar(255,0,0), -1);
+            std::string label_text2 = "Target point: " + std::to_string(target_point_camera[0]) +"px, "+ std::to_string(target_point_camera[1]) + " px";
+        cv::putText(img_with_best_keypoint, //target image
+                    label_text2, //text
+                    cv::Point(20, 60), //top-left position
                     cv::FONT_HERSHEY_DUPLEX,
                     0.8,
                     CV_RGB(0,0,255), //font color
                     2);
+        // }
+
         cv::imwrite(debug_path + "img_best_keypoint.jpg", img_with_best_keypoint);
     }
 
@@ -365,6 +398,23 @@ Eigen::Vector2f CameraTracker::cameraToRobot(cv::Point2f cameraPt, CAMERA_ID id)
     if(fabs(world_point(2)) > 1e-3) PLOGE.printf("Z value %f is not near zero", world_point(2));
 
     return {world_point(0),world_point(1)};
+}
+
+Eigen::Vector2f CameraTracker::robotToCamera(Eigen::Vector2f robotPt, CAMERA_ID id)
+{
+    const CameraData& camera_data = cameras_[id];
+    Eigen::Vector4f robot_point_3d = {robotPt[0], robotPt[1], 0, 1};
+    Eigen::MatrixXf r_t(3,4);
+    r_t << camera_data.R, camera_data.t;
+
+    Eigen::Matrix3f K_tmp;
+    // Hack to get around problems with enabling eigen support in opencv
+    K_tmp << camera_data.K.at<double>(0,0), camera_data.K.at<double>(0,1), camera_data.K.at<double>(0,2),
+           camera_data.K.at<double>(1,0), camera_data.K.at<double>(1,1), camera_data.K.at<double>(1,2),
+           camera_data.K.at<double>(2,0), camera_data.K.at<double>(2,1), camera_data.K.at<double>(2,2);
+
+    Eigen::Vector3f camera_pt_scaled = K_tmp * r_t * robot_point_3d;
+    return {camera_pt_scaled[0]/camera_pt_scaled[2], camera_pt_scaled[1]/camera_pt_scaled[2]};
 }
 
 Point CameraTracker::computeRobotPoseFromImagePoints(Eigen::Vector2f p_side, Eigen::Vector2f p_rear)

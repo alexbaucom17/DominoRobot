@@ -38,6 +38,8 @@ class CameraTracker : public CameraTrackerBase
 
     Eigen::Vector2f cameraToRobot(cv::Point2f cameraPt, CAMERA_ID id);
 
+    Eigen::Vector2f robotToCamera(Eigen::Vector2f robotPt, CAMERA_ID id);
+
     Point computeRobotPoseFromImagePoints(Eigen::Vector2f p_side, Eigen::Vector2f p_rear);
 
     void oneLoop();
