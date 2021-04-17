@@ -81,5 +81,13 @@ if __name__ == '__main__':
         "color": False
     })
 
-    get_and_display_multiple_images(robot_ip, remote_path, local_path, img_data)
+    DISPLAY_SIDE = True;
+    DISPLAY_REAR = True;
+
+    if DISPLAY_SIDE:
+        side_remote_path = remote_path + 'side/'
+        get_and_display_multiple_images(robot_ip, side_remote_path, local_path, img_data)
+    if DISPLAY_REAR:
+        rear_remote_path = remote_path + 'rear/'
+        get_and_display_multiple_images(robot_ip, rear_remote_path, local_path, img_data)
 
