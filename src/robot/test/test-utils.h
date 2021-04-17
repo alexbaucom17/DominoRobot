@@ -9,6 +9,7 @@
 #include "distance_tracker/DistanceTrackerFactory.h" 
 #include "distance_tracker/DistanceTrackerMock.h" 
 #include "utils.h"
+#include <variant>
 
 inline MockSocketMultiThreadWrapper* build_and_get_mock_socket() 
 {
@@ -76,5 +77,23 @@ class SafeConfigModifier
     libconfig::Setting& cur_val_;
     T old_val_;
 };
+
+
+// class SafeConfigModifierContainer
+// {
+//   public:
+//     template <typename T>
+//     void add(std::string path, T value)
+//     {
+//         data_.push_back(SafeConfigModifier<T>(path, value));
+//     }
+//   private:
+//     std::vector<std::variant<
+//       SafeConfigModifier<int>,
+//       SafeConfigModifier<float>,
+//       SafeConfigModifier<std::string>,
+//       SafeConfigModifier<bool>
+//       >> data_;
+// };
 
 #endif

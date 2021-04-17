@@ -55,9 +55,7 @@ Robot::Robot()
 
 void Robot::run()
 {
-    CameraTracker* actual_tracker_ = dynamic_cast<CameraTracker*>(camera_tracker_);
-    // actual_tracker_->test_function();
-    actual_tracker_->start();
+    camera_tracker_->start();
     while(true)
     {
         runOnce();
@@ -116,9 +114,8 @@ void Robot::runOnce()
         // PLOGI.printf("Cur dist: %s",pose.toString().c_str());
         // distance_tracker_->logDebug();
 
-        CameraTracker* actual_tracker_ = dynamic_cast<CameraTracker*>(camera_tracker_);
-        Point p = actual_tracker_->getPoseFromCamera();
-        int loop_time = actual_tracker_->getLoopTimeMs();
+        Point p = camera_tracker_->getPoseFromCamera();
+        int loop_time = camera_tracker_->getLoopTimeMs();
         PLOGI.printf("Camera point: %s, loop time: %i", p.toString().c_str(), loop_time);
 
     }

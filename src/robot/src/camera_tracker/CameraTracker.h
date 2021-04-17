@@ -11,7 +11,7 @@
 class CameraTracker : public CameraTrackerBase
 {
   public:
-    CameraTracker();
+    CameraTracker(bool start_thread = true);
     
     virtual ~CameraTracker();
 
@@ -25,13 +25,24 @@ class CameraTracker : public CameraTrackerBase
 
     void test_function();   
 
-  private:
-
+    // Below here exposed for testing only (yes, bad practice, but useful for now)
     enum class CAMERA_ID
     {
       REAR,
       SIDE
     };
+
+    Eigen::Vector2f processImage(CAMERA_ID id);
+
+    std::vector<cv::KeyPoint> allKeypointsInImage(cv::Mat img_raw, CAMERA_ID id, bool output_debug);
+
+    Eigen::Vector2f cameraToRobot(cv::Point2f cameraPt, CAMERA_ID id);
+
+    Point computeRobotPoseFromImagePoints(Eigen::Vector2f p_side, Eigen::Vector2f p_rear);
+
+    void oneLoop();
+
+  private:
 
     std::string cameraIdToString(CAMERA_ID id);
     
@@ -41,20 +52,16 @@ class CameraTracker : public CameraTrackerBase
 
     bool isRunning();
 
-    cv::Point2f processImage(CAMERA_ID id);
-
-    std::vector<cv::KeyPoint> allKeypointsInImage(cv::Mat img_raw, CAMERA_ID id, bool output_debug);
-
-    cv::Point2f cameraToRobot(cv::Point2f cameraPt);
-
-    Point computeRobotPoseFromImagePoints(cv::Point2f p_side, cv::Point2f p_rear);
-
     struct CameraData 
     {
       CAMERA_ID id;
       cv::VideoCapture capture;
       cv::Mat K;
+      Eigen::Matrix3f K_inv;
       cv::Mat D;
+      Eigen::Matrix3f R;
+      Eigen::Matrix3f R_inv;
+      Eigen::Vector3f t;
       cv::Mat debug_frame;
       std::string debug_output_path;
     };
@@ -63,6 +70,7 @@ class CameraTracker : public CameraTrackerBase
     bool use_debug_image_;
     bool output_debug_images_;
     bool running_;
+    bool thread_running_;
     Point current_point_;
     TimeRunningAverage camera_loop_time_averager_;
     int loop_time_ms_;
@@ -73,8 +81,6 @@ class CameraTracker : public CameraTrackerBase
     int threshold_;
     float pixels_per_meter_u_;
     float pixels_per_meter_v_;
-    Eigen::Matrix3f robot_T_side_cam_;
-    Eigen::Matrix3f robot_T_rear_cam_;
     Eigen::Vector2f robot_P_side_target_;
     Eigen::Vector2f robot_P_rear_target_;
 };
