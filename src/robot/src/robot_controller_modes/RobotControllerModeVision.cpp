@@ -104,8 +104,8 @@ Velocity RobotControllerModeVision::computeTargetVelocity(Point current_position
 
     // Rotate this commanded velocity back into global frame because currently it is in the local robot frame
     Velocity output_global;
-    output_global.vx = -1*(cos(current_position.a) * output_local.vx - sin(current_position.a) * output_local.vy);
-    output_global.vy = -1*(sin(current_position.a) * output_local.vx + cos(current_position.a) * output_local.vy);
+    output_global.vx = cos(current_position.a) * output_local.vx - sin(current_position.a) * output_local.vy;
+    output_global.vy = sin(current_position.a) * output_local.vx + cos(current_position.a) * output_local.vy;
     output_global.va = output_local.va;
 
     return output_global;

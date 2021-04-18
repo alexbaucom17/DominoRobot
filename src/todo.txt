@@ -1,13 +1,17 @@
 
 Robot SW:
+- Convert status/debug to output vision info and robot/vision loop times
+- Improve timing for vision tracker (maybe more threads?)
+- Setup vision tracker to handle no markers in frame
+- If latency is too high, update KF in vision control mode to only get correct on vision update
 - Fix localization tests
 - Fix localization issue where it gets too confidence and doesn't accept any more updates
-- Convert status/debug to output vision info and robot/vision loop times
 - Add more unit tests for camera and vision controller
 
 Robot HW:
 
 Master:
+- Figure out reasonable marker spacing
 
 Robustify:
 - Fix that missing ack skips current action during plan

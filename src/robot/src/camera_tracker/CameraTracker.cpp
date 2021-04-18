@@ -91,6 +91,8 @@ void CameraTracker::initCamera(CAMERA_ID id)
     std::string x_offset_config_name = "vision_tracker.physical." + name + ".x_offset";
     std::string y_offset_config_name = "vision_tracker.physical." + name + ".y_offset";
     std::string z_offset_config_name = "vision_tracker.physical." + name + ".z_offset";
+    std::string x_res_scale_config_name = "vision_tracker." + name + ".resolution_scale_x";
+    std::string y_res_scale_config_name = "vision_tracker." + name + ".resolution_scale_y";
     
     // Initialize intrinsic calibration data
     std::string calibration_path = cfg.lookup(calibration_path_config_name);
@@ -103,6 +105,16 @@ void CameraTracker::initCamera(CAMERA_ID id)
     }
     fs["K"] >> camera_data.K;
     fs["D"] >> camera_data.D;
+
+    // Handle scale factors
+    float x_res_scale = cfg.lookup(x_res_scale_config_name);
+    camera_data.K.at<double>(0,0) = camera_data.K.at<double>(0,0) * x_res_scale;
+    camera_data.K.at<double>(0,1) = camera_data.K.at<double>(0,1) * x_res_scale;
+    camera_data.K.at<double>(0,2) = camera_data.K.at<double>(0,2) * x_res_scale;
+    float y_res_scale = cfg.lookup(y_res_scale_config_name);
+    camera_data.K.at<double>(1,0) = camera_data.K.at<double>(1,0) * y_res_scale;
+    camera_data.K.at<double>(1,1) = camera_data.K.at<double>(1,1) * y_res_scale;
+    camera_data.K.at<double>(1,2) = camera_data.K.at<double>(1,2) * y_res_scale;
 
     // Initialize extrinsic data
     float x_offset = cfg.lookup(x_offset_config_name);
@@ -117,11 +129,13 @@ void CameraTracker::initCamera(CAMERA_ID id)
     }
     else
     {
-        camera_rotation << 1,0,0,  0,-1,0, 0,0,-1;
+        camera_rotation << 1,0,0, 0,-1,0, 0,0,-1;
     }
     // From https://ksimek.github.io/2012/08/22/extrinsic/
     camera_data.t = -1 * camera_rotation * camera_pose;
-    camera_data.R = camera_rotation.transpose();
+    camera_data.R =  camera_rotation.transpose();
+    // PLOGI << name << " R: " << camera_data.R;
+    // PLOGI << name << " t: " << camera_data.t.transpose();
 
     // Precompute some inverse values for later re-use
     camera_data.R_inv = camera_data.R.inverse();
@@ -131,6 +145,10 @@ void CameraTracker::initCamera(CAMERA_ID id)
            camera_data.K.at<double>(1,0), camera_data.K.at<double>(1,1), camera_data.K.at<double>(1,2),
            camera_data.K.at<double>(2,0), camera_data.K.at<double>(2,1), camera_data.K.at<double>(2,2);
     camera_data.K_inv = tmp.inverse();
+
+    // PLOGI << name << " K: " << camera_data.K;
+    // PLOGI << name << " Ktmp: " << tmp;
+    // PLOGI << name << " Kinv: " << camera_data.K_inv;
     
     // Initialize camera calibration capture or debug data
     if(!use_debug_image_)
@@ -206,22 +224,33 @@ void CameraTracker::stop()
 
 std::vector<cv::KeyPoint> CameraTracker::allKeypointsInImage(cv::Mat img_raw, CAMERA_ID id, bool output_debug)
 {   
+    // Timer t;
+
     // Undistort and crop
     cv::Mat img_undistorted;
     cv::Rect validPixROI;
     cv::Mat newcameramtx = cv::getOptimalNewCameraMatrix(cameras_[id].K, cameras_[id].D, img_raw.size(), /*alpha=*/1, img_raw.size(), &validPixROI);
     cv::undistort(img_raw, img_undistorted, cameras_[id].K, cameras_[id].D);
 
+    // PLOGI << "undistort time: " << t.dt_ms();
+    // t.reset();
+
     // Threshold
     cv::Mat img_thresh;
     cv::threshold(img_undistorted, img_thresh, threshold_, 255, cv::THRESH_BINARY_INV);
     // PLOGI <<" Threshold";
+
+    // PLOGI << "threshold time: " << t.dt_ms();
+    // t.reset();
 
     // Blob detection
     std::vector<cv::KeyPoint> keypoints;
     cv::Ptr<cv::SimpleBlobDetector> blob_detector = cv::SimpleBlobDetector::create(blob_params_);
     blob_detector->detect(img_thresh, keypoints);
     // PLOGI <<" Blobs";
+
+    // PLOGI << "blob time: " << t.dt_ms();
+    // t.reset();
 
     if(output_debug)
     {
@@ -259,18 +288,9 @@ std::vector<cv::KeyPoint> CameraTracker::allKeypointsInImage(cv::Mat img_raw, CA
             target_point_world << float(cfg.lookup("vision_tracker.physical.rear.target_x")), float(cfg.lookup("vision_tracker.physical.rear.target_y"));
         }
         Eigen::Vector2f target_point_camera = robotToCamera(target_point_world, id);
-        // int n_cols = img_with_best_keypoint.cols;
-        // int n_rows = img_with_best_keypoint.rows;
-        // if( target_point_camera[0] < 0 || target_point_camera[0] > n_cols || 
-        //     target_point_camera[1] < 0 || target_point_camera[1] > n_rows)
-        // {
-        //     PLOGW << "Target point " << target_point_camera.transpose() << " is outside image frame";
-        // }
-        // else 
-        // {
-            cv::Point2f pt{target_point_camera[0], target_point_camera[1]};
-            cv::circle(img_with_best_keypoint, pt, 5, cv::Scalar(255,0,0), -1);
-            std::string label_text2 = "Target point: " + std::to_string(target_point_camera[0]) +"px, "+ std::to_string(target_point_camera[1]) + " px";
+        cv::Point2f pt{target_point_camera[0], target_point_camera[1]};
+        cv::circle(img_with_best_keypoint, pt, 5, cv::Scalar(255,0,0), -1);
+        std::string label_text2 = "Target point: " + std::to_string(target_point_camera[0]) +"px, "+ std::to_string(target_point_camera[1]) + " px";
         cv::putText(img_with_best_keypoint, //target image
                     label_text2, //text
                     cv::Point(20, 60), //top-left position
@@ -278,10 +298,13 @@ std::vector<cv::KeyPoint> CameraTracker::allKeypointsInImage(cv::Mat img_raw, CA
                     0.8,
                     CV_RGB(0,0,255), //font color
                     2);
-        // }
 
         cv::imwrite(debug_path + "img_best_keypoint.jpg", img_with_best_keypoint);
+        // PLOGI << "Writing debug images";
     }
+
+    // PLOGI << "debug time: " << t.dt_ms();
+    // t.reset();
 
     return keypoints;
 }
@@ -342,9 +365,16 @@ void CameraTracker::threadLoop()
 
 void CameraTracker::oneLoop()
 {
+    // Timer t;
     Eigen::Vector2f best_point_side = processImage(CAMERA_ID::SIDE);
+    // PLOGI << "side cam time: " << t.dt_ms();
+    // t.reset();
     Eigen::Vector2f best_point_rear = processImage(CAMERA_ID::REAR);
+    // PLOGI << "rear cam time: " << t.dt_ms();
+    // t.reset();
     Point pose = computeRobotPoseFromImagePoints(best_point_side, best_point_rear);
+    // PLOGI << "compute time: " << t.dt_ms();
+    // t.reset();
     {
         std::lock_guard<std::mutex> read_lock(pose_mutex);
         current_point_ = pose;
@@ -354,10 +384,13 @@ void CameraTracker::oneLoop()
         std::lock_guard<std::mutex> read_lock(loop_time_mutex);
         loop_time_ms_ = camera_loop_time_averager_.get_ms();
     }
+    // PLOGI << "finish time: " << t.dt_ms();
+    // t.reset();
 }
 
 Eigen::Vector2f CameraTracker::processImage(CAMERA_ID id)
 {
+    // Timer t;
     cv::Mat frame;
     if (id == CAMERA_ID::REAR && use_debug_image_) 
     {
@@ -377,9 +410,18 @@ Eigen::Vector2f CameraTracker::processImage(CAMERA_ID id)
     }
     else PLOGE << "Error: unknown camera id";
 
+    // PLOGI << "frame time: " << t.dt_ms();
+    // t.reset();
+
     std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, id, output_debug_images_);
+    // PLOGI << "detection time: " << t.dt_ms();
+    // t.reset();
     cv::Point2f best_point_px = getBestKeypoint(keypoints);
+    // PLOGI << "filter time: " << t.dt_ms();
+    // t.reset();
     Eigen::Vector2f best_point_m = cameraToRobot(best_point_px, id);
+    // PLOGI << "transform time: " << t.dt_ms();
+    // t.reset();
     return best_point_m;
 }
 
@@ -393,8 +435,19 @@ Eigen::Vector2f CameraTracker::cameraToRobot(cv::Point2f cameraPt, CAMERA_ID id)
     Eigen::Vector3f tmp2 = camera_data.R_inv * camera_data.t;
     float s = tmp2(2,0) / tmp1(2,0);
 
+    // Debug
+    Eigen::Vector3f scaled_cam_frame = s * camera_data.K_inv * uv_point;
+    Eigen::Vector3f cam_frame_offset = scaled_cam_frame  - camera_data.t;
+
     // Convert to world coordinate
-    Eigen::Vector3f world_point = camera_data.R_inv * (s * camera_data.K_inv * uv_point - camera_data.t);
+    Eigen::Vector3f world_point = camera_data.R_inv * cam_frame_offset;
+    // PLOGI << cameraIdToString(id);
+    // PLOGI << "uv_point: " << uv_point.transpose();
+    // PLOGI << "scaled_cam_frame: " << scaled_cam_frame.transpose();
+    // PLOGI << "cam_frame_offset: " << cam_frame_offset.transpose();
+    // PLOGI << "world_point: " << world_point.transpose();
+
+
     if(fabs(world_point(2)) > 1e-3) PLOGE.printf("Z value %f is not near zero", world_point(2));
 
     return {world_point(0),world_point(1)};
@@ -433,9 +486,9 @@ Point CameraTracker::computeRobotPoseFromImagePoints(Eigen::Vector2f p_side, Eig
     Eigen::Vector4f x = A.colPivHouseholderQr().solve(b);
     
     // Populate pose with angle averaging
-    float pose_x = -x[0];
-    float pose_y = -x[1];
-    float pose_a = -atan2(x[2], x[3]);
+    float pose_x = x[0];
+    float pose_y = x[1];
+    float pose_a = atan2(x[2], x[3]);
     return {pose_x, pose_y, pose_a};
 }
 
