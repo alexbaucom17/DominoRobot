@@ -23,8 +23,9 @@ def display_debug_image(local_path):
     figManager.window.state('zoomed')
     plt.show()
 
-def get_and_display_multiple_images(remote_ip, remote_path, local_path, img_data):
+def get_and_display_multiple_images(cam_name, remote_ip, remote_path, local_path, img_data):
     fig, axes = plt.subplots(nrows=2, ncols=3)
+    fig.suptitle("{} camera".format(cam_name), fontsize=16)
     ax = axes.ravel()
 
     for i,data in enumerate(img_data):
@@ -61,11 +62,6 @@ if __name__ == '__main__':
         "color": False
     })
     img_data.append({
-        "file": "img_cropped.jpg",
-        "title": "cropped",
-        "color": False
-    })
-    img_data.append({
         "file": "img_thresh.jpg",
         "title": "threshold",
         "color": False
@@ -86,8 +82,8 @@ if __name__ == '__main__':
 
     if DISPLAY_SIDE:
         side_remote_path = remote_path + 'side/'
-        get_and_display_multiple_images(robot_ip, side_remote_path, local_path, img_data)
+        get_and_display_multiple_images("side", robot_ip, side_remote_path, local_path, img_data)
     if DISPLAY_REAR:
         rear_remote_path = remote_path + 'rear/'
-        get_and_display_multiple_images(robot_ip, rear_remote_path, local_path, img_data)
+        get_and_display_multiple_images("rear", robot_ip, rear_remote_path, local_path, img_data)
 
