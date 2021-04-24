@@ -2,7 +2,8 @@
 Robot SW:
 - Convert status/debug to output vision info and robot/vision loop times
 - Improve timing for vision tracker (maybe more threads?)
-- Setup vision tracker to handle no markers in frame
+    Also consider ditching blob detector and use contours directly (theoretically has more speed)
+- Setup vision tracker to handle no markers/detections in frame
 - If latency is too high, update KF in vision control mode to only get correct on vision update
 - Fix localization tests
 - Fix localization issue where it gets too confidence and doesn't accept any more updates

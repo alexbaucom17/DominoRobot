@@ -16,7 +16,8 @@ INC_DIRS := ./lib ./src /usr/local/include
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP
-CXXFLAGS ?= -std=c++17 -Wall -Wextra -Wwrite-strings -Wno-parentheses -pthread -g `pkg-config --cflags opencv4`
+# -g for debug symbols, -O2 for run speed
+CXXFLAGS ?= -std=c++17 -Wall -Wextra -Wwrite-strings -Wno-parentheses -pthread -O3 `pkg-config --cflags opencv4`
 LDFLAGS += -ldl -lconfig++ -lstdc++fs `pkg-config --libs opencv4` 
 LIBS += /usr/local/lib/libserial.a ./lib/marvelmind/marvelmind.a
 
