@@ -3,6 +3,12 @@
 
 #include "utils.h"
 
+struct CameraTrackerOutput
+{
+  Point pose;
+  bool ok;
+};
+
 class CameraTrackerBase
 {
   public:
@@ -11,7 +17,7 @@ class CameraTrackerBase
 
     virtual void stop() = 0;
 
-    virtual Point getPoseFromCamera() = 0; 
+    virtual CameraTrackerOutput getPoseFromCamera() = 0; 
 
     virtual int getLoopTimeMs() = 0;
 };

@@ -55,7 +55,6 @@ Robot::Robot()
 
 void Robot::run()
 {
-    camera_tracker_->start();
     while(true)
     {
         runOnce();
@@ -114,10 +113,13 @@ void Robot::runOnce()
         // PLOGI.printf("Cur dist: %s",pose.toString().c_str());
         // distance_tracker_->logDebug();
 
-        Point p = camera_tracker_->getPoseFromCamera();
+        CameraTrackerOutput tracker_output = camera_tracker_->getPoseFromCamera();
         int loop_time = camera_tracker_->getLoopTimeMs();
-        PLOGI.printf("Camera point: %s, loop time: %i", p.toString().c_str(), loop_time);
-
+        PLOGI.printf("Camera ok: %i", tracker_output.ok);
+        if(tracker_output.ok)
+        {
+            PLOGI.printf("Camera point: %s, loop time: %i", tracker_output.pose.toString().c_str(), loop_time);
+        }
     }
 }
 

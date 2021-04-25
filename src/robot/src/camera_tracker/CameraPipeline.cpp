@@ -4,7 +4,7 @@
 #include "constants.h"
 #include <mutex>
 
-std::mutex pose_mutex;
+std::mutex data_mutex;
 
 cv::Point2f getBestKeypoint(std::vector<cv::KeyPoint> keypoints)
 {
@@ -32,7 +32,7 @@ CameraPipeline::CameraPipeline(CAMERA_ID id, bool start_thread)
 : use_debug_image_(cfg.lookup("vision_tracker.debug.use_debug_image")),
   output_debug_images_(cfg.lookup("vision_tracker.debug.save_camera_debug")),
   thread_running_(false),
-  current_point_({0,0})
+  current_output_()
 {
     initCamera(id);
 
@@ -52,13 +52,12 @@ CameraPipeline::CameraPipeline(CAMERA_ID id, bool start_thread)
     blob_detector_ = cv::SimpleBlobDetector::create(blob_params_);
 
     // Start thread
-    if (start_thread)
-    {
-        PLOGI.printf("Starting %s camera thread",cameraIdToString(camera_data_.id).c_str());
-        thread_ = std::thread(&CameraPipeline::threadLoop, this);
-        thread_.detach();
-        thread_running_ = true;
-    }
+    if (start_thread) start();
+}
+
+CameraPipeline::~CameraPipeline()
+{
+    stop();
 }
 
 void CameraPipeline::initCamera(CAMERA_ID id)
@@ -84,18 +83,18 @@ void CameraPipeline::initCamera(CAMERA_ID id)
         PLOGE.printf("Missing %s calibration data", name.c_str());
         throw;
     }
-    fs["K"] >> camera_data.K;
-    fs["D"] >> camera_data.D;
+    fs["K"] >> camera_data_.K;
+    fs["D"] >> camera_data_.D;
 
     // Handle scale factors
     float x_res_scale = cfg.lookup(x_res_scale_config_name);
-    camera_data.K.at<double>(0,0) = camera_data.K.at<double>(0,0) * x_res_scale;
-    camera_data.K.at<double>(0,1) = camera_data.K.at<double>(0,1) * x_res_scale;
-    camera_data.K.at<double>(0,2) = camera_data.K.at<double>(0,2) * x_res_scale;
+    camera_data_.K.at<double>(0,0) = camera_data_.K.at<double>(0,0) * x_res_scale;
+    camera_data_.K.at<double>(0,1) = camera_data_.K.at<double>(0,1) * x_res_scale;
+    camera_data_.K.at<double>(0,2) = camera_data_.K.at<double>(0,2) * x_res_scale;
     float y_res_scale = cfg.lookup(y_res_scale_config_name);
-    camera_data.K.at<double>(1,0) = camera_data.K.at<double>(1,0) * y_res_scale;
-    camera_data.K.at<double>(1,1) = camera_data.K.at<double>(1,1) * y_res_scale;
-    camera_data.K.at<double>(1,2) = camera_data.K.at<double>(1,2) * y_res_scale;
+    camera_data_.K.at<double>(1,0) = camera_data_.K.at<double>(1,0) * y_res_scale;
+    camera_data_.K.at<double>(1,1) = camera_data_.K.at<double>(1,1) * y_res_scale;
+    camera_data_.K.at<double>(1,2) = camera_data_.K.at<double>(1,2) * y_res_scale;
 
     // Initialize extrinsic data
     float x_offset = cfg.lookup(x_offset_config_name);
@@ -113,30 +112,30 @@ void CameraPipeline::initCamera(CAMERA_ID id)
         camera_rotation << 1,0,0, 0,-1,0, 0,0,-1;
     }
     // From https://ksimek.github.io/2012/08/22/extrinsic/
-    camera_data.t = -1 * camera_rotation * camera_pose;
-    camera_data.R =  camera_rotation.transpose();
-    // PLOGI << name << " R: " << camera_data.R;
-    // PLOGI << name << " t: " << camera_data.t.transpose();
+    camera_data_.t = -1 * camera_rotation * camera_pose;
+    camera_data_.R =  camera_rotation.transpose();
+    // PLOGI << name << " R: " << camera_data_.R;
+    // PLOGI << name << " t: " << camera_data_.t.transpose();
 
     // Precompute some inverse values for later re-use
-    camera_data.R_inv = camera_data.R.inverse();
+    camera_data_.R_inv = camera_data_.R.inverse();
     Eigen::Matrix3f tmp;
     // Hack to get around problems with enabling eigen support in opencv
-    tmp << camera_data.K.at<double>(0,0), camera_data.K.at<double>(0,1), camera_data.K.at<double>(0,2),
-           camera_data.K.at<double>(1,0), camera_data.K.at<double>(1,1), camera_data.K.at<double>(1,2),
-           camera_data.K.at<double>(2,0), camera_data.K.at<double>(2,1), camera_data.K.at<double>(2,2);
-    camera_data.K_inv = tmp.inverse();
+    tmp << camera_data_.K.at<double>(0,0), camera_data_.K.at<double>(0,1), camera_data_.K.at<double>(0,2),
+           camera_data_.K.at<double>(1,0), camera_data_.K.at<double>(1,1), camera_data_.K.at<double>(1,2),
+           camera_data_.K.at<double>(2,0), camera_data_.K.at<double>(2,1), camera_data_.K.at<double>(2,2);
+    camera_data_.K_inv = tmp.inverse();
 
-    // PLOGI << name << " K: " << camera_data.K;
+    // PLOGI << name << " K: " << camera_data_.K;
     // PLOGI << name << " Ktmp: " << tmp;
-    // PLOGI << name << " Kinv: " << camera_data.K_inv;
+    // PLOGI << name << " Kinv: " << camera_data_.K_inv;
     
     // Initialize camera calibration capture or debug data
     if(!use_debug_image_)
     {
         std::string camera_path = cfg.lookup(camera_path_config_name);
-        camera_data.capture = cv::VideoCapture(camera_path);
-        if (!camera_data.capture.isOpened()) 
+        camera_data_.capture = cv::VideoCapture(camera_path);
+        if (!camera_data_.capture.isOpened()) 
         {
             PLOGE.printf("Could not open %s camera at %s", name.c_str(), camera_path.c_str());
             throw;
@@ -146,8 +145,8 @@ void CameraPipeline::initCamera(CAMERA_ID id)
     else 
     {
         std::string image_path = cfg.lookup(debug_image_config_name);
-        camera_data.debug_frame = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
-        if(camera_data.debug_frame.empty())
+        camera_data_.debug_frame = cv::imread(image_path, cv::IMREAD_GRAYSCALE);
+        if(camera_data_.debug_frame.empty())
         {
             PLOGE.printf("Could not read %s debug image from %s", name.c_str(), image_path.c_str());
             throw;
@@ -158,57 +157,57 @@ void CameraPipeline::initCamera(CAMERA_ID id)
     // Initialze debug output path
     if(output_debug_images_)
     {
-        camera_data.debug_output_path = std::string(cfg.lookup(debug_output_path_config_name)); 
+        camera_data_.debug_output_path = std::string(cfg.lookup(debug_output_path_config_name)); 
     }
 }
 
-std::string CameraTracker::cameraIdToString(CAMERA_ID id)
+std::string CameraPipeline::cameraIdToString(CAMERA_ID id)
 {
-    if(id == CAMERA_ID::REAR) return "rear";
     if(id == CAMERA_ID::SIDE) return "side";
+    if(id == CAMERA_ID::REAR) return "rear";
     PLOGE << "Unknown camera id";
     return "unk";
 }
 
-std::vector<cv::KeyPoint> CameraTracker::allKeypointsInImage(cv::Mat img_raw, bool output_debug)
+std::vector<cv::KeyPoint> CameraPipeline::allKeypointsInImage(cv::Mat img_raw, bool output_debug)
 {   
-    Timer t;
+    // Timer t;
 
     // Undistort and crop
     cv::Mat img_undistorted;
     cv::Rect validPixROI;
-    PLOGI << "init memory time: " << t.dt_ms();
-    t.reset();
-    cv::Mat newcameramtx = cv::getOptimalNewCameraMatrix(cameras_[id].K, cameras_[id].D, img_raw.size(), /*alpha=*/1, img_raw.size(), &validPixROI);
-    PLOGI << "new camera time: " << t.dt_ms();
-    t.reset();
-    cv::undistort(img_raw, img_undistorted, cameras_[id].K, cameras_[id].D);
+    // PLOGI << "init memory time: " << t.dt_ms();
+    // t.reset();
+    cv::Mat newcameramtx = cv::getOptimalNewCameraMatrix(camera_data_.K, camera_data_.D, img_raw.size(), /*alpha=*/1, img_raw.size(), &validPixROI);
+    // PLOGI << "new camera time: " << t.dt_ms();
+    // t.reset();
+    cv::undistort(img_raw, img_undistorted, camera_data_.K, camera_data_.D);
 
-    PLOGI << "undistort time: " << t.dt_ms();
-    t.reset();
+    // PLOGI << "undistort time: " << t.dt_ms();
+    // t.reset();
 
     // Threshold
     cv::Mat img_thresh;
     cv::threshold(img_undistorted, img_thresh, threshold_, 255, cv::THRESH_BINARY_INV);
     // PLOGI <<" Threshold";
 
-    PLOGI << "threshold time: " << t.dt_ms();
-    t.reset();
+    // PLOGI << "threshold time: " << t.dt_ms();
+    // t.reset();
 
     // Blob detection
     std::vector<cv::KeyPoint> keypoints;
     keypoints.reserve(10);
-    PLOGI << "blob memory time: " << t.dt_ms();
-    t.reset();
+    // PLOGI << "blob memory time: " << t.dt_ms();
+    // t.reset();
     blob_detector_->detect(img_thresh, keypoints);
-    PLOGI <<"Num blobs " << keypoints.size();
+    // PLOGI <<"Num blobs " << keypoints.size();
 
-    PLOGI << "blob detect time: " << t.dt_ms();
-    t.reset();
+    // PLOGI << "blob detect time: " << t.dt_ms();
+    // t.reset();
 
     if(output_debug)
     {
-        std::string debug_path = id == CAMERA_ID::SIDE ? 
+        std::string debug_path = camera_data_.id == CAMERA_ID::SIDE ? 
             cfg.lookup("vision_tracker.side.debug_output_path") :
             cfg.lookup("vision_tracker.rear.debug_output_path");
         cv::imwrite(debug_path + "img_raw.jpg", img_raw);
@@ -223,7 +222,7 @@ std::vector<cv::KeyPoint> CameraTracker::allKeypointsInImage(cv::Mat img_raw, bo
         cv::Point2f best_keypoint = getBestKeypoint(keypoints);
         cv::circle(img_with_best_keypoint, best_keypoint, 2, cv::Scalar(0,0,255), -1);
         cv::circle(img_with_best_keypoint, best_keypoint, 20, cv::Scalar(0,0,255), 5);
-        Eigen::Vector2f best_point_m = cameraToRobot(best_keypoint, id);
+        Eigen::Vector2f best_point_m = cameraToRobot(best_keypoint);
         std::string label_text = "Best point: " + std::to_string(best_point_m(0)) +"m, "+ std::to_string(best_point_m(1)) + " m";
         cv::putText(img_with_best_keypoint, //target image
                     label_text, //text
@@ -233,7 +232,7 @@ std::vector<cv::KeyPoint> CameraTracker::allKeypointsInImage(cv::Mat img_raw, bo
                     CV_RGB(255,0,0), //font color
                     2);
         Eigen::Vector2f target_point_world;
-        if(id == CAMERA_ID::SIDE)
+        if(camera_data_.id == CAMERA_ID::SIDE)
         {
             target_point_world << float(cfg.lookup("vision_tracker.physical.side.target_x")), float(cfg.lookup("vision_tracker.physical.side.target_y"));
         }
@@ -241,7 +240,7 @@ std::vector<cv::KeyPoint> CameraTracker::allKeypointsInImage(cv::Mat img_raw, bo
         {
             target_point_world << float(cfg.lookup("vision_tracker.physical.rear.target_x")), float(cfg.lookup("vision_tracker.physical.rear.target_y"));
         }
-        Eigen::Vector2f target_point_camera = robotToCamera(target_point_world, id);
+        Eigen::Vector2f target_point_camera = robotToCamera(target_point_world);
         cv::Point2f pt{target_point_camera[0], target_point_camera[1]};
         cv::circle(img_with_best_keypoint, pt, 5, cv::Scalar(255,0,0), -1);
         std::string label_text2 = "Target point: " + std::to_string(target_point_camera[0]) +"px, "+ std::to_string(target_point_camera[1]) + " px";
@@ -257,101 +256,108 @@ std::vector<cv::KeyPoint> CameraTracker::allKeypointsInImage(cv::Mat img_raw, bo
         PLOGI << "Writing debug images";
     }
 
-    PLOGI << "debug time: " << t.dt_ms();
-    t.reset();
+    // PLOGI << "debug time: " << t.dt_ms();
+    // t.reset();
 
     return keypoints;
 }
 
-void CameraTracker::threadLoop()
+void CameraPipeline::start()
 {
-    while(true)
+    if(!thread_running_)
     {
-        if (isRunning())
-        {
-            oneLoop();
-        }
+        PLOGI.printf("Starting %s camera thread",cameraIdToString(camera_data_.id).c_str());
+        thread_running_ = true;
+        thread_ = std::thread(&CameraPipeline::threadLoop, this);
+        thread_.detach();
     }
 }
 
-void CameraTracker::oneLoop()
+void CameraPipeline::stop()
 {
-    Timer t;
-    Eigen::Vector2f best_point_side = processImage(CAMERA_ID::SIDE);
-    PLOGI << "side cam time: " << t.dt_ms();
-    t.reset();
-    Eigen::Vector2f best_point_rear = processImage(CAMERA_ID::REAR);
-    PLOGI << "rear cam time: " << t.dt_ms();
-    t.reset();
-    Point pose = computeRobotPoseFromImagePoints(best_point_side, best_point_rear);
-    PLOGI << "compute time: " << t.dt_ms();
-    t.reset();
+    if(thread_running_)
     {
-        std::lock_guard<std::mutex> read_lock(pose_mutex);
-        current_point_ = pose;
+        PLOGI.printf("Stopping %s camera thread",cameraIdToString(camera_data_.id).c_str());
+        thread_running_ = false;
     }
-    {
-        camera_loop_time_averager_.mark_point();
-        std::lock_guard<std::mutex> read_lock(loop_time_mutex);
-        loop_time_ms_ = camera_loop_time_averager_.get_ms();
-    }
-    PLOGI << "finish time: " << t.dt_ms();
-    t.reset();
 }
 
-Eigen::Vector2f CameraTracker::processImage(CAMERA_ID id)
+void CameraPipeline::threadLoop()
+{
+    while(thread_running_)
+    {
+        oneLoop();
+        PLOGI << "loop";
+    }
+}
+
+void CameraPipeline::oneLoop()
+{
+    // Timer t;
+    Eigen::Vector2f best_point = processImage();
+    // PLOGI << cameraIdToString(camera_data_.id) <<" cam time: " << t.dt_ms();
+    // t.reset();
+    {
+        std::lock_guard<std::mutex> read_lock(data_mutex);
+        current_output_.ok = true;
+        current_output_.timestamp = ClockFactory::getFactoryInstance()->get_clock()->now();
+        current_output_.point = best_point;
+    }
+//     PLOGI << "finish time: " << t.dt_ms();
+//     t.reset();
+}
+
+CameraPipelineOutput CameraPipeline::getData()
+{
+    std::lock_guard<std::mutex> read_lock(data_mutex);
+    CameraPipelineOutput output = current_output_;
+    current_output_.ok = false;
+    return output;
+}
+
+Eigen::Vector2f CameraPipeline::processImage()
 {
     // Timer t;
     cv::Mat frame;
-    if (id == CAMERA_ID::REAR && use_debug_image_) 
+    if (use_debug_image_) 
     {
-        frame = cameras_[CAMERA_ID::REAR].debug_frame;
+        frame = camera_data_.debug_frame;
     }
-    else if (id == CAMERA_ID::REAR && !use_debug_image_) 
+    else
     {
-        cameras_[CAMERA_ID::REAR].capture >> frame;
+        camera_data_.capture >> frame;
     }
-    else if (id == CAMERA_ID::SIDE && use_debug_image_) 
-    {
-        frame = cameras_[CAMERA_ID::SIDE].debug_frame;
-    }
-    else if (id == CAMERA_ID::SIDE && !use_debug_image_) 
-    {
-        cameras_[CAMERA_ID::SIDE].capture >> frame;
-    }
-    else PLOGE << "Error: unknown camera id";
 
     // PLOGI << "frame time: " << t.dt_ms();
     // t.reset();
 
-    std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, id, output_debug_images_);
+    std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, output_debug_images_);
     // PLOGI << "detection time: " << t.dt_ms();
     // t.reset();
     cv::Point2f best_point_px = getBestKeypoint(keypoints);
     // PLOGI << "filter time: " << t.dt_ms();
     // t.reset();
-    Eigen::Vector2f best_point_m = cameraToRobot(best_point_px, id);
+    Eigen::Vector2f best_point_m = cameraToRobot(best_point_px);
     // PLOGI << "transform time: " << t.dt_ms();
     // t.reset();
     return best_point_m;
 }
 
-Eigen::Vector2f CameraTracker::cameraToRobot(cv::Point2f cameraPt, CAMERA_ID id)
+Eigen::Vector2f CameraPipeline::cameraToRobot(cv::Point2f cameraPt)
 {
-    const CameraData& camera_data = cameras_[id];
     Eigen::Vector3f uv_point = {cameraPt.x, cameraPt.y, 1};
 
     // Compute scaling factor for Z=0
-    Eigen::Vector3f tmp1 = camera_data.R_inv * camera_data.K_inv * uv_point;
-    Eigen::Vector3f tmp2 = camera_data.R_inv * camera_data.t;
+    Eigen::Vector3f tmp1 = camera_data_.R_inv * camera_data_.K_inv * uv_point;
+    Eigen::Vector3f tmp2 = camera_data_.R_inv * camera_data_.t;
     float s = tmp2(2,0) / tmp1(2,0);
 
     // Debug
-    Eigen::Vector3f scaled_cam_frame = s * camera_data.K_inv * uv_point;
-    Eigen::Vector3f cam_frame_offset = scaled_cam_frame  - camera_data.t;
+    Eigen::Vector3f scaled_cam_frame = s * camera_data_.K_inv * uv_point;
+    Eigen::Vector3f cam_frame_offset = scaled_cam_frame  - camera_data_.t;
 
     // Convert to world coordinate
-    Eigen::Vector3f world_point = camera_data.R_inv * cam_frame_offset;
+    Eigen::Vector3f world_point = camera_data_.R_inv * cam_frame_offset;
     // PLOGI << cameraIdToString(id);
     // PLOGI << "uv_point: " << uv_point.transpose();
     // PLOGI << "scaled_cam_frame: " << scaled_cam_frame.transpose();
@@ -364,18 +370,17 @@ Eigen::Vector2f CameraTracker::cameraToRobot(cv::Point2f cameraPt, CAMERA_ID id)
     return {world_point(0),world_point(1)};
 }
 
-Eigen::Vector2f CameraTracker::robotToCamera(Eigen::Vector2f robotPt, CAMERA_ID id)
+Eigen::Vector2f CameraPipeline::robotToCamera(Eigen::Vector2f robotPt)
 {
-    const CameraData& camera_data = cameras_[id];
     Eigen::Vector4f robot_point_3d = {robotPt[0], robotPt[1], 0, 1};
     Eigen::MatrixXf r_t(3,4);
-    r_t << camera_data.R, camera_data.t;
+    r_t << camera_data_.R, camera_data_.t;
 
     Eigen::Matrix3f K_tmp;
     // Hack to get around problems with enabling eigen support in opencv
-    K_tmp << camera_data.K.at<double>(0,0), camera_data.K.at<double>(0,1), camera_data.K.at<double>(0,2),
-           camera_data.K.at<double>(1,0), camera_data.K.at<double>(1,1), camera_data.K.at<double>(1,2),
-           camera_data.K.at<double>(2,0), camera_data.K.at<double>(2,1), camera_data.K.at<double>(2,2);
+    K_tmp << camera_data_.K.at<double>(0,0), camera_data_.K.at<double>(0,1), camera_data_.K.at<double>(0,2),
+           camera_data_.K.at<double>(1,0), camera_data_.K.at<double>(1,1), camera_data_.K.at<double>(1,2),
+           camera_data_.K.at<double>(2,0), camera_data_.K.at<double>(2,1), camera_data_.K.at<double>(2,2);
 
     Eigen::Vector3f camera_pt_scaled = K_tmp * r_t * robot_point_3d;
     return {camera_pt_scaled[0]/camera_pt_scaled[2], camera_pt_scaled[1]/camera_pt_scaled[2]};

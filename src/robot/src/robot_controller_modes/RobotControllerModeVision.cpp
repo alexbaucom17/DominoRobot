@@ -47,7 +47,13 @@ RobotControllerModeVision::RobotControllerModeVision(bool fake_perfect_motion)
 
 bool RobotControllerModeVision::startMove(Point target_point)
 {
-    current_point_ = camera_tracker_->getPoseFromCamera();
+    CameraTrackerOutput tracker_output = camera_tracker_->getPoseFromCamera();
+    if(!tracker_output.ok) 
+    {
+        PLOGE << "Cannot start vision move, camera pose not ok";
+        return false;
+    }
+    current_point_ = tracker_output.pose;
     goal_point_ = target_point;
     bool ok = traj_gen_.generatePointToPointTrajectory(current_point_, target_point, /*fine_mode*/ true);
     if(ok) RobotControllerModeBase::startMove();
@@ -55,10 +61,7 @@ bool RobotControllerModeVision::startMove(Point target_point)
 }
 
 Velocity RobotControllerModeVision::computeTargetVelocity(Point current_position, Velocity current_velocity, bool log_this_cycle)
-{
-    // Get latest image
-    Point camera_measurement = camera_tracker_->getPoseFromCamera();
-    
+{   
     // Get current target global position and global velocity according to the trajectory
     float dt_from_traj_start = move_start_timer_.dt_s();
     current_target_ = traj_gen_.lookup(dt_from_traj_start);
@@ -78,9 +81,16 @@ Velocity RobotControllerModeVision::computeTargetVelocity(Point current_position
         kf_.predict(udt);
     }
 
-    // Get the current distance measurements from the sensors and update the filter
-    Eigen::Vector3f point_vec = {camera_measurement.x,camera_measurement.y,camera_measurement.a};
-    kf_.update(point_vec);
+    // Get latest pose from cameras and do update step if data is available
+    CameraTrackerOutput tracker_output = camera_tracker_->getPoseFromCamera();
+    if(tracker_output.ok)
+    {
+        // Get the current distance measurements from the sensors and update the filter
+        Eigen::Vector3f point_vec = {tracker_output.pose.x,tracker_output.pose.y,tracker_output.pose.a};
+        kf_.update(point_vec);
+    }
+    
+    // Update current point from state
     Eigen::VectorXf state = kf_.state();
     current_point_ = {state[0], state[1], state[2]};
 

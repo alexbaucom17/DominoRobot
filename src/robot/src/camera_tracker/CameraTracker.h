@@ -17,7 +17,7 @@ class CameraTracker : public CameraTrackerBase
 
     virtual void stop() override;
 
-    virtual Point getPoseFromCamera() override; 
+    virtual CameraTrackerOutput getPoseFromCamera() override; 
 
     virtual int getLoopTimeMs() override;
 
@@ -37,6 +37,8 @@ class CameraTracker : public CameraTrackerBase
     CameraPipeline side_cam_;
     Eigen::Vector2f robot_P_side_target_;
     Eigen::Vector2f robot_P_rear_target_;
+    CameraPipelineOutput last_rear_cam_output_;
+    CameraPipelineOutput last_side_cam_output_;
 };
 
 

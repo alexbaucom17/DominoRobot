@@ -5,11 +5,19 @@
 #include <opencv2/opencv.hpp>
 #include <Eigen/Dense>
 #include <thread>
+#include <atomic>
 
 enum class CAMERA_ID
 {
     REAR,
     SIDE
+};
+
+struct CameraPipelineOutput
+{
+  bool ok = false;
+  ClockTimePoint timestamp = ClockFactory::getFactoryInstance()->get_clock()->now();
+  Eigen::Vector2f point = {0,0};
 };
 
 class CameraPipeline 
@@ -18,9 +26,19 @@ class CameraPipeline
 
     CameraPipeline(CAMERA_ID id, bool start_thread);
 
-    bool isDataReady();
+    ~CameraPipeline();
 
     CameraPipelineOutput getData();
+
+    void start();
+
+    void stop();
+
+    void oneLoop();
+
+    Eigen::Vector2f cameraToRobot(cv::Point2f cameraPt);
+
+    Eigen::Vector2f robotToCamera(Eigen::Vector2f robotPt);
   
   private:
 
@@ -38,7 +56,7 @@ class CameraPipeline
       std::string debug_output_path;
     };
 
-    threadLoop();
+    void threadLoop();
 
     std::string cameraIdToString(CAMERA_ID id);
     
@@ -48,16 +66,12 @@ class CameraPipeline
 
     std::vector<cv::KeyPoint> allKeypointsInImage(cv::Mat img_raw, bool output_debug);
 
-    Eigen::Vector2f cameraToRobot(cv::Point2f cameraPt);
-
-    Eigen::Vector2f robotToCamera(Eigen::Vector2f robotPt);
-
     CameraData camera_data_;
     bool use_debug_image_;
     bool output_debug_images_;
-    bool thread_running_;
+    std::atomic<bool> thread_running_;
     std::thread thread_;
-    Eigen::Vector2f current_point_;
+    CameraPipelineOutput current_output_;
 
     // Params read from config
     cv::SimpleBlobDetector::Params blob_params_;
@@ -65,8 +79,6 @@ class CameraPipeline
     int threshold_;
     float pixels_per_meter_u_;
     float pixels_per_meter_v_;
-
-
 };
 
 #endif //CameraPipeline_h
