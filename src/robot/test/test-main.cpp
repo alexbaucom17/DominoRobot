@@ -18,13 +18,8 @@ libconfig::Config cfg = libconfig::Config();
 
 void configure_logger()
 {
-    // Get current date/time
-    const std::time_t datetime =  std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    char datetime_str[50];
-    std::strftime(datetime_str, sizeof(datetime_str), "%Y%m%d_%H%M%S", std::localtime(&datetime));
-
     // Make file names
-    std::string test_log_file_name = std::string("log/test_log_") + std::string(datetime_str) + std::string(".txt");
+    std::string test_log_file_name = std::string("log/test_log.txt");
 
     // Initialize test logs to to go file and console
     static plog::RollingFileAppender<plog::TxtFormatter> fileAppender(test_log_file_name.c_str(), 1000000, 5);
