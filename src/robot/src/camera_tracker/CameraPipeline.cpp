@@ -75,6 +75,7 @@ void CameraPipeline::initCamera(CAMERA_ID id)
     std::string y_res_scale_config_name = "vision_tracker." + name + ".resolution_scale_y";
     
     // Initialize intrinsic calibration data
+    camera_data_.id = id;
     std::string calibration_path = cfg.lookup(calibration_path_config_name);
     PLOGI.printf("Loading %s camera calibration from %s", name.c_str(), calibration_path.c_str());
     cv::FileStorage fs(calibration_path, cv::FileStorage::READ);
@@ -269,7 +270,7 @@ void CameraPipeline::start()
         PLOGI.printf("Starting %s camera thread",cameraIdToString(camera_data_.id).c_str());
         thread_running_ = true;
         thread_ = std::thread(&CameraPipeline::threadLoop, this);
-        thread_.detach();
+        // thread_.detach();
     }
 }
 
@@ -279,6 +280,7 @@ void CameraPipeline::stop()
     {
         PLOGI.printf("Stopping %s camera thread",cameraIdToString(camera_data_.id).c_str());
         thread_running_ = false;
+        thread_.join();
     }
 }
 
@@ -287,24 +289,35 @@ void CameraPipeline::threadLoop()
     while(thread_running_)
     {
         oneLoop();
-        PLOGI << "loop";
     }
 }
 
 void CameraPipeline::oneLoop()
 {
-    // Timer t;
-    Eigen::Vector2f best_point = processImage();
-    // PLOGI << cameraIdToString(camera_data_.id) <<" cam time: " << t.dt_ms();
-    // t.reset();
+    // Get latest frame
+    cv::Mat frame;
+    if (use_debug_image_) frame = camera_data_.debug_frame;
+    else camera_data_.capture >> frame;
+
+    // Perform keypoint detection
+    std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, output_debug_images_);
+
+    // Do post-processing if the detection was successful
+    Eigen::Vector2f best_point_m = {0,0};
+    bool detected = !keypoints.empty();
+    if(detected) 
+    {
+        cv::Point2f best_point_px = getBestKeypoint(keypoints);
+        best_point_m = cameraToRobot(best_point_px);
+    }
+
+    // Update output values in thread-safe manner
     {
         std::lock_guard<std::mutex> read_lock(data_mutex);
-        current_output_.ok = true;
+        current_output_.ok = detected;
         current_output_.timestamp = ClockFactory::getFactoryInstance()->get_clock()->now();
-        current_output_.point = best_point;
+        current_output_.point = best_point_m;
     }
-//     PLOGI << "finish time: " << t.dt_ms();
-//     t.reset();
 }
 
 CameraPipelineOutput CameraPipeline::getData()
@@ -313,34 +326,6 @@ CameraPipelineOutput CameraPipeline::getData()
     CameraPipelineOutput output = current_output_;
     current_output_.ok = false;
     return output;
-}
-
-Eigen::Vector2f CameraPipeline::processImage()
-{
-    // Timer t;
-    cv::Mat frame;
-    if (use_debug_image_) 
-    {
-        frame = camera_data_.debug_frame;
-    }
-    else
-    {
-        camera_data_.capture >> frame;
-    }
-
-    // PLOGI << "frame time: " << t.dt_ms();
-    // t.reset();
-
-    std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, output_debug_images_);
-    // PLOGI << "detection time: " << t.dt_ms();
-    // t.reset();
-    cv::Point2f best_point_px = getBestKeypoint(keypoints);
-    // PLOGI << "filter time: " << t.dt_ms();
-    // t.reset();
-    Eigen::Vector2f best_point_m = cameraToRobot(best_point_px);
-    // PLOGI << "transform time: " << t.dt_ms();
-    // t.reset();
-    return best_point_m;
 }
 
 Eigen::Vector2f CameraPipeline::cameraToRobot(cv::Point2f cameraPt)

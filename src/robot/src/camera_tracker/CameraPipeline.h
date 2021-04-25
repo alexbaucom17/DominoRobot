@@ -62,8 +62,6 @@ class CameraPipeline
     
     void initCamera(CAMERA_ID id);
 
-    Eigen::Vector2f processImage();
-
     std::vector<cv::KeyPoint> allKeypointsInImage(cv::Mat img_raw, bool output_debug);
 
     CameraData camera_data_;

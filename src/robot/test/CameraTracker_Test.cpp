@@ -17,7 +17,7 @@ TEST_CASE("Nominal case", "[Camera]")
     while(!output.ok && counter < 20){
         output = c.getPoseFromCamera();
         counter++;
-        usleep(10000);
+        usleep(100000);
     }
     REQUIRE(output.ok == true);
     Point p = output.pose;
