@@ -304,10 +304,11 @@ void CameraPipeline::oneLoop()
 
     // Do post-processing if the detection was successful
     Eigen::Vector2f best_point_m = {0,0};
+    cv::Point2f best_point_px = {0,0};
     bool detected = !keypoints.empty();
     if(detected) 
     {
-        cv::Point2f best_point_px = getBestKeypoint(keypoints);
+        best_point_px = getBestKeypoint(keypoints);
         best_point_m = cameraToRobot(best_point_px);
     }
 
@@ -317,6 +318,7 @@ void CameraPipeline::oneLoop()
         current_output_.ok = detected;
         current_output_.timestamp = ClockFactory::getFactoryInstance()->get_clock()->now();
         current_output_.point = best_point_m;
+        current_output_.uv = {best_point_px.x, best_point_px.y};
     }
 }
 

@@ -19,7 +19,8 @@ class CameraTrackerBase
 
     virtual CameraTrackerOutput getPoseFromCamera() = 0; 
 
-    virtual int getLoopTimeMs() = 0;
+    virtual CameraDebug getCameraDebug() = 0;
+
 };
 
 

@@ -26,6 +26,8 @@ CameraTrackerOutput CameraTracker::getPoseFromCamera()
     
     CameraPipelineOutput side_output = side_cam_.getData();
     CameraPipelineOutput rear_output = rear_cam_.getData();
+    debug_.side_detection = side_output.ok;
+    debug_.rear_detection = rear_output.ok;
 
     if(rear_output.ok)
     {
@@ -46,9 +48,24 @@ CameraTrackerOutput CameraTracker::getPoseFromCamera()
         return output;
     }
 
+    // Populate output
     output.pose = computeRobotPoseFromImagePoints(last_side_cam_output_.point, last_rear_cam_output_.point);
     output.ok = true;
     camera_loop_time_averager_.mark_point();
+
+    // Populate debug
+    debug_.side_u = last_side_cam_output_.uv[0];
+    debug_.side_v = last_side_cam_output_.uv[1];
+    debug_.rear_u = last_rear_cam_output_.uv[0];
+    debug_.rear_v = last_rear_cam_output_.uv[1];
+    debug_.side_x = last_side_cam_output_.point[0];
+    debug_.side_y = last_side_cam_output_.point[1];
+    debug_.rear_x = last_rear_cam_output_.point[0];
+    debug_.rear_y = last_rear_cam_output_.point[1];
+    debug_.pose_x = output.pose.x;
+    debug_.pose_y = output.pose.y;
+    debug_.pose_a = output.pose.a;
+    debug_.loop_ms = camera_loop_time_averager_.get_ms();
 
     // Mark output values as not okay to make sure they are only used once
     last_rear_cam_output_.ok = false;
@@ -57,9 +74,9 @@ CameraTrackerOutput CameraTracker::getPoseFromCamera()
     return output;
 }
 
-int CameraTracker::getLoopTimeMs()
+CameraDebug CameraTracker::getCameraDebug()
 {
-    return camera_loop_time_averager_.get_ms();
+    return debug_;
 }
 
 void CameraTracker::start()

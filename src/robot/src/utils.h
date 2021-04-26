@@ -300,6 +300,24 @@ struct LocalizationMetrics
     float total_confidence;
 };
 
+struct CameraDebug
+{
+    bool side_detection;
+    bool rear_detection;
+    float side_u;
+    float side_v;
+    float rear_u;
+    float rear_v;
+    float side_x;
+    float side_y;
+    float rear_x;
+    float rear_y;
+    float pose_x;
+    float pose_y;
+    float pose_a;
+    int loop_ms;
+};
+
 //*******************************************
 //           Misc math
 //*******************************************

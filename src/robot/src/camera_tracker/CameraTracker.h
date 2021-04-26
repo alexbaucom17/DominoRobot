@@ -19,7 +19,7 @@ class CameraTracker : public CameraTrackerBase
 
     virtual CameraTrackerOutput getPoseFromCamera() override; 
 
-    virtual int getLoopTimeMs() override;
+    virtual CameraDebug getCameraDebug() override;
 
     void test_function();   
 
@@ -32,7 +32,7 @@ class CameraTracker : public CameraTrackerBase
   private:
 
     TimeRunningAverage camera_loop_time_averager_;
-    int loop_time_ms_;
+    CameraDebug debug_;
     CameraPipeline rear_cam_;
     CameraPipeline side_cam_;
     Eigen::Vector2f robot_P_side_target_;

@@ -18,6 +18,7 @@ struct CameraPipelineOutput
   bool ok = false;
   ClockTimePoint timestamp = ClockFactory::getFactoryInstance()->get_clock()->now();
   Eigen::Vector2f point = {0,0};
+  Eigen::Vector2f uv = {0,0};
 };
 
 class CameraPipeline 

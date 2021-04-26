@@ -104,6 +104,8 @@ void Robot::runOnce()
     statusUpdater_.updateDistanceLoopTime(distance_tracker_->getAverageMeasurementTimeMs());
     statusUpdater_.updateRawDistances(distance_tracker_->getRawDistances());
     statusUpdater_.updateDistancePose(distance_tracker_->getDistancePose());
+    CameraDebug camera_debug = camera_tracker_->getCameraDebug();
+    statusUpdater_.updateCameraDebug(camera_debug);
     robot_loop_time_averager_.mark_point();
     // PLOGI << "Robot loop time: " << robot_loop_time_averager_.get_ms() << " ms";
 
@@ -114,11 +116,10 @@ void Robot::runOnce()
         // distance_tracker_->logDebug();
 
         CameraTrackerOutput tracker_output = camera_tracker_->getPoseFromCamera();
-        int loop_time = camera_tracker_->getLoopTimeMs();
         PLOGI.printf("Camera ok: %i", tracker_output.ok);
         if(tracker_output.ok)
         {
-            PLOGI.printf("Camera point: %s, loop time: %i", tracker_output.pose.toString().c_str(), loop_time);
+            PLOGI.printf("Camera point: %s, loop time: %i", tracker_output.pose.toString().c_str(), camera_debug.loop_ms);
         }
     }
 }

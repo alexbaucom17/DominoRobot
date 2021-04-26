@@ -44,6 +44,8 @@ class StatusUpdater
 
     void updateDistancePose(Point pose);
 
+    void updateCameraDebug(CameraDebug camera_debug) {camera_debug = camera_debug;};
+
     struct Status
     {
       // Current position and velocity
@@ -76,6 +78,7 @@ class StatusUpdater
       bool lifter_driver_connected;
 
       LocalizationMetrics localization_metrics;
+      CameraDebug camera_debug;
 
       //When adding extra fields, update toJsonString method to serialize and add additional capacity
 
@@ -101,14 +104,15 @@ class StatusUpdater
       counter(0),
       motor_driver_connected(false),
       lifter_driver_connected(false),
-      localization_metrics()
+      localization_metrics(),
+      camera_debug()
       {
       }
 
       std::string toJsonString()
       {
         // Size the object correctly
-        const size_t capacity = JSON_OBJECT_SIZE(30); // Update when adding new fields
+        const size_t capacity = JSON_OBJECT_SIZE(50); // Update when adding new fields
         DynamicJsonDocument root(capacity);
 
         // Format to match messages sent by server
@@ -122,16 +126,8 @@ class StatusUpdater
         doc["vel_x"] = vel_x;
         doc["vel_y"] = vel_y;
         doc["vel_a"] = vel_a;
-        doc["dist_fl"] = dist_fl;
-        doc["dist_fr"] = dist_fr;
-        doc["dist_sf"] = dist_sf;
-        doc["dist_sb"] = dist_sb;
-        doc["dist_x"] = dist_x;
-        doc["dist_y"] = dist_y;
-        doc["dist_a"] = dist_a;
         doc["controller_loop_ms"] = controller_loop_ms;
         doc["position_loop_ms"] = position_loop_ms;
-        doc["distance_loop_ms"] = distance_loop_ms;
         doc["in_progress"] = in_progress;
         doc["error_status"] = error_status;
         doc["counter"] = counter++;
@@ -142,6 +138,20 @@ class StatusUpdater
         doc["localization_confidence_a"] = localization_metrics.confidence_a;
         doc["localization_total_confidence"] = localization_metrics.total_confidence;
         doc["last_position_uncertainty"] = localization_metrics.last_position_uncertainty;
+        doc["cam_side_detection"] = camera_debug.side_detection;
+        doc["cam_rear_detection"] = camera_debug.rear_detection;
+        doc["cam_side_u"] = camera_debug.side_u;
+        doc["cam_side_v"] = camera_debug.side_v;
+        doc["cam_rear_u"] = camera_debug.rear_u;
+        doc["cam_rear_v"] = camera_debug.rear_v;
+        doc["cam_side_x"] = camera_debug.side_x;
+        doc["cam_side_y"] = camera_debug.side_y;
+        doc["cam_rear_x"] = camera_debug.rear_x;
+        doc["cam_rear_y"] = camera_debug.rear_y;
+        doc["cam_pose_x"] = camera_debug.pose_x;
+        doc["cam_pose_y"] = camera_debug.pose_y;
+        doc["cam_pose_a"] = camera_debug.pose_a;
+        doc["cam_loop_ms"] = camera_debug.loop_ms;
 
         // Serialize and return string
         std::string msg;

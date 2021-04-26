@@ -1,28 +1,28 @@
 
 Robot SW:
-- Convert status/debug to output vision info and robot/vision loop times
-- Improve timing for vision tracker
-    Also consider ditching blob detector and use contours directly (theoretically has more speed)
-- Fix localization tests
 - Fix localization issue where it gets too confidence and doesn't accept any more updates
-- Add more unit tests for camera and vision controller
+- Tune vision robot controller to drive better
+    - Consider doing multi-step controller (get angle close, then translation)
+- Consider ditching blob detector and use contours directly if needed (theoretically has more speed)
 
 Robot HW:
 
 Master:
 - Figure out reasonable marker spacing
+- Add vision debug to master screen
 
 Robustify:
 - Fix that missing ack skips current action during plan
 - Fix that resume after estop during place action immediately drops dominos
+- Detect when tray init needs to happen again after robot estop
+- Spacebar to trigger sw estop
 
 Nice to haves:
 - Better utility/method to plot motion/controller logs
-- Add better logging for distance tracker
-- Detect when tray init needs to happen again after robot estop
-- Spacebar to trigger sw estop
 - Change text color/highlighting on master for bad values (i.e. long loop times, error, etc)
 - Fix motion unit tests commanding large velocities and tripping thresholding
+- Fix localization tests
+- Add more unit tests for camera and vision controller
 
 
 
