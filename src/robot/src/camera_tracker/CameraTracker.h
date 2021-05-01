@@ -39,6 +39,8 @@ class CameraTracker : public CameraTrackerBase
     Eigen::Vector2f robot_P_rear_target_;
     CameraPipelineOutput last_rear_cam_output_;
     CameraPipelineOutput last_side_cam_output_;
+    LatchedBool side_cam_ok_filter_;
+    LatchedBool rear_cam_ok_filter_;
 };
 
 

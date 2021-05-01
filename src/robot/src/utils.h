@@ -199,6 +199,43 @@ struct Velocity
     }
 };
 
+class LatchedBool
+{
+  public:
+    LatchedBool(float seconds_to_latch)
+    : latch_time_(seconds_to_latch),
+      time_since_true_(),
+      value_(false)
+      {}
+
+    void add(bool value_in)
+    {
+        if(value_in)
+        {
+            value_ = true;
+            time_since_true_.reset();
+        }
+        else
+        {
+            if(time_since_true_.dt_s() > latch_time_)
+            {
+                value_ = false;
+            }
+        }
+    }
+
+    bool get() {return value_;}
+    bool update(bool value_in)
+    {
+      add(value_in);
+      return get();
+    }
+  
+  private:
+    float latch_time_;
+    Timer time_since_true_;
+    bool value_;
+};
 
 // Very simple circular buffer class
 template<class T>

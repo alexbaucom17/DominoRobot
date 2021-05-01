@@ -9,7 +9,9 @@ CameraTracker::CameraTracker(bool start_thread)
   rear_cam_(CAMERA_ID::REAR, start_thread),
   side_cam_(CAMERA_ID::SIDE, start_thread),
   last_rear_cam_output_(),
-  last_side_cam_output_()
+  last_side_cam_output_(),
+  side_cam_ok_filter_(1.0),
+  rear_cam_ok_filter_(1.0)
 {
     // Target points
     robot_P_side_target_ = {cfg.lookup("vision_tracker.physical.side.target_x"), 
@@ -26,8 +28,8 @@ CameraTrackerOutput CameraTracker::getPoseFromCamera()
     
     CameraPipelineOutput side_output = side_cam_.getData();
     CameraPipelineOutput rear_output = rear_cam_.getData();
-    debug_.side_detection = side_output.ok;
-    debug_.rear_detection = rear_output.ok;
+    debug_.side_detection = side_cam_ok_filter_.update(side_output.ok);
+    debug_.rear_detection = rear_cam_ok_filter_.update(rear_output.ok);
 
     if(rear_output.ok)
     {

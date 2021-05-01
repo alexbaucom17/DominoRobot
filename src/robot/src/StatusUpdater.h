@@ -44,7 +44,7 @@ class StatusUpdater
 
     void updateDistancePose(Point pose);
 
-    void updateCameraDebug(CameraDebug camera_debug) {camera_debug = camera_debug;};
+    void updateCameraDebug(CameraDebug camera_debug) {currentStatus_.camera_debug = camera_debug;};
 
     struct Status
     {
