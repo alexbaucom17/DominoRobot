@@ -9,7 +9,6 @@ Robot HW:
 
 Master:
 - Figure out reasonable marker spacing
-- Add vision debug to master screen
 
 Robustify:
 - Fix that missing ack skips current action during plan

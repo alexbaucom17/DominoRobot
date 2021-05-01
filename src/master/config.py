@@ -6,7 +6,7 @@ class Config:
 
     # Various debug/test flags
     # Set to override config values for home network
-    USING_HOME_NETWORK = False
+    USING_HOME_NETWORK = True
     # Set for laptop vs desktop
     USING_DESKTOP = False
     # Set to override config values for small scale testing
