@@ -42,13 +42,13 @@ CameraTrackerOutput CameraTracker::getPoseFromCamera()
 
     if(!last_side_cam_output_.ok || !last_rear_cam_output_.ok) return output;
 
-    int time_delta_ms = std::chrono::duration_cast<std::chrono::milliseconds>
-        (last_side_cam_output_.timestamp - last_rear_cam_output_.timestamp).count();
-    if(abs(time_delta_ms) > 200)
-    {
-        PLOGW << "Camera timestamp delta too large: " << time_delta_ms;
-        return output;
-    }
+    // int time_delta_ms = std::chrono::duration_cast<std::chrono::milliseconds>
+    //     (last_side_cam_output_.timestamp - last_rear_cam_output_.timestamp).count();
+    // if(abs(time_delta_ms) > 400)
+    // {
+    //     PLOGW << "Camera timestamp delta too large: " << time_delta_ms;
+    //     return output;
+    // }
 
     // Populate output
     output.pose = computeRobotPoseFromImagePoints(last_side_cam_output_.point, last_rear_cam_output_.point);

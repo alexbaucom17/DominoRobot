@@ -42,7 +42,6 @@ Robot::Robot()
   controller_(statusUpdater_),
   tray_controller_(),
   mm_wrapper_(),
-  distance_tracker_(DistanceTrackerFactory::getFactoryInstance()->get_distance_tracker()),
   position_time_averager_(20),
   robot_loop_time_averager_(20),
   wait_for_localize_helper_(statusUpdater_, cfg.lookup("localization.max_wait_time"), cfg.lookup("localization.confidence_for_wait")),
@@ -87,9 +86,6 @@ void Robot::runOnce()
     // Service various modules
     controller_.update();
     tray_controller_.update();
-    distance_tracker_->checkForMeasurement();
-
-
 
     // Check if the current command has finished
     bool done = checkForCmdComplete(curCmd_);
@@ -101,27 +97,24 @@ void Robot::runOnce()
 
     // Update loop time and status updater
     statusUpdater_.updatePositionLoopTime(position_time_averager_.get_ms());
-    statusUpdater_.updateDistanceLoopTime(distance_tracker_->getAverageMeasurementTimeMs());
-    statusUpdater_.updateRawDistances(distance_tracker_->getRawDistances());
-    statusUpdater_.updateDistancePose(distance_tracker_->getDistancePose());
     CameraDebug camera_debug = camera_tracker_->getCameraDebug();
     statusUpdater_.updateCameraDebug(camera_debug);
     robot_loop_time_averager_.mark_point();
     // PLOGI << "Robot loop time: " << robot_loop_time_averager_.get_ms() << " ms";
 
-    if(dist_print_rate_.ready())
-    {
-        // Point pose = distance_tracker_->getDistancePose();
-        // PLOGI.printf("Cur dist: %s",pose.toString().c_str());
-        // distance_tracker_->logDebug();
+    // if(dist_print_rate_.ready())
+    // {
+    //     // Point pose = distance_tracker_->getDistancePose();
+    //     // PLOGI.printf("Cur dist: %s",pose.toString().c_str());
+    //     // distance_tracker_->logDebug();
 
-        CameraTrackerOutput tracker_output = camera_tracker_->getPoseFromCamera();
-        PLOGI.printf("Camera ok: %i", tracker_output.ok);
-        if(tracker_output.ok)
-        {
-            PLOGI.printf("Camera point: %s, loop time: %i", tracker_output.pose.toString().c_str(), camera_debug.loop_ms);
-        }
-    }
+    //     CameraTrackerOutput tracker_output = camera_tracker_->getPoseFromCamera();
+    //     PLOGI.printf("Camera ok: %i", tracker_output.ok);
+    //     if(tracker_output.ok)
+    //     {
+    //         PLOGI.printf("Camera point: %s, loop time: %i", tracker_output.pose.toString().c_str(), camera_debug.loop_ms);
+    //     }
+    // }
 }
 
 
@@ -150,25 +143,12 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     {
         controller_.estop();
         tray_controller_.estop();
-        distance_tracker_->stop();
         return false;
     }
     // Same with LOAD_COMPLETE
     if (cmd == COMMAND::LOAD_COMPLETE)
     {
         tray_controller_.setLoadComplete();
-        return false;
-    }
-    if(cmd == COMMAND::TOGGLE_DISTANCE)
-    {
-        if(distance_tracker_->isRunning())
-        {
-            distance_tracker_->stop();
-        }
-        else
-        {
-            distance_tracker_->start();
-        }
         return false;
     }
 
@@ -206,11 +186,6 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
     {
         RobotServer::VelocityData data = server_.getVelocityData();
         controller_.moveConstVel(data.vx, data.vy, data.va, data.t);
-    }
-    else if (cmd == COMMAND::MOVE_WITH_DISTANCE)
-    {
-        RobotServer::PositionData data = server_.getMoveData();
-        controller_.moveWithDistance(data.x, data.y, data.a);
     }
     else if (cmd == COMMAND::MOVE_WITH_VISION)
     {
