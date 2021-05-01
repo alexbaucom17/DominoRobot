@@ -1,14 +1,15 @@
 
 Robot SW:
 - Fix camera latency issues
-- Output more vision control debug to logs/status (i.e. kf position, error terms)
-- Consider ditching blob detector and use contours directly if needed (theoretically has more speed)
-- Set up camera tracking so it only happens when near the markers (maybe move fine and vision only?)
+    - See if power improvments do it
+    - Consider ditching blob detector and use contours directly if needed (theoretically has more speed)
+- Tune controller positioning speed/accuracy
+    - Output more vision control debug to logs/status (i.e. kf position, error terms)
+    - Use these to tune the controller
+- Set up camera tracking so it only happens when near the markers (maybe move fine and vision only?) but also shows debug info when it is running
 - Fix localization issue where it gets too confidence and doesn't accept any more updates
 
 Robot HW:
- - Buy USB voltage/current meter for pi
- - Buy powered usb hub for cameras
  - Sync with Josh on camera mounting system (or should I take it?)
 
 Master:
