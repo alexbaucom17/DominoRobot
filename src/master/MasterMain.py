@@ -272,7 +272,7 @@ class CmdGui:
                 status_str += "Velocity: [{0:.3f} m/s, {1:.3f} m/s, {2:.2f} deg/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], math.degrees(status_dict['vel_a']))
                 status_str += "Vision Pose : [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(status_dict['vision_x'],status_dict['vision_y'], math.degrees(status_dict['vision_a']))
                 status_str += "Camera Raw Pose : [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(status_dict['cam_pose_x'],status_dict['cam_pose_y'], math.degrees(status_dict['cam_pose_a']))
-                status_str += "Detections: Side-{} Rear-{}\n".format(status_dict["cam_side_detection"], status_dict["cam_rear_detection"])
+                status_str += "Cam Status: Both-{} | Side-{} | Rear-{}\n".format(status_dict["cam_both_ok"],status_dict["cam_side_ok"], status_dict["cam_rear_ok"])
                 status_str += "Raw Camera px: Side [{:d}, {:d}] Rear: [{:d}, {:d}]\n".format( \
                     int(status_dict['cam_side_u']),int(status_dict['cam_side_v']), int(status_dict['cam_rear_u']), int(status_dict['cam_rear_v']))
                 status_str += "Localization total confidence: {:.1f}%\n".format(status_dict['localization_total_confidence']*100)
