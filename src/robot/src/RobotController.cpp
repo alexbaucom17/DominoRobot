@@ -36,8 +36,10 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
 
 void RobotController::moveToPosition(float x, float y, float a)
 {
+    reset_last_motion_logger();
     fineMode_ = false;
     Point goal_pos = Point(x,y,a);
+    PLOGI_(MOTION_CSV_LOG_ID).printf("MoveToPosition: %s",goal_pos.toString().c_str());
 
     auto position_mode = std::make_unique<RobotControllerModePosition>(fake_perfect_motion_);
     bool ok = position_mode->startMove(cartPos_, goal_pos, fineMode_);
@@ -52,12 +54,14 @@ void RobotController::moveToPosition(float x, float y, float a)
 
 void RobotController::moveToPositionRelative(float dx_local, float dy_local, float da_local)
 {
+    reset_last_motion_logger();
     fineMode_ = false;
 
     float dx_global =  cos(cartPos_.a) * dx_local - sin(cartPos_.a) * dy_local;
     float dy_global =  sin(cartPos_.a) * dx_local + cos(cartPos_.a) * dy_local;
     float da_global = da_local;
     Point goal_pos = Point(cartPos_.x + dx_global, cartPos_.y + dy_global, wrap_angle(cartPos_.a + da_global));
+    PLOGI_(MOTION_CSV_LOG_ID).printf("MoveToPositionRelative: %s",goal_pos.toString().c_str());
 
     auto position_mode = std::make_unique<RobotControllerModePosition>(fake_perfect_motion_);
     bool ok = position_mode->startMove(cartPos_, goal_pos, fineMode_);
@@ -72,8 +76,10 @@ void RobotController::moveToPositionRelative(float dx_local, float dy_local, flo
 
 void RobotController::moveToPositionFine(float x, float y, float a)
 {
+    reset_last_motion_logger();
     fineMode_ = true;
     Point goal_pos = Point(x,y,a);
+    PLOGI_(MOTION_CSV_LOG_ID).printf("MoveToPositionFine: %s",goal_pos.toString().c_str());
 
     auto position_mode = std::make_unique<RobotControllerModePosition>(fake_perfect_motion_);
     bool ok = position_mode->startMove(cartPos_, goal_pos, fineMode_);
@@ -112,7 +118,9 @@ void RobotController::moveWithDistance(float x_dist, float y_dist, float a_dist)
 
 void RobotController::moveWithVision(float x, float y, float a)
 {
+    reset_last_motion_logger();
     Point goal = Point(x,y,a);
+    PLOGI_(MOTION_CSV_LOG_ID).printf("MoveWithVision: %s",goal.toString().c_str());
     auto vision_mode = std::make_unique<RobotControllerModeVision>(fake_perfect_motion_, statusUpdater_);
     bool ok = vision_mode->startMove(goal);
    

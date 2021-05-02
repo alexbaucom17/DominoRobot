@@ -66,6 +66,13 @@ Velocity RobotControllerModePosition::computeTargetVelocity(Point current_positi
         output.va = a_controller_.compute(current_target_.position.a, current_position.a, current_target_.velocity.va, current_velocity.va, dt_since_last_loop);
     }
 
+    PLOGI_(MOTION_CSV_LOG_ID).printf("time,",dt_from_traj_start);
+    PLOGI_(MOTION_CSV_LOG_ID).printf("pos,%.4f,%.4f,%.4f",current_position.x,current_position.y,current_position.a);
+    PLOGI_(MOTION_CSV_LOG_ID).printf("target_pos,%.4f,%.4f,%.4f",current_target_.position.x,current_target_.position.y,current_target_.position.a);
+    PLOGI_(MOTION_CSV_LOG_ID).printf("vel,%.4f,%.4f,%.4f",current_velocity.vx,current_velocity.vy,current_velocity.va);
+    PLOGI_(MOTION_CSV_LOG_ID).printf("target_vel,%.4f,%.4f,%.4f",current_target_.velocity.vx,current_target_.velocity.vy,current_target_.velocity.va);
+    PLOGI_(MOTION_CSV_LOG_ID).printf("control_vel,%.4f,%.4f,%.4f",output.vx,output.vy,output.va);
+
     return output;
 }
 

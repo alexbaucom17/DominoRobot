@@ -5,6 +5,10 @@
 #include <vector>
 #include <memory>
 #include <math.h>
+#include <plog/Log.h> 
+#include <plog/Logger.h> 
+
+#include "constants.h"
 
 using ClockTimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 using FpSeconds = std::chrono::duration<float, std::chrono::seconds::period>;
@@ -374,5 +378,9 @@ float zScore(float mean, float stddev, float reading);
 std::vector<std::string> parseCommaDelimitedString(const std::string& str_in);
 std::vector<float> parseCommaDelimitedStringToFloat(const std::string& str_in);
 
+
+static std::unique_ptr<plog::IAppender> g_appender;
+static std::unique_ptr<plog::Logger<MOTION_CSV_LOG_ID>> g_logger;
+void reset_last_motion_logger();
 
 #endif

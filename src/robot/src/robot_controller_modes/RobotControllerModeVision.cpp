@@ -121,6 +121,13 @@ Velocity RobotControllerModeVision::computeTargetVelocity(Point current_position
     output_global.vy = sin(current_position.a) * output_local.vx + cos(current_position.a) * output_local.vy;
     output_global.va = output_local.va;
 
+    PLOGI_(MOTION_CSV_LOG_ID).printf("time,",dt_from_traj_start);
+    PLOGI_(MOTION_CSV_LOG_ID).printf("pos,%.4f,%.4f,%.4f",current_point_.x,current_point_.y,current_point_.a);
+    PLOGI_(MOTION_CSV_LOG_ID).printf("target_pos,%.4f,%.4f,%.4f",current_target_.position.x,current_target_.position.y,current_target_.position.a);
+    PLOGI_(MOTION_CSV_LOG_ID).printf("vel,%.4f,%.4f,%.4f",local_vel[0],local_vel[1],local_vel[2]);
+    PLOGI_(MOTION_CSV_LOG_ID).printf("target_vel,%.4f,%.4f,%.4f",current_target_.velocity.vx,current_target_.velocity.vy,current_target_.velocity.va);
+    PLOGI_(MOTION_CSV_LOG_ID).printf("control_vel,%.4f,%.4f,%.4f",output_local.vx,output_local.vy,output_local.va);
+
     return output_global;
 }
 
