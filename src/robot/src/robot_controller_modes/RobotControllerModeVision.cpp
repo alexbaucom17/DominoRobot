@@ -84,11 +84,12 @@ Velocity RobotControllerModeVision::computeTargetVelocity(Point current_position
 
     // Get latest pose from cameras and do update step if data is available
     CameraTrackerOutput tracker_output = camera_tracker_->getPoseFromCamera();
-    if(tracker_output.ok)
+    if(tracker_output.ok && tracker_output.timestamp > last_vision_update_time_)
     {
         // Get the current distance measurements from the sensors and update the filter
         Eigen::Vector3f point_vec = {tracker_output.pose.x,tracker_output.pose.y,tracker_output.pose.a};
         kf_.update(point_vec);
+        last_vision_update_time_ = tracker_output.timestamp;
     }
     
     // Update current point from state

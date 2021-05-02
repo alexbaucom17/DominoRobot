@@ -148,8 +148,9 @@ class StatusUpdater
         doc["localization_confidence_a"] = localization_metrics.confidence_a;
         doc["localization_total_confidence"] = localization_metrics.total_confidence;
         doc["last_position_uncertainty"] = localization_metrics.last_position_uncertainty;
-        doc["cam_side_detection"] = camera_debug.side_detection;
-        doc["cam_rear_detection"] = camera_debug.rear_detection;
+        doc["cam_side_ok"] = camera_debug.side_ok;
+        doc["cam_rear_ok"] = camera_debug.rear_ok;
+        doc["cam_both_ok"] = camera_debug.both_ok;
         doc["cam_side_u"] = camera_debug.side_u;
         doc["cam_side_v"] = camera_debug.side_v;
         doc["cam_rear_u"] = camera_debug.rear_u;

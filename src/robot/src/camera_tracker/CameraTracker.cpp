@@ -8,10 +8,12 @@ CameraTracker::CameraTracker(bool start_thread)
 : camera_loop_time_averager_(10),
   rear_cam_(CAMERA_ID::REAR, start_thread),
   side_cam_(CAMERA_ID::SIDE, start_thread),
+  output_({{0,0,0}, false, ClockFactory::getFactoryInstance()->get_clock()->now()}),
   last_rear_cam_output_(),
   last_side_cam_output_(),
-  side_cam_ok_filter_(1.0),
-  rear_cam_ok_filter_(1.0)
+  side_cam_ok_filter_(0.5),
+  rear_cam_ok_filter_(0.5),
+  both_cams_ok_filter_(0.5)
 {
     // Target points
     robot_P_side_target_ = {cfg.lookup("vision_tracker.physical.side.target_x"), 
@@ -22,14 +24,13 @@ CameraTracker::CameraTracker(bool start_thread)
 
 CameraTracker::~CameraTracker() {}
 
-CameraTrackerOutput CameraTracker::getPoseFromCamera()
+void CameraTracker::update()
 {
-    CameraTrackerOutput output = {{0,0,0}, false};
-    
     CameraPipelineOutput side_output = side_cam_.getData();
     CameraPipelineOutput rear_output = rear_cam_.getData();
-    debug_.side_detection = side_cam_ok_filter_.update(side_output.ok);
-    debug_.rear_detection = rear_cam_ok_filter_.update(rear_output.ok);
+    debug_.side_ok = side_cam_ok_filter_.update(side_output.ok);
+    debug_.rear_ok = rear_cam_ok_filter_.update(rear_output.ok);
+    bool new_output_pose_ready = false;
 
     if(rear_output.ok)
     {
@@ -40,19 +41,25 @@ CameraTrackerOutput CameraTracker::getPoseFromCamera()
         last_side_cam_output_ = side_output;
     }
 
-    if(!last_side_cam_output_.ok || !last_rear_cam_output_.ok) return output;
+    if(last_side_cam_output_.ok && last_rear_cam_output_.ok) new_output_pose_ready = true;
+
 
     // int time_delta_ms = std::chrono::duration_cast<std::chrono::milliseconds>
     //     (last_side_cam_output_.timestamp - last_rear_cam_output_.timestamp).count();
     // if(abs(time_delta_ms) > 400)
     // {
     //     PLOGW << "Camera timestamp delta too large: " << time_delta_ms;
-    //     return output;
+    //     new_output_pose_ready = false;
     // }
 
+
+    output_.ok = both_cams_ok_filter_.update(new_output_pose_ready);
+    debug_.both_ok = output_.ok;
+    if(!new_output_pose_ready) return;
+
     // Populate output
-    output.pose = computeRobotPoseFromImagePoints(last_side_cam_output_.point, last_rear_cam_output_.point);
-    output.ok = true;
+    output_.pose = computeRobotPoseFromImagePoints(last_side_cam_output_.point, last_rear_cam_output_.point);
+    output_.timestamp = ClockFactory::getFactoryInstance()->get_clock()->now();
     camera_loop_time_averager_.mark_point();
 
     // Populate debug
@@ -64,16 +71,19 @@ CameraTrackerOutput CameraTracker::getPoseFromCamera()
     debug_.side_y = last_side_cam_output_.point[1];
     debug_.rear_x = last_rear_cam_output_.point[0];
     debug_.rear_y = last_rear_cam_output_.point[1];
-    debug_.pose_x = output.pose.x;
-    debug_.pose_y = output.pose.y;
-    debug_.pose_a = output.pose.a;
+    debug_.pose_x = output_.pose.x;
+    debug_.pose_y = output_.pose.y;
+    debug_.pose_a = output_.pose.a;
     debug_.loop_ms = camera_loop_time_averager_.get_ms();
 
-    // Mark output values as not okay to make sure they are only used once
+    // Mark camera output values as not okay to make sure they are only used once
     last_rear_cam_output_.ok = false;
     last_side_cam_output_.ok = false;
+}
 
-    return output;
+CameraTrackerOutput CameraTracker::getPoseFromCamera()
+{
+    return output_;
 }
 
 CameraDebug CameraTracker::getCameraDebug()

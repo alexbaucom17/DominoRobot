@@ -17,6 +17,8 @@ class CameraTracker : public CameraTrackerBase
 
     virtual void stop() override;
 
+    virtual void update() override;
+
     virtual CameraTrackerOutput getPoseFromCamera() override; 
 
     virtual CameraDebug getCameraDebug() override;
@@ -35,12 +37,14 @@ class CameraTracker : public CameraTrackerBase
     CameraDebug debug_;
     CameraPipeline rear_cam_;
     CameraPipeline side_cam_;
+    CameraTrackerOutput output_;
     Eigen::Vector2f robot_P_side_target_;
     Eigen::Vector2f robot_P_rear_target_;
     CameraPipelineOutput last_rear_cam_output_;
     CameraPipelineOutput last_side_cam_output_;
     LatchedBool side_cam_ok_filter_;
     LatchedBool rear_cam_ok_filter_;
+    LatchedBool both_cams_ok_filter_;
 };
 
 

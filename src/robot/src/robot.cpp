@@ -45,7 +45,7 @@ Robot::Robot()
   position_time_averager_(20),
   robot_loop_time_averager_(20),
   wait_for_localize_helper_(statusUpdater_, cfg.lookup("localization.max_wait_time"), cfg.lookup("localization.confidence_for_wait")),
-  dist_print_rate_(10),
+  vision_print_rate_(10),
   camera_tracker_(CameraTrackerFactory::getFactoryInstance()->get_camera_tracker()),
   curCmd_(COMMAND::NONE)
 {
@@ -86,6 +86,7 @@ void Robot::runOnce()
     // Service various modules
     controller_.update();
     tray_controller_.update();
+    camera_tracker_->update();
 
     // Check if the current command has finished
     bool done = checkForCmdComplete(curCmd_);
@@ -102,12 +103,8 @@ void Robot::runOnce()
     robot_loop_time_averager_.mark_point();
     // PLOGI << "Robot loop time: " << robot_loop_time_averager_.get_ms() << " ms";
 
-    if(dist_print_rate_.ready())
+    if(vision_print_rate_.ready())
     {
-        // Point pose = distance_tracker_->getDistancePose();
-        // PLOGI.printf("Cur dist: %s",pose.toString().c_str());
-        // distance_tracker_->logDebug();
-
         CameraTrackerOutput tracker_output = camera_tracker_->getPoseFromCamera();
         PLOGI.printf("Camera ok: %i", tracker_output.ok);
         if(tracker_output.ok)

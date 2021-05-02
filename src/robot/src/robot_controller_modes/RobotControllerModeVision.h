@@ -30,6 +30,7 @@ class RobotControllerModeVision : public RobotControllerModeBase
     PVTPoint current_target_;
     CameraTrackerBase* camera_tracker_;
     Timer traj_done_timer_;
+    ClockTimePoint last_vision_update_time_;
 
     TrajectoryTolerances tolerances_;
 

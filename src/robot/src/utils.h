@@ -339,8 +339,9 @@ struct LocalizationMetrics
 
 struct CameraDebug
 {
-    bool side_detection;
-    bool rear_detection;
+    bool side_ok;
+    bool rear_ok;
+    bool both_ok;
     float side_u;
     float side_v;
     float rear_u;
