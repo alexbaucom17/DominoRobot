@@ -46,6 +46,8 @@ class StatusUpdater
 
     void updateCameraDebug(CameraDebug camera_debug) {currentStatus_.camera_debug = camera_debug;};
 
+    void updateVisionControllerPose(Point pose);
+
     struct Status
     {
       // Current position and velocity
@@ -64,6 +66,11 @@ class StatusUpdater
       float dist_x;
       float dist_y;
       float dist_a;
+
+      // Vision tracker pose
+      float vision_x;
+      float vision_y;
+      float vision_a;
 
       // Loop times
       int controller_loop_ms;
@@ -96,6 +103,9 @@ class StatusUpdater
       dist_x(0.0),
       dist_y(0.0),
       dist_a(0.0),
+      vision_x(0.0),
+      vision_y(0.0),
+      vision_a(0.0),
       controller_loop_ms(999),
       position_loop_ms(999),
       distance_loop_ms(999),
@@ -152,6 +162,9 @@ class StatusUpdater
         doc["cam_pose_y"] = camera_debug.pose_y;
         doc["cam_pose_a"] = camera_debug.pose_a;
         doc["cam_loop_ms"] = camera_debug.loop_ms;
+        doc["vision_x"] = vision_x;
+        doc["vision_y"] = vision_y;
+        doc["vision_a"] = vision_a;
 
         // Serialize and return string
         std::string msg;

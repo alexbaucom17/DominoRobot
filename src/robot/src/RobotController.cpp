@@ -113,7 +113,7 @@ void RobotController::moveWithDistance(float x_dist, float y_dist, float a_dist)
 void RobotController::moveWithVision(float x, float y, float a)
 {
     Point goal = Point(x,y,a);
-    auto vision_mode = std::make_unique<RobotControllerModeVision>(fake_perfect_motion_);
+    auto vision_mode = std::make_unique<RobotControllerModeVision>(fake_perfect_motion_, statusUpdater_);
     bool ok = vision_mode->startMove(goal);
    
     if (ok) 

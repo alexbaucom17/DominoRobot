@@ -3,8 +3,9 @@
 #include <plog/Log.h>
 #include "camera_tracker/CameraTrackerFactory.h"
 
-RobotControllerModeVision::RobotControllerModeVision(bool fake_perfect_motion)
+RobotControllerModeVision::RobotControllerModeVision(bool fake_perfect_motion, StatusUpdater& status_updater)
 : RobotControllerModeBase(fake_perfect_motion),
+  status_updater_(status_updater),
   traj_gen_(),
   goal_point_(0,0,0),
   current_point_(0,0,0),
@@ -93,6 +94,7 @@ Velocity RobotControllerModeVision::computeTargetVelocity(Point current_position
     // Update current point from state
     Eigen::VectorXf state = kf_.state();
     current_point_ = {state[0], state[1], state[2]};
+    status_updater_.updateVisionControllerPose(current_point_);
 
     // Print motion estimates to log
     PLOGD_IF_(MOTION_LOG_ID, log_this_cycle) << "\nTarget: " << current_target_.toString();

@@ -6,13 +6,14 @@
 #include "utils.h"
 #include "camera_tracker/CameraTracker.h"
 #include "KalmanFilter.h"
+#include "StatusUpdater.h"
 
 class RobotControllerModeVision : public RobotControllerModeBase
 {
 
   public:
 
-    RobotControllerModeVision(bool fake_perfect_motion);
+    RobotControllerModeVision(bool fake_perfect_motion, StatusUpdater& status_updater);
 
     bool startMove(Point target_point);
 
@@ -22,7 +23,7 @@ class RobotControllerModeVision : public RobotControllerModeBase
 
   protected:
 
-
+    StatusUpdater& status_updater_;
     SmoothTrajectoryGenerator traj_gen_; 
     Point goal_point_;
     Point current_point_;

@@ -102,19 +102,19 @@ void Robot::runOnce()
     robot_loop_time_averager_.mark_point();
     // PLOGI << "Robot loop time: " << robot_loop_time_averager_.get_ms() << " ms";
 
-    // if(dist_print_rate_.ready())
-    // {
-    //     // Point pose = distance_tracker_->getDistancePose();
-    //     // PLOGI.printf("Cur dist: %s",pose.toString().c_str());
-    //     // distance_tracker_->logDebug();
+    if(dist_print_rate_.ready())
+    {
+        // Point pose = distance_tracker_->getDistancePose();
+        // PLOGI.printf("Cur dist: %s",pose.toString().c_str());
+        // distance_tracker_->logDebug();
 
-    //     CameraTrackerOutput tracker_output = camera_tracker_->getPoseFromCamera();
-    //     PLOGI.printf("Camera ok: %i", tracker_output.ok);
-    //     if(tracker_output.ok)
-    //     {
-    //         PLOGI.printf("Camera point: %s, loop time: %i", tracker_output.pose.toString().c_str(), camera_debug.loop_ms);
-    //     }
-    // }
+        CameraTrackerOutput tracker_output = camera_tracker_->getPoseFromCamera();
+        PLOGI.printf("Camera ok: %i", tracker_output.ok);
+        if(tracker_output.ok)
+        {
+            PLOGI.printf("Camera point: %s, loop time: %i", tracker_output.pose.toString().c_str(), camera_debug.loop_ms);
+        }
+    }
 }
 
 

@@ -79,3 +79,10 @@ void StatusUpdater::updateDistancePose(Point pose)
   currentStatus_.dist_y = pose.y;
   currentStatus_.dist_a = pose.a;
 }
+
+void StatusUpdater::updateVisionControllerPose(Point pose)
+{
+  currentStatus_.vision_x = pose.x;
+  currentStatus_.vision_y = pose.y;
+  currentStatus_.vision_a = pose.a;
+}
