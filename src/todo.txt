@@ -1,11 +1,8 @@
 
 Robot SW:
-- Fix camera latency issues
-    - See if power improvments do it
-    - Consider ditching blob detector and use contours directly if needed (theoretically has more speed)
 - Tune controller positioning speed/accuracy
     - Tune the controller to be less wobbly and faster
-- Fix localization issue where it gets too confidence and doesn't accept any more updates
+- Fix localization issue where it gets too confident and doesn't accept any more updates
 
 Robot HW:
  - Sync with Josh on camera mounting system (or should I take it?)
@@ -20,7 +17,6 @@ Robustify:
 - Robustify camera pipeline against cv errors 
 
 Nice to haves:
-- Better utility/method to plot motion/controller logs
 - Change text color/highlighting on master for bad values (i.e. long loop times, error, etc)
 - Fix motion unit tests commanding large velocities and tripping thresholding
 - Fix localization tests
