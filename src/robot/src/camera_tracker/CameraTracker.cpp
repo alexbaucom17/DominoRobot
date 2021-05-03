@@ -35,10 +35,12 @@ void CameraTracker::update()
     if(rear_output.ok)
     {
         last_rear_cam_output_ = rear_output;
+        // PLOGI << "Got valid rear output";
     }
     if(side_output.ok)
     {
         last_side_cam_output_ = side_output;
+        // PLOGI << "Got valid side output";
     }
 
     if(last_side_cam_output_.ok && last_rear_cam_output_.ok) new_output_pose_ready = true;

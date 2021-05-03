@@ -142,6 +142,14 @@ void CameraPipeline::initCamera(CAMERA_ID id)
             throw;
         }
         PLOGI.printf("Opened %s camera at %s", name.c_str(), camera_path.c_str());
+        camera_data_.capture.set(cv::CAP_PROP_FRAME_WIDTH, 320);
+        camera_data_.capture.set(cv::CAP_PROP_FRAME_HEIGHT, 240);
+        camera_data_.capture.set(cv::CAP_PROP_FPS, 30);
+
+        int width = camera_data_.capture.get(cv::CAP_PROP_FRAME_WIDTH);
+        int height = camera_data_.capture.get(cv::CAP_PROP_FRAME_HEIGHT);
+        int fps = camera_data_.capture.get(cv::CAP_PROP_FPS);
+        PLOGI.printf("Properties %s: resolution: %ix%i, fps: %i", name.c_str(), width, height, fps);
     } 
     else 
     {
@@ -221,17 +229,17 @@ std::vector<cv::KeyPoint> CameraPipeline::allKeypointsInImage(cv::Mat img_raw, b
 
         cv::Mat img_with_best_keypoint = img_undistorted;
         cv::Point2f best_keypoint = getBestKeypoint(keypoints);
-        cv::circle(img_with_best_keypoint, best_keypoint, 2, cv::Scalar(0,0,255), -1);
-        cv::circle(img_with_best_keypoint, best_keypoint, 20, cv::Scalar(0,0,255), 5);
+        cv::circle(img_with_best_keypoint, best_keypoint, 1, cv::Scalar(0,0,255), -1);
+        cv::circle(img_with_best_keypoint, best_keypoint, 10, cv::Scalar(0,0,255), 5);
         Eigen::Vector2f best_point_m = cameraToRobot(best_keypoint);
-        std::string label_text = "Best point: " + std::to_string(best_point_m(0)) +"m, "+ std::to_string(best_point_m(1)) + " m";
+        std::string label_text = "Best:" + std::to_string(best_keypoint.x) +"px,"+ std::to_string(best_keypoint.y) + "px";
         cv::putText(img_with_best_keypoint, //target image
                     label_text, //text
-                    cv::Point(20, 20), //top-left position
+                    cv::Point(10, 20), //top-left position
                     cv::FONT_HERSHEY_DUPLEX,
-                    0.8,
+                    0.5,
                     CV_RGB(255,0,0), //font color
-                    2);
+                    1);
         Eigen::Vector2f target_point_world;
         if(camera_data_.id == CAMERA_ID::SIDE)
         {
@@ -244,14 +252,14 @@ std::vector<cv::KeyPoint> CameraPipeline::allKeypointsInImage(cv::Mat img_raw, b
         Eigen::Vector2f target_point_camera = robotToCamera(target_point_world);
         cv::Point2f pt{target_point_camera[0], target_point_camera[1]};
         cv::circle(img_with_best_keypoint, pt, 5, cv::Scalar(255,0,0), -1);
-        std::string label_text2 = "Target point: " + std::to_string(target_point_camera[0]) +"px, "+ std::to_string(target_point_camera[1]) + " px";
+        std::string label_text2 = "Target:" + std::to_string(target_point_camera[0]) +"px, "+ std::to_string(target_point_camera[1]) + "px";
         cv::putText(img_with_best_keypoint, //target image
                     label_text2, //text
-                    cv::Point(20, 60), //top-left position
+                    cv::Point(10, 40), //top-left position
                     cv::FONT_HERSHEY_DUPLEX,
-                    0.8,
+                    0.5,
                     CV_RGB(0,0,255), //font color
-                    2);
+                    1);
 
         cv::imwrite(debug_path + "img_best_keypoint.jpg", img_with_best_keypoint);
         PLOGI << "Writing debug images";
@@ -294,13 +302,19 @@ void CameraPipeline::threadLoop()
 
 void CameraPipeline::oneLoop()
 {
+    // Timer t;
     // Get latest frame
     cv::Mat frame;
     if (use_debug_image_) frame = camera_data_.debug_frame;
     else camera_data_.capture >> frame;
 
+    // PLOGI.printf("%s: done capture %i ms",cameraIdToString(camera_data_.id).c_str(), t.dt_ms());
+    // t.reset();
+
     // Perform keypoint detection
     std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, output_debug_images_);
+    // PLOGI.printf("%s: done keypoints %i ms",cameraIdToString(camera_data_.id).c_str(), t.dt_ms());
+    // t.reset();
 
     // Do post-processing if the detection was successful
     Eigen::Vector2f best_point_m = {0,0};
@@ -310,7 +324,14 @@ void CameraPipeline::oneLoop()
     {
         best_point_px = getBestKeypoint(keypoints);
         best_point_m = cameraToRobot(best_point_px);
+        // PLOGI.printf("%s: done detection %i ms",cameraIdToString(camera_data_.id).c_str(), t.dt_ms());
+        // t.reset();
     }
+    // else 
+    // {
+    //     PLOGI.printf("%s: NO detection %i ms",cameraIdToString(camera_data_.id).c_str(), t.dt_ms());
+    //     t.reset();
+    // }
 
     // Update output values in thread-safe manner
     {
