@@ -286,6 +286,7 @@ void RobotController::computeOdometry()
     {
         PLOGD_IF_(MOTION_LOG_ID, log_this_cycle_).printf("Decoded velocity: %.3f, %.3f, %.3f\n", local_cart_vel.vx, local_cart_vel.vy, local_cart_vel.va);
     }
+    // Bypassing motor feedback and just using fake_local_cart_vel_ here may give better performance, but its hard to tell.
 
     // Compute time since last odom update
     float dt = prevOdomLoopTimer_.dt_s();
