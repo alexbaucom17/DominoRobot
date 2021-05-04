@@ -163,7 +163,7 @@ class CmdGui:
         name = 'ManualAction'
 
         action = None
-        if action_type in [ActionTypes.MOVE_COARSE, ActionTypes.MOVE_REL, ActionTypes.MOVE_FINE, ActionTypes.MOVE_WITH_DISTANCE, ActionTypes.MOVE_WITH_VISION]:
+        if action_type in [ActionTypes.MOVE_COARSE, ActionTypes.MOVE_REL, ActionTypes.MOVE_FINE, ActionTypes.MOVE_WITH_DISTANCE]:
             data = data_str.split(',')
             data = [x.strip() for x in data]
             if len(data) != 3:
@@ -184,6 +184,13 @@ class CmdGui:
                 logging.warning("Invalid data: {}".format(data))
                 return None
             action = SetPoseAction(action_type, name, data[0], data[1], data[2])
+        elif action_type == ActionTypes.MOVE_WITH_VISION:
+            data = data_str.split(',')
+            data = [x.strip() for x in data]
+            if len(data) != 3:
+                data = (0,0,0)
+                logging.warning("Assuming position of (0,0,0) for vision move")
+            action = MoveAction(action_type, name, data[0], data[1], data[2])
         else:
             action = Action(action_type, name)
 

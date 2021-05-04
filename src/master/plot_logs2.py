@@ -100,7 +100,7 @@ def plot_rows_axes(data, rows, axes):
 if __name__ == '__main__':
     cfg = config.Config()
 
-    GET_FILE = False
+    GET_FILE = True
     EXISTING_LOCAL_FILENAME = "WiggleVision.csv"
 
     if GET_FILE:
