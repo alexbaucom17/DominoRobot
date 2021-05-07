@@ -13,7 +13,6 @@ Robustify:
 - Fix that missing ack skips current action during plan
 - Fix that resume after estop during place action immediately drops dominos
 - Detect when tray init needs to happen again after robot estop
-- Robustify camera pipeline against cv errors 
 
 Nice to haves:
 - Fix motion unit tests commanding large velocities and tripping thresholding

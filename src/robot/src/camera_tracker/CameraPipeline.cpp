@@ -232,7 +232,7 @@ std::vector<cv::KeyPoint> CameraPipeline::allKeypointsInImage(cv::Mat img_raw, b
         cv::circle(img_with_best_keypoint, best_keypoint, 1, cv::Scalar(0,0,255), -1);
         cv::circle(img_with_best_keypoint, best_keypoint, 10, cv::Scalar(0,0,255), 5);
         Eigen::Vector2f best_point_m = cameraToRobot(best_keypoint);
-        std::string label_text = "Best:" + std::to_string(best_keypoint.x) +"px,"+ std::to_string(best_keypoint.y) + "px";
+        std::string label_text = "Best:" + std::to_string(best_point_m[0]) +"m,"+ std::to_string(best_point_m[1]) + "m";
         cv::putText(img_with_best_keypoint, //target image
                     label_text, //text
                     cv::Point(10, 20), //top-left position
@@ -302,36 +302,37 @@ void CameraPipeline::threadLoop()
 
 void CameraPipeline::oneLoop()
 {
-    // Timer t;
-    // Get latest frame
-    cv::Mat frame;
-    if (use_debug_image_) frame = camera_data_.debug_frame;
-    else camera_data_.capture >> frame;
-
-    // PLOGI.printf("%s: done capture %i ms",cameraIdToString(camera_data_.id).c_str(), t.dt_ms());
-    // t.reset();
-
-    // Perform keypoint detection
-    std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, output_debug_images_);
-    // PLOGI.printf("%s: done keypoints %i ms",cameraIdToString(camera_data_.id).c_str(), t.dt_ms());
-    // t.reset();
-
-    // Do post-processing if the detection was successful
     Eigen::Vector2f best_point_m = {0,0};
     cv::Point2f best_point_px = {0,0};
-    bool detected = !keypoints.empty();
-    if(detected) 
+    bool detected = false;
+    try
     {
-        best_point_px = getBestKeypoint(keypoints);
-        best_point_m = cameraToRobot(best_point_px);
-        // PLOGI.printf("%s: done detection %i ms",cameraIdToString(camera_data_.id).c_str(), t.dt_ms());
-        // t.reset();
+
+        // Get latest frame
+        cv::Mat frame;
+        if (use_debug_image_) frame = camera_data_.debug_frame;
+        else camera_data_.capture >> frame;
+
+        // Perform keypoint detection
+        std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, output_debug_images_);
+
+        // Do post-processing if the detection was successful
+        detected = !keypoints.empty();
+        if(detected) 
+        {
+            best_point_px = getBestKeypoint(keypoints);
+            best_point_m = cameraToRobot(best_point_px);
+
+        }
     }
-    // else 
-    // {
-    //     PLOGI.printf("%s: NO detection %i ms",cameraIdToString(camera_data_.id).c_str(), t.dt_ms());
-    //     t.reset();
-    // }
+    catch (cv::Exception& e)
+    {
+        PLOGW << "Caught cv::Exception: " << e.what();
+        detected = false;
+        best_point_m = {0,0};
+        best_point_px = {0,0};
+    }
+    
 
     // Update output values in thread-safe manner
     {
