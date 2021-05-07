@@ -13,11 +13,9 @@ Robustify:
 - Fix that missing ack skips current action during plan
 - Fix that resume after estop during place action immediately drops dominos
 - Detect when tray init needs to happen again after robot estop
-- Spacebar to trigger sw estop
 - Robustify camera pipeline against cv errors 
 
 Nice to haves:
-- Change text color/highlighting on master for bad values (i.e. long loop times, error, etc)
 - Fix motion unit tests commanding large velocities and tripping thresholding
 - Fix localization tests
 - Add more unit tests for camera and vision controller
