@@ -106,11 +106,11 @@ void CameraPipeline::initCamera(CAMERA_ID id)
     // Hardcoding rotation matrices here for simplicity
     if(id == CAMERA_ID::SIDE) 
     {
-        camera_rotation << 0,1,0, 1,0,0, 0,0,-1;
+        camera_rotation << -1,0,0, 0,1,0, 0,0,-1;
     }
     else
     {
-        camera_rotation << 1,0,0, 0,-1,0, 0,0,-1;
+        camera_rotation << 0,1,0, 1,0,0, 0,0,-1;
     }
     // From https://ksimek.github.io/2012/08/22/extrinsic/
     camera_data_.t = -1 * camera_rotation * camera_pose;
@@ -262,7 +262,7 @@ std::vector<cv::KeyPoint> CameraPipeline::allKeypointsInImage(cv::Mat img_raw, b
                     1);
 
         cv::imwrite(debug_path + "img_best_keypoint.jpg", img_with_best_keypoint);
-        PLOGI << "Writing debug images";
+        PLOGI.printf("Writing debug images %s",cameraIdToString(camera_data_.id).c_str());
     }
 
     // PLOGI << "debug time: " << t.dt_ms();
