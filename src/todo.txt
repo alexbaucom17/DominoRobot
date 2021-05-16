@@ -5,9 +5,9 @@ Robot SW:
 - Consider adjusting parameters to make marvelmind based fine control have lower thresholds
 
 Robot HW:
- - Finish camera mounting system
 
 Master:
+- Add ability to configure x,y,a offset values for vision movement
 
 Robustify:
 - Fix that missing ack skips current action during plan
