@@ -257,6 +257,7 @@ class CmdGui:
                     status_str += "  Cycle id: {}\n".format(data["cycle_id"])
                     status_str += "  Action id: {}\n".format(data["action_id"])
                     status_str += "  Action name: {}\n".format(data["action_name"])
+                    status_str += "  Vision offset: {}\n".format(data["vision_offset"])
                 
                 # Set panel coloring based on state
                 if plan_state_str == "PAUSED" or plan_state_str == "ABORTED":
