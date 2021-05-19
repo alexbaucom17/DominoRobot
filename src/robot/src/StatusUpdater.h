@@ -20,8 +20,6 @@ class StatusUpdater
 
     void updatePositionLoopTime(int position_loop_ms);
 
-    void updateDistanceLoopTime(int distance_loop_ms);
-
     void updateInProgress(bool in_progress);
 
     bool getInProgress() const { return currentStatus_.in_progress; };
@@ -40,10 +38,6 @@ class StatusUpdater
 
     void update_lifter_driver_connected(bool connected);
 
-    void updateRawDistances(std::vector<float> distances);
-
-    void updateDistancePose(Point pose);
-
     void updateCameraDebug(CameraDebug camera_debug) {currentStatus_.camera_debug = camera_debug;};
 
     void updateVisionControllerPose(Point pose);
@@ -58,15 +52,6 @@ class StatusUpdater
       float vel_y;
       float vel_a;
 
-      // Distances
-      float dist_fl;
-      float dist_fr;
-      float dist_sf;
-      float dist_sb;
-      float dist_x;
-      float dist_y;
-      float dist_a;
-
       // Vision tracker pose
       float vision_x;
       float vision_y;
@@ -75,7 +60,6 @@ class StatusUpdater
       // Loop times
       int controller_loop_ms;
       int position_loop_ms;
-      int distance_loop_ms;
 
       bool in_progress;
       bool error_status;
@@ -96,19 +80,11 @@ class StatusUpdater
       vel_x(0.0),
       vel_y(0.0),
       vel_a(0.0),
-      dist_fl(0.0),
-      dist_fr(0.0),
-      dist_sf(0.0),
-      dist_sb(0.0),
-      dist_x(0.0),
-      dist_y(0.0),
-      dist_a(0.0),
       vision_x(0.0),
       vision_y(0.0),
       vision_a(0.0),
       controller_loop_ms(999),
       position_loop_ms(999),
-      distance_loop_ms(999),
       in_progress(false),
       error_status(false),
       counter(0),
@@ -178,10 +154,6 @@ class StatusUpdater
 
   private:
     Status currentStatus_;
-    int fwd_left_id_;
-    int fwd_right_id_;
-    int side_front_id_;
-    int side_back_id_;
 
 };
 

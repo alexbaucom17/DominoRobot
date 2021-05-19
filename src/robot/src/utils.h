@@ -379,6 +379,10 @@ std::vector<std::string> parseCommaDelimitedString(const std::string& str_in);
 std::vector<float> parseCommaDelimitedStringToFloat(const std::string& str_in);
 
 
+//*******************************************
+//           Logging
+//*******************************************
+
 static std::unique_ptr<plog::IAppender> g_appender;
 static std::unique_ptr<plog::Logger<MOTION_CSV_LOG_ID>> g_logger;
 void reset_last_motion_logger();

@@ -21,9 +21,11 @@ void configure_logger()
     std::string test_log_file_name = std::string("log/test_log.txt");
 
     // Initialize test logs to to go file and console
+    std::string log_level = cfg.lookup("log_level");
+    plog::Severity severity = plog::severityFromString(log_level.c_str());
     static plog::RollingFileAppender<plog::TxtFormatter> fileAppender(test_log_file_name.c_str(), 1000000, 5);
     static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
-    plog::init(plog::info, &fileAppender).addAppender(&consoleAppender); 
+    plog::init(severity, &fileAppender).addAppender(&consoleAppender); 
 
     PLOGI << "Logger ready";
 }

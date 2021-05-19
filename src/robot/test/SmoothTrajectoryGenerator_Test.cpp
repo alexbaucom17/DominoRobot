@@ -30,16 +30,16 @@ TEST_CASE("SmoothTrajectoryGenerator class", "[trajectory]")
         SmoothTrajectoryGenerator stg;
         Point p1 = {3,4,5};
         Point p2 = {1,2,3};
-        bool fineMode = false;
+        LIMITS_MODE limits_mode = LIMITS_MODE::COARSE;
 
-        bool ok = stg.generatePointToPointTrajectory(p1, p2, fineMode);
+        bool ok = stg.generatePointToPointTrajectory(p1, p2, limits_mode);
         REQUIRE(ok == true);
 
         PVTPoint output = stg.lookup(1.0);
         REQUIRE(output.time == 1.0);
 
-        fineMode = true;
-        ok = stg.generatePointToPointTrajectory(p1, p2, fineMode);
+        limits_mode = LIMITS_MODE::FINE;
+        ok = stg.generatePointToPointTrajectory(p1, p2, limits_mode);
         REQUIRE(ok == true);
 
         output = stg.lookup(1.0);
@@ -51,9 +51,9 @@ TEST_CASE("SmoothTrajectoryGenerator class", "[trajectory]")
         SmoothTrajectoryGenerator stg;
         Point p1 = {0,0,0};
         Point p2 = {1,2,3};
-        bool fineMode = false;
+        LIMITS_MODE limits_mode = LIMITS_MODE::COARSE;
 
-        bool ok = stg.generatePointToPointTrajectory(p1, p2, fineMode);
+        bool ok = stg.generatePointToPointTrajectory(p1, p2, limits_mode);
         REQUIRE(ok == true);
 
         //Way in the future should return the final point
@@ -66,8 +66,8 @@ TEST_CASE("SmoothTrajectoryGenerator class", "[trajectory]")
         CHECK(output.velocity.vy == Approx(0));
         CHECK(output.velocity.va == Approx(0).margin(0.0001));
 
-        fineMode = true;
-        ok = stg.generatePointToPointTrajectory(p1, p2, fineMode);
+        limits_mode = LIMITS_MODE::FINE;
+        ok = stg.generatePointToPointTrajectory(p1, p2, limits_mode);
         REQUIRE(ok == true);
 
         //Way in the future should return the final point
@@ -86,9 +86,9 @@ TEST_CASE("SmoothTrajectoryGenerator class", "[trajectory]")
         SmoothTrajectoryGenerator stg;
         Point p1 = {0,0,0};
         Point p2 = {10,0,0};
-        bool fineMode = false;
+        LIMITS_MODE limits_mode = LIMITS_MODE::COARSE;
 
-        bool ok = stg.generatePointToPointTrajectory(p1, p2, fineMode);
+        bool ok = stg.generatePointToPointTrajectory(p1, p2, limits_mode);
         REQUIRE(ok == true);
 
         //Way in the future should return the final point
@@ -107,9 +107,9 @@ TEST_CASE("SmoothTrajectoryGenerator class", "[trajectory]")
         SmoothTrajectoryGenerator stg;
         Point p1 = {5,4,3};
         Point p2 = {10,0,0};
-        bool fineMode = false;
+        LIMITS_MODE limits_mode = LIMITS_MODE::COARSE;
 
-        bool ok = stg.generatePointToPointTrajectory(p1, p2, fineMode);
+        bool ok = stg.generatePointToPointTrajectory(p1, p2, limits_mode);
         REQUIRE(ok == true);
 
         PVTPoint output = stg.lookup(0);
@@ -136,9 +136,9 @@ TEST_CASE("SmoothTrajectoryGenerator class", "[trajectory]")
         SmoothTrajectoryGenerator stg;
         Point p1 = {0,0,3};
         Point p2 = {0,0,-3};
-        bool fineMode = false;
+        LIMITS_MODE limits_mode = LIMITS_MODE::COARSE;
 
-        bool ok = stg.generatePointToPointTrajectory(p1, p2, fineMode);
+        bool ok = stg.generatePointToPointTrajectory(p1, p2, limits_mode);
         REQUIRE(ok == true);
 
         //Way in the future should return the final point
@@ -164,9 +164,9 @@ TEST_CASE("SmoothTrajectoryGenerator class", "[trajectory]")
         SmoothTrajectoryGenerator stg;
         Point p1 = {0,0,-1};
         Point p2 = {0,0,1};
-        bool fineMode = false;
+        LIMITS_MODE limits_mode = LIMITS_MODE::COARSE;
 
-        bool ok = stg.generatePointToPointTrajectory(p1, p2, fineMode);
+        bool ok = stg.generatePointToPointTrajectory(p1, p2, limits_mode);
         REQUIRE(ok == true);
 
         //Way in the future should return the final point
@@ -191,7 +191,7 @@ TEST_CASE("BuildMotionPlanningProblem", "[trajectory]")
 {
     Point p1 = {0,0,0};
     Point p2 = {10,0,-3};
-    bool fineMode;
+    LIMITS_MODE limits_mode;
     SolverParameters solver;
     solver.num_loops = 10;
     solver.alpha_decay = 0.8;
@@ -206,8 +206,8 @@ TEST_CASE("BuildMotionPlanningProblem", "[trajectory]")
 
     SECTION ("Coarse mode")
     {
-        fineMode = false;
-        MotionPlanningProblem mpp = buildMotionPlanningProblem(p1, p2, fineMode, solver);
+        limits_mode = LIMITS_MODE::COARSE;
+        MotionPlanningProblem mpp = buildMotionPlanningProblem(p1, p2, limits_mode, solver);
         REQUIRE(mpp.initialPoint == expected_p1);
         REQUIRE(mpp.targetPoint == expected_p2);
         REQUIRE(mpp.translationalLimits.max_vel == static_cast<float>(cfg.lookup("motion.translation.max_vel.coarse")));
@@ -224,8 +224,8 @@ TEST_CASE("BuildMotionPlanningProblem", "[trajectory]")
 
     SECTION ("Fine mode")
     {
-        fineMode = true;
-        MotionPlanningProblem mpp = buildMotionPlanningProblem(p1, p2, fineMode, solver);
+        limits_mode = LIMITS_MODE::FINE;
+        MotionPlanningProblem mpp = buildMotionPlanningProblem(p1, p2, limits_mode, solver);
         REQUIRE(mpp.initialPoint == expected_p1);
         REQUIRE(mpp.targetPoint == expected_p2);
         REQUIRE(mpp.translationalLimits.max_vel == static_cast<float>(cfg.lookup("motion.translation.max_vel.fine")));
@@ -245,9 +245,9 @@ TEST_CASE("generateTrajectory", "[trajectory]")
 {
     Point p1 = {0,0,0};
     Point p2 = {10,0,-3};
-    bool fineMode = false;
+    LIMITS_MODE limits_mode = LIMITS_MODE::COARSE;
     SolverParameters solver = {25, 0.8, 0.8, 0.1};
-    MotionPlanningProblem mpp = buildMotionPlanningProblem(p1, p2, fineMode, solver);
+    MotionPlanningProblem mpp = buildMotionPlanningProblem(p1, p2, limits_mode, solver);
 
     Trajectory traj = generateTrajectory(mpp);
 
