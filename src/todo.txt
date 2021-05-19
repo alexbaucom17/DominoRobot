@@ -5,7 +5,6 @@ Robot SW:
 - Consider adjusting parameters to make marvelmind based fine control have lower thresholds
 
 Robot HW:
- - Sync with Josh on camera mounting system (or should I take it?)
 
 Master:
 
@@ -48,6 +47,9 @@ Hardware info
     - Actual dims: 90cm x 77cm
     - Domino tile dimensions: 89cm x 64.2cm
     - 'Tileable' domino spacing: 93cm x 68cm
+- Camera mounts
+    - 80/20 - 38mm square
+    - Screw depth (min/max): 5mm-10mm
 
 Marvelmind notes:
     - About 70-80% of the time, accuracy looks great, but the rest of the time, the positions jump around wildly

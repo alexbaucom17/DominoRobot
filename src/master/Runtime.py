@@ -6,6 +6,7 @@ import pickle
 import os
 import json
 import copy
+import math
 
 from MarvelMindHandler import MarvelmindWrapper, MockMarvelmindWrapper
 from RobotClient import RobotClient, BaseStationClient, MockRobotClient, MockBaseStationClient
@@ -443,7 +444,7 @@ class RuntimeManager:
         robot_metrics = {}
         for id, data in self.cycle_tracker.items():
             robot_metrics[id] = {}
-            robot_metrics[id] = {'cycle_id': 'None', 'action_name': 'None', 'action_id': 'None'}
+            robot_metrics[id] = {'cycle_id': 'None', 'action_name': 'None', 'action_id': 'None', 'vision_offset': 'None'}
             if data['cycle_id'] is not None:
                 robot_metrics[id]['cycle_id'] = data['cycle_id']                
             if data['action_id'] is not None:
@@ -451,6 +452,10 @@ class RuntimeManager:
                 action = self.plan.get_action(data['cycle_id'], data['action_id'])
                 if action:
                     robot_metrics[id]['action_name'] = action.name
+                if action and action.action_type == ActionTypes.MOVE_WITH_VISION:
+                    robot_metrics[id]['vision_offset'] = (action.x, action.y, math.degrees(action.a))
+                else:
+                    robot_metrics[id]['vision_offset'] = 'None'
             robot_metrics[id]['needs_restart'] = data['needs_restart']
 
         plan_metrics['robots'] = robot_metrics
