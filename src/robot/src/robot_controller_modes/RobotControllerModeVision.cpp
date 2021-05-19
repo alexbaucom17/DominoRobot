@@ -14,22 +14,22 @@ RobotControllerModeVision::RobotControllerModeVision(bool fake_perfect_motion, S
   traj_done_timer_(),
   kf_(3,3)
 {
-    tolerances_.trans_pos_err = cfg.lookup("motion.translation.position_threshold.fine");
-    tolerances_.ang_pos_err = cfg.lookup("motion.rotation.position_threshold.fine");
-    tolerances_.trans_vel_err = cfg.lookup("motion.translation.velocity_threshold.fine");
-    tolerances_.ang_vel_err = cfg.lookup("motion.rotation.velocity_threshold.fine");
+    tolerances_.trans_pos_err = cfg.lookup("motion.translation.position_threshold.vision");
+    tolerances_.ang_pos_err = cfg.lookup("motion.rotation.position_threshold.vision");
+    tolerances_.trans_vel_err = cfg.lookup("motion.translation.velocity_threshold.vision");
+    tolerances_.ang_vel_err = cfg.lookup("motion.rotation.velocity_threshold.vision");
 
     PositionController::Gains position_gains;
-    position_gains.kp = cfg.lookup("motion.translation.gains_distance.kp");
-    position_gains.ki = cfg.lookup("motion.translation.gains_distance.ki");
-    position_gains.kd = cfg.lookup("motion.translation.gains_distance.kd");
+    position_gains.kp = cfg.lookup("motion.translation.gains_vision.kp");
+    position_gains.ki = cfg.lookup("motion.translation.gains_vision.ki");
+    position_gains.kd = cfg.lookup("motion.translation.gains_vision.kd");
     x_controller_ = PositionController(position_gains);
     y_controller_ = PositionController(position_gains);
 
     PositionController::Gains angle_gains;
-    angle_gains.kp = cfg.lookup("motion.rotation.gains_distance.kp");
-    angle_gains.ki = cfg.lookup("motion.rotation.gains_distance.ki");
-    angle_gains.kd = cfg.lookup("motion.rotation.gains_distance.kd");
+    angle_gains.kp = cfg.lookup("motion.rotation.gains_vision.kp");
+    angle_gains.ki = cfg.lookup("motion.rotation.gains_vision.ki");
+    angle_gains.kd = cfg.lookup("motion.rotation.gains_vision.kd");
     a_controller_ = PositionController(angle_gains);
 
     Eigen::MatrixXf A = Eigen::MatrixXf::Identity(3,3);
@@ -56,7 +56,7 @@ bool RobotControllerModeVision::startMove(Point target_point)
     }
     current_point_ = tracker_output.pose;
     goal_point_ = target_point;
-    bool ok = traj_gen_.generatePointToPointTrajectory(current_point_, target_point, /*fine_mode*/ true);
+    bool ok = traj_gen_.generatePointToPointTrajectory(current_point_, target_point, LIMITS_MODE::VISION);
     if(ok) RobotControllerModeBase::startMove();
     return ok;
 }

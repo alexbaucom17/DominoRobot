@@ -74,7 +74,7 @@ class RobotController
     Point cartPos_;                        // Current cartesian position
     Velocity cartVel_;                     // Current cartesian velocity
     bool trajRunning_;                     // If a trajectory is currently active
-    bool fineMode_;                        // If fine positioning mode is enabled or not.
+    LIMITS_MODE limits_mode_;              // Which limits mode is being used.
     RateController controller_rate_;       // Rate limit controller loops
     RateController logging_rate_ ;         // Rate limit logging to file
     bool log_this_cycle_;                  // Trigger for logging this cycle

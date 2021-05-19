@@ -19,7 +19,7 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
   cartPos_(),
   cartVel_(),
   trajRunning_(false),
-  fineMode_(true),
+  limits_mode_(LIMITS_MODE::FINE),
   controller_rate_(cfg.lookup("motion.controller_frequency")),
   logging_rate_(cfg.lookup("motion.log_frequency")),
   log_this_cycle_(false),
@@ -36,12 +36,12 @@ RobotController::RobotController(StatusUpdater& statusUpdater)
 void RobotController::moveToPosition(float x, float y, float a)
 {
     reset_last_motion_logger();
-    fineMode_ = false;
+    limits_mode_ = LIMITS_MODE::COARSE;
     Point goal_pos = Point(x,y,a);
     PLOGI_(MOTION_CSV_LOG_ID).printf("MoveToPosition: %s",goal_pos.toString().c_str());
 
     auto position_mode = std::make_unique<RobotControllerModePosition>(fake_perfect_motion_);
-    bool ok = position_mode->startMove(cartPos_, goal_pos, fineMode_);
+    bool ok = position_mode->startMove(cartPos_, goal_pos, limits_mode_);
    
     if (ok) 
     { 
@@ -54,7 +54,7 @@ void RobotController::moveToPosition(float x, float y, float a)
 void RobotController::moveToPositionRelative(float dx_local, float dy_local, float da_local)
 {
     reset_last_motion_logger();
-    fineMode_ = false;
+    limits_mode_ = LIMITS_MODE::COARSE;
 
     float dx_global =  cos(cartPos_.a) * dx_local - sin(cartPos_.a) * dy_local;
     float dy_global =  sin(cartPos_.a) * dx_local + cos(cartPos_.a) * dy_local;
@@ -63,7 +63,7 @@ void RobotController::moveToPositionRelative(float dx_local, float dy_local, flo
     PLOGI_(MOTION_CSV_LOG_ID).printf("MoveToPositionRelative: %s",goal_pos.toString().c_str());
 
     auto position_mode = std::make_unique<RobotControllerModePosition>(fake_perfect_motion_);
-    bool ok = position_mode->startMove(cartPos_, goal_pos, fineMode_);
+    bool ok = position_mode->startMove(cartPos_, goal_pos, limits_mode_);
    
     if (ok) 
     { 
@@ -76,12 +76,12 @@ void RobotController::moveToPositionRelative(float dx_local, float dy_local, flo
 void RobotController::moveToPositionFine(float x, float y, float a)
 {
     reset_last_motion_logger();
-    fineMode_ = true;
+    limits_mode_ = LIMITS_MODE::FINE;
     Point goal_pos = Point(x,y,a);
     PLOGI_(MOTION_CSV_LOG_ID).printf("MoveToPositionFine: %s",goal_pos.toString().c_str());
 
     auto position_mode = std::make_unique<RobotControllerModePosition>(fake_perfect_motion_);
-    bool ok = position_mode->startMove(cartPos_, goal_pos, fineMode_);
+    bool ok = position_mode->startMove(cartPos_, goal_pos, limits_mode_);
    
     if (ok) 
     { 
@@ -103,6 +103,7 @@ void RobotController::moveConstVel(float vx , float vy, float va, float t)
 void RobotController::moveWithVision(float x, float y, float a)
 {
     reset_last_motion_logger();
+    limits_mode_ = LIMITS_MODE::VISION;
     Point goal = Point(x,y,a);
     PLOGI_(MOTION_CSV_LOG_ID).printf("MoveWithVision: %s",goal.toString().c_str());
     auto vision_mode = std::make_unique<RobotControllerModeVision>(fake_perfect_motion_, statusUpdater_);
@@ -128,7 +129,7 @@ void RobotController::estop()
     PLOGW.printf("Estopping robot control");
     PLOGD_(MOTION_LOG_ID) << "\n====ESTOP====\n";
     trajRunning_ = false;
-    fineMode_ = true;
+    limits_mode_ = LIMITS_MODE::FINE;
     disableAllMotors();
 }
 
@@ -153,7 +154,7 @@ void RobotController::update()
             disableAllMotors();
             trajRunning_ = false;
             // Re-enable fine mode at the end of a trajectory
-            fineMode_ = true;
+            limits_mode_ = LIMITS_MODE::FINE;
         }
     }
     else
@@ -165,7 +166,7 @@ void RobotController::update()
         localization_.forceZeroVelocity();
 
         // Force flags to default values
-        fineMode_ = true;
+        limits_mode_ = LIMITS_MODE::FINE;
     }
 
     // Run controller and odometry update
@@ -211,7 +212,7 @@ void RobotController::disableAllMotors()
 
 void RobotController::inputPosition(float x, float y, float a)
 {
-    if(fineMode_)
+    if(limits_mode_ == LIMITS_MODE::FINE)
     {
         localization_.updatePositionReading({x,y,a});
         cartPos_ = localization_.getPosition();

@@ -5,7 +5,7 @@
 RobotControllerModePosition::RobotControllerModePosition(bool fake_perfect_motion)
 : RobotControllerModeBase(fake_perfect_motion),
   traj_gen_(),
-  fine_mode_(true),
+  limits_mode_(LIMITS_MODE::FINE),
   goal_pos_(0,0,0),
   current_target_()
 {
@@ -33,11 +33,11 @@ RobotControllerModePosition::RobotControllerModePosition(bool fake_perfect_motio
     a_controller_ = PositionController(angle_gains);
 }
 
-bool RobotControllerModePosition::startMove(Point current_position, Point target_position, bool fine_mode)
+bool RobotControllerModePosition::startMove(Point current_position, Point target_position, LIMITS_MODE limits_mode)
 {
-    fine_mode_ = fine_mode;
+    limits_mode_ = limits_mode;
     goal_pos_ = target_position;
-    bool ok = traj_gen_.generatePointToPointTrajectory(current_position, target_position, fine_mode_);
+    bool ok = traj_gen_.generatePointToPointTrajectory(current_position, target_position, limits_mode);
     if(ok) RobotControllerModeBase::startMove();
     return ok;
 }
@@ -79,7 +79,7 @@ Velocity RobotControllerModePosition::computeTargetVelocity(Point current_positi
 bool RobotControllerModePosition::checkForMoveComplete(Point current_position, Velocity current_velocity)
 {
     // Get the right threshold values
-    TrajectoryTolerances tol = fine_mode_ ? fine_tolerances_ : coarse_tolerances_;
+    TrajectoryTolerances tol = limits_mode_ == LIMITS_MODE::FINE ? fine_tolerances_ : coarse_tolerances_;
 
     // Verify our target velocity is zero (i.e. we reached the end of the trajectory)
     bool zero_cmd_vel = current_target_.velocity.nearZero();

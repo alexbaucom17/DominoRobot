@@ -70,7 +70,7 @@ std::vector<float> lookup_1D(float time, const SCurveParameters& params)
 }
 
 
-bool SmoothTrajectoryGenerator::generatePointToPointTrajectory(Point initialPoint, Point targetPoint, bool fineMode)
+bool SmoothTrajectoryGenerator::generatePointToPointTrajectory(Point initialPoint, Point targetPoint, LIMITS_MODE limits_mode)
 {    
     // Print to logs
     PLOGI.printf("Generating trajectory");
@@ -80,7 +80,7 @@ bool SmoothTrajectoryGenerator::generatePointToPointTrajectory(Point initialPoin
     PLOGD_(MOTION_LOG_ID).printf("Starting point: %s", initialPoint.toString().c_str());
     PLOGD_(MOTION_LOG_ID).printf("Target point: %s", targetPoint.toString().c_str());
 
-    MotionPlanningProblem mpp = buildMotionPlanningProblem(initialPoint, targetPoint, fineMode, solver_params_);
+    MotionPlanningProblem mpp = buildMotionPlanningProblem(initialPoint, targetPoint, limits_mode, solver_params_);
     currentTrajectory_ = generateTrajectory(mpp);
 
     PLOGI << currentTrajectory_.toString();
@@ -91,7 +91,7 @@ bool SmoothTrajectoryGenerator::generatePointToPointTrajectory(Point initialPoin
 
 // TODO Implement a more accurate version of this if needed
 // Note that this implimentation is a hack and isn't guaranteed to give an accurate constant velocity - so use with caution.
-bool SmoothTrajectoryGenerator::generateConstVelTrajectory(Point initialPoint, Velocity velocity, float moveTime, bool fineMode)
+bool SmoothTrajectoryGenerator::generateConstVelTrajectory(Point initialPoint, Velocity velocity, float moveTime, LIMITS_MODE limits_mode)
 {
     // Print to logs
     PLOGI.printf("Generating constVel (sort of) trajectory");
@@ -110,7 +110,7 @@ bool SmoothTrajectoryGenerator::generateConstVelTrajectory(Point initialPoint, V
     targetPoint.y = initialPoint.y + velocity.vy * moveTime;
     targetPoint.a = initialPoint.a + velocity.va * moveTime;
 
-    MotionPlanningProblem mpp = buildMotionPlanningProblem(initialPoint, targetPoint, fineMode, solver_params_);
+    MotionPlanningProblem mpp = buildMotionPlanningProblem(initialPoint, targetPoint, limits_mode, solver_params_);
     currentTrajectory_ = generateTrajectory(mpp);
 
     PLOGI << currentTrajectory_.toString();
@@ -119,7 +119,7 @@ bool SmoothTrajectoryGenerator::generateConstVelTrajectory(Point initialPoint, V
     return currentTrajectory_.complete;
 }
 
-MotionPlanningProblem buildMotionPlanningProblem(Point initialPoint, Point targetPoint, bool fineMode, const SolverParameters& solver)
+MotionPlanningProblem buildMotionPlanningProblem(Point initialPoint, Point targetPoint, LIMITS_MODE limits_mode, const SolverParameters& solver)
 {
     MotionPlanningProblem mpp;
     mpp.initialPoint = {initialPoint.x, initialPoint.y, initialPoint.a};
@@ -127,7 +127,16 @@ MotionPlanningProblem buildMotionPlanningProblem(Point initialPoint, Point targe
 
     DynamicLimits translationalLimits;
     DynamicLimits rotationalLimits;
-    if(fineMode)
+    if(limits_mode == LIMITS_MODE::VISION)
+    {
+        translationalLimits = { cfg.lookup("motion.translation.max_vel.vision"), 
+                                cfg.lookup("motion.translation.max_acc.vision"), 
+                                cfg.lookup("motion.translation.max_jerk.vision")};
+        rotationalLimits = {    cfg.lookup("motion.rotation.max_vel.vision"), 
+                                cfg.lookup("motion.rotation.max_acc.vision"), 
+                                cfg.lookup("motion.rotation.max_jerk.vision")};
+    }
+    else if(limits_mode == LIMITS_MODE::FINE)
     {
         translationalLimits = { cfg.lookup("motion.translation.max_vel.fine"), 
                                 cfg.lookup("motion.translation.max_acc.fine"), 
