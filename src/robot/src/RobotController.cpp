@@ -7,7 +7,6 @@
 #include "constants.h"
 #include "serial/SerialCommsFactory.h"
 #include "robot_controller_modes/RobotControllerModePosition.h"
-#include "robot_controller_modes/RobotControllerModeDistance.h"
 #include "robot_controller_modes/RobotControllerModeVision.h"
 
 
@@ -99,21 +98,6 @@ void RobotController::moveConstVel(float vx , float vy, float va, float t)
     (void) va;
     (void) t;
     PLOGE << "Not implimented";
-}
-
-void RobotController::moveWithDistance(float x_dist, float y_dist, float a_dist)
-{
-    Point goal_dist = Point(x_dist,y_dist,a_dist);
-
-    auto distance_mode = std::make_unique<RobotControllerModeDistance>(fake_perfect_motion_);
-    bool ok = distance_mode->startMove(goal_dist);
-   
-    if (ok) 
-    { 
-        startTraj(); 
-        controller_mode_ = std::move(distance_mode);
-    }
-    else { statusUpdater_.setErrorStatus(); }
 }
 
 void RobotController::moveWithVision(float x, float y, float a)

@@ -27,8 +27,6 @@ class RobotController
     // Command robot to move with a constant velocity for some amount of time
     void moveConstVel(float vx , float vy, float va, float t);
 
-    void moveWithDistance(float x_dist, float y_dist, float a_dist);
-
     void moveWithVision(float x, float y, float a);
 
     // Main update loop. Should be called as fast as possible

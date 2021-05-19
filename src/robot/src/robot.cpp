@@ -2,7 +2,6 @@
 
 #include <plog/Log.h> 
 #include "utils.h"
-#include "distance_tracker/DistanceTrackerFactory.h"
 #include "camera_tracker/CameraTrackerFactory.h"
 
 
@@ -228,7 +227,6 @@ bool Robot::checkForCmdComplete(COMMAND cmd)
             cmd == COMMAND::MOVE_REL ||
             cmd == COMMAND::MOVE_FINE ||
             cmd == COMMAND::MOVE_CONST_VEL ||
-            cmd == COMMAND::MOVE_WITH_DISTANCE ||
             cmd == COMMAND::MOVE_WITH_VISION)
     {
         return !controller_.isTrajectoryRunning();
