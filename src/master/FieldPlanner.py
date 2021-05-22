@@ -414,7 +414,7 @@ class MoveAction(Action):
 
     def draw(self, ax, show_label=True):
 
-        if self.action_type == ActionTypes.MOVE_WITH_DISTANCE:
+        if self.action_type == ActionTypes.MOVE_WITH_VISION:
             return
 
         # Base triangle at 0 degrees
