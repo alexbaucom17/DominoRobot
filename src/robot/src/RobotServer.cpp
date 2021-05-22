@@ -150,6 +150,16 @@ COMMAND RobotServer::getCommand(std::string message)
             sendAck(type);
             cmd = COMMAND::TOGGLE_VISION_DEBUG;
         }
+        else if (type == "start_cameras")
+        {
+            sendAck(type);
+            cmd = COMMAND::START_CAMERAS;
+        }
+        else if (type == "stop_cameras")
+        {
+            sendAck(type);
+            cmd = COMMAND::STOP_CAMERAS;
+        }
         else if(type == "")
         {
             printIncomingCommand(message);

@@ -35,16 +35,13 @@ void CameraTracker::update()
     if(rear_output.ok)
     {
         last_rear_cam_output_ = rear_output;
-        // PLOGI << "Got valid rear output";
     }
     if(side_output.ok)
     {
         last_side_cam_output_ = side_output;
-        // PLOGI << "Got valid side output";
     }
 
     if(last_side_cam_output_.ok && last_rear_cam_output_.ok) new_output_pose_ready = true;
-
 
     // int time_delta_ms = std::chrono::duration_cast<std::chrono::milliseconds>
     //     (last_side_cam_output_.timestamp - last_rear_cam_output_.timestamp).count();
@@ -53,7 +50,6 @@ void CameraTracker::update()
     //     PLOGW << "Camera timestamp delta too large: " << time_delta_ms;
     //     new_output_pose_ready = false;
     // }
-
 
     output_.ok = both_cams_ok_filter_.update(new_output_pose_ready);
     debug_.both_ok = output_.ok;
