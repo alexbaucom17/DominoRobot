@@ -163,7 +163,7 @@ class CmdGui:
         name = 'ManualAction'
 
         action = None
-        if action_type in [ActionTypes.MOVE_COARSE, ActionTypes.MOVE_REL, ActionTypes.MOVE_FINE, ActionTypes.MOVE_WITH_DISTANCE]:
+        if action_type in [ActionTypes.MOVE_COARSE, ActionTypes.MOVE_REL, ActionTypes.MOVE_FINE]:
             data = data_str.split(',')
             data = [x.strip() for x in data]
             if len(data) != 3:

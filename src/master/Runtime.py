@@ -48,7 +48,7 @@ class RobotInterface:
             ActionTypes.ESTOP: self.robot_client.estop,
             ActionTypes.CLEAR_ERROR: self.robot_client.clear_error,
             ActionTypes.WAIT_FOR_LOCALIZATION: self.robot_client.wait_for_localization,
-            ActionTypes.TOGGLE_DISTANCE: self.robot_client.toggle_distance,
+            ActionTypes.TOGGLE_VISION_DEBUG: self.robot_client.toggle_vision_debug,
         }
 
     def _bring_comms_online(self, use_mock=False):
@@ -111,8 +111,6 @@ class RobotInterface:
             elif action.action_type == ActionTypes.MOVE_FINE:
                 self.robot_client.move_fine(action.x, action.y, action.a)
                 self.current_move_data = [action.x, action.y, action.getAngleDegrees()]
-            elif action.action_type == ActionTypes.MOVE_WITH_DISTANCE:
-                self.robot_client.move_with_distance(action.x, action.y, action.a)
             elif action.action_type == ActionTypes.MOVE_WITH_VISION:
                 self.robot_client.move_with_vision(action.x, action.y, action.a)
             elif action.action_type == ActionTypes.MOVE_CONST_VEL:
