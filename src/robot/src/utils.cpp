@@ -6,9 +6,11 @@
 #include <chrono>
 #include <plog/Log.h>
 #include <iostream>
+#include <stdio.h>
 #include <sstream>
-
-#include "constants.h"
+#include <plog/Init.h>
+#include <plog/Formatters/CsvFormatter.h>
+#include <plog/Appenders/RollingFileAppender.h>
 
 float wrap_angle(float a)
 {
@@ -307,4 +309,21 @@ std::vector<float> parseCommaDelimitedStringToFloat(const std::string& str_in)
         result.push_back(std::stof(val));
     }
     return result;
+}
+
+
+
+void reset_last_motion_logger()
+{
+    // Delete the loggers
+    g_logger.reset();
+    g_appender.reset();
+
+    // Delete the file
+    remove("log/last_motion_log.csv");
+
+    // Re-initialize the logger
+    g_appender.reset(new plog::RollingFileAppender<plog::CsvFormatter>("log/last_motion_log.csv"));
+    g_logger.reset(new plog::Logger<MOTION_CSV_LOG_ID>(plog::debug));
+    g_logger->addAppender(g_appender.get());
 }

@@ -27,7 +27,7 @@ class RobotController
     // Command robot to move with a constant velocity for some amount of time
     void moveConstVel(float vx , float vy, float va, float t);
 
-    void moveWithDistance(float x_dist, float y_dist, float a_dist);
+    void moveWithVision(float x, float y, float a);
 
     // Main update loop. Should be called as fast as possible
     void update();
@@ -74,7 +74,7 @@ class RobotController
     Point cartPos_;                        // Current cartesian position
     Velocity cartVel_;                     // Current cartesian velocity
     bool trajRunning_;                     // If a trajectory is currently active
-    bool fineMode_;                        // If fine positioning mode is enabled or not.
+    LIMITS_MODE limits_mode_;              // Which limits mode is being used.
     RateController controller_rate_;       // Rate limit controller loops
     RateController logging_rate_ ;         // Rate limit logging to file
     bool log_this_cycle_;                  // Trigger for logging this cycle

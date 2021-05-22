@@ -10,6 +10,33 @@ import os
 import Utils
 import config
 import pickle
+import csv
+
+
+def generateVisionOffsetMap(cfg, max_x, max_y):
+    
+    vision_offset_map = { (x,y): cfg.default_vision_offset for x in range(max_x) for y in range(max_y) }
+    with open(cfg.vision_offset_file) as csvfile:
+        reader = csv.reader(csvfile)
+        for idx,row in enumerate(reader):
+            if idx == 0:
+                continue
+            tile_x = int(row[0])
+            tile_y = int(row[1])
+            offset_x_meters = int(row[2]) / 1000.0
+            offset_y_meters = int(row[3]) / 1000.0
+            offset_a_degrees = float(row[4])
+            add_to_default = bool(row[5])
+            key = (tile_x,tile_y)
+            value = (offset_x_meters,offset_y_meters,offset_a_degrees)
+            if add_to_default:
+                value = (   cfg.default_vision_offset[0] + offset_x_meters,
+                            cfg.default_vision_offset[1] + offset_y_meters,
+                            cfg.default_vision_offset[2] + offset_a_degrees
+                        )
+            vision_offset_map[key] = value
+
+    return vision_offset_map
 
 
 class DominoField:
@@ -144,9 +171,10 @@ class DominoField:
         self.img_parsed_ids = img_parsed_ids
         self.img_parsed_color = img_parsed_color
 
-    def _addTile(self, tile_coordinate, tile_values, tile_order):
+    def _addTile(self, tile_coordinate, tile_values, tile_order, vision_offset_map):
 
-        new_tile = Tile(self.cfg, tile_coordinate, tile_values, tile_order)
+        vision_offset = vision_offset_map[tile_coordinate]
+        new_tile = Tile(self.cfg, tile_coordinate, tile_values, tile_order, vision_offset)
         self.tiles.append(new_tile)
 
     def _generateTiles(self):
@@ -163,6 +191,7 @@ class DominoField:
         print("Generating tiles {} x {}".format(self.n_tiles_x, self.n_tiles_y))
 
         order_map = self._generateTileOrdering(self.n_tiles_x, self.n_tiles_y)
+        vision_offset_map = generateVisionOffsetMap(self.cfg, self.n_tiles_x, self.n_tiles_y)
 
         # Loop over tiles and assign id and colors to each
         for i in range(self.n_tiles_x):
@@ -177,7 +206,7 @@ class DominoField:
                 tile_values = np.copy(self.img_parsed_ids[y_start_idx:y_end_idx:-1, x_start_idx:x_end_idx])
                 tile_coord = (i,j)
                 tile_order = order_map[tile_coord]
-                self._addTile(tile_coord, tile_values, tile_order)
+                self._addTile(tile_coord, tile_values, tile_order, vision_offset_map)
 
         # Sort tile array so they are in order
         self.tiles = sorted(self.tiles, key = lambda tile: tile.order)
@@ -243,8 +272,9 @@ class Tile:
     Holds info and useful methods related to an individual domino tile
     """
 
-    def __init__(self, cfg, coordinate, values, order):
+    def __init__(self, cfg, coordinate, values, order, vision_offset):
         self.coordinate = coordinate
+        self.vision_offset = vision_offset
         self.values = values
         self.cfg = cfg
         self.order = order
@@ -312,8 +342,8 @@ class ActionTypes(enum.Enum):
     CLEAR_ERROR = 11,
     NONE = 12,
     SET_POSE = 13,
-    MOVE_WITH_DISTANCE = 14,
-    TOGGLE_DISTANCE = 15,
+    MOVE_WITH_VISION = 14,
+    TOGGLE_VISION_DEBUG = 15,
 
 class Action:
 
@@ -469,6 +499,9 @@ def generate_full_action_sequence(cfg, tile):
     name = "Move to place - fine"
     actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle))
 
+    name = "Move to place - vision"
+    actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, tile.vision_offset[0], tile.vision_offset[1], tile.vision_offset[2]))
+
     name = "Place tile"
     actions.append(Action(ActionTypes.PLACE, name))
 
@@ -535,8 +568,8 @@ def generate_small_testing_action_sequence(cfg, tile):
     name = "Move to place - fine"
     actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle))
 
-    name = "Move to place - super fine"
-    actions.append(MoveAction(ActionTypes.MOVE_WITH_DISTANCE, name, cfg.distance_placement_pose[0], cfg.distance_placement_pose[1], cfg.distance_placement_pose[2]))
+    name = "Move to place - vision"
+    actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, tile.vision_offset[0], tile.vision_offset[1], tile.vision_offset[2]))
 
     name = "Place tile"
     actions.append(Action(ActionTypes.PLACE, name))

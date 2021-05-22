@@ -163,7 +163,7 @@ class CmdGui:
         name = 'ManualAction'
 
         action = None
-        if action_type in [ActionTypes.MOVE_COARSE, ActionTypes.MOVE_REL, ActionTypes.MOVE_FINE, ActionTypes.MOVE_WITH_DISTANCE]:
+        if action_type in [ActionTypes.MOVE_COARSE, ActionTypes.MOVE_REL, ActionTypes.MOVE_FINE]:
             data = data_str.split(',')
             data = [x.strip() for x in data]
             if len(data) != 3:
@@ -184,6 +184,13 @@ class CmdGui:
                 logging.warning("Invalid data: {}".format(data))
                 return None
             action = SetPoseAction(action_type, name, data[0], data[1], data[2])
+        elif action_type == ActionTypes.MOVE_WITH_VISION:
+            data = data_str.split(',')
+            data = [x.strip() for x in data]
+            if len(data) != 3:
+                data = (0,0,0)
+                logging.warning("Assuming position of (0,0,0) for vision move")
+            action = MoveAction(action_type, name, data[0], data[1], data[2])
         else:
             action = Action(action_type, name)
 
@@ -250,6 +257,7 @@ class CmdGui:
                     status_str += "  Cycle id: {}\n".format(data["cycle_id"])
                     status_str += "  Action id: {}\n".format(data["action_id"])
                     status_str += "  Action name: {}\n".format(data["action_name"])
+                    status_str += "  Vision offset: {}\n".format(data["vision_offset"])
                 
                 # Set panel coloring based on state
                 if plan_state_str == "PAUSED" or plan_state_str == "ABORTED":
@@ -270,16 +278,18 @@ class CmdGui:
                 status_str = ""
                 status_str += "Position: [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(robot_pose[0], robot_pose[1], robot_pose[2])
                 status_str += "Velocity: [{0:.3f} m/s, {1:.3f} m/s, {2:.2f} deg/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], math.degrees(status_dict['vel_a']))
-                status_str += "Distance Pose : [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(status_dict['dist_x'],status_dict['dist_y'], math.degrees(status_dict['dist_a']))
-                status_str += "Raw Distance: FL: {0:.3f} m, FR: {1:.3f} m\n                      SF: {2:.3f} m, SB: {3:.3f} m\n".format(\
-                    status_dict['dist_fl'],status_dict['dist_fr'], status_dict['dist_sf'], status_dict['dist_sb'])
+                status_str += "Vision Pose : [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(status_dict['vision_x'],status_dict['vision_y'], math.degrees(status_dict['vision_a']))
+                status_str += "Camera Raw Pose : [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(status_dict['cam_pose_x'],status_dict['cam_pose_y'], math.degrees(status_dict['cam_pose_a']))
+                status_str += "Cam Status: Both-{} | Side-{} | Rear-{}\n".format(status_dict["cam_both_ok"],status_dict["cam_side_ok"], status_dict["cam_rear_ok"])
+                status_str += "Raw Camera px: Side [{:d}, {:d}] Rear: [{:d}, {:d}]\n".format( \
+                    int(status_dict['cam_side_u']),int(status_dict['cam_side_v']), int(status_dict['cam_rear_u']), int(status_dict['cam_rear_v']))
                 status_str += "Localization total confidence: {:.1f}%\n".format(status_dict['localization_total_confidence']*100)
                 status_str += "  Axes confidence: [{:.1f}%, {:.1f}%, {:.1f}%]\n".format(
                     status_dict['localization_confidence_x']*100,status_dict['localization_confidence_y']*100,status_dict['localization_confidence_a']*100)
                 status_str += "Localization position uncertainty: {:.2f}\n".format(status_dict['last_position_uncertainty'])
                 status_str += "Controller timing: {} ms\n".format(status_dict['controller_loop_ms'])
                 status_str += "Position timing:   {} ms\n".format(status_dict['position_loop_ms'])
-                status_str += "Distance timing:   {} ms\n".format(status_dict['distance_loop_ms'])
+                status_str += "Camera timing:   {} ms\n".format(status_dict['cam_loop_ms'])
                 status_str += "Current action:   {}\n".format(status_dict['current_action'].split('.')[-1])
                 status_str += "Motion in progress: {}\n".format(status_dict["in_progress"])
                 status_str += "Has error: {}\n".format(status_dict["error_status"])

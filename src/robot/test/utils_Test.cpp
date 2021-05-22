@@ -467,3 +467,56 @@ TEST_CASE("StringToFloatParse", "[utils]")
         REQUIRE_THAT(result, Catch::Matchers::Equals(std::vector<float>{1.0, 2.345, -1.2363}));
     }
 }
+
+TEST_CASE("LatchedBool", "[utils]")
+{
+    SECTION("All true")
+    {
+        MockClockWrapper* mock_clock = get_mock_clock_and_reset();
+        LatchedBool lb(1.0);
+        CHECK(lb.update(true) == true);
+        mock_clock->advance_sec(0.5);
+        CHECK(lb.update(true) == true);
+        mock_clock->advance_sec(0.6);
+        CHECK(lb.update(true) == true);
+    }
+    SECTION("All false")
+    {
+        MockClockWrapper* mock_clock = get_mock_clock_and_reset();
+        LatchedBool lb(1.0);
+        CHECK(lb.update(false) == false);
+        mock_clock->advance_sec(0.5);
+        CHECK(lb.update(false) == false);
+        mock_clock->advance_sec(0.6);
+        CHECK(lb.update(false) == false);
+    }
+    SECTION("True then false then true")
+    {
+        MockClockWrapper* mock_clock = get_mock_clock_and_reset();
+        LatchedBool lb(1.0);
+        CHECK(lb.update(true) == true);
+        mock_clock->advance_sec(0.5);
+        CHECK(lb.update(false) == true);
+        CHECK(lb.update(false) == true);
+        CHECK(lb.update(false) == true);
+        mock_clock->advance_sec(0.6);
+        CHECK(lb.update(false) == false);
+        CHECK(lb.update(true) == true);
+        mock_clock->advance_sec(0.5);
+        CHECK(lb.update(false) == true);
+        mock_clock->advance_sec(0.6);
+        CHECK(lb.update(false) == false);
+    }
+    SECTION("False then true then false")
+    {
+        MockClockWrapper* mock_clock = get_mock_clock_and_reset();
+        LatchedBool lb(1.0);
+        CHECK(lb.update(false) == false);
+        mock_clock->advance_sec(0.5);
+        CHECK(lb.update(false) == false);
+        mock_clock->advance_sec(0.6);
+        CHECK(lb.update(true) == true);
+        mock_clock->advance_sec(0.6);
+        CHECK(lb.update(false) == true);
+    }
+}

@@ -1,20 +1,21 @@
-#ifndef RobotControllerModeDistance_h
-#define RobotControllerModeDistance_h
+#ifndef RobotControllerModeVision_h
+#define RobotControllerModeVision_h
 
 #include "RobotControllerModeBase.h"
 #include "SmoothTrajectoryGenerator.h"
 #include "utils.h"
-#include "distance_tracker/DistanceTrackerBase.h"
+#include "camera_tracker/CameraTracker.h"
 #include "KalmanFilter.h"
+#include "StatusUpdater.h"
 
-class RobotControllerModeDistance : public RobotControllerModeBase
+class RobotControllerModeVision : public RobotControllerModeBase
 {
 
   public:
 
-    RobotControllerModeDistance(bool fake_perfect_motion);
+    RobotControllerModeVision(bool fake_perfect_motion, StatusUpdater& status_updater);
 
-    bool startMove(Point goal_distance);
+    bool startMove(Point target_point);
 
     virtual Velocity computeTargetVelocity(Point current_position, Velocity current_velocity, bool log_this_cycle) override;
 
@@ -22,18 +23,16 @@ class RobotControllerModeDistance : public RobotControllerModeBase
 
   protected:
 
-    void actuallyStartTheMove();
-
+    StatusUpdater& status_updater_;
     SmoothTrajectoryGenerator traj_gen_; 
-    Point goal_distance_;
-    Point current_distance_;
+    Point goal_point_;
+    Point current_point_;
     PVTPoint current_target_;
-    DistanceTrackerBase* distance_tracker_;
-    bool move_started_for_real_;
-    float move_start_delay_sec_;
+    CameraTrackerBase* camera_tracker_;
     Timer traj_done_timer_;
+    ClockTimePoint last_vision_update_time_;
 
-    TrajectoryTolerances distance_tolerances_;
+    TrajectoryTolerances tolerances_;
 
     PositionController x_controller_;
     PositionController y_controller_;
@@ -42,4 +41,4 @@ class RobotControllerModeDistance : public RobotControllerModeBase
 
 };
 
-#endif //RobotControllerModeDistance_h
+#endif //RobotControllerModeVision_h

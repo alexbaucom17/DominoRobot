@@ -2,7 +2,7 @@
 
 #include <plog/Log.h> 
 #include "utils.h"
-#include "distance_tracker/DistanceTrackerFactory.h"
+#include "camera_tracker/CameraTrackerFactory.h"
 
 
 WaitForLocalizeHelper::WaitForLocalizeHelper(const StatusUpdater& statusUpdater, float max_timeout, float confidence_threshold) 
@@ -41,10 +41,11 @@ Robot::Robot()
   controller_(statusUpdater_),
   tray_controller_(),
   mm_wrapper_(),
-  distance_tracker_(DistanceTrackerFactory::getFactoryInstance()->get_distance_tracker()),
   position_time_averager_(20),
+  robot_loop_time_averager_(20),
   wait_for_localize_helper_(statusUpdater_, cfg.lookup("localization.max_wait_time"), cfg.lookup("localization.confidence_for_wait")),
-  dist_print_rate_(10),
+  vision_print_rate_(10),
+  camera_tracker_(CameraTrackerFactory::getFactoryInstance()->get_camera_tracker()),
   curCmd_(COMMAND::NONE)
 {
     PLOGI.printf("Robot starting");
@@ -84,7 +85,7 @@ void Robot::runOnce()
     // Service various modules
     controller_.update();
     tray_controller_.update();
-    distance_tracker_->checkForMeasurement();
+    camera_tracker_->update();
 
     // Check if the current command has finished
     bool done = checkForCmdComplete(curCmd_);
@@ -96,16 +97,9 @@ void Robot::runOnce()
 
     // Update loop time and status updater
     statusUpdater_.updatePositionLoopTime(position_time_averager_.get_ms());
-    statusUpdater_.updateDistanceLoopTime(distance_tracker_->getAverageMeasurementTimeMs());
-    statusUpdater_.updateRawDistances(distance_tracker_->getRawDistances());
-    statusUpdater_.updateDistancePose(distance_tracker_->getDistancePose());
-
-    // if(dist_print_rate_.ready())
-    // {
-    //     Point pose = distance_tracker_->getDistancePose();
-    //     PLOGI.printf("Cur dist: %s",pose.toString().c_str());
-    //     distance_tracker_->logDebug();
-    // }
+    CameraDebug camera_debug = camera_tracker_->getCameraDebug();
+    statusUpdater_.updateCameraDebug(camera_debug);
+    robot_loop_time_averager_.mark_point();
 }
 
 
@@ -129,30 +123,22 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
         controller_.forceSetPosition(data.x, data.y, data.a);
         return false;
     }
+    if (cmd == COMMAND::TOGGLE_VISION_DEBUG)
+    {
+        camera_tracker_->toggleDebugImageOutput();
+        return false;
+    }
     // Same with ESTOP
     if (cmd == COMMAND::ESTOP)
     {
         controller_.estop();
         tray_controller_.estop();
-        distance_tracker_->stop();
         return false;
     }
     // Same with LOAD_COMPLETE
     if (cmd == COMMAND::LOAD_COMPLETE)
     {
         tray_controller_.setLoadComplete();
-        return false;
-    }
-    if(cmd == COMMAND::TOGGLE_DISTANCE)
-    {
-        if(distance_tracker_->isRunning())
-        {
-            distance_tracker_->stop();
-        }
-        else
-        {
-            distance_tracker_->start();
-        }
         return false;
     }
 
@@ -191,10 +177,10 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
         RobotServer::VelocityData data = server_.getVelocityData();
         controller_.moveConstVel(data.vx, data.vy, data.va, data.t);
     }
-    else if (cmd == COMMAND::MOVE_WITH_DISTANCE)
+    else if (cmd == COMMAND::MOVE_WITH_VISION)
     {
         RobotServer::PositionData data = server_.getMoveData();
-        controller_.moveWithDistance(data.x, data.y, data.a);
+        controller_.moveWithVision(data.x, data.y, data.a);
     }
     else if(cmd == COMMAND::PLACE_TRAY)
     {
@@ -235,7 +221,7 @@ bool Robot::checkForCmdComplete(COMMAND cmd)
             cmd == COMMAND::MOVE_REL ||
             cmd == COMMAND::MOVE_FINE ||
             cmd == COMMAND::MOVE_CONST_VEL ||
-            cmd == COMMAND::MOVE_WITH_DISTANCE)
+            cmd == COMMAND::MOVE_WITH_VISION)
     {
         return !controller_.isTrajectoryRunning();
     }

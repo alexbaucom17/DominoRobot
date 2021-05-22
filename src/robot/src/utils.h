@@ -5,6 +5,10 @@
 #include <vector>
 #include <memory>
 #include <math.h>
+#include <plog/Log.h> 
+#include <plog/Logger.h> 
+
+#include "constants.h"
 
 using ClockTimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 using FpSeconds = std::chrono::duration<float, std::chrono::seconds::period>;
@@ -199,6 +203,43 @@ struct Velocity
     }
 };
 
+class LatchedBool
+{
+  public:
+    LatchedBool(float seconds_to_latch)
+    : latch_time_(seconds_to_latch),
+      time_since_true_(),
+      value_(false)
+      {}
+
+    void add(bool value_in)
+    {
+        if(value_in)
+        {
+            value_ = true;
+            time_since_true_.reset();
+        }
+        else
+        {
+            if(time_since_true_.dt_s() > latch_time_)
+            {
+                value_ = false;
+            }
+        }
+    }
+
+    bool get() {return value_;}
+    bool update(bool value_in)
+    {
+      add(value_in);
+      return get();
+    }
+  
+  private:
+    float latch_time_;
+    Timer time_since_true_;
+    bool value_;
+};
 
 // Very simple circular buffer class
 template<class T>
@@ -300,6 +341,25 @@ struct LocalizationMetrics
     float total_confidence;
 };
 
+struct CameraDebug
+{
+    bool side_ok;
+    bool rear_ok;
+    bool both_ok;
+    float side_u;
+    float side_v;
+    float rear_u;
+    float rear_v;
+    float side_x;
+    float side_y;
+    float rear_x;
+    float rear_y;
+    float pose_x;
+    float pose_y;
+    float pose_a;
+    int loop_ms;
+};
+
 //*******************************************
 //           Misc math
 //*******************************************
@@ -318,5 +378,13 @@ float zScore(float mean, float stddev, float reading);
 std::vector<std::string> parseCommaDelimitedString(const std::string& str_in);
 std::vector<float> parseCommaDelimitedStringToFloat(const std::string& str_in);
 
+
+//*******************************************
+//           Logging
+//*******************************************
+
+static std::unique_ptr<plog::IAppender> g_appender;
+static std::unique_ptr<plog::Logger<MOTION_CSV_LOG_ID>> g_logger;
+void reset_last_motion_logger();
 
 #endif

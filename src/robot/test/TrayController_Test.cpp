@@ -58,9 +58,11 @@ TEST_CASE("Initialize tray", "[TrayController]")
 
     mock_clock->advance_ms(1500);
     t.update();
-    int p = cfg.lookup("tray.default_pos_revs");
+    float revs = cfg.lookup("tray.default_pos_revs");
+    int steps_per_rev = cfg.lookup("tray.steps_per_rev");
+    int steps = steps_per_rev * revs;
     REQUIRE(mock_serial->mock_rcv_lift() == "status_req");
-    REQUIRE(mock_serial->mock_rcv_lift() == "pos:"+std::to_string(p));
+    REQUIRE(mock_serial->mock_rcv_lift() == "pos:"+std::to_string(steps));
     mock_serial->mock_send("lift:none");
 
     mock_clock->advance_ms(1500);
@@ -82,8 +84,10 @@ TEST_CASE("Place tray", "[TrayController]")
 
     mock_clock->advance_ms(1500);
     t.update();
-    int p = cfg.lookup("tray.place_pos_revs");
-    REQUIRE(mock_serial->mock_rcv_lift() == "pos:"+std::to_string(p));
+    float revs = cfg.lookup("tray.place_pos_revs");
+    int steps_per_rev = cfg.lookup("tray.steps_per_rev");
+    int steps = steps_per_rev * revs;
+    REQUIRE(mock_serial->mock_rcv_lift() == "pos:"+std::to_string(steps));
     mock_serial->mock_send("lift:none");
 
     mock_clock->advance_ms(1500);
@@ -94,9 +98,10 @@ TEST_CASE("Place tray", "[TrayController]")
 
     mock_clock->advance_ms(1500);
     t.update();
-    p = cfg.lookup("tray.default_pos_revs");
+    revs = cfg.lookup("tray.default_pos_revs");
+    steps = steps_per_rev * revs;
     REQUIRE(mock_serial->mock_rcv_lift() == "status_req");
-    REQUIRE(mock_serial->mock_rcv_lift() == "pos:"+std::to_string(p));
+    REQUIRE(mock_serial->mock_rcv_lift() == "pos:"+std::to_string(steps));
     mock_serial->mock_send("lift:none");
 
     mock_clock->advance_ms(1500);
@@ -124,8 +129,10 @@ TEST_CASE("Load tray", "[TrayController]")
 
     mock_clock->advance_ms(1500);
     t.update();
-    int p = cfg.lookup("tray.load_pos_revs");
-    REQUIRE(mock_serial->mock_rcv_lift() == "pos:"+std::to_string(p));
+    float revs = cfg.lookup("tray.load_pos_revs");
+    int steps_per_rev = cfg.lookup("tray.steps_per_rev");
+    int steps = steps_per_rev * revs;
+    REQUIRE(mock_serial->mock_rcv_lift() == "pos:"+std::to_string(steps));
     mock_serial->mock_send("lift:none");
 
     mock_clock->advance_ms(1500);
@@ -136,8 +143,9 @@ TEST_CASE("Load tray", "[TrayController]")
 
     mock_clock->advance_ms(1500);
     t.update();
-    p = cfg.lookup("tray.default_pos_revs");
-    REQUIRE(mock_serial->mock_rcv_lift() == "pos:"+std::to_string(p));
+    revs = cfg.lookup("tray.default_pos_revs");
+    steps = steps_per_rev * revs;
+    REQUIRE(mock_serial->mock_rcv_lift() == "pos:"+std::to_string(steps));
     mock_serial->mock_send("lift:none");
 
     mock_clock->advance_ms(1500);

@@ -6,6 +6,7 @@ import pickle
 import os
 import json
 import copy
+import math
 
 from MarvelMindHandler import MarvelmindWrapper, MockMarvelmindWrapper
 from RobotClient import RobotClient, BaseStationClient, MockRobotClient, MockBaseStationClient
@@ -47,7 +48,7 @@ class RobotInterface:
             ActionTypes.ESTOP: self.robot_client.estop,
             ActionTypes.CLEAR_ERROR: self.robot_client.clear_error,
             ActionTypes.WAIT_FOR_LOCALIZATION: self.robot_client.wait_for_localization,
-            ActionTypes.TOGGLE_DISTANCE: self.robot_client.toggle_distance,
+            ActionTypes.TOGGLE_VISION_DEBUG: self.robot_client.toggle_vision_debug,
         }
 
     def _bring_comms_online(self, use_mock=False):
@@ -110,8 +111,8 @@ class RobotInterface:
             elif action.action_type == ActionTypes.MOVE_FINE:
                 self.robot_client.move_fine(action.x, action.y, action.a)
                 self.current_move_data = [action.x, action.y, action.getAngleDegrees()]
-            elif action.action_type == ActionTypes.MOVE_WITH_DISTANCE:
-                self.robot_client.move_with_distance(action.x, action.y, action.a)
+            elif action.action_type == ActionTypes.MOVE_WITH_VISION:
+                self.robot_client.move_with_vision(action.x, action.y, action.a)
             elif action.action_type == ActionTypes.MOVE_CONST_VEL:
                 self.robot_client.move_const_vel(action.vx, action.vy, action.va, action.t)
             elif action.action_type == ActionTypes.SET_POSE:
@@ -441,7 +442,7 @@ class RuntimeManager:
         robot_metrics = {}
         for id, data in self.cycle_tracker.items():
             robot_metrics[id] = {}
-            robot_metrics[id] = {'cycle_id': 'None', 'action_name': 'None', 'action_id': 'None'}
+            robot_metrics[id] = {'cycle_id': 'None', 'action_name': 'None', 'action_id': 'None', 'vision_offset': 'None'}
             if data['cycle_id'] is not None:
                 robot_metrics[id]['cycle_id'] = data['cycle_id']                
             if data['action_id'] is not None:
@@ -449,6 +450,10 @@ class RuntimeManager:
                 action = self.plan.get_action(data['cycle_id'], data['action_id'])
                 if action:
                     robot_metrics[id]['action_name'] = action.name
+                if action and action.action_type == ActionTypes.MOVE_WITH_VISION:
+                    robot_metrics[id]['vision_offset'] = (action.x, action.y, math.degrees(action.a))
+                else:
+                    robot_metrics[id]['vision_offset'] = 'None'
             robot_metrics[id]['needs_restart'] = data['needs_restart']
 
         plan_metrics['robots'] = robot_metrics

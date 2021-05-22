@@ -26,9 +26,11 @@ void configure_logger()
     std::string localization_log_file_name = std::string("log/localization_log_") + std::string(datetime_str) + std::string(".txt");
 
     // Initialize robot logs to to go file and console
+    std::string log_level = cfg.lookup("log_level");
+    plog::Severity severity = plog::severityFromString(log_level.c_str());
     static plog::RollingFileAppender<plog::TxtFormatter> fileAppender(robot_log_file_name.c_str(), 1000000, 5);
     static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
-    plog::init(plog::info, &fileAppender).addAppender(&consoleAppender); 
+    plog::init(severity, &fileAppender).addAppender(&consoleAppender); 
 
     // Initialize motion logs to go to file
     static plog::RollingFileAppender<plog::TxtFormatter> motionFileAppender(motion_log_file_name.c_str(), 1000000, 5);
@@ -60,10 +62,10 @@ int main()
 {
     try
     {
-        configure_logger();
-        
         cfg.readFile(CONSTANTS_FILE);
         std::string name = cfg.lookup("name");
+
+        configure_logger();
         PLOGI << "Loaded constants file: " << name;
 
         setup_mock_socket();
