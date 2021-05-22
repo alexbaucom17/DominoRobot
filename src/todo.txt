@@ -17,7 +17,6 @@ Nice to haves:
 - Fix motion unit tests commanding large velocities and tripping thresholding
 - Fix localization tests
 - Add more unit tests for camera and vision controller
-- Set up camera tracking so it only happens when near the markers (maybe move fine and vision only?)
 
 
 
