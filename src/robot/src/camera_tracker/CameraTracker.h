@@ -19,11 +19,11 @@ class CameraTracker : public CameraTrackerBase
 
     virtual void update() override;
 
+    virtual void toggleDebugImageOutput() override;
+
     virtual CameraTrackerOutput getPoseFromCamera() override; 
 
     virtual CameraDebug getCameraDebug() override;
-
-    void test_function();   
 
     // Below here exposed for testing only (yes, bad practice, but useful for now)
 

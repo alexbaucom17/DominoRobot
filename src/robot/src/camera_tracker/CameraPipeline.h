@@ -37,6 +37,8 @@ class CameraPipeline
 
     void oneLoop();
 
+    void toggleDebugImageOutput() {output_debug_images_ = !output_debug_images_;};
+
     Eigen::Vector2f cameraToRobot(cv::Point2f cameraPt);
 
     Eigen::Vector2f robotToCamera(Eigen::Vector2f robotPt);
@@ -67,7 +69,7 @@ class CameraPipeline
 
     CameraData camera_data_;
     bool use_debug_image_;
-    bool output_debug_images_;
+    std::atomic<bool> output_debug_images_;
     std::atomic<bool> thread_running_;
     std::thread thread_;
     CameraPipelineOutput current_output_;

@@ -145,6 +145,11 @@ COMMAND RobotServer::getCommand(std::string message)
             sendAck(type);
             cmd = COMMAND::WAIT_FOR_LOCALIZATION;
         }
+        else if (type == "toggle_vision_debug")
+        {
+            sendAck(type);
+            cmd = COMMAND::TOGGLE_VISION_DEBUG;
+        }
         else if(type == "")
         {
             printIncomingCommand(message);

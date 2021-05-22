@@ -105,45 +105,11 @@ void CameraTracker::stop()
     side_cam_.stop();
 }
 
-
-void CameraTracker::test_function()
+void CameraTracker::toggleDebugImageOutput()
 {
-    // if (isRunning()) 
-    // {
-    //     PLOGE << "Skipping test function while background thread is running";
-    //     return;
-    // }
-    
-    // cv::Mat frame;
-    // Timer t0;
-    // {
-    //     Timer t1;
-    //     if(!use_debug_image_) cameras_[CAMERA_ID::SIDE].capture >> frame;
-    //     PLOGI << "Side camera frame took " << t1.dt_ms() << "ms to get";
-    //     std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, CAMERA_ID::SIDE, true);
-    //     cv::Point2f best_point_px = getBestKeypoint(keypoints);
-    //     Eigen::Vector2f best_point_m = cameraToRobot(best_point_px, CAMERA_ID::SIDE);
-    //     PLOGI << "Best keypoint side at " << best_point_px << " px";
-    //     PLOGI << "Best keypoint side at " << best_point_m << " m";
-    //     PLOGI << "Side camera took " << t1.dt_ms() << "ms to run";
-    // }
-    // {
-    //     Timer t1;
-    //     if(!use_debug_image_) cameras_[CAMERA_ID::REAR].capture >> frame;
-    //     PLOGI << "Rear camera frame took " << t1.dt_ms() << "ms to get";
-    //     std::vector<cv::KeyPoint> keypoints = allKeypointsInImage(frame, CAMERA_ID::REAR, true);
-    //     cv::Point2f best_point_px = getBestKeypoint(keypoints);
-    //     Eigen::Vector2f best_point_m = cameraToRobot(best_point_px, CAMERA_ID::REAR);
-    //     PLOGI << "Best keypoint rear at " << best_point_px << " px";
-    //     PLOGI << "Best keypoint rear at " << best_point_m << " m";
-    //     PLOGI << "Rear camera took " << t1.dt_ms() << "ms to run";
-    // }
-
-    // PLOGI << "Done with image processing";
-    // PLOGI << "Total image processing time: " << t0.dt_ms() << "ms";
+    rear_cam_.toggleDebugImageOutput();
+    side_cam_.toggleDebugImageOutput();
 }
-
-
 
 Point CameraTracker::computeRobotPoseFromImagePoints(Eigen::Vector2f p_side, Eigen::Vector2f p_rear)
 {  
