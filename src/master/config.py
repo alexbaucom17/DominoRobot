@@ -7,6 +7,8 @@ class Config:
     # Various debug/test flags
     # Set to override config values for home network
     USING_HOME_NETWORK = False
+    # Set for laptop vs desktop
+    USING_DESKTOP = False
     # Set to override config values for small scale testing
     USE_SMALL_TESTING_CONFIG = True
     # Set to skip connecting to robot
@@ -26,7 +28,7 @@ class Config:
     # ====== PATHS ========
     
     root_path = "C:\\Users\\alexb\\Documents\\Github\\DominoRobot\\"  # Laptop
-    if USING_HOME_NETWORK:
+    if USING_DESKTOP:
         root_path = "C:\\Users\\alexb\\Data\\Github\\DominoRobot\\"   # Desktop
     mm_api_relative_path = "marvelmind_SW_20202_04_19\\API\\api_windows_64bit\\dashapi.dll"
     config_dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -87,6 +89,10 @@ class Config:
     tile_edge_color = (0,0,1)
     tile_size_width_meters = tile_width * (domino_spacing_width + domino_width)
     tile_size_height_meters = tile_height * (domino_spacing_height + domino_height)
+
+    # Vision offset configuration
+    default_vision_offset = (0,0,0)
+    vision_offset_file = os.path.join(plans_dir, 'vision_offsets.csv')
 
     # ====== ENVIRONMENT CONFIGURATION ========
 

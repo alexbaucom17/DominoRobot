@@ -10,6 +10,7 @@ Required system libraries at /usr/local/include
 
 Required libraries at /usr/local/lib
 - libserial.a
+- opencv: (following instructions here: https://docs.opencv.org/master/d7/d9f/tutorial_linux_install.html and fix from here: https://github.com/cggos/DIPDemoQt/issues/1)
 
 Required libraries installed with apt-get
  - libconfig++-dev

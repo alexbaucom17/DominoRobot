@@ -93,6 +93,13 @@ struct SolverParameters
     float exponent_decay;
 };
 
+enum class LIMITS_MODE
+{
+    COARSE,
+    FINE,
+    VISION,
+};
+
 // All the pieces needed to define the motion planning problem
 struct MotionPlanningProblem
 {
@@ -104,7 +111,7 @@ struct MotionPlanningProblem
 };
 
 // Helper methods - making public for easier testing
-MotionPlanningProblem buildMotionPlanningProblem(Point initialPoint, Point targetPoint, bool fineMode, const SolverParameters& solver);
+MotionPlanningProblem buildMotionPlanningProblem(Point initialPoint, Point targetPoint, LIMITS_MODE limits_mode, const SolverParameters& solver);
 Trajectory generateTrajectory(MotionPlanningProblem problem);
 bool generateSCurve(float dist, DynamicLimits limits, const SolverParameters& solver, SCurveParameters* params);
 void populateSwitchTimeParameters(SCurveParameters* params, float dt_j, float dt_a, float dt_v);
@@ -123,12 +130,12 @@ class SmoothTrajectoryGenerator
     // Generates a trajectory that starts at the initial point and ends at the target point. Setting fineMode to true makes the 
     // adjusts the dynamic limits for a more accurate motion. Returns a bool indicating if trajectory generation was
     // successful
-    bool generatePointToPointTrajectory(Point initialPoint, Point targetPoint, bool fineMode);
+    bool generatePointToPointTrajectory(Point initialPoint, Point targetPoint, LIMITS_MODE limits_mode);
 
     // Generates a trajectory that attempts to maintain the target velocity for a specified time. Note that the current implimentation
     // of this does not give a guarantee on the accuracy of the velocity if the specified velocity and move time would violate the dynamic 
     // limits of the fine or coarse movement mode. Returns a bool indicating if trajectory generation was successful
-    bool generateConstVelTrajectory(Point initialPoint, Velocity velocity, float moveTime, bool fineMode);
+    bool generateConstVelTrajectory(Point initialPoint, Velocity velocity, float moveTime, LIMITS_MODE limits_mode);
 
     // Looks up a point in the current trajectory based on the time, in seconds, from the start of the trajectory
     PVTPoint lookup(float time);

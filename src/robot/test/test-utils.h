@@ -6,9 +6,8 @@
 #include "constants.h"
 #include "sockets/SocketMultiThreadWrapperFactory.h"
 #include "sockets/MockSocketMultiThreadWrapper.h"
-#include "distance_tracker/DistanceTrackerFactory.h" 
-#include "distance_tracker/DistanceTrackerMock.h" 
 #include "utils.h"
+#include <variant>
 
 inline MockSocketMultiThreadWrapper* build_and_get_mock_socket() 
 {
@@ -26,14 +25,6 @@ inline MockSerialComms* build_and_get_mock_serial(const std::string& portName)
     MockSerialComms* mock_serial = dynamic_cast<MockSerialComms*>(base_serial);
     mock_serial->purge_data();
     return mock_serial;
-}
-
-inline DistanceTrackerMock* build_and_get_mock_distance_tracker() 
-{
-    DistanceTrackerBase* base_distance_tracker = DistanceTrackerFactory::getFactoryInstance()->get_distance_tracker();
-    // Slightly dangerous....
-    DistanceTrackerMock* mock_distance_tracker = dynamic_cast<DistanceTrackerMock*>(base_distance_tracker);
-    return mock_distance_tracker;
 }
 
 inline MockClockWrapper* get_mock_clock()
@@ -76,5 +67,6 @@ class SafeConfigModifier
     libconfig::Setting& cur_val_;
     T old_val_;
 };
+
 
 #endif

@@ -1,25 +1,25 @@
 
 Robot SW:
-- Increase robustness to noisy data
-    - Consider aggressively filtering distance measurements and relying more on odom. Then if I get a few good measurements here and there, it might still work.
-- Fix localization tests
-- Fix localization issue where it gets too confidence and doesn't accept any more updates
-- Investigate feasbility of fiducial tracking (opencv)
+- Fix localization issue where it gets too confident and doesn't accept any more updates
+- Try to fix y/a axis interaction during vision control
+- Update camera test and debug images to use lower resolution versions
 
 Robot HW:
-- Keep working to get better US data
 
 Master:
 
 Robustify:
 - Fix that missing ack skips current action during plan
 - Fix that resume after estop during place action immediately drops dominos
+- Detect when tray init needs to happen again after robot estop
 
 Nice to haves:
-- Better utility/method to plot motion/controller logs
-- Add better logging for distance tracker
-- Detect when tray init needs to happen again after robot estop
-- Spacebar to trigger sw estop
+- Fix motion unit tests commanding large velocities and tripping thresholding
+- Fix localization tests
+- Add more unit tests for camera and vision controller
+- Set up camera tracking so it only happens when near the markers (maybe move fine and vision only?)
+
+
 
 
 Misc notes:
@@ -43,6 +43,13 @@ Hardware info
     - Between tray and 80/20 - 7.5 cm
     - Back of tray to dominos is 12 cm
     - usable width for us offsets - 6-28cm
+- Tray
+    - Actual dims: 90cm x 77cm
+    - Domino tile dimensions: 89cm x 64.2cm
+    - 'Tileable' domino spacing: 93cm x 68cm
+- Camera mounts
+    - 80/20 - 38mm square
+    - Screw depth (min/max): 5mm-10mm
 
 Marvelmind notes:
     - About 70-80% of the time, accuracy looks great, but the rest of the time, the positions jump around wildly
@@ -174,3 +181,23 @@ Notes From Monday:
 - More chat with mark, going to try IR camera tracking of reflective spots on the floor
     - Cameras and reflectors ordered
     - My job in the short term is to get OpenCV up and running and get some tracking basics working
+- Got OpenCV installed and configured on raspi
+    - Able to load camera images and do simple blob detection on RGB camera
+    - Wrote utility to copy images from raspi to computer for debugging since there is no screen on pi
+
+Notes from Tuesday:
+- Robustified and parametarized vision processing pipeline for marker detection
+- Set up camera calibration proces
+- Tested new IR cameras
+    - One was DOA, should get replacement
+    - Floor reflects IR LEDs quite a lot, need to cover/block them in order for it to work
+    - Floor also has pretty bright reflections from lights/skylights. 
+        - They are clearly different enough in shape to be filterable, but may cause problems if they end up in the same spot as a marker.
+        - We should think about how to mitigate this as we will be doing enough drops that this is certain to cause a problem at some point
+            - One option is to get some sort of covering that goes over a large part of the areas with the cameras to block out overhead reflections
+                - Quick test shows this does work, might need a large area to cover sources from multiple angles though
+    - Need to think carefully about marker placement and spacing, would be great if marker on side of robot could be shared with back of robot from another column
+        - At the very least, have to make sure that markers are far enough apart that robot will not see 2 of them in the same frame
+- Ghetto-mounted camera onto robot
+- Got super basic vision-based motion up and running for a single camera
+    - Appears to work quite well for the single camera

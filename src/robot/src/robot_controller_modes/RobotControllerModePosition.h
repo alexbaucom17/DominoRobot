@@ -12,7 +12,7 @@ class RobotControllerModePosition : public RobotControllerModeBase
 
     RobotControllerModePosition(bool fake_perfect_motion);
 
-    bool startMove(Point current_position, Point target_position, bool fine_mode);
+    bool startMove(Point current_position, Point target_position, LIMITS_MODE limits_mode);
 
     virtual Velocity computeTargetVelocity(Point current_position, Velocity current_velocity, bool log_this_cycle) override;
 
@@ -21,7 +21,7 @@ class RobotControllerModePosition : public RobotControllerModeBase
   protected:
 
     SmoothTrajectoryGenerator traj_gen_; 
-    bool fine_mode_;
+    LIMITS_MODE limits_mode_;
     Point goal_pos_;
     PVTPoint current_target_;
 

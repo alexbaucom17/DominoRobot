@@ -162,55 +162,6 @@ TEST_CASE("Validate fake_perfect_motion option", "[RobotController]")
     REQUIRE(status.pos_a != Approx(a).margin(0.0005));
 }
 
-TEST_CASE("Distance controller simple", "[RobotController]")
-{
-    // Configure parameters and mocks
-    SafeConfigModifier<bool> config_modifier("motion.fake_perfect_motion", true);
-    DistanceTrackerMock* distance_tracker_mock = build_and_get_mock_distance_tracker();
-    MockClockWrapper* mock_clock = get_mock_clock_and_reset();
-
-    // Setup unit for test
-    StatusUpdater s;
-    RobotController r = RobotController(s);
-    float dist_x = 0.6;
-    float dist_y = 0.0;
-    float dist_a = 0.0;
-    float initial_distance = 1.0;
-    r.moveWithDistance(dist_x, dist_y, dist_a);
-    REQUIRE(distance_tracker_mock->isRunning() == true);
-    distance_tracker_mock->setMockDistancePose({initial_distance,0,0});
-
-    // Movement should not have started yet as it is waiting for distance values
-    mock_clock->advance_ms(1);
-    r.update();
-    StatusUpdater::Status status = s.getStatus();
-    REQUIRE(status.pos_x == Approx(0.0).margin(0.0005));
-    REQUIRE(status.pos_y == Approx(0.0).margin(0.0005));
-    REQUIRE(status.pos_a == Approx(0.0).margin(0.0005));
-
-    // Run updates until trajectory stops
-    mock_clock->advance_sec(1);
-    for (int i = 0; i < 1000; i++) 
-    {
-        float new_dist = std::max(dist_x + (1-i/200.0f)*(initial_distance-dist_x), dist_x);
-        distance_tracker_mock->setMockDistancePose({new_dist,0,0});
-        r.update();
-        mock_clock->advance_ms(5);
-
-        if(!r.isTrajectoryRunning()) break;
-    }
-
-    r.update();
-
-    // Make sure trajectory reaches target
-    status = s.getStatus();
-    CHECK(status.pos_x == Approx(initial_distance - dist_x).margin(0.0005));
-    CHECK(status.pos_y == Approx(dist_y).margin(0.0005));
-    CHECK(status.pos_a == Approx(dist_a).margin(0.0005));
-    CHECK(distance_tracker_mock->isRunning() == false);
-    CHECK(r.isTrajectoryRunning() == false);
-}
-
 
 
 

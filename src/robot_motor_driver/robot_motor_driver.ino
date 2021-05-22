@@ -60,8 +60,8 @@ float MOTOR_REAR_CENTER_FAKE = 0;
 #define SAFETY_MIN_POS 0 // Revs, Sanity check on desired position to make sure it isn't less than this
 
 #define LATCH_ACTIVE_MS 1000
-#define LATCH_OPEN_DUTY_CYCLE 50
-#define LATCH_CLOSE_DUTY_CYCLE 200
+#define LATCH_OPEN_DUTY_CYCLE 45
+#define LATCH_CLOSE_DUTY_CYCLE 120
 #define MANUAL_LATCH_BUTTON_DELAY 200 // Poor man's debounce
 
 // --------------------------------------------------

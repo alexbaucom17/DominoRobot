@@ -62,9 +62,9 @@ COMMAND RobotServer::getCommand(std::string message)
             printIncomingCommand(message);
             sendAck(type);
         }
-        else if(type == "move_dist")
+        else if(type == "move_vision")
         {
-            cmd = COMMAND::MOVE_WITH_DISTANCE;
+            cmd = COMMAND::MOVE_WITH_VISION;
             moveData_.x = doc["data"]["x"];
             moveData_.y = doc["data"]["y"];
             moveData_.a = doc["data"]["a"];
@@ -145,10 +145,10 @@ COMMAND RobotServer::getCommand(std::string message)
             sendAck(type);
             cmd = COMMAND::WAIT_FOR_LOCALIZATION;
         }
-        else if (type == "toggle_dist")
+        else if (type == "toggle_vision_debug")
         {
             sendAck(type);
-            cmd = COMMAND::TOGGLE_DISTANCE;
+            cmd = COMMAND::TOGGLE_VISION_DEBUG;
         }
         else if(type == "")
         {

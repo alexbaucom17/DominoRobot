@@ -201,9 +201,9 @@ class RobotClient(ClientBase):
         msg = {'type': 'move_fine', 'data': {'x': x, 'y': y, 'a': a}}
         self.send_msg_and_wait_for_ack(msg)
 
-    def move_with_distance(self, x, y, a):
-        """ Tell robot to move to a location relative to the distance measurements from ultrasonic sensors """
-        msg = {'type': 'move_dist', 'data': {'x': x, 'y': y, 'a': a}}
+    def move_with_vision(self, x, y, a):
+        """ Tell robot to move to a location relative to the vision measurements from cameras"""
+        msg = {'type': 'move_vision', 'data': {'x': x, 'y': y, 'a': a}}
         self.send_msg_and_wait_for_ack(msg)
 
     def move_const_vel(self, vx, vy, va, t):
@@ -246,9 +246,9 @@ class RobotClient(ClientBase):
         msg = {'type': 'set_pose', 'data': {'x': x, 'y': y, 'a': a}}
         self.send_msg_and_wait_for_ack(msg)
 
-    def toggle_distance(self):
-        """ Tell robot to toggle distance measurement"""
-        msg = {'type': 'toggle_dist'}
+    def toggle_vision_debug(self):
+        """ Tell robot to toggle vision debug output"""
+        msg = {'type': 'toggle_vision_debug'}
         self.send_msg_and_wait_for_ack(msg)
 
 class BaseStationClient(ClientBase):
