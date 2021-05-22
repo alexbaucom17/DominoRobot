@@ -49,6 +49,8 @@ class RobotInterface:
             ActionTypes.CLEAR_ERROR: self.robot_client.clear_error,
             ActionTypes.WAIT_FOR_LOCALIZATION: self.robot_client.wait_for_localization,
             ActionTypes.TOGGLE_VISION_DEBUG: self.robot_client.toggle_vision_debug,
+            ActionTypes.START_CAMERAS: self.robot_client.start_cameras,
+            ActionTypes.STOP_CAMERAS: self.robot_client.stop_cameras,
         }
 
     def _bring_comms_online(self, use_mock=False):

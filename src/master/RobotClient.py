@@ -251,6 +251,16 @@ class RobotClient(ClientBase):
         msg = {'type': 'toggle_vision_debug'}
         self.send_msg_and_wait_for_ack(msg)
 
+    def start_cameras(self):
+        """ Tell robot to start the cameras"""
+        msg = {'type': 'start_cameras'}
+        self.send_msg_and_wait_for_ack(msg)
+
+    def stop_cameras(self):
+        """ Tell robot to stop the cameras"""
+        msg = {'type': 'stop_cameras'}
+        self.send_msg_and_wait_for_ack(msg)
+
 class BaseStationClient(ClientBase):
     
     def __init__(self, cfg):

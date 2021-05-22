@@ -344,6 +344,8 @@ class ActionTypes(enum.Enum):
     SET_POSE = 13,
     MOVE_WITH_VISION = 14,
     TOGGLE_VISION_DEBUG = 15,
+    START_CAMERAS = 16,
+    STOP_CAMERAS = 17,
 
 class Action:
 
@@ -496,11 +498,17 @@ def generate_full_action_sequence(cfg, tile):
     name = "Wait for localization"
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
+    name = "Start cameras"
+    actions.append(Action(ActionTypes.START_CAMERAS, name))
+
     name = "Move to place - fine"
     actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle))
 
     name = "Move to place - vision"
     actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, tile.vision_offset[0], tile.vision_offset[1], tile.vision_offset[2]))
+
+    name = "Stop cameras"
+    actions.append(Action(ActionTypes.STOP_CAMERAS, name))
 
     name = "Place tile"
     actions.append(Action(ActionTypes.PLACE, name))
@@ -565,16 +573,22 @@ def generate_small_testing_action_sequence(cfg, tile):
     name = "Wait for localization"
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
+    name = "Start cameras"
+    actions.append(Action(ActionTypes.START_CAMERAS, name))
+
     name = "Move to place - fine"
     actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle))
 
     name = "Move to place - vision"
     actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, tile.vision_offset[0], tile.vision_offset[1], tile.vision_offset[2]))
 
+    name = "Stop cameras"
+    actions.append(Action(ActionTypes.STOP_CAMERAS, name))
+
     name = "Place tile"
     actions.append(Action(ActionTypes.PLACE, name))
 
-    name = "Move away from place - coarse"
+    name = "Move away from place - fine"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
 
     name = "Move to exit - coarse"
