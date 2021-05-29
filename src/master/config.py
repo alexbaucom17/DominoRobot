@@ -91,7 +91,7 @@ class Config:
     tile_size_height_meters = tile_height * (domino_spacing_height + domino_height)
 
     # Vision offset configuration
-    default_vision_offset = (0,0,0)
+    default_vision_offset = (0.03,0,-2)
     vision_offset_file = os.path.join(plans_dir, 'vision_offsets.csv')
 
     # ====== ENVIRONMENT CONFIGURATION ========

@@ -3,6 +3,10 @@ Robot SW:
 - Fix localization issue where it gets too confident and doesn't accept any more updates
 - Try to fix y/a axis interaction during vision control
 - Update camera test and debug images to use lower resolution versions
+- Fix set pose not working
+- Fix camera loop time average breaking when camera threads stopped
+- Ensure load complete can only send once
+- Figure out why the robot sometimes overshoots and quickly corrects motion (low battery??)
 
 Robot HW:
 
@@ -12,6 +16,7 @@ Robustify:
 - Fix that missing ack skips current action during plan
 - Fix that resume after estop during place action immediately drops dominos
 - Detect when tray init needs to happen again after robot estop
+- Add warnings to master screen when robot caps control effort
 
 Nice to haves:
 - Fix motion unit tests commanding large velocities and tripping thresholding
