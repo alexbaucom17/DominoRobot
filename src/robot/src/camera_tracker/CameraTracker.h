@@ -9,7 +9,7 @@
 class CameraTracker : public CameraTrackerBase
 {
   public:
-    CameraTracker(bool start_thread = true);
+    CameraTracker(bool start_thread = false);
     
     virtual ~CameraTracker();
 

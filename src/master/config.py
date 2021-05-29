@@ -59,8 +59,8 @@ class Config:
     desired_width_dominos = 30
     desired_height_dominos = 40
     if USE_SMALL_TESTING_CONFIG:
-        desired_width_dominos = 45
-        desired_height_dominos = 60
+        desired_width_dominos = 30
+        desired_height_dominos = 40
     dominos = np.array(
                 [('black', (0,0,0)),
                 ('red',   (1,0,0)),
@@ -91,7 +91,7 @@ class Config:
     tile_size_height_meters = tile_height * (domino_spacing_height + domino_height)
 
     # Vision offset configuration
-    default_vision_offset = (0,0,0)
+    default_vision_offset = (0.03,0,-2)
     vision_offset_file = os.path.join(plans_dir, 'vision_offsets.csv')
 
     # ====== ENVIRONMENT CONFIGURATION ========
@@ -112,11 +112,11 @@ class Config:
     field_to_robot_frame_angle = 90                             # In case robot frame and field frame ever need to be rotated relative to each other
 
     if USE_SMALL_TESTING_CONFIG:  
-        load_pose = np.array([9,-8,90])            
-        domino_field_top_left = np.array([8.3,-4.1])  
-        domino_field_angle = 0
-        tile_placement_coarse_offset = np.array([-0.5,-0.5])
-        tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0 - 0.1])    # Testing a hack - x tile offset smaller so tray goes slightly over dominos                               
+        load_pose = np.array([0,0,0])            
+        domino_field_top_left = np.array([3.6,tile_size_width_meters/2.0])  
+        domino_field_angle = -90
+        tile_placement_coarse_offset = np.array([-0.3,-0.3])
+        tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0 ])                             
 
     # Computed - don't change
     field_width = tile_size_width_meters * desired_width_dominos/tile_width

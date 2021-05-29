@@ -41,6 +41,8 @@ enum class COMMAND
     WAIT_FOR_LOCALIZATION,
     SET_POSE,
     TOGGLE_VISION_DEBUG,
+    START_CAMERAS,
+    STOP_CAMERAS,
 };
 
 #endif

@@ -128,6 +128,16 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
         camera_tracker_->toggleDebugImageOutput();
         return false;
     }
+    if (cmd == COMMAND::START_CAMERAS)
+    {
+        camera_tracker_->start();
+        return false;
+    }
+    if (cmd == COMMAND::STOP_CAMERAS)
+    {
+        camera_tracker_->stop();
+        return false;
+    }
     // Same with ESTOP
     if (cmd == COMMAND::ESTOP)
     {

@@ -174,6 +174,7 @@ class DominoField:
     def _addTile(self, tile_coordinate, tile_values, tile_order, vision_offset_map):
 
         vision_offset = vision_offset_map[tile_coordinate]
+        print("Tile: order {}, coord {}, vision offset: {}".format(tile_order, tile_coordinate, vision_offset))
         new_tile = Tile(self.cfg, tile_coordinate, tile_values, tile_order, vision_offset)
         self.tiles.append(new_tile)
 
@@ -344,6 +345,8 @@ class ActionTypes(enum.Enum):
     SET_POSE = 13,
     MOVE_WITH_VISION = 14,
     TOGGLE_VISION_DEBUG = 15,
+    START_CAMERAS = 16,
+    STOP_CAMERAS = 17,
 
 class Action:
 
@@ -410,9 +413,9 @@ class MoveAction(Action):
     def getAngleRadians(self):
         return self.a
 
-    def draw(self, ax, show_label=True):
+    def draw(self, ax, text="", show_label=True):
 
-        if self.action_type == ActionTypes.MOVE_WITH_DISTANCE:
+        if self.action_type == ActionTypes.MOVE_WITH_VISION:
             return
 
         # Base triangle at 0 degrees
@@ -441,8 +444,11 @@ class MoveAction(Action):
                                     edgecolor='c',
                                     facecolor='c'))
         text_point = points[0]
+        text_to_show = self.name
+        if text:
+            text_to_show = text
         if show_label:
-            ax.annotate(self.name, xy=text_point[:2], xytext=[1, 1], textcoords="offset points", fontsize=8, color="green")
+            ax.annotate(text_to_show, xy=text_point[:2], xytext=[1, 1], textcoords="offset points", fontsize=8, color="green")
 
 
 def generate_full_action_sequence(cfg, tile):
@@ -496,11 +502,17 @@ def generate_full_action_sequence(cfg, tile):
     name = "Wait for localization"
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
+    name = "Start cameras"
+    actions.append(Action(ActionTypes.START_CAMERAS, name))
+
     name = "Move to place - fine"
     actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle))
 
     name = "Move to place - vision"
     actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, tile.vision_offset[0], tile.vision_offset[1], tile.vision_offset[2]))
+
+    name = "Stop cameras"
+    actions.append(Action(ActionTypes.STOP_CAMERAS, name))
 
     name = "Place tile"
     actions.append(Action(ActionTypes.PLACE, name))
@@ -565,16 +577,22 @@ def generate_small_testing_action_sequence(cfg, tile):
     name = "Wait for localization"
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
+    name = "Start cameras"
+    actions.append(Action(ActionTypes.START_CAMERAS, name))
+
     name = "Move to place - fine"
     actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle))
 
     name = "Move to place - vision"
     actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, tile.vision_offset[0], tile.vision_offset[1], tile.vision_offset[2]))
 
+    name = "Stop cameras"
+    actions.append(Action(ActionTypes.STOP_CAMERAS, name))
+
     name = "Place tile"
     actions.append(Action(ActionTypes.PLACE, name))
 
-    name = "Move away from place - coarse"
+    name = "Move away from place - fine"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
 
     name = "Move to exit - coarse"
@@ -637,8 +655,8 @@ class Cycle:
         for action in self.action_sequence:
             action.draw(ax)
 
-    def draw_action(self, ax, idx):
-        self.action_sequence[idx].draw(ax)
+    def draw_action(self, ax, idx, text=""):
+        self.action_sequence[idx].draw(ax, text)
 
 
 def generate_standard_cycles(cfg, field, cycle_generator_fn):
@@ -704,7 +722,6 @@ class Plan(BasePlan):
                 break
         if place_idx == -1:
             raise ValueError("Couldn't find placement index")
-        print(place_idx)
         tile_pose_move_idx = -1
         for j in range(place_idx, 0, -1):
             action = self.get_action(0, j)
@@ -716,7 +733,7 @@ class Plan(BasePlan):
             
         ax = draw_env(self.cfg)
         for cycle in self.cycles:
-            cycle.draw_action(ax, tile_pose_move_idx)
+            cycle.draw_action(ax, tile_pose_move_idx, text=cycle.tile.order)
         plt.show()
 
 
@@ -772,7 +789,7 @@ if __name__ == '__main__':
     # plan.field.printStats()
     # plan.field.show_image_parsing()
     # plan.field.render_domino_image_tiles()
-    # plan.field.show_tile_ordering()
+    plan.field.show_tile_ordering()
     plan.draw_cycle(2)
     plan.draw_all_tile_poses()
 
