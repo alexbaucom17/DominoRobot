@@ -154,7 +154,7 @@ bool RobotControllerModeVision::checkForMoveComplete(Point current_position, Vel
     if (!maybe_traj_complete) traj_done_timer_.reset();
     else PLOGI_(MOTION_LOG_ID) << "Camera move maybe done";
 
-    if(maybe_traj_complete && traj_done_timer_.dt_s() > 0.5) 
+    if(maybe_traj_complete && traj_done_timer_.dt_s() > 0.8) 
     {
         move_running_ = false;
         PLOGI_(MOTION_LOG_ID) << "Camera move done";
