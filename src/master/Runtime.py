@@ -11,7 +11,7 @@ import math
 from MarvelMindHandler import MarvelmindWrapper, MockMarvelmindWrapper
 from RobotClient import RobotClient, BaseStationClient, MockRobotClient, MockBaseStationClient
 from FieldPlanner import ActionTypes, Action, TestPlan, RunFieldPlanning
-from Utils import write_file, NonBlockingTimer
+from Utils import write_file, NonBlockingTimer, ActionValidator
 
 class RobotInterface:
     def __init__(self, config, robot_id):
@@ -233,7 +233,7 @@ class RuntimeManager:
         self.idle_bots = set([n for n in self.robots.keys()])
         self.initialization_timer = None
 
-        self.cycle_tracker = {n: {'action_id': None, 'cycle_id': None, 'timer': None, 'needs_restart': False} for n in self.robots.keys()}
+        self.cycle_tracker = {n: {'action_id': None, 'cycle_id': None, 'timer': None, 'needs_restart': False, 'action_validator': ActionValidator()} for n in self.robots.keys()}
         self.next_cycle_number = 0
         self.plan = None
         self.plan_path = ""
@@ -331,7 +331,7 @@ class RuntimeManager:
         # Clean up if we don't want to save the plan state
         if status == PlanStatus.ABORTED:
             self.next_cycle_number = 0
-            self.cycle_tracker = {n: {'action_id': None, 'cycle_id': None, 'timer': None, 'needs_restart': False} for n in self.robots.keys()}
+            self.cycle_tracker = {n: {'action_id': None, 'cycle_id': None, 'timer': None, 'needs_restart': False, 'action_validator': ActionValidator()} for n in self.robots.keys()}
             self.idle_bots = set([n for n in self.robots.keys()])
         elif status == PlanStatus.PAUSED:
             for data in self.cycle_tracker.values():
@@ -483,6 +483,7 @@ class RuntimeManager:
                     action = cycle.action_sequence[tracker_data['action_id']]
                     logging.info("Re-starting action {} ({}) on {}".format(tracker_data['action_id'], action.name, robot_id))
                     self._run_action(robot_id, action)
+                    tracker_data['action_validator'].update_expected_action(action.action_type)
                     tracker_data['needs_restart'] = False
 
                 # The timer check here is to give a delay for the robot to actually start the action 
@@ -497,7 +498,8 @@ class RuntimeManager:
                 # If the robot was doing an action and is now finished, start the next one
                 action_assigned = tracker_data['action_id'] is not None
                 action_finished = not metric['in_progress']
-                if action_assigned and action_finished and action_timer_ready:
+                previous_action_validated = tracker_data['action_validator'].update_action_validation(metric)
+                if action_assigned and action_finished and action_timer_ready and previous_action_validated:
                     start_next_action = True
 
                 if start_next_action:
@@ -517,6 +519,7 @@ class RuntimeManager:
                         next_action = cycle.action_sequence[tracker_data['action_id']]
                         logging.info("Starting action {} ({}) on {}".format(tracker_data['action_id'], next_action.name, robot_id))
                         self._run_action(robot_id, next_action)
+                        tracker_data['action_validator'].update_expected_action(next_action.action_type)
 
         # Update if any robots are idle
         for robot, data in self.cycle_tracker.items():
@@ -552,6 +555,7 @@ class RuntimeManager:
         data['cycle_id'] = new_cycle_id
         data['timer'] = None
         data['needs_restart'] = True
+        data['action_validator'] = ActionValidator()
         self.next_cycle_number = new_cycle_id + 1
         try:
             self.idle_bots.remove(target)
@@ -565,6 +569,7 @@ class RuntimeManager:
             robot_cycle_states = copy.deepcopy(self.cycle_tracker)
             for tracker_data in robot_cycle_states.values():
                 del tracker_data['timer']
+                del tracker_data['action_validator']
 
             data_to_dump = {}
             data_to_dump['plan_path'] = self.plan_path
@@ -589,6 +594,7 @@ class RuntimeManager:
             # Need to re-add timer state and tell the controller the action needs to be restarted
             data['timer'] = None
             data['needs_restart'] = True
+            data['action_validator'] = ActionValidator()
 
             # Need to remove the robot from the idle list if it was actually doing something at the time it stopped
             if data['action_id'] is not None or data['cycle_id'] is not None:

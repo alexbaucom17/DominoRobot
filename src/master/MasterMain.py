@@ -89,6 +89,7 @@ class CmdGui:
         self.window.finalize()
 
         self.viz_figs = {}
+        self.manual_action_debounce_timer = Utils.NonBlockingTimer(1.0)
 
         self._draw_environment()
 
@@ -116,9 +117,12 @@ class CmdGui:
         
         # Sending a manual action (via button or pressing enter)
         if event in ('Send Command', '\r', '\n'):
-            manual_action = self._parse_manual_action(values)
+            manual_action = None
+            if self.manual_action_debounce_timer.check():
+                manual_action = self._parse_manual_action(values)
             if manual_action is not None:
                 self.window['_ACTION_DATA_'].update("")
+                self.manual_action_debounce_timer = Utils.NonBlockingTimer(1.0)
                 return 'Action', manual_action
 
         # Pressing the run plan button

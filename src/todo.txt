@@ -12,6 +12,7 @@ Master:
 
 Robustify:
 - Detect when tray init needs to happen again after robot estop
+- Figure out why the robot sometimes overshoots and quickly corrects motion (low battery??)
 - Add warnings to master screen when robot caps control effort
 
 Nice to haves:
