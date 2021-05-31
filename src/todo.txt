@@ -4,7 +4,6 @@ Robot SW:
 - Update camera test and debug images to use lower resolution versions
 - Test camera time offset check works
 - Test master action validator
-- Figure out why the robot sometimes overshoots and quickly corrects motion (low battery??)
 
 Robot HW:
 
