@@ -81,12 +81,27 @@ bool TrayController::load()
 void TrayController::estop()
 {
     cur_action_ = ACTION::NONE;
+    action_step_ = 0;
+    action_step_running_ = false;
     PLOGW << "Estopping tray control";
     if (serial_to_lifter_driver_->isConnected())
     {
         serial_to_lifter_driver_->send("lift:stop");
     }
 }
+
+void TrayController::setLoadComplete()
+{
+    if(cur_action_ == ACTION::LOAD && action_step_ == 1)
+    {
+        load_complete_ = true;
+    } 
+    else 
+    {
+        PLOGW << "Recieved LOAD_COMPLETE signal at incorrect time. Ignoring.";
+    }
+}
+
 
 void TrayController::update()
 {

@@ -24,7 +24,7 @@ class TrayController
 
     void estop();
 
-    void setLoadComplete() {load_complete_ = true;};
+    void setLoadComplete();
 
     // Used for testing
     void setTrayInitialized(bool value) {is_initialized_ = value;};

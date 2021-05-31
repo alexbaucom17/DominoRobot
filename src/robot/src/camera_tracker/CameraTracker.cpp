@@ -3,9 +3,10 @@
 #include <plog/Log.h>
 #include "constants.h"
 
+constexpr int num_samples_to_average = 10;
 
 CameraTracker::CameraTracker(bool start_thread)
-: camera_loop_time_averager_(10),
+: camera_loop_time_averager_(num_samples_to_average),
   rear_cam_(CAMERA_ID::REAR, start_thread),
   side_cam_(CAMERA_ID::SIDE, start_thread),
   output_({{0,0,0}, false, ClockFactory::getFactoryInstance()->get_clock()->now()}),
@@ -93,6 +94,7 @@ void CameraTracker::start()
 {
     rear_cam_.start();
     side_cam_.start();
+    camera_loop_time_averager_ = TimeRunningAverage(num_samples_to_average);
 }
 
 void CameraTracker::stop()
