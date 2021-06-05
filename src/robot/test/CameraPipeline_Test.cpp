@@ -7,8 +7,8 @@
 TEST_CASE("Robot coords from image coords", "[Camera]")
 {
     SafeConfigModifier<bool> config_modifier_1("vision_tracker.debug.use_debug_image", true);
-    SafeConfigModifier<std::string> config_modifier_2("vision_tracker.side.debug_image", "/home/pi/images/test/TestImage1.jpg");
-    SafeConfigModifier<std::string> config_modifier_3("vision_tracker.rear.debug_image", "/home/pi/images/test/TestImage1.jpg");
+    SafeConfigModifier<std::string> config_modifier_2("vision_tracker.side.debug_image", "/home/pi/images/test/TestImage2.jpg");
+    SafeConfigModifier<std::string> config_modifier_3("vision_tracker.rear.debug_image", "/home/pi/images/test/TestImage2.jpg");
     
     float side_offset_x = 0.0;
     float side_offset_y = -1.5;
@@ -20,8 +20,8 @@ TEST_CASE("Robot coords from image coords", "[Camera]")
 
     SECTION("Side cam, center point")
     {
-        float u = 640/2;
-        float v = 480/2;
+        float u = 320/2;
+        float v = 240/2;
         Eigen::Vector2f xy_world = c.cameraToRobot({u,v});
         CHECK(xy_world[0] == Approx(side_offset_x).margin(0.2));
         CHECK(xy_world[1] == Approx(side_offset_y).margin(0.2));
@@ -32,7 +32,7 @@ TEST_CASE("Robot coords from image coords", "[Camera]")
         float u = 0;
         float v = 0;
         Eigen::Vector2f xy_world = c.cameraToRobot({u,v});
-        CHECK(xy_world[0] < side_offset_x);
+        CHECK(xy_world[0] > side_offset_x);
         CHECK(xy_world[1] < side_offset_y);
     }
 }
