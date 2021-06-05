@@ -49,9 +49,11 @@ class ActionValidator:
         if metric is not None and \
            'in_progress' in metric and \
            'current_action' in metric and \
-            metric['current_action'] == self.expected_action and \
-            metric['in_progress'] == True:
-            self.action_validated = True
+            metric['current_action'] == self.expected_action:
+            if self.expected_action in [ActionTypes.START_CAMERAS, ActionTypes.STOP_CAMERAS]:
+                self.action_validated = True
+            elif metric['in_progress'] == True:
+                self.action_validated = True
         return self.action_validated
 
 

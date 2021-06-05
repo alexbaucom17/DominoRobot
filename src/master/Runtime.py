@@ -499,8 +499,10 @@ class RuntimeManager:
                 action_assigned = tracker_data['action_id'] is not None
                 action_finished = not metric['in_progress']
                 previous_action_validated = tracker_data['action_validator'].update_action_validation(metric)
-                if action_assigned and action_finished and action_timer_ready and previous_action_validated:
+                if action_assigned and action_finished and action_timer_ready:
                     start_next_action = True
+                    if not previous_action_validated:
+                        logging.warning("Everything else finished but previous action not validated")
 
                 if start_next_action:
                     # Check if there is a new action to run for this cycle, if not, end the cycle

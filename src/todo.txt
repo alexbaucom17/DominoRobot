@@ -1,13 +1,13 @@
 
 Robot SW:
 - Fix localization issue where it gets too confident and doesn't accept any more updates
-- Update camera test and debug images to use lower resolution versions
-- Test camera time offset check works
-- Test master action validator
 
 Robot HW:
 
 Master:
+- Test master action validator
+    - Fix action validator choking on START_CAMERA action
+- Ensure that previous state works with autogen plan, might need to like version number autogen plans so things don't break if plan was re-gened
 
 Robustify:
 - Detect when tray init needs to happen again after robot estop
