@@ -7,7 +7,7 @@ networkx==2.5
 numpy==1.19.1
 opencv-python==4.5.1.48
 paramiko==2.7.2
-Pillow==8.1.1
+Pillow==8.2.0
 pyparsing==2.4.7
 pyserial==3.4
 PySimpleGUI==4.32.1
