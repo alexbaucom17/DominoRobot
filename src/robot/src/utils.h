@@ -343,9 +343,9 @@ struct LocalizationMetrics
 
 struct CameraDebug
 {
-    bool side_ok;
-    bool rear_ok;
-    bool both_ok;
+    bool side_ok = false;
+    bool rear_ok = false;
+    bool both_ok = false;
     float side_u;
     float side_v;
     float rear_u;
@@ -357,7 +357,7 @@ struct CameraDebug
     float pose_x;
     float pose_y;
     float pose_a;
-    int loop_ms;
+    int loop_ms = 0;
 };
 
 //*******************************************

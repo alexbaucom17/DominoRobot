@@ -66,7 +66,6 @@ class RobotController
     bool readMsgFromMotorDriver(Velocity* decodedVelocity);
 
     // Member variables
-    SmoothTrajectoryGenerator trajGen_;    // Trajectory generator object
     StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
     SerialCommsBase* serial_to_motor_driver_;   // Serial connection to motor driver
     Localization localization_;            // Object that handles localization

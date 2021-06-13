@@ -7,14 +7,15 @@
 TEST_CASE("Nominal case", "[Camera]")
 {
     SafeConfigModifier<bool> config_modifier_1("vision_tracker.debug.use_debug_image", true);
-    SafeConfigModifier<std::string> config_modifier_2("vision_tracker.side.debug_image", "/home/pi/images/test/TestImage1.jpg");
-    SafeConfigModifier<std::string> config_modifier_3("vision_tracker.rear.debug_image", "/home/pi/images/test/TestImage1.jpg");
+    SafeConfigModifier<std::string> config_modifier_2("vision_tracker.side.debug_image", "/home/pi/images/test/TestImage2.jpg");
+    SafeConfigModifier<std::string> config_modifier_3("vision_tracker.rear.debug_image", "/home/pi/images/test/TestImage2.jpg");
 
     CameraTracker c(/*start_thread=*/ true);
     int counter = 0;
     CameraTrackerOutput output;
     output.ok = false;
-    while(!output.ok && counter < 20){
+    while(!output.ok && counter < 50){
+        c.update();
         output = c.getPoseFromCamera();
         counter++;
         usleep(100000);
@@ -28,8 +29,8 @@ TEST_CASE("Nominal case", "[Camera]")
 TEST_CASE("Robot pose from coords", "[Camera]")
 {
     SafeConfigModifier<bool> config_modifier_1("vision_tracker.debug.use_debug_image", true);
-    SafeConfigModifier<std::string> config_modifier_2("vision_tracker.side.debug_image", "/home/pi/images/test/TestImage1.jpg");
-    SafeConfigModifier<std::string> config_modifier_3("vision_tracker.rear.debug_image", "/home/pi/images/test/TestImage1.jpg");
+    SafeConfigModifier<std::string> config_modifier_2("vision_tracker.side.debug_image", "/home/pi/images/test/TestImage2.jpg");
+    SafeConfigModifier<std::string> config_modifier_3("vision_tracker.rear.debug_image", "/home/pi/images/test/TestImage2.jpg");
     
     float side_target_x = 0.0;
     float side_target_y = -1.4;

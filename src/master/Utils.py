@@ -1,6 +1,7 @@
 import time
 import numpy as np
 import math
+from FieldPlanner import ActionTypes
 
 class NonBlockingTimer:
 
@@ -32,6 +33,28 @@ def TransformPos(pos_2d, frame_offset_2d, frame_angle):
     pos_2d = np.concatenate((pos_2d,[1])).reshape((3,))
     new_pos = np.matmul(tf, pos_2d)
     return new_pos[:2].reshape((2,))
+
+
+class ActionValidator:
+
+    def __init__(self):
+        self.expected_action = str(ActionTypes.NONE)
+        self.action_validated = False
+
+    def update_expected_action(self, expected_action):
+        self.expected_action = str(expected_action)
+        self.action_validated = False
+
+    def update_action_validation(self, metric):
+        if metric is not None and \
+           'in_progress' in metric and \
+           'current_action' in metric and \
+            metric['current_action'] == self.expected_action:
+            if self.expected_action in [ActionTypes.START_CAMERAS, ActionTypes.STOP_CAMERAS]:
+                self.action_validated = True
+            elif metric['in_progress'] == True:
+                self.action_validated = True
+        return self.action_validated
 
 
 
