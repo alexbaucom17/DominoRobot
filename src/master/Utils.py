@@ -1,7 +1,27 @@
 import time
 import numpy as np
 import math
-from FieldPlanner import ActionTypes
+import enum
+
+class ActionTypes(enum.Enum):
+    MOVE_COARSE = 0,
+    MOVE_FINE = 1,
+    MOVE_REL = 2,
+    NET = 3,
+    LOAD = 4,
+    PLACE = 5,
+    TRAY_INIT = 6, 
+    LOAD_COMPLETE = 7,
+    ESTOP = 8,
+    WAIT_FOR_LOCALIZATION = 9, 
+    MOVE_CONST_VEL = 10,
+    CLEAR_ERROR = 11,
+    NONE = 12,
+    SET_POSE = 13,
+    MOVE_WITH_VISION = 14,
+    TOGGLE_VISION_DEBUG = 15,
+    START_CAMERAS = 16,
+    STOP_CAMERAS = 17,
 
 class NonBlockingTimer:
 
