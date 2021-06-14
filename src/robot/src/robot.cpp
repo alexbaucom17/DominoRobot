@@ -41,7 +41,7 @@ Robot::Robot()
   controller_(statusUpdater_),
   tray_controller_(),
   mm_wrapper_(),
-  position_time_averager_(20),
+  position_time_averager_(10),
   robot_loop_time_averager_(20),
   wait_for_localize_helper_(statusUpdater_, cfg.lookup("localization.max_wait_time"), cfg.lookup("localization.confidence_for_wait")),
   vision_print_rate_(10),

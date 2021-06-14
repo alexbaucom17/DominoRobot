@@ -93,12 +93,10 @@ void Localization::updateVelocityReading(Velocity local_cart_vel, float dt)
     // Apply prediction step with velocity to get estimated position
     Eigen::Vector3f u = {vel_.vx, vel_.vy, vel_.va};
     Eigen::Vector3f udt = dt*u;
-    if(udt.norm() > 0)
-    {
-        kf_.predict(udt);
-        // PLOGI << "cov3: " << kf_.covariance();
-        time_since_last_motion_.reset();
-    }
+    kf_.predict(udt);
+    // PLOGI << "cov3: " << kf_.covariance();
+    time_since_last_motion_.reset();
+
     Eigen::VectorXf est = kf_.state();
     pos_.x = est[0];
     pos_.y = est[1];
