@@ -1,17 +1,17 @@
 
 Robot SW:
-- Fix localization issue where it gets too confident and doesn't accept any more updates
+- Fix localization issue where it gets too confident and doesn't accept any more updates (might be fixed with recent retuning?)
 - Fix rotation issue - maybe localization isn't correctly being updated during vision mode?
 - Consider adjusting vision mode to take over motion as soon as mavelmind mode is close-ish and both markers are detected.
+- Auto collect images of undetected markers when vision mode takes over and errors out for no detection. Collect these into unit test.
 
 Robot HW:
+- Get more batteries/chargers? Or at least try to estimate power usage/battery life for expected number of recharges.
 
 Master:
 - Test master action validator
     - Fix action validator choking on START_CAMERA action
-- Ensure that previous state works with autogen plan, might need to like version number autogen plans so things don't break if plan was re-gened
-- Fix plan config to use number of tiles instead of number of dominos
-- Fix plan config to use a better input reference for the world to figure out the robot poses (maybe use robot pose -> tile rather than tile->robot pose)
+- Ensure that reloading previous state file works with autogen plan, might need to like version number autogen plans so things don't break if plan was re-gened
 - Consider setting MM fine pose a bit further away from the dominos than the actual target point (to avoid overshoot)
 
 Robustify:
@@ -20,6 +20,9 @@ Robustify:
 - Add warnings to master screen when robot caps control effort
 
 Nice to haves:
+- Maybe consider rewrite of FieldPlanner (for fun) and to generally improve speed and ease of use.
+- Fix plan config to use number of tiles instead of number of dominos
+- Fix plan config to use a better input reference for the world to figure out the robot poses (maybe use robot pose -> tile rather than tile->robot pose)
 - Fix motion unit tests commanding large velocities and tripping thresholding
 - Fix localization tests
 - Add more unit tests for camera and vision controller
