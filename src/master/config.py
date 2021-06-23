@@ -101,18 +101,17 @@ class Config:
     base_station_target_pos = np.array([0.5, 1.5])              # Target position for robot to be under base station [x,y], in global frame
     base_station_target_angle = 180                             # Target angle (deg) for base station in global frame
     base_station_coarse_pose_offset = np.array([-1.5, 0])       # Offset from base station to use for apprach [x,y] in robot frame
-    domino_field_top_left = np.array([3,3])                       # Top left corner of domino field in global frame
+    robot_pose_top_left = np.array([3,3])                       # Robot pose in global frame for top left of tile position of domino field
     domino_field_angle = 90                                     # Domino field angle (deg), global frame
     tile_placement_coarse_offset = np.array([0.3,-0.3])         # Offset position for tile placement [x,y], in robot coordinate frame
-    tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])  # Offset from bottom left of tile to robot center [x,y], in robot coordinate frame
-    distance_placement_pose = np.array([0.865,0.20,0])              # Target distance values for fine placement       
+    tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])  # Offset from bottom left of tile to robot center [x,y], in robot coordinate frame     
     prep_position_distance = 1                                  # How far out of field boundaries to do robot prep move
     exit_position_distance = 1                                  # How far out of the field boundaries to move to exit
     field_to_robot_frame_angle = 90                             # In case robot frame and field frame ever need to be rotated relative to each other
 
     if USE_SMALL_TESTING_CONFIG:  
         load_pose = np.array([7.5,7.5,0])            
-        domino_field_top_left = np.array([13.30,9.472])  
+        robot_pose_top_left = np.array([12.20,9.472])  
         domino_field_angle = -90
         tile_placement_coarse_offset = np.array([-0.5,-0.5])
         tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0 ])                             
@@ -120,6 +119,7 @@ class Config:
     # Computed - don't change
     field_width = tile_size_width_meters * desired_width_dominos/tile_width
     field_height = tile_size_height_meters * desired_height_dominos/tile_height
+    domino_field_top_left = robot_pose_top_left + Utils.TransformPos(tile_to_robot_offset - np.array([tile_size_height_meters, 0]), [0,0], domino_field_angle)
     domino_field_origin = domino_field_top_left + Utils.TransformPos(np.array([0,-field_height]), [0,0], domino_field_angle)
     domino_field_top_right = domino_field_origin + Utils.TransformPos(np.array([field_width,field_height]), [0,0], domino_field_angle)
     domino_field_boundaries = np.array([domino_field_origin, domino_field_top_right])  

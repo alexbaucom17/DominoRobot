@@ -12,6 +12,7 @@ Master:
 - Test master action validator
     - Fix action validator choking on START_CAMERA action
 - Consider setting MM fine pose a bit further away from the dominos than the actual target point (to avoid overshoot)
+- Test new robot pose configuration
 
 Robustify:
 - Detect when tray init needs to happen again after robot estop
@@ -20,7 +21,6 @@ Robustify:
 
 Nice to haves:
 - Maybe consider rewrite of FieldPlanner (for fun) and to generally improve speed and ease of use.
-- Fix plan config to use a better input reference for the world to figure out the robot poses (maybe use robot pose -> tile rather than tile->robot pose)
 - Fix motion unit tests commanding large velocities and tripping thresholding
 - Fix localization tests
 - Add more unit tests for camera and vision controller
