@@ -243,7 +243,7 @@ class RuntimeManager:
         elif self.config.REGEN_PLAN:
             logging.info("Regenerating and loading plan")
             plan = RunFieldPlanning(autosave=True)
-            self._load_plan_from_object(plan, "autogen")
+            self._load_plan_from_object(plan, os.path.join(self.config.plans_dir, "autosaved.p"))
         elif self.config.AUTO_LOAD_PLAN and self.config.AUTO_LOAD_PLAN_NAME:
             plan_path = os.path.join(self.config.plans_dir, self.config.AUTO_LOAD_PLAN_NAME)
             self._load_plan_from_file(plan_path)
