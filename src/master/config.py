@@ -56,11 +56,8 @@ class Config:
 
     # Image configuration
     image_name = os.path.join(config_dir_path, 'MR.jpg')
-    desired_width_dominos = 30
-    desired_height_dominos = 40
-    if USE_SMALL_TESTING_CONFIG:
-        desired_width_dominos = 60
-        desired_height_dominos = 80
+    num_tiles_wdith = 4
+    num_tiles_height = 4
     dominos = np.array(
                 [('black', (0,0,0)),
                 ('red',   (1,0,0)),
@@ -89,6 +86,8 @@ class Config:
     tile_edge_color = (0,0,1)
     tile_size_width_meters = tile_width * (domino_spacing_width + domino_width)
     tile_size_height_meters = tile_height * (domino_spacing_height + domino_height)
+    desired_width_dominos = tile_width * num_tiles_wdith
+    desired_height_dominos = tile_height * num_tiles_height
 
     # Vision offset configuration
     default_vision_offset = (0,0,-2)
