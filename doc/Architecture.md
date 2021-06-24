@@ -2,7 +2,7 @@
 
 The high level software architecure can be seen in the following diagram.
 
-![Architecture Diagram](DominoRobotSoftwareArchitecture.png)
+<img src="DominoRobotSoftwareArchitecture.png" width="500">
 
 ## Master
 Fill in
