@@ -1,8 +1,8 @@
 # Domino Robot Software Architecture
 
-The high level software architecure can be seen in the following diagram.
+The high level software architecure can be seen in the following diagram (click to enlarge).
 
-<img src="DominoRobotSoftwareArchitecture.png" width="500">
+<img src="DominoRobotSoftwareArchitecture.png" width="600">
 
 ## Master
 Fill in
