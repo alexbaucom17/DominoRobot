@@ -771,8 +771,8 @@ if __name__ == '__main__':
     plan = RunFieldPlanning(autosave=False)
 
     # plan.field.printStats()
-    # plan.field.show_image_parsing()
-    # plan.field.render_domino_image_tiles()
+    plan.field.show_image_parsing()
+    plan.field.render_domino_image_tiles()
     plan.field.show_tile_ordering()
     plan.draw_cycle(2)
     plan.draw_all_tile_poses()

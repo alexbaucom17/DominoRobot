@@ -56,7 +56,7 @@ class Config:
 
     # Image configuration
     image_name = os.path.join(config_dir_path, 'MR.jpg')
-    num_tiles_wdith = 4
+    num_tiles_wdith = 2
     num_tiles_height = 4
     dominos = np.array(
                 [('black', (0,0,0)),
@@ -109,17 +109,28 @@ class Config:
     exit_position_distance = 1                                  # How far out of the field boundaries to move to exit
     field_to_robot_frame_angle = 90                             # In case robot frame and field frame ever need to be rotated relative to each other
 
+    # Left side
+    # if USE_SMALL_TESTING_CONFIG:  
+    #     load_pose = np.array([7.5,7.5,0])            
+    #     robot_pose_top_left = np.array([12.20,9.472])  
+    #     domino_field_angle = -90
+    #     tile_placement_coarse_offset = np.array([-0.5,-0.5])
+    #     tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0 ])                             
+
+    # Right side
     if USE_SMALL_TESTING_CONFIG:  
-        load_pose = np.array([7.5,7.5,0])            
-        robot_pose_top_left = np.array([12.20,9.472])  
+        load_pose = np.array([8,-6.5,0])            
+        robot_pose_top_left = np.array([12.74,-6.94])  
         domino_field_angle = -90
         tile_placement_coarse_offset = np.array([-0.5,-0.5])
-        tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0 ])                             
+        tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0 ])    
 
     # Computed - don't change
     field_width = tile_size_width_meters * desired_width_dominos/tile_width
     field_height = tile_size_height_meters * desired_height_dominos/tile_height
-    domino_field_top_left = robot_pose_top_left + Utils.TransformPos(tile_to_robot_offset - np.array([tile_size_height_meters, 0]), [0,0], domino_field_angle)
+    # Fix me
+    domino_field_top_left = robot_pose_top_left + np.array([tile_size_height_meters-tile_to_robot_offset[0], -tile_to_robot_offset[1]])
+        #Utils.TransformPos(np.array([tile_size_height_meters-tile_to_robot_offset[0], -tile_to_robot_offset[1]]), [0,0], domino_field_angle)
     domino_field_origin = domino_field_top_left + Utils.TransformPos(np.array([0,-field_height]), [0,0], domino_field_angle)
     domino_field_top_right = domino_field_origin + Utils.TransformPos(np.array([field_width,field_height]), [0,0], domino_field_angle)
     domino_field_boundaries = np.array([domino_field_origin, domino_field_top_right])  
