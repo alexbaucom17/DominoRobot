@@ -37,6 +37,8 @@ class KalmanFilter
     Eigen::VectorXf state() { return x_hat_; };
     Eigen::MatrixXf covariance() { return P_; };
 
+    void update_covariance(Eigen::MatrixXf P) {P_ = P;}
+
   private:
 
     // System dimensions

@@ -154,3 +154,10 @@ float Localization::computePositionUncertainty()
 
     return position_uncertainty;
 }
+
+void Localization::resetAngleCovariance() 
+{
+    Eigen::MatrixXf covariance = kf_.covariance();
+    covariance(2,2) = variance_ref_angle_;
+    kf_.update_covariance(covariance);
+}

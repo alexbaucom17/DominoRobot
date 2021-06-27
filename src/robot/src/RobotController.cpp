@@ -152,6 +152,12 @@ void RobotController::update()
             target_vel = {0,0,0};
             disableAllMotors();
             trajRunning_ = false;
+            // Bit of a hack for reseting angle covariance after vision motion
+            // This avoids weird rotations from error accumlated in the kalman filter
+            if (limits_mode_ == LIMITS_MODE::VISION)
+            {
+                localization_.resetAngleCovariance();
+            }
             // Re-enable fine mode at the end of a trajectory
             limits_mode_ = LIMITS_MODE::FINE;
         }
