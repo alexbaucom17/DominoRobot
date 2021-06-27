@@ -6,6 +6,7 @@ import os
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import config
+from datetime import datetime
 
 def scp_image(ip, remote_path, local_path):
     ssh_client = paramiko.SSHClient()
@@ -29,8 +30,9 @@ def get_and_display_multiple_images(cam_name, remote_ip, remote_path, local_path
     ax = axes.ravel()
 
     for i,data in enumerate(img_data):
+        cur_time_str = datetime.now().strftime("%Y%m%d%H%M%S")
         remote_path_to_file = remote_path + data['file']
-        local_path_to_file = os.path.join(local_path, data['file'])
+        local_path_to_file = os.path.join(local_path, cur_time_str+"_"+cam_name+"_"+data['file'])
         scp_image(remote_ip, remote_path_to_file, local_path_to_file)
         img = mpimg.imread(local_path_to_file)
         if data["color"]:
