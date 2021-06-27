@@ -10,6 +10,7 @@
 #include "robot.h"
 #include "constants.h"
 #include "sockets/SocketMultiThreadWrapperFactory.h"
+#include "camera_tracker/CameraTrackerFactory.h"
 
 libconfig::Config cfg = libconfig::Config();
 
@@ -58,7 +59,24 @@ void setup_mock_socket()
     }
 }
 
-int main()
+void capture_images()
+{
+    // Modify config values to ensure they are set to log debug images
+    libconfig::Setting& save_debug_config = cfg.lookup("vision_tracker.debug.save_camera_debug");
+    save_debug_config = true;
+    
+    // Start camera
+    CameraTrackerBase* camera_tracker_ = CameraTrackerFactory::getFactoryInstance()->get_camera_tracker();
+    camera_tracker_->start();
+    
+    // Wait for a few seconds for images to save
+    Timer t;
+    while(t.dt_s() < 5.0) {}
+
+    PLOGI << "Camera image capture complete...Exiting";
+}
+
+int main(int argc, char** argv)
 {
     try
     {
@@ -68,10 +86,18 @@ int main()
         configure_logger();
         PLOGI << "Loaded constants file: " << name;
 
-        setup_mock_socket();
+        if(argc > 1 && std::string(argv[1]) == "-c")
+        {
+            capture_images();
+        } 
+        else 
+        {
+            setup_mock_socket();
 
-        Robot r;
-        r.run(); //Should loop forver until stopped
+            Robot r;
+            r.run(); //Should loop forver until stopped
+        }
+
     }
     catch (const libconfig::SettingNotFoundException &e)
     {

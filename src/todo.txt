@@ -2,23 +2,20 @@
 Robot SW:
 - Fix localization issue where it gets too confident and doesn't accept any more updates (might be fixed with recent retuning?)
 - Fix rotation issue - maybe localization isn't correctly being updated during vision mode?
-- Consider adjusting vision mode to take over motion as soon as mavelmind mode is close-ish and both markers are detected.
-- Auto collect images of undetected markers when vision mode takes over and errors out for no detection. Collect these into unit test?
-    - Or just improve workflow for collecting bad images
+- Collect interesting images and make into unit test
 
 Robot HW:
-- Get more batteries/chargers? Or at least try to estimate power usage/battery life for expected number of recharges.
 
 Master:
 - Test master action validator
     - Fix action validator choking on START_CAMERA action
 - Consider setting MM fine pose a bit further away from the dominos than the actual target point (to avoid overshoot)
-- Test new robot pose configuration
 
 Robustify:
 - Detect when tray init needs to happen again after robot estop
 - Figure out why the robot sometimes overshoots and quickly corrects motion (low battery??)
 - Add warnings to master screen when robot caps control effort
+- Consider adjusting vision mode to take over motion as soon as mavelmind mode is close-ish and both markers are detected.
 
 Nice to haves:
 - Maybe consider rewrite of FieldPlanner (for fun) and to generally improve speed and ease of use.
