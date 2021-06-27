@@ -36,3 +36,44 @@ TEST_CASE("Robot coords from image coords", "[Camera]")
         CHECK(xy_world[1] < side_offset_y);
     }
 }
+
+// Verify that camera params between actual and test config are synced if this test is giving trouble
+TEST_CASE("Marker Detection", "[Camera]")
+{
+    struct TestImageMetadata
+    {
+        std::string name;
+        bool expected_detection;
+        CAMERA_ID id;
+        Eigen::Vector2f expected_point_px = {-1, -1};
+    };
+    
+    std::vector<TestImageMetadata> test_images = {
+        {.name = "test_img_1.jpg",
+         .expected_detection = true,
+         .id = CAMERA_ID::REAR},
+        {.name = "test_img_2.jpg",
+         .expected_detection = true,
+         .id = CAMERA_ID::REAR},
+    };
+
+    for (const auto& item : test_images) 
+    {
+        std::string image_dir = "/home/pi/DominoRobot/src/robot/test/testdata/images/";
+        std::string image_path = image_dir + item.name;
+        SafeConfigModifier<bool> config_modifier_1("vision_tracker.debug.use_debug_image", true);
+        SafeConfigModifier<std::string> config_modifier_2("vision_tracker.side.debug_image", image_path);
+        SafeConfigModifier<std::string> config_modifier_3("vision_tracker.rear.debug_image", image_path);
+       
+        CameraPipeline c(item.id, /*start_thread=*/ false);
+        c.oneLoop();
+        CameraPipelineOutput output = c.getData();
+
+        PLOGI << "Checking detection in image " << item.name;
+        CHECK(output.ok == item.expected_detection);
+        if(item.expected_point_px != Eigen::Vector2f({-1,-1}))
+        {
+            CHECK(output.uv == item.expected_point_px);
+        }
+    }
+}
