@@ -64,11 +64,11 @@ class Config:
     dominos = np.array(
                 [('black', (0,0,0)),
                 ('red',   (1,0,0)),
-                ('blue',  (0,0,1)),
+                ('blue',  (0.188,0.5,0.886)),
                 ('green', (0,1,0)),
                 ('white', (1,1,1)),
-                ('brown', (145.0/255.0,73.0/255.0,29.0/255.0)),
-                ('yellow', (226.0/255.0,1,0)),
+                ('brown', (1,0.51,0)),
+                ('yellow', (1,0.867,0)),
                 ], dtype=object)
 
     # Physical dimensions of dominos
