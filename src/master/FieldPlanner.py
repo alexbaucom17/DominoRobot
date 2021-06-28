@@ -66,6 +66,8 @@ class DominoField:
 
     def printStats(self):
         # Output some metrics
+        logging.info("Original image size: {}".format(self.img.shape[:2]))
+        logging.info("Scaled image size: {}".format(self.img_scaled.shape[:2]))
         logging.info('Domino usage:')
         logging.info('Total number of dominos: ' + str(self.img_parsed_ids.size))
         logging.info('Colors:')
@@ -775,18 +777,18 @@ if __name__ == '__main__':
     plan = RunFieldPlanning(autosave=False)
 
     plan.field.printStats()
-    plan.field.show_image_parsing()
+    # plan.field.show_image_parsing()
     plan.field.render_domino_image_tiles()
-    plan.field.show_tile_ordering()
-    plan.draw_cycle(2)
-    plan.draw_all_tile_poses()
+    # plan.field.show_tile_ordering()
+    # plan.draw_cycle(2)
+    # plan.draw_all_tile_poses()
 
 
-    sg.change_look_and_feel('Dark Blue 3')
-    clicked_value = sg.popup_yes_no('Save plan to file?')
-    if clicked_value == "Yes":
-        fname = sg.popup_get_file("Location to save", save_as=True)
-        with open(fname, 'wb') as f:
-            pickle.dump(plan, f)
-            logging.info("Saved plan to {}".format(fname))
+    # sg.change_look_and_feel('Dark Blue 3')
+    # clicked_value = sg.popup_yes_no('Save plan to file?')
+    # if clicked_value == "Yes":
+    #     fname = sg.popup_get_file("Location to save", save_as=True)
+    #     with open(fname, 'wb') as f:
+    #         pickle.dump(plan, f)
+    #         logging.info("Saved plan to {}".format(fname))
 

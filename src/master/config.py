@@ -56,7 +56,7 @@ class Config:
 
     # Image configuration
     image_name = os.path.join(config_dir_path, 'DominoDesign.psd')
-    num_tiles_wdith = 20
+    num_tiles_wdith = 18
     num_tiles_height = 19
     if USE_SMALL_TESTING_CONFIG:  
         num_tiles_wdith = 2
@@ -87,7 +87,7 @@ class Config:
     # Tile configuration
     tile_width = 15
     tile_height = 20
-    tile_background_color = (0.8, 0.8, 0.8)
+    tile_background_color = (0.9,0.9,0.9)
     tile_edge_color = (0,0,1)
     tile_size_width_meters = tile_width * (domino_spacing_width + domino_width)
     tile_size_height_meters = tile_height * (domino_spacing_height + domino_height)
