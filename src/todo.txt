@@ -1,29 +1,27 @@
 
 Robot SW:
-- Fix localization issue where it gets too confident and doesn't accept any more updates (might be fixed with recent retuning?)
-- Fix rotation issue - maybe localization isn't correctly being updated during vision mode?
 - Collect interesting images and make into unit test
 
 Robot HW:
 
 Master:
-- Test master action validator
-    - Fix action validator choking on START_CAMERA action
 - Consider setting MM fine pose a bit further away from the dominos than the actual target point (to avoid overshoot)
+- Write action sequence for fridge docking
+- Fix hacky offset for domino field corner (I think the angle is just incorrect for that transform)
+    - Maybe document (for my own sanity), all the various frames and reference points
 
 Robustify:
-- Detect when tray init needs to happen again after robot estop
-- Figure out why the robot sometimes overshoots and quickly corrects motion (low battery??)
-- Add warnings to master screen when robot caps control effort
+- Test master action validator
+    - Fix action validator choking on START_CAMERA action
 - Consider adjusting vision mode to take over motion as soon as mavelmind mode is close-ish and both markers are detected.
 
 Nice to haves:
+- Detect when tray init needs to happen again after robot estop
+- Add warnings to master screen when robot caps control effort
 - Maybe consider rewrite of FieldPlanner (for fun) and to generally improve speed and ease of use.
 - Fix motion unit tests commanding large velocities and tripping thresholding
 - Fix localization tests
 - Add more unit tests for camera and vision controller
-
-
 
 
 Misc notes:

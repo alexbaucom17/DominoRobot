@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     robot_ip = cfg.ip_map['robot1']
     remote_path = "/home/pi/images/debug/"
-    local_path = cfg.log_folder
+    local_path = os.path.join(cfg.log_folder,"images")
     img_data = []
     img_data.append({
         "file": "img_raw.jpg",
