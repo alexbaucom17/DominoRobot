@@ -117,10 +117,10 @@ class DominoField:
 
         # Build array of order to show and write
         order_array = np.zeros((self.n_tiles_x,self.n_tiles_y))
-        print(self.n_tiles_x)
-        print(self.n_tiles_y)
+        # print(self.n_tiles_x)
+        # print(self.n_tiles_y)
         for tile in self.tiles:
-            print(tile.coordinate)
+            # print(tile.coordinate)
             order_array[tile.coordinate] = tile.order
 
         # Modify array to show image correctly
@@ -142,6 +142,10 @@ class DominoField:
     def _generateField(self):
         # Load original image
         img = mpimg.imread(self.cfg.image_name)
+
+        # Skip A value for RGBA files
+        if img.shape[2] is 4:
+            img = img[:,:,:3]
 
         # Scaled image
         img_scaled = sktf.resize(img, (self.cfg.desired_height_dominos, self.cfg.desired_width_dominos), anti_aliasing=False)
@@ -175,7 +179,7 @@ class DominoField:
     def _addTile(self, tile_coordinate, tile_values, tile_order, vision_offset_map):
 
         vision_offset = vision_offset_map[tile_coordinate]
-        print("Tile: order {}, coord {}, vision offset: {}".format(tile_order, tile_coordinate, vision_offset))
+        # print("Tile: order {}, coord {}, vision offset: {}".format(tile_order, tile_coordinate, vision_offset))
         new_tile = Tile(self.cfg, tile_coordinate, tile_values, tile_order, vision_offset)
         self.tiles.append(new_tile)
 
@@ -770,7 +774,7 @@ if __name__ == '__main__':
 
     plan = RunFieldPlanning(autosave=False)
 
-    # plan.field.printStats()
+    plan.field.printStats()
     plan.field.show_image_parsing()
     plan.field.render_domino_image_tiles()
     plan.field.show_tile_ordering()
