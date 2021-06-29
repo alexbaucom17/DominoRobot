@@ -1,6 +1,5 @@
 
 Robot SW:
-- Collect interesting images and make into unit test
 
 Robot HW:
 
