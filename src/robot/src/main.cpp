@@ -71,7 +71,9 @@ void capture_images()
     
     // Wait for a few seconds for images to save
     Timer t;
-    while(t.dt_s() < 5.0) {}
+    while(t.dt_s() < 2.0) {}
+
+    camera_tracker_->stop();
 
     PLOGI << "Camera image capture complete...Exiting";
 }
