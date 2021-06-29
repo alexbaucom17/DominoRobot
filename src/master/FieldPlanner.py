@@ -66,6 +66,8 @@ class DominoField:
 
     def printStats(self):
         # Output some metrics
+        logging.info("Original image size: {}".format(self.img.shape[:2]))
+        logging.info("Scaled image size: {}".format(self.img_scaled.shape[:2]))
         logging.info('Domino usage:')
         logging.info('Total number of dominos: ' + str(self.img_parsed_ids.size))
         logging.info('Colors:')
@@ -117,10 +119,10 @@ class DominoField:
 
         # Build array of order to show and write
         order_array = np.zeros((self.n_tiles_x,self.n_tiles_y))
-        print(self.n_tiles_x)
-        print(self.n_tiles_y)
+        # print(self.n_tiles_x)
+        # print(self.n_tiles_y)
         for tile in self.tiles:
-            print(tile.coordinate)
+            # print(tile.coordinate)
             order_array[tile.coordinate] = tile.order
 
         # Modify array to show image correctly
@@ -142,6 +144,10 @@ class DominoField:
     def _generateField(self):
         # Load original image
         img = mpimg.imread(self.cfg.image_name)
+
+        # Skip A value for RGBA files
+        if img.shape[2] is 4:
+            img = img[:,:,:3]
 
         # Scaled image
         img_scaled = sktf.resize(img, (self.cfg.desired_height_dominos, self.cfg.desired_width_dominos), anti_aliasing=False)
@@ -175,7 +181,7 @@ class DominoField:
     def _addTile(self, tile_coordinate, tile_values, tile_order, vision_offset_map):
 
         vision_offset = vision_offset_map[tile_coordinate]
-        print("Tile: order {}, coord {}, vision offset: {}".format(tile_order, tile_coordinate, vision_offset))
+        # print("Tile: order {}, coord {}, vision offset: {}".format(tile_order, tile_coordinate, vision_offset))
         new_tile = Tile(self.cfg, tile_coordinate, tile_values, tile_order, vision_offset)
         self.tiles.append(new_tile)
 
@@ -770,19 +776,19 @@ if __name__ == '__main__':
 
     plan = RunFieldPlanning(autosave=False)
 
-    # plan.field.printStats()
-    plan.field.show_image_parsing()
+    plan.field.printStats()
+    # plan.field.show_image_parsing()
     plan.field.render_domino_image_tiles()
-    plan.field.show_tile_ordering()
-    plan.draw_cycle(2)
-    plan.draw_all_tile_poses()
+    # plan.field.show_tile_ordering()
+    # plan.draw_cycle(2)
+    # plan.draw_all_tile_poses()
 
 
-    sg.change_look_and_feel('Dark Blue 3')
-    clicked_value = sg.popup_yes_no('Save plan to file?')
-    if clicked_value == "Yes":
-        fname = sg.popup_get_file("Location to save", save_as=True)
-        with open(fname, 'wb') as f:
-            pickle.dump(plan, f)
-            logging.info("Saved plan to {}".format(fname))
+    # sg.change_look_and_feel('Dark Blue 3')
+    # clicked_value = sg.popup_yes_no('Save plan to file?')
+    # if clicked_value == "Yes":
+    #     fname = sg.popup_get_file("Location to save", save_as=True)
+    #     with open(fname, 'wb') as f:
+    #         pickle.dump(plan, f)
+    #         logging.info("Saved plan to {}".format(fname))
 

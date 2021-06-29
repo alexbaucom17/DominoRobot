@@ -6,11 +6,11 @@ class Config:
 
     # Various debug/test flags
     # Set to override config values for home network
-    USING_HOME_NETWORK = False
+    USING_HOME_NETWORK = True
     # Set for laptop vs desktop
-    USING_DESKTOP = False
+    USING_DESKTOP = True
     # Set to override config values for small scale testing
-    USE_SMALL_TESTING_CONFIG = True
+    USE_SMALL_TESTING_CONFIG = False
     # Set to skip connecting to robot
     OFFLINE_TESTING = False
     # Set to skip connecting to base station
@@ -55,15 +55,20 @@ class Config:
     # ====== PLAN GENERATION ========
 
     # Image configuration
-    image_name = os.path.join(config_dir_path, 'MR.jpg')
-    num_tiles_wdith = 2
-    num_tiles_height = 4
+    image_name = os.path.join(config_dir_path, 'DominoDesign.psd')
+    num_tiles_wdith = 18
+    num_tiles_height = 19
+    if USE_SMALL_TESTING_CONFIG:  
+        num_tiles_wdith = 2
+        num_tiles_height = 4
     dominos = np.array(
                 [('black', (0,0,0)),
                 ('red',   (1,0,0)),
-                ('blue',  (0,0,1)),
+                ('blue',  (0.188,0.5,0.886)),
                 ('green', (0,1,0)),
-                ('white', (1,1,1))
+                ('white', (1,1,1)),
+                ('brown', (1,0.51,0)),
+                ('yellow', (1,0.867,0)),
                 ], dtype=object)
 
     # Physical dimensions of dominos
@@ -82,7 +87,7 @@ class Config:
     # Tile configuration
     tile_width = 15
     tile_height = 20
-    tile_background_color = (0.8, 0.8, 0.8)
+    tile_background_color = (0.9,0.9,0.9)
     tile_edge_color = (0,0,1)
     tile_size_width_meters = tile_width * (domino_spacing_width + domino_width)
     tile_size_height_meters = tile_height * (domino_spacing_height + domino_height)
