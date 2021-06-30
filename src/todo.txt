@@ -1,5 +1,6 @@
 
 Robot SW:
+- Try updating traj gen to syncronize angle and translation, this will make angle adjustments look less jerky and sudden
 
 Robot HW:
 
