@@ -1,16 +1,18 @@
 
 Robot SW:
-- Test updated trajectory generation
+- Test updated trajectory generation, see if it resolves angle issue with mm. 
 
 Robot HW:
 
 Master:
-- Consider setting MM fine pose a bit further away from the dominos than the actual target point (to avoid overshoot)
-- Write action sequence for fridge docking
+- Test docking actions
+    - Figure out if any adjustments are needed to fine motion, vision motion when docking
+- Test increasing status request rate, may allow to decrease action wait time and shave a few seconds off of actions like start/stop cameras
 - Fix hacky offset for domino field corner (I think the angle is just incorrect for that transform)
     - Maybe document (for my own sanity), all the various frames and reference points
 
 Robustify:
+- Consider setting MM fine pose a bit further away from the dominos than the actual target point (to avoid overshoot)
 - Test master action validator
     - Fix action validator choking on START_CAMERA action
 - Consider adjusting vision mode to take over motion as soon as mavelmind mode is close-ish and both markers are detected.

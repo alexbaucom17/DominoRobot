@@ -10,7 +10,7 @@ class Config:
     # Set for laptop vs desktop
     USING_DESKTOP = False
     # Set to override config values for small scale testing
-    USE_SMALL_TESTING_CONFIG = True
+    USE_SMALL_TESTING_CONFIG = False
     # Set to skip connecting to robot
     OFFLINE_TESTING = False
     # Set to skip connecting to base station
@@ -101,14 +101,18 @@ class Config:
     # ====== ENVIRONMENT CONFIGURATION ========
 
     # Map configuration (distances in meters, angles in degrees)
-    robot_boundaries = np.array([[1,-11],[15,11]])                # Bottom left, top right, global frame
-    base_station_boundaries = np.array([[0,1],[1,2]])           # Bottom left, top right, global frame
-    base_station_target_pos = np.array([0.5, 1.5])              # Target position for robot to be under base station [x,y], in global frame
-    base_station_target_angle = 180                             # Target angle (deg) for base station in global frame
-    base_station_coarse_pose_offset = np.array([-1.5, 0])       # Offset from base station to use for apprach [x,y] in robot frame
-    robot_pose_top_left = np.array([3,3])                       # Robot pose in global frame for top left of tile position of domino field
-    domino_field_angle = 90                                     # Domino field angle (deg), global frame
-    tile_placement_coarse_offset = np.array([0.3,-0.3])         # Offset position for tile placement [x,y], in robot coordinate frame
+    robot_boundaries = np.array([[1,-11],[15,11]])              # Bottom left, top right, global frame
+
+    base_station_boundaries = np.array([[2,10],[3,11]])         # Bottom left, top right, global frame
+    base_station_target_angle = 90                              # Target angle (deg) for base station in global frame
+    base_station_target_pos = np.array([2.5, 9.5])              # Target position for robot to be under base station [x,y], in global frame
+    base_station_vision_offset = np.array([0,0,0])              # Vision offset for base station alignment
+    base_station_prep_pos = np.array([2.5,9])                 # Pose outside of base station to align with before going in to dock
+    base_station_prep_vision_offset = np.array([0,0,0])         # Vision offset to use for base station prep pose
+
+    robot_pose_top_left = np.array([14,7.5])                       # Robot pose in global frame for top left of tile position of domino field
+    domino_field_angle = -90                                     # Domino field angle (deg), global frame
+    tile_placement_coarse_offset = np.array([-0.5,-0.5])         # Offset position for tile placement [x,y], in robot coordinate frame
     tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])  # Offset from bottom left of tile to robot center [x,y], in robot coordinate frame     
     prep_position_distance = 1                                  # How far out of field boundaries to do robot prep move
     exit_position_distance = 1                                  # How far out of the field boundaries to move to exit
