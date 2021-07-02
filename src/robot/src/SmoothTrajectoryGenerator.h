@@ -98,6 +98,7 @@ enum class LIMITS_MODE
     COARSE,
     FINE,
     VISION,
+    SLOW,
 };
 
 // All the pieces needed to define the motion planning problem

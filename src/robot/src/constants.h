@@ -43,6 +43,7 @@ enum class COMMAND
     TOGGLE_VISION_DEBUG,
     START_CAMERAS,
     STOP_CAMERAS,
+    MOVE_REL_SLOW,
 };
 
 #endif

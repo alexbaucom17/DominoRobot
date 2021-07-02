@@ -74,7 +74,7 @@ Velocity RobotControllerModeVision::computeTargetVelocity(Point current_position
     // Convert global velocity into local robot frame and use it to predict the filter
     Eigen::Vector3f local_vel;
     local_vel[0] = cos(current_position.a) * current_velocity.vx + sin(current_position.a) * current_velocity.vy;
-    local_vel[1] = sin(current_position.a) * current_velocity.vx + cos(current_position.a) * current_velocity.vy;
+    local_vel[1] = - sin(current_position.a) * current_velocity.vx + cos(current_position.a) * current_velocity.vy;
     local_vel[2] = current_velocity.va;
     Eigen::Vector3f udt = local_vel * dt_since_last_loop;
     if(udt.norm() > 0)

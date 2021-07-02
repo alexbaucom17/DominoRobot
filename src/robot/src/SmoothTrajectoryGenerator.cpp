@@ -129,6 +129,7 @@ MotionPlanningProblem buildMotionPlanningProblem(Point initialPoint, Point targe
     DynamicLimits rotationalLimits;
     if(limits_mode == LIMITS_MODE::VISION)
     {
+        PLOGI << "Setting trajectory limits mode to LIMITS_MODE::VISION";
         translationalLimits = { cfg.lookup("motion.translation.max_vel.vision"), 
                                 cfg.lookup("motion.translation.max_acc.vision"), 
                                 cfg.lookup("motion.translation.max_jerk.vision")};
@@ -136,8 +137,9 @@ MotionPlanningProblem buildMotionPlanningProblem(Point initialPoint, Point targe
                                 cfg.lookup("motion.rotation.max_acc.vision"), 
                                 cfg.lookup("motion.rotation.max_jerk.vision")};
     }
-    else if(limits_mode == LIMITS_MODE::FINE)
+    else if(limits_mode == LIMITS_MODE::FINE || limits_mode == LIMITS_MODE::SLOW)
     {
+        PLOGI << "Setting trajectory limits mode to LIMITS_MODE::FINE/SLOW";
         translationalLimits = { cfg.lookup("motion.translation.max_vel.fine"), 
                                 cfg.lookup("motion.translation.max_acc.fine"), 
                                 cfg.lookup("motion.translation.max_jerk.fine")};
@@ -147,6 +149,7 @@ MotionPlanningProblem buildMotionPlanningProblem(Point initialPoint, Point targe
     }
     else
     {
+        PLOGI << "Setting trajectory limits mode to LIMITS_MODE::COARSE";
         translationalLimits = { cfg.lookup("motion.translation.max_vel.coarse"), 
                                 cfg.lookup("motion.translation.max_acc.coarse"), 
                                 cfg.lookup("motion.translation.max_jerk.coarse")};
