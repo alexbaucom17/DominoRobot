@@ -22,6 +22,7 @@ class ActionTypes(enum.Enum):
     TOGGLE_VISION_DEBUG = 15,
     START_CAMERAS = 16,
     STOP_CAMERAS = 17,
+    MOVE_REL_SLOW = 18,
 
 class NonBlockingTimer:
 

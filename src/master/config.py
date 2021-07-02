@@ -20,10 +20,10 @@ class Config:
     # Set to use fake plan instead of loading a generated one
     USE_TEST_PLAN = False
     # Set to auto-load this plan on master startup
-    AUTO_LOAD_PLAN = False
-    AUTO_LOAD_PLAN_NAME = "AccuracyTesting_3x3_withdistance_2axis.p"
+    AUTO_LOAD_PLAN = True
+    AUTO_LOAD_PLAN_NAME = "DockingTest2.p"
     # Set to regenerate and auto load plan on master startup
-    REGEN_PLAN = True
+    REGEN_PLAN = False
 
     # ====== PATHS ========
     
@@ -105,10 +105,10 @@ class Config:
 
     base_station_boundaries = np.array([[2,10],[3,11]])         # Bottom left, top right, global frame
     base_station_target_angle = 90                              # Target angle (deg) for base station in global frame
-    base_station_target_pos = np.array([2.5, 9.5])              # Target position for robot to be under base station [x,y], in global frame
-    base_station_vision_offset = np.array([0,0,0])              # Vision offset for base station alignment
-    base_station_prep_pos = np.array([2.5,9])                 # Pose outside of base station to align with before going in to dock
-    base_station_prep_vision_offset = np.array([0,0,0])         # Vision offset to use for base station prep pose
+    base_station_relative_offset = np.array([1.1, 0, 0])           # Relative position of base station from prep pos - robot frame (x,y,a)
+    base_station_vision_offset = np.array([0.04,0.05,-1.5])     # Vision offset for base station alignment
+    base_station_prep_pos = np.array([2.0,8.2])                   # Pose outside of base station to align with before going in to dock
+    base_station_prep_vision_offset = np.array([0,0.03,2])      # Vision offset to use for base station prep pose
 
     robot_pose_top_left = np.array([14,7.5])                       # Robot pose in global frame for top left of tile position of domino field
     domino_field_angle = -90                                     # Domino field angle (deg), global frame
@@ -165,6 +165,6 @@ class Config:
 
 
     # ====== RUNTIME CONFIGURATION ========
-    robot_status_wait_time = 0.5    # How many seconds to wait between status requests for each robot
+    robot_status_wait_time = 0.2    # How many seconds to wait between status requests for each robot
     base_station_status_wait_time = 1 # How many seconds to wait between status requests for the base station
     robot_next_action_wait_time = 2.0 # How many seconds to wait before checking if robot is finished with current plan action

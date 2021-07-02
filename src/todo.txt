@@ -1,6 +1,8 @@
 
 Robot SW:
-- Test updated trajectory generation, see if it resolves angle issue with mm. 
+- Consider implications of move vision depending on global position/velocity from global KF
+    - Should this be changed? Seems to work okay if the angle transform is correct :facepalm:
+- Move latest rear image raw into vision unit test
 
 Robot HW:
 
@@ -10,6 +12,7 @@ Master:
 - Test increasing status request rate, may allow to decrease action wait time and shave a few seconds off of actions like start/stop cameras
 - Fix hacky offset for domino field corner (I think the angle is just incorrect for that transform)
     - Maybe document (for my own sanity), all the various frames and reference points
+- Make robot panel go red when error (but still with valid info)
 
 Robustify:
 - Consider setting MM fine pose a bit further away from the dominos than the actual target point (to avoid overshoot)

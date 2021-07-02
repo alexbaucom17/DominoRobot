@@ -110,6 +110,8 @@ class RobotInterface:
                 self.current_move_data = [action.x, action.y, action.getAngleDegrees()]
             elif action.action_type == ActionTypes.MOVE_REL:
                 self.robot_client.move_rel(action.x, action.y, action.a)
+            elif action.action_type == ActionTypes.MOVE_REL_SLOW:
+                self.robot_client.move_rel_slow(action.x, action.y, action.a)
             elif action.action_type == ActionTypes.MOVE_FINE:
                 self.robot_client.move_fine(action.x, action.y, action.a)
                 self.current_move_data = [action.x, action.y, action.getAngleDegrees()]

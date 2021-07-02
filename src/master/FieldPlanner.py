@@ -473,6 +473,9 @@ def generate_full_action_sequence(cfg, tile):
     name = "Move to near load prep - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
 
+    name = "Start cameras"
+    actions.append(Action(ActionTypes.START_CAMERAS, name))
+
     name = "Wait for localization"
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
@@ -482,17 +485,20 @@ def generate_full_action_sequence(cfg, tile):
     name = "Move to load prep - vision"
     actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, cfg.base_station_prep_vision_offset[0], cfg.base_station_prep_vision_offset[1], cfg.base_station_prep_vision_offset[2]))
     
-    name = "Move to load - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, cfg.base_station_target_pos[0], cfg.base_station_target_pos[1], cfg.base_station_target_angle))
+    name = "Move to load - relative slow"
+    actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, cfg.base_station_relative_offset[0], cfg.base_station_relative_offset[1], cfg.base_station_relative_offset[2]))
 
     name = "Align with load"
     actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, cfg.base_station_vision_offset[0], cfg.base_station_vision_offset[1], cfg.base_station_vision_offset[2]))
 
+    name = "Stop cameras"
+    actions.append(Action(ActionTypes.STOP_CAMERAS, name))
+
     name = "Load tile"
     actions.append(Action(ActionTypes.LOAD, name))
 
-    name = "Move away from load - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
+    name = "Move away from load - relative slow"
+    actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, -cfg.base_station_relative_offset[0], -cfg.base_station_relative_offset[1], -cfg.base_station_relative_offset[2]))
 
     name = "Move to enter - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, enter_field_prep_global_frame[0], enter_field_prep_global_frame[1], robot_field_angle))
@@ -791,15 +797,15 @@ if __name__ == '__main__':
     # plan.field.show_image_parsing()
     # plan.field.render_domino_image_tiles()
     # plan.field.show_tile_ordering()
-    plan.draw_cycle(2)
+    # plan.draw_cycle(2)
     # plan.draw_all_tile_poses()
 
 
-    # sg.change_look_and_feel('Dark Blue 3')
-    # clicked_value = sg.popup_yes_no('Save plan to file?')
-    # if clicked_value == "Yes":
-    #     fname = sg.popup_get_file("Location to save", save_as=True)
-    #     with open(fname, 'wb') as f:
-    #         pickle.dump(plan, f)
-    #         logging.info("Saved plan to {}".format(fname))
+    sg.change_look_and_feel('Dark Blue 3')
+    clicked_value = sg.popup_yes_no('Save plan to file?')
+    if clicked_value == "Yes":
+        fname = sg.popup_get_file("Location to save", save_as=True)
+        with open(fname, 'wb') as f:
+            pickle.dump(plan, f)
+            logging.info("Saved plan to {}".format(fname))
 
