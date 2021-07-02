@@ -466,31 +466,45 @@ def generate_full_action_sequence(cfg, tile):
     robot_placement_fine_pos_global_frame = Utils.TransformPos(robot_placement_fine_pos_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
     enter_field_prep_global_frame = Utils.TransformPos(enter_field_prep_pos_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
     exit_field_prep_global_frame = Utils.TransformPos(exit_field_prep_pos_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
-    base_station_coarse_pos = cfg.base_station_target_pos + Utils.TransformPos(cfg.base_station_coarse_pose_offset, [0,0], cfg.base_station_target_angle)
     robot_field_angle = cfg.domino_field_angle + cfg.field_to_robot_frame_angle
 
     actions = []
 
+    name = "Move to near load prep - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
+
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+
+    name = "Move to load prep - fine"
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
+
+    name = "Move to load prep - vision"
+    actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, cfg.base_station_prep_vision_offset[0], cfg.base_station_prep_vision_offset[1], cfg.base_station_prep_vision_offset[2]))
+    
     name = "Move to load - fine"
     actions.append(MoveAction(ActionTypes.MOVE_FINE, name, cfg.base_station_target_pos[0], cfg.base_station_target_pos[1], cfg.base_station_target_angle))
+
+    name = "Align with load"
+    actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, cfg.base_station_vision_offset[0], cfg.base_station_vision_offset[1], cfg.base_station_vision_offset[2]))
 
     name = "Load tile"
     actions.append(Action(ActionTypes.LOAD, name))
 
     name = "Move away from load - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], cfg.base_station_target_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
 
-    name = "Move to prep - coarse"
+    name = "Move to enter - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, enter_field_prep_global_frame[0], enter_field_prep_global_frame[1], robot_field_angle))
 
     name = "Move to near place - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
 
-    name = "Wait for localization"
-    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
-
     name = "Start cameras"
     actions.append(Action(ActionTypes.START_CAMERAS, name))
+
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to place - fine"
     actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle))
@@ -508,10 +522,7 @@ def generate_full_action_sequence(cfg, tile):
     actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
 
     name = "Move to exit - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, exit_field_prep_global_frame[0], exit_field_prep_global_frame[1], robot_field_angle))
-
-    name = "Move to near load - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], cfg.base_station_target_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, enter_field_prep_global_frame[0], enter_field_prep_global_frame[1], robot_field_angle))
 
     return actions
 
@@ -776,11 +787,11 @@ if __name__ == '__main__':
 
     plan = RunFieldPlanning(autosave=False)
 
-    plan.field.printStats()
+    # plan.field.printStats()
     # plan.field.show_image_parsing()
-    plan.field.render_domino_image_tiles()
+    # plan.field.render_domino_image_tiles()
     # plan.field.show_tile_ordering()
-    # plan.draw_cycle(2)
+    plan.draw_cycle(2)
     # plan.draw_all_tile_poses()
 
 
