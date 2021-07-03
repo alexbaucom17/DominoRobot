@@ -305,6 +305,8 @@ class CmdGui:
                 if 'current_move_data' in status_dict.keys():
                     self._update_target_viz_position(robot_id, robot_pose, status_dict['current_move_data'])
                 color_str = STATUS_PANEL_OK_COLOR
+                if status_dict["error_status"]:
+                    color_str = STATUS_PANEL_BAD_COLOR
 
             except Exception as e:
                 if "offline" in str(status_dict):
