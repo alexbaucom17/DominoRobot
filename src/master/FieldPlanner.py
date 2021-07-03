@@ -230,10 +230,12 @@ class DominoField:
 
     @classmethod
     def _generateTileOrderingColumns(cls, num_x, num_y):
-        def coordToOrder(coord, num_y):
+        def coordToOrderLR(coord, num_x, num_y):
             return coord[0]*num_y + num_y - coord[1] -1
+        def coordToOrderRL(coord, num_x, num_y):
+            return (num_x - coord[0] - 1)*num_y + num_y - coord[1] -1
         all_coords = [(x,y) for x in range(num_x) for y in range(num_y)]
-        order_map = {coord: coordToOrder(coord, num_y) for coord in all_coords}
+        order_map = {coord: coordToOrderRL(coord, num_x, num_y) for coord in all_coords}
         return order_map
 
     @classmethod
@@ -793,12 +795,12 @@ if __name__ == '__main__':
 
     plan = RunFieldPlanning(autosave=False)
 
-    # plan.field.printStats()
-    # plan.field.show_image_parsing()
-    # plan.field.render_domino_image_tiles()
-    # plan.field.show_tile_ordering()
-    # plan.draw_cycle(2)
-    # plan.draw_all_tile_poses()
+    plan.field.printStats()
+    plan.field.show_image_parsing()
+    plan.field.render_domino_image_tiles()
+    plan.field.show_tile_ordering()
+    plan.draw_cycle(2)
+    plan.draw_all_tile_poses()
 
 
     sg.change_look_and_feel('Dark Blue 3')
