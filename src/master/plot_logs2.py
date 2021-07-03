@@ -113,4 +113,4 @@ if __name__ == '__main__':
 
     parsed_data = parse_log_file(local_file)
     # plot_data(parsed_data, rows_to_plot=['pos_x','pos_y','pos_a'])
-    plot_rows_axes(parsed_data, ['pos','vel','target_pos','target_vel','control_vel'], ['y'])
+    plot_rows_axes(parsed_data, ['pos','vel','target_pos','target_vel','control_vel'], ['a'])

@@ -105,12 +105,12 @@ class Config:
     # Map configuration (distances in meters, angles in degrees)
     robot_boundaries = np.array([[1,-11],[15,11]])              # Bottom left, top right, global frame
 
-    base_station_boundaries = np.array([[2,10],[3,11]])         # Bottom left, top right, global frame
+    base_station_boundaries = np.array([[2.5,10],[3.5,11]])         # Bottom left, top right, global frame
     base_station_target_angle = 90                              # Target angle (deg) for base station in global frame
-    base_station_relative_offset = np.array([1.1, 0, 0])           # Relative position of base station from prep pos - robot frame (x,y,a)
-    base_station_vision_offset = np.array([0.04,0.05,-1.5])     # Vision offset for base station alignment
-    base_station_prep_pos = np.array([2.0,8.2])                   # Pose outside of base station to align with before going in to dock
-    base_station_prep_vision_offset = np.array([0,0.03,2])      # Vision offset to use for base station prep pose
+    base_station_relative_offset = np.array([1.0, 0, 0])           # Relative position of base station from prep pos - robot frame (x,y,a)
+    base_station_vision_offset = np.array([0.03,0.005,-0.5])     # Vision offset for base station alignment
+    base_station_prep_pos = np.array([2.8,9.7])                   # Pose outside of base station to align with before going in to dock
+    base_station_prep_vision_offset = np.array([0,0.02,-1])      # Vision offset to use for base station prep pose
 
     robot_pose_top_left = np.array([13.2,7.8])                   # Robot pose in global frame for top left of tile position of domino field
     domino_field_angle = -90                                     # Domino field angle (deg), global frame
