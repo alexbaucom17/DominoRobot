@@ -106,7 +106,7 @@ void CameraPipeline::initCamera(CAMERA_ID id)
     // Hardcoding rotation matrices here for simplicity
     if(id == CAMERA_ID::SIDE) 
     {
-        camera_rotation << -1,0,0, 0,1,0, 0,0,-1;
+        camera_rotation << 1,0,0, 0,-1,0, 0,0,-1;
     }
     else
     {
