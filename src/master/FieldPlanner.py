@@ -472,6 +472,12 @@ def generate_full_action_sequence(cfg, tile):
 
     actions = []
 
+    name = "Move to load waypoint - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.load_waypoint[2]))
+
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+
     name = "Move to near load prep - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
 
@@ -502,8 +508,17 @@ def generate_full_action_sequence(cfg, tile):
     name = "Move away from load - relative slow"
     actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, -cfg.base_station_relative_offset[0], -cfg.base_station_relative_offset[1], -cfg.base_station_relative_offset[2]))
 
+    name = "Move to load waypoint - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.load_waypoint[2]))
+
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+
     name = "Move to enter - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, enter_field_prep_global_frame[0], enter_field_prep_global_frame[1], robot_field_angle))
+
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to near place - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))

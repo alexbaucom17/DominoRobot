@@ -1,9 +1,9 @@
 
 Robot SW:
-- Consider implications of move vision depending on global position/velocity from global KF
-    - Should this be changed? Seems to work okay if the angle transform is correct :facepalm:
+- Get localization working better for coarse motions
 
 Robot HW:
+- Re-make camera covers to expose leds
 
 Master:
 - Fix hacky offset for domino field corner (I think the angle is just incorrect for that transform)
