@@ -110,6 +110,8 @@ class RobotInterface:
                 self.current_move_data = [action.x, action.y, action.getAngleDegrees()]
             elif action.action_type == ActionTypes.MOVE_REL:
                 self.robot_client.move_rel(action.x, action.y, action.a)
+            elif action.action_type == ActionTypes.MOVE_REL_SLOW:
+                self.robot_client.move_rel_slow(action.x, action.y, action.a)
             elif action.action_type == ActionTypes.MOVE_FINE:
                 self.robot_client.move_fine(action.x, action.y, action.a)
                 self.current_move_data = [action.x, action.y, action.getAngleDegrees()]
@@ -243,7 +245,7 @@ class RuntimeManager:
         elif self.config.REGEN_PLAN:
             logging.info("Regenerating and loading plan")
             plan = RunFieldPlanning(autosave=True)
-            self._load_plan_from_object(plan, "autogen")
+            self._load_plan_from_object(plan, os.path.join(self.config.plans_dir, "autosaved.p"))
         elif self.config.AUTO_LOAD_PLAN and self.config.AUTO_LOAD_PLAN_NAME:
             plan_path = os.path.join(self.config.plans_dir, self.config.AUTO_LOAD_PLAN_NAME)
             self._load_plan_from_file(plan_path)

@@ -10,7 +10,7 @@ class Config:
     # Set for laptop vs desktop
     USING_DESKTOP = False
     # Set to override config values for small scale testing
-    USE_SMALL_TESTING_CONFIG = True
+    USE_SMALL_TESTING_CONFIG = False
     # Set to skip connecting to robot
     OFFLINE_TESTING = False
     # Set to skip connecting to base station
@@ -20,8 +20,8 @@ class Config:
     # Set to use fake plan instead of loading a generated one
     USE_TEST_PLAN = False
     # Set to auto-load this plan on master startup
-    AUTO_LOAD_PLAN = False
-    AUTO_LOAD_PLAN_NAME = "AccuracyTesting_3x3_withdistance_2axis.p"
+    AUTO_LOAD_PLAN = True
+    AUTO_LOAD_PLAN_NAME = "LargeScale2_5x5.p"
     # Set to regenerate and auto load plan on master startup
     REGEN_PLAN = True
 
@@ -55,18 +55,22 @@ class Config:
     # ====== PLAN GENERATION ========
 
     # Image configuration
-    image_name = os.path.join(config_dir_path, 'MR.jpg')
-    desired_width_dominos = 30
-    desired_height_dominos = 40
-    if USE_SMALL_TESTING_CONFIG:
-        desired_width_dominos = 30
-        desired_height_dominos = 40
+    image_name = os.path.join(config_dir_path, 'DominoDesign.psd')
+    # num_tiles_width = 18
+    # num_tiles_height = 19
+    num_tiles_width = 5
+    num_tiles_height = 5
+    if USE_SMALL_TESTING_CONFIG:  
+        num_tiles_width = 2
+        num_tiles_height = 4
     dominos = np.array(
                 [('black', (0,0,0)),
                 ('red',   (1,0,0)),
-                ('blue',  (0,0,1)),
+                ('blue',  (0.188,0.5,0.886)),
                 ('green', (0,1,0)),
-                ('white', (1,1,1))
+                ('white', (1,1,1)),
+                ('brown', (1,0.51,0)),
+                ('yellow', (1,0.867,0)),
                 ], dtype=object)
 
     # Physical dimensions of dominos
@@ -85,42 +89,60 @@ class Config:
     # Tile configuration
     tile_width = 15
     tile_height = 20
-    tile_background_color = (0.8, 0.8, 0.8)
+    tile_background_color = (0.9,0.9,0.9)
     tile_edge_color = (0,0,1)
     tile_size_width_meters = tile_width * (domino_spacing_width + domino_width)
     tile_size_height_meters = tile_height * (domino_spacing_height + domino_height)
+    desired_width_dominos = tile_width * num_tiles_width
+    desired_height_dominos = tile_height * num_tiles_height
 
     # Vision offset configuration
-    default_vision_offset = (0.03,0,-2)
-    vision_offset_file = os.path.join(plans_dir, 'vision_offsets.csv')
+    default_vision_offset = (0,0,-1.4)
+    vision_offset_file = os.path.join(plans_dir, 'vision_offsets_larger_testing_area.csv')
 
     # ====== ENVIRONMENT CONFIGURATION ========
 
     # Map configuration (distances in meters, angles in degrees)
-    robot_boundaries = np.array([[1,-11],[15,11]])                # Bottom left, top right, global frame
-    base_station_boundaries = np.array([[0,1],[1,2]])           # Bottom left, top right, global frame
-    base_station_target_pos = np.array([0.5, 1.5])              # Target position for robot to be under base station [x,y], in global frame
-    base_station_target_angle = 180                             # Target angle (deg) for base station in global frame
-    base_station_coarse_pose_offset = np.array([-1.5, 0])       # Offset from base station to use for apprach [x,y] in robot frame
-    domino_field_top_left = np.array([3,3])                       # Top left corner of domino field in global frame
-    domino_field_angle = 90                                     # Domino field angle (deg), global frame
-    tile_placement_coarse_offset = np.array([0.3,-0.3])         # Offset position for tile placement [x,y], in robot coordinate frame
-    tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])  # Offset from bottom left of tile to robot center [x,y], in robot coordinate frame
-    distance_placement_pose = np.array([0.865,0.20,0])              # Target distance values for fine placement       
+    robot_boundaries = np.array([[1,-11],[15,11]])              # Bottom left, top right, global frame
+    load_waypoint = np.array([3, 8.5, 0])                    # xya (global frame) for waypoint to go to first before load prep
+
+    base_station_boundaries = np.array([[2.5,10],[3.5,11]])         # Bottom left, top right, global frame
+    base_station_target_angle = 90                              # Target angle (deg) for base station in global frame
+    base_station_relative_offset = np.array([1.0, 0, 0])           # Relative position of base station from prep pos - robot frame (x,y,a)
+    base_station_vision_offset = np.array([0.025,0.005,-0.6])     # Vision offset for base station alignment
+    base_station_prep_pos = np.array([2.8,9.7])                   # Pose outside of base station to align with before going in to dock
+    base_station_prep_vision_offset = np.array([0,0.04,-1])      # Vision offset to use for base station prep pose
+
+    robot_pose_top_left = np.array([13.2,7.9])                   # Robot pose in global frame for top left of tile position of domino field
+    domino_field_angle = -90                                     # Domino field angle (deg), global frame
+    tile_placement_coarse_offset = np.array([-0.5,0.5])         # Offset position for tile placement [x,y], in robot coordinate frame
+    tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])  # Offset from bottom left of tile to robot center [x,y], in robot coordinate frame     
     prep_position_distance = 1                                  # How far out of field boundaries to do robot prep move
     exit_position_distance = 1                                  # How far out of the field boundaries to move to exit
     field_to_robot_frame_angle = 90                             # In case robot frame and field frame ever need to be rotated relative to each other
 
+    # Left side
+    # if USE_SMALL_TESTING_CONFIG:  
+    #     load_pose = np.array([7.5,7.5,0])            
+    #     robot_pose_top_left = np.array([12.20,9.472])  
+    #     domino_field_angle = -90
+    #     tile_placement_coarse_offset = np.array([-0.5,-0.5])
+    #     tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0 ])                             
+
+    # Right side
     if USE_SMALL_TESTING_CONFIG:  
-        load_pose = np.array([0,0,0])            
-        domino_field_top_left = np.array([3.6,tile_size_width_meters/2.0])  
+        load_pose = np.array([8,-6.5,0])            
+        robot_pose_top_left = np.array([12.74,-6.94])  
         domino_field_angle = -90
-        tile_placement_coarse_offset = np.array([-0.3,-0.3])
-        tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0 ])                             
+        tile_placement_coarse_offset = np.array([-0.5,-0.5])
+        tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0 ])    
 
     # Computed - don't change
     field_width = tile_size_width_meters * desired_width_dominos/tile_width
     field_height = tile_size_height_meters * desired_height_dominos/tile_height
+    # Fix me
+    domino_field_top_left = robot_pose_top_left + np.array([tile_size_height_meters-tile_to_robot_offset[0], -tile_to_robot_offset[1]])
+        #Utils.TransformPos(np.array([tile_size_height_meters-tile_to_robot_offset[0], -tile_to_robot_offset[1]]), [0,0], domino_field_angle)
     domino_field_origin = domino_field_top_left + Utils.TransformPos(np.array([0,-field_height]), [0,0], domino_field_angle)
     domino_field_top_right = domino_field_origin + Utils.TransformPos(np.array([field_width,field_height]), [0,0], domino_field_angle)
     domino_field_boundaries = np.array([domino_field_origin, domino_field_top_right])  
@@ -146,6 +168,6 @@ class Config:
 
 
     # ====== RUNTIME CONFIGURATION ========
-    robot_status_wait_time = 0.5    # How many seconds to wait between status requests for each robot
+    robot_status_wait_time = 0.2    # How many seconds to wait between status requests for each robot
     base_station_status_wait_time = 1 # How many seconds to wait between status requests for the base station
     robot_next_action_wait_time = 2.0 # How many seconds to wait before checking if robot is finished with current plan action

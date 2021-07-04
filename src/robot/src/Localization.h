@@ -25,6 +25,8 @@ class Localization
 
     LocalizationMetrics getLocalizationMetrics() { return metrics_; };
 
+    void resetAngleCovariance();
+
   private:
 
     // Convert position reading from marvelmind frame to robot frame

@@ -1,0 +1,39 @@
+- robot
+	- status updater
+		- status
+	- robot server
+		- socket multi thread wrapper
+	- robot controller
+		- serial comms
+		- localization
+			- Kalman filter
+		- controller mode
+			- position mode
+				- trajectory generator
+				- x,y,a controllers
+			- vision mode
+				- trajectory generator
+				- Camera tracker *
+				- Kalman filter
+				- x,y,a controllers
+	- tray controller
+		- serial comms
+	- marvelmind wrapper
+	- camera tracker
+		- side camera
+		- rear camera
+
+
+- motor controller
+	- serial comms
+	- robot velocity handler
+	- lifter action handler
+	
+- master
+	- gui
+	- runtime
+		- plan
+		- robot interface
+			- robot client
+				- tcp client
+	- field planner

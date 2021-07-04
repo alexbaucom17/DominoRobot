@@ -41,7 +41,7 @@ Robot::Robot()
   controller_(statusUpdater_),
   tray_controller_(),
   mm_wrapper_(),
-  position_time_averager_(20),
+  position_time_averager_(10),
   robot_loop_time_averager_(20),
   wait_for_localize_helper_(statusUpdater_, cfg.lookup("localization.max_wait_time"), cfg.lookup("localization.confidence_for_wait")),
   vision_print_rate_(10),
@@ -177,6 +177,11 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
         RobotServer::PositionData data = server_.getMoveData();
         controller_.moveToPositionRelative(data.x, data.y, data.a);
     }
+    else if(cmd == COMMAND::MOVE_REL_SLOW)
+    {
+        RobotServer::PositionData data = server_.getMoveData();
+        controller_.moveToPositionRelativeSlow(data.x, data.y, data.a);
+    }
     else if(cmd == COMMAND::MOVE_FINE)
     {
         RobotServer::PositionData data = server_.getMoveData();
@@ -231,7 +236,8 @@ bool Robot::checkForCmdComplete(COMMAND cmd)
             cmd == COMMAND::MOVE_REL ||
             cmd == COMMAND::MOVE_FINE ||
             cmd == COMMAND::MOVE_CONST_VEL ||
-            cmd == COMMAND::MOVE_WITH_VISION)
+            cmd == COMMAND::MOVE_WITH_VISION || 
+            cmd == COMMAND::MOVE_REL_SLOW)
     {
         return !controller_.isTrajectoryRunning();
     }

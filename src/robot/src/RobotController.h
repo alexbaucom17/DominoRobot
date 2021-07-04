@@ -20,6 +20,9 @@ class RobotController
 
     // Command robot to move a specific position relative to current position with low accuracy
     void moveToPositionRelative(float dx_local, float dy_local, float da_local);
+
+    // Command robot to move a specific position relative to current position with low speed
+    void moveToPositionRelativeSlow(float dx_local, float dy_local, float da_local);
     
     // Command robot to move to a specific position with high accuracy
     void moveToPositionFine(float x, float y, float a);
@@ -65,6 +68,8 @@ class RobotController
     // velocity in the pointer, if available. Returns true if velocity is filled, false otherwise
     bool readMsgFromMotorDriver(Velocity* decodedVelocity);
 
+    void setCartVelLimits(LIMITS_MODE limits_mode);
+
     // Member variables
     StatusUpdater& statusUpdater_;         // Reference to status updater object to input status info about the controller
     SerialCommsBase* serial_to_motor_driver_;   // Serial connection to motor driver
@@ -79,7 +84,7 @@ class RobotController
     bool log_this_cycle_;                  // Trigger for logging this cycle
     bool fake_perfect_motion_;             // Flag used for testing to enable perfect motion without clearcore
     Velocity fake_local_cart_vel_;         // Commanded local cartesian velocity used to fake perfect motion
-    const Velocity max_cart_vel_limit_;    // Maximum velocity allowed, used to limit commanded velocity
+    Velocity max_cart_vel_limit_;          // Maximum velocity allowed, used to limit commanded velocity
 
     TimeRunningAverage loop_time_averager_;        // Handles keeping average of the loop timing
 

@@ -1,0 +1,1 @@
+#tile_x, tile_y, offset_x (millimeters), offset_y(millimeters), offset_a(degrees), add to default (True) or exact (False)

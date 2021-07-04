@@ -1,0 +1,25 @@
+KukaInit();
+
+int tile_count = 0;
+int num_tiles = 333;
+int num_rows = 20;
+int num_cols = 15;
+
+while (tile_count < num_tiles) {
+    string line = ReadLineFromFile(tile_count);
+    vector<char> colors = ParseColors(line);
+    int color_count = 0;
+    for (int row = 0; row < num_rows; row++) {
+        for (int col = 0; col < num_cols; col++) {
+            Pose pickup_pose = PickupPoseFromColor(colors[color_count]);
+            Pose dropoff_pose = DropoffPoseFromRowCol(row, col);
+            MoveToPickup(pickup_pose);
+            CloseGripper();
+            MoveToDropoff(dropoff_pose);
+            OpenGripper();
+            color_count++;
+        }
+    }
+    tile_count++;
+}
+

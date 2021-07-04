@@ -36,6 +36,7 @@ void RobotController::moveToPosition(float x, float y, float a)
 {
     reset_last_motion_logger();
     limits_mode_ = LIMITS_MODE::COARSE;
+    setCartVelLimits(limits_mode_);
     Point goal_pos = Point(x,y,a);
     PLOGI_(MOTION_CSV_LOG_ID).printf("MoveToPosition: %s",goal_pos.toString().c_str());
 
@@ -54,6 +55,7 @@ void RobotController::moveToPositionRelative(float dx_local, float dy_local, flo
 {
     reset_last_motion_logger();
     limits_mode_ = LIMITS_MODE::COARSE;
+    setCartVelLimits(limits_mode_);
 
     float dx_global =  cos(cartPos_.a) * dx_local - sin(cartPos_.a) * dy_local;
     float dy_global =  sin(cartPos_.a) * dx_local + cos(cartPos_.a) * dy_local;
@@ -72,10 +74,34 @@ void RobotController::moveToPositionRelative(float dx_local, float dy_local, flo
     else { statusUpdater_.setErrorStatus(); }
 }
 
+void RobotController::moveToPositionRelativeSlow(float dx_local, float dy_local, float da_local)
+{
+    reset_last_motion_logger();
+    limits_mode_ = LIMITS_MODE::SLOW;
+    setCartVelLimits(limits_mode_);
+
+    float dx_global =  cos(cartPos_.a) * dx_local - sin(cartPos_.a) * dy_local;
+    float dy_global =  sin(cartPos_.a) * dx_local + cos(cartPos_.a) * dy_local;
+    float da_global = da_local;
+    Point goal_pos = Point(cartPos_.x + dx_global, cartPos_.y + dy_global, wrap_angle(cartPos_.a + da_global));
+    PLOGI_(MOTION_CSV_LOG_ID).printf("MoveToPositionRelativeSlow: %s",goal_pos.toString().c_str());
+
+    auto position_mode = std::make_unique<RobotControllerModePosition>(fake_perfect_motion_);
+    bool ok = position_mode->startMove(cartPos_, goal_pos, limits_mode_);
+   
+    if (ok) 
+    { 
+        startTraj(); 
+        controller_mode_ = std::move(position_mode);
+    }
+    else { statusUpdater_.setErrorStatus(); }
+}
+
 void RobotController::moveToPositionFine(float x, float y, float a)
 {
     reset_last_motion_logger();
     limits_mode_ = LIMITS_MODE::FINE;
+    setCartVelLimits(limits_mode_);
     Point goal_pos = Point(x,y,a);
     PLOGI_(MOTION_CSV_LOG_ID).printf("MoveToPositionFine: %s",goal_pos.toString().c_str());
 
@@ -103,6 +129,7 @@ void RobotController::moveWithVision(float x, float y, float a)
 {
     reset_last_motion_logger();
     limits_mode_ = LIMITS_MODE::VISION;
+    setCartVelLimits(limits_mode_);
     Point goal = Point(x,y,a);
     PLOGI_(MOTION_CSV_LOG_ID).printf("MoveWithVision: %s",goal.toString().c_str());
     auto vision_mode = std::make_unique<RobotControllerModeVision>(fake_perfect_motion_, statusUpdater_);
@@ -152,6 +179,12 @@ void RobotController::update()
             target_vel = {0,0,0};
             disableAllMotors();
             trajRunning_ = false;
+            // Bit of a hack for reseting angle covariance after vision motion
+            // This avoids weird rotations from error accumlated in the kalman filter
+            if (limits_mode_ == LIMITS_MODE::VISION)
+            {
+                localization_.resetAngleCovariance();
+            }
             // Re-enable fine mode at the end of a trajectory
             limits_mode_ = LIMITS_MODE::FINE;
         }
@@ -222,6 +255,28 @@ void RobotController::forceSetPosition(float x, float y, float a)
 {
     localization_.forceSetPosition({x,y,a});
     cartPos_ = localization_.getPosition();
+}
+
+void RobotController::setCartVelLimits(LIMITS_MODE limits_mode)
+{
+    if(limits_mode == LIMITS_MODE::VISION)
+    {
+        max_cart_vel_limit_ = { cfg.lookup("motion.translation.max_vel.vision"), 
+                                cfg.lookup("motion.translation.max_vel.vision"), 
+                                cfg.lookup("motion.rotation.max_vel.vision")};
+    }
+    else if(limits_mode == LIMITS_MODE::FINE || limits_mode == LIMITS_MODE::SLOW)
+    {
+        max_cart_vel_limit_ = { cfg.lookup("motion.translation.max_vel.fine"), 
+                                cfg.lookup("motion.translation.max_vel.fine"), 
+                                cfg.lookup("motion.rotation.max_vel.fine")};
+    }
+    else
+    {
+        max_cart_vel_limit_ = { cfg.lookup("motion.translation.max_vel.coarse"), 
+                                cfg.lookup("motion.translation.max_vel.coarse"), 
+                                cfg.lookup("motion.rotation.max_vel.coarse")};
+    }
 }
 
 bool RobotController::readMsgFromMotorDriver(Velocity* decodedVelocity)

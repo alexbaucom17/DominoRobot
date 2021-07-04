@@ -8,6 +8,7 @@ import enum
 import logging
 import os
 import Utils
+from Utils import ActionTypes
 import config
 import pickle
 import csv
@@ -65,6 +66,8 @@ class DominoField:
 
     def printStats(self):
         # Output some metrics
+        logging.info("Original image size: {}".format(self.img.shape[:2]))
+        logging.info("Scaled image size: {}".format(self.img_scaled.shape[:2]))
         logging.info('Domino usage:')
         logging.info('Total number of dominos: ' + str(self.img_parsed_ids.size))
         logging.info('Colors:')
@@ -116,10 +119,10 @@ class DominoField:
 
         # Build array of order to show and write
         order_array = np.zeros((self.n_tiles_x,self.n_tiles_y))
-        print(self.n_tiles_x)
-        print(self.n_tiles_y)
+        # print(self.n_tiles_x)
+        # print(self.n_tiles_y)
         for tile in self.tiles:
-            print(tile.coordinate)
+            # print(tile.coordinate)
             order_array[tile.coordinate] = tile.order
 
         # Modify array to show image correctly
@@ -141,6 +144,10 @@ class DominoField:
     def _generateField(self):
         # Load original image
         img = mpimg.imread(self.cfg.image_name)
+
+        # Skip A value for RGBA files
+        if img.shape[2] is 4:
+            img = img[:,:,:3]
 
         # Scaled image
         img_scaled = sktf.resize(img, (self.cfg.desired_height_dominos, self.cfg.desired_width_dominos), anti_aliasing=False)
@@ -174,7 +181,7 @@ class DominoField:
     def _addTile(self, tile_coordinate, tile_values, tile_order, vision_offset_map):
 
         vision_offset = vision_offset_map[tile_coordinate]
-        print("Tile: order {}, coord {}, vision offset: {}".format(tile_order, tile_coordinate, vision_offset))
+        # print("Tile: order {}, coord {}, vision offset: {}".format(tile_order, tile_coordinate, vision_offset))
         new_tile = Tile(self.cfg, tile_coordinate, tile_values, tile_order, vision_offset)
         self.tiles.append(new_tile)
 
@@ -223,10 +230,12 @@ class DominoField:
 
     @classmethod
     def _generateTileOrderingColumns(cls, num_x, num_y):
-        def coordToOrder(coord, num_y):
+        def coordToOrderLR(coord, num_x, num_y):
             return coord[0]*num_y + num_y - coord[1] -1
+        def coordToOrderRL(coord, num_x, num_y):
+            return (num_x - coord[0] - 1)*num_y + num_y - coord[1] -1
         all_coords = [(x,y) for x in range(num_x) for y in range(num_y)]
-        order_map = {coord: coordToOrder(coord, num_y) for coord in all_coords}
+        order_map = {coord: coordToOrderRL(coord, num_x, num_y) for coord in all_coords}
         return order_map
 
     @classmethod
@@ -327,26 +336,6 @@ class Tile:
                 array[domino_start_x:domino_end_x, domino_start_y:domino_end_y, 1] = domino_color[1]
                 array[domino_start_x:domino_end_x, domino_start_y:domino_end_y, 2] = domino_color[2]
 
-
-class ActionTypes(enum.Enum):
-    MOVE_COARSE = 0,
-    MOVE_FINE = 1,
-    MOVE_REL = 2,
-    NET = 3,
-    LOAD = 4,
-    PLACE = 5,
-    TRAY_INIT = 6, 
-    LOAD_COMPLETE = 7,
-    ESTOP = 8,
-    WAIT_FOR_LOCALIZATION = 9, 
-    MOVE_CONST_VEL = 10,
-    CLEAR_ERROR = 11,
-    NONE = 12,
-    SET_POSE = 13,
-    MOVE_WITH_VISION = 14,
-    TOGGLE_VISION_DEBUG = 15,
-    START_CAMERAS = 16,
-    STOP_CAMERAS = 17,
 
 class Action:
 
@@ -479,31 +468,66 @@ def generate_full_action_sequence(cfg, tile):
     robot_placement_fine_pos_global_frame = Utils.TransformPos(robot_placement_fine_pos_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
     enter_field_prep_global_frame = Utils.TransformPos(enter_field_prep_pos_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
     exit_field_prep_global_frame = Utils.TransformPos(exit_field_prep_pos_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
-    base_station_coarse_pos = cfg.base_station_target_pos + Utils.TransformPos(cfg.base_station_coarse_pose_offset, [0,0], cfg.base_station_target_angle)
     robot_field_angle = cfg.domino_field_angle + cfg.field_to_robot_frame_angle
 
     actions = []
 
-    name = "Move to load - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, cfg.base_station_target_pos[0], cfg.base_station_target_pos[1], cfg.base_station_target_angle))
-
-    name = "Load tile"
-    actions.append(Action(ActionTypes.LOAD, name))
-
-    name = "Move away from load - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], cfg.base_station_target_angle))
-
-    name = "Move to prep - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, enter_field_prep_global_frame[0], enter_field_prep_global_frame[1], robot_field_angle))
-
-    name = "Move to near place - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
+    name = "Move to load waypoint - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.load_waypoint[2]))
 
     name = "Wait for localization"
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
+    name = "Move to near load prep - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
+
     name = "Start cameras"
     actions.append(Action(ActionTypes.START_CAMERAS, name))
+
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+
+    name = "Move to load prep - fine"
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
+
+    name = "Move to load prep - vision"
+    actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, cfg.base_station_prep_vision_offset[0], cfg.base_station_prep_vision_offset[1], cfg.base_station_prep_vision_offset[2]))
+    
+    name = "Move to load - relative slow"
+    actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, cfg.base_station_relative_offset[0], cfg.base_station_relative_offset[1], cfg.base_station_relative_offset[2]))
+
+    name = "Align with load"
+    actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, cfg.base_station_vision_offset[0], cfg.base_station_vision_offset[1], cfg.base_station_vision_offset[2]))
+
+    name = "Stop cameras"
+    actions.append(Action(ActionTypes.STOP_CAMERAS, name))
+
+    name = "Load tile"
+    actions.append(Action(ActionTypes.LOAD, name))
+
+    name = "Move away from load - relative slow"
+    actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, -cfg.base_station_relative_offset[0], -cfg.base_station_relative_offset[1], -cfg.base_station_relative_offset[2]))
+
+    name = "Move to load waypoint - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.load_waypoint[2]))
+
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+
+    name = "Move to enter - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, enter_field_prep_global_frame[0], enter_field_prep_global_frame[1], robot_field_angle))
+
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+
+    name = "Move to near place - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
+
+    name = "Start cameras"
+    actions.append(Action(ActionTypes.START_CAMERAS, name))
+
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to place - fine"
     actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle))
@@ -521,10 +545,7 @@ def generate_full_action_sequence(cfg, tile):
     actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
 
     name = "Move to exit - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, exit_field_prep_global_frame[0], exit_field_prep_global_frame[1], robot_field_angle))
-
-    name = "Move to near load - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, base_station_coarse_pos[0], base_station_coarse_pos[1], cfg.base_station_target_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, enter_field_prep_global_frame[0], enter_field_prep_global_frame[1], robot_field_angle))
 
     return actions
 
@@ -570,6 +591,9 @@ def generate_small_testing_action_sequence(cfg, tile):
 
     name = "Move to prep - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, enter_field_prep_global_frame[0], enter_field_prep_global_frame[1], robot_field_angle))
+
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to near place - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
@@ -786,9 +810,9 @@ if __name__ == '__main__':
 
     plan = RunFieldPlanning(autosave=False)
 
-    # plan.field.printStats()
-    # plan.field.show_image_parsing()
-    # plan.field.render_domino_image_tiles()
+    plan.field.printStats()
+    plan.field.show_image_parsing()
+    plan.field.render_domino_image_tiles()
     plan.field.show_tile_ordering()
     plan.draw_cycle(2)
     plan.draw_all_tile_poses()

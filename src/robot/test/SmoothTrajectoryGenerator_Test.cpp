@@ -62,9 +62,9 @@ TEST_CASE("SmoothTrajectoryGenerator class", "[trajectory]")
         CHECK(output.position.x == Approx(p2.x));
         CHECK(output.position.y == Approx(p2.y));
         CHECK(output.position.a == Approx(p2.a));
-        CHECK(output.velocity.vx == Approx(0));
-        CHECK(output.velocity.vy == Approx(0));
-        CHECK(output.velocity.va == Approx(0).margin(0.0001));
+        CHECK(output.velocity.vx == Approx(0.0).margin(0.0001));
+        CHECK(output.velocity.vy == Approx(0.0).margin(0.0001));
+        CHECK(output.velocity.va == Approx(0.0f).margin(0.0001));
 
         limits_mode = LIMITS_MODE::FINE;
         ok = stg.generatePointToPointTrajectory(p1, p2, limits_mode);
@@ -76,9 +76,9 @@ TEST_CASE("SmoothTrajectoryGenerator class", "[trajectory]")
         CHECK(output.position.x == Approx(p2.x));
         CHECK(output.position.y == Approx(p2.y));
         CHECK(output.position.a == Approx(p2.a));
-        CHECK(output.velocity.vx == Approx(0));
-        CHECK(output.velocity.vy == Approx(0));
-        CHECK(output.velocity.va == Approx(0).margin(0.0001));
+        CHECK(output.velocity.vx == Approx(0.0).margin(0.0001));
+        CHECK(output.velocity.vy == Approx(0.0).margin(0.0001));
+        CHECK(output.velocity.va == Approx(0.0).margin(0.0001));
     }
 
     SECTION("Zeros")
@@ -618,125 +618,65 @@ TEST_CASE("computeKinematicsBasedOnRegion", "[trajectory]")
     }
 }
 
+TEST_CASE("synchronizeParameters", "[trajectory]")
+{
+    // These values should all be valid together
+    std::vector<float> switch_times {0.000, 0.200, 0.500, 0.700, 6.000, 6.200, 6.500, 6.700};
+    float dt_v = 5.3;
+    float dt_a = 0.3;
+    float dt_j = 0.2;
+    float dp = 3.0;
+    SCurveParameters valid_params;
+    valid_params.v_lim = 0.5;
+    valid_params.a_lim = 1.0;
+    valid_params.j_lim = 5.0;
+    populateSwitchTimeParameters(&valid_params, dt_j, dt_a, dt_v);
+    for (int i = 0; i < 8; i++)
+    {
+        REQUIRE(valid_params.switch_points[i].t == switch_times[i]);
+    }
+    REQUIRE(valid_params.switch_points[7].p == dp);
+    
+    SCurveParameters params_to_test = valid_params;
+    params_to_test.v_lim = 0.0;
+    params_to_test.a_lim = 0.0;
+    params_to_test.j_lim = 0.0;
 
-// TEST_CASE("synchronizeParameters", "[trajectory]")
-// {
-//     SECTION("Monotonic - First arg")
-//     {
-//         // Generate one set of parameters
-//         float dist = 10;
-//         DynamicLimits limits = {1, 2, 8};
-//         SolverParameters solver = {25, 0.8, 0.8, 0.1};
-//         SCurveParameters params1;
-//         bool ok = generateSCurve(dist, limits, solver, &params1);
-//         REQUIRE(ok == true);
-//         CHECK(params1.v_lim == limits.max_vel);
-//         CHECK(params1.a_lim == limits.max_acc);
-//         CHECK(params1.j_lim == limits.max_jerk);
-
-//         // Make new set of params - make sure all dt values are smaller than the first one so 
-//         // it maps params1 times to param2 
-//         SCurveParameters params2;
-//         params2.switch_points[7].p = dist;
-//         float dt_v = 9;
-//         float dt_a = 0.05;
-//         float dt_j = 0.05;
-//         params2.switch_points[0].t = 0;
-//         params2.switch_points[1].t = dt_j;
-//         params2.switch_points[2].t = dt_j + dt_a;
-//         params2.switch_points[3].t = 2*dt_j + dt_a;
-//         params2.switch_points[4].t = 2*dt_j + dt_a + dt_v;
-//         params2.switch_points[5].t = 3*dt_j + dt_a + dt_v;
-//         params2.switch_points[6].t = 3*dt_j + 2*dt_a + dt_v;
-//         params2.switch_points[7].t = 4*dt_j + 2*dt_a + dt_v;
-
-//         // Synchronize parameters
-//         ok = synchronizeParameters(&params1, &params2);
-//         REQUIRE(ok == true);
-
-//         // Verify limits match expectation - i.e. params2 got mapped to slower values
-//         CHECK(params2.v_lim == Approx(limits.max_vel).epsilon(0.01));
-//         CHECK(params2.a_lim == Approx(limits.max_acc).epsilon(0.01));
-//         CHECK(params2.j_lim == Approx(limits.max_jerk).epsilon(0.01));
-
-//     }
-//     SECTION("Monotonic - Second arg")
-//     {
-//         // Generate one set of parameters
-//         float dist = 10;
-//         DynamicLimits limits = {1, 2, 8};
-//         SolverParameters solver = {25, 0.8, 0.8, 0.1};
-//         SCurveParameters params1;
-//         bool ok = generateSCurve(dist, limits, solver, &params1);
-//         REQUIRE(ok == true);
-//         CHECK(params1.v_lim == limits.max_vel);
-//         CHECK(params1.a_lim == limits.max_acc);
-//         CHECK(params1.j_lim == limits.max_jerk);
-
-//         // Make new set of params - make sure all dt values are smaller than the first one so 
-//         // it maps params1 times to param2 
-//         SCurveParameters params2;
-//         params2.switch_points[7].p = dist;
-//         float dt_v = 9;
-//         float dt_a = 0.05;
-//         float dt_j = 0.05;
-//         params2.switch_points[0].t = 0;
-//         params2.switch_points[1].t = dt_j;
-//         params2.switch_points[2].t = dt_j + dt_a;
-//         params2.switch_points[3].t = 2*dt_j + dt_a;
-//         params2.switch_points[4].t = 2*dt_j + dt_a + dt_v;
-//         params2.switch_points[5].t = 3*dt_j + dt_a + dt_v;
-//         params2.switch_points[6].t = 3*dt_j + 2*dt_a + dt_v;
-//         params2.switch_points[7].t = 4*dt_j + 2*dt_a + dt_v;
-
-//         // Synchronize parameters
-//         ok = synchronizeParameters(&params1, &params2);
-//         REQUIRE(ok == true);
-
-//         // Verify limits match expectation - i.e. params2 got mapped to slower values
-//         CHECK(params2.v_lim == Approx(limits.max_vel).epsilon(0.01));
-//         CHECK(params2.a_lim == Approx(limits.max_acc).epsilon(0.01));
-//         CHECK(params2.j_lim == Approx(limits.max_jerk).epsilon(0.01));
-
-//     }
-//     SECTION ("Nonmonotonic")
-//     {
-
-//     }
-// }
-
-// TEST_CASE("mapParameters", "[trajectory]")
-// {
-//     // Generate one set of parameters
-//     float dist = 10;
-//     DynamicLimits limits = {1, 2, 8};
-//     SolverParameters solver = {25, 0.8, 0.8, 0.1};
-//     SCurveParameters params1;
-//     bool ok = generateSCurve(dist, limits, solver, &params1);
-//     REQUIRE(ok == true);
-//     CHECK(params1.v_lim == limits.max_vel);
-//     CHECK(params1.a_lim == limits.max_acc);
-//     CHECK(params1.j_lim == limits.max_jerk);
-
-//     // Solve the inverse
-//     ok = solveInverse(&params1);
-//     REQUIRE(ok == true);
-
-//     // Verify times match expectation
-//     float dt_v = 9.25;
-//     float dt_a = 0.25;
-//     float dt_j = 0.25;
-//     CHECK(params1.switch_points[0].t == 0);
-//     CHECK(params1.switch_points[1].t == dt_j);
-//     CHECK(params1.switch_points[2].t == dt_j + dt_a);
-//     CHECK(params1.switch_points[3].t == 2*dt_j + dt_a);
-//     CHECK(params1.switch_points[4].t == 2*dt_j + dt_a + dt_v);
-//     CHECK(params1.switch_points[5].t == 3*dt_j + dt_a + dt_v);
-//     CHECK(params1.switch_points[6].t == 3*dt_j + 2*dt_a + dt_v);
-//     CHECK(params1.switch_points[7].t == 4*dt_j + 2*dt_a + dt_v);
-
-//     // Verify limits match expectation
-//     CHECK(params1.v_lim == Approx(limits.max_vel).epsilon(0.01));
-//     CHECK(params1.a_lim == Approx(limits.max_acc).epsilon(0.01));
-//     CHECK(params1.j_lim == Approx(limits.max_jerk).epsilon(0.01));
-// }
+    SECTION("solveInverse")
+    {
+        bool ok = solveInverse(&params_to_test);
+        CHECK(ok == true);
+        CHECK(params_to_test.v_lim == Approx(valid_params.v_lim));
+        CHECK(params_to_test.a_lim == Approx(valid_params.a_lim));
+        CHECK(params_to_test.j_lim == Approx(valid_params.j_lim));
+    }
+    SECTION("slowDownParamsToMatchTime")
+    {
+        for (int i = 0; i < 8; i++)
+        {
+            params_to_test.switch_points[i].t /= 2.0;
+        }
+        bool ok = slowDownParamsToMatchTime(&params_to_test, switch_times[7]);
+        CHECK(ok == true);
+        CHECK(params_to_test.switch_points[7].t == switch_times[7]);
+        CHECK(params_to_test.switch_points[7].p == Approx(dp));
+    }
+    SECTION("synchronize")
+    {
+        for (int i = 0; i < 8; i++)
+        {
+            params_to_test.switch_points[i].t /= 2.0;
+        }
+        SCurveParameters params_to_test2 = valid_params;
+        bool ok = synchronizeParameters(&params_to_test, &params_to_test2);
+        CHECK(ok == true);
+        CHECK(params_to_test.switch_points[7].t == switch_times[7]);
+        CHECK(params_to_test.switch_points[7].p == Approx(dp));
+        CHECK(params_to_test2.switch_points[7].t == switch_times[7]);
+        CHECK(params_to_test2.switch_points[7].p == Approx(dp));
+        for (int i = 0; i < 8; i++)
+        {
+            CHECK(params_to_test2.switch_points[i].t == switch_times[i]);
+        }
+    }
+}

@@ -196,6 +196,11 @@ class RobotClient(ClientBase):
         msg = {'type': 'move_rel', 'data': {'x': x, 'y': y, 'a': a}}
         self.send_msg_and_wait_for_ack(msg)
 
+    def move_rel_slow(self, x, y, a):
+        """ Tell robot to move to a relative location but slowly """
+        msg = {'type': 'move_rel_slow', 'data': {'x': x, 'y': y, 'a': a}}
+        self.send_msg_and_wait_for_ack(msg)
+
     def move_fine(self, x, y, a):
         """ Tell robot to move to a specific location with fine precision """
         msg = {'type': 'move_fine', 'data': {'x': x, 'y': y, 'a': a}}
@@ -284,6 +289,9 @@ class MockRobotClient:
         pass
 
     def move_rel(self, x, y, a):
+        pass
+
+    def move_rel_slow(self, x, y, a):
         pass
 
     def move_fine(self, x, y, a):
