@@ -506,7 +506,7 @@ def generate_full_action_sequence(cfg, tile):
     actions.append(Action(ActionTypes.LOAD, name))
 
     name = "Move away from load - relative slow"
-    actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, -cfg.base_station_relative_offset[0], -cfg.base_station_relative_offset[1], -cfg.base_station_relative_offset[2]))
+    actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, -1.5*cfg.base_station_relative_offset[0], -1.5*cfg.base_station_relative_offset[1], -1.5*cfg.base_station_relative_offset[2]))
 
     name = "Move to load waypoint - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.load_waypoint[2]))

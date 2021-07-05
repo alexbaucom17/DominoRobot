@@ -58,7 +58,7 @@ class Config:
     image_name = os.path.join(config_dir_path, 'DominoDesign.psd')
     # num_tiles_width = 18
     # num_tiles_height = 19
-    num_tiles_width = 5
+    num_tiles_width = 7
     num_tiles_height = 5
     if USE_SMALL_TESTING_CONFIG:  
         num_tiles_width = 2
@@ -91,8 +91,8 @@ class Config:
     tile_height = 20
     tile_background_color = (0.9,0.9,0.9)
     tile_edge_color = (0,0,1)
-    tile_size_width_meters = tile_width * (domino_spacing_width + domino_width)
-    tile_size_height_meters = tile_height * (domino_spacing_height + domino_height)
+    tile_size_width_meters = 0.930 #tile_width * (domino_spacing_width + domino_width)
+    tile_size_height_meters = 0.665 #tile_height * (domino_spacing_height + domino_height)
     desired_width_dominos = tile_width * num_tiles_width
     desired_height_dominos = tile_height * num_tiles_height
 
@@ -113,7 +113,7 @@ class Config:
     base_station_prep_pos = np.array([2.8,9.7])                   # Pose outside of base station to align with before going in to dock
     base_station_prep_vision_offset = np.array([0,0.04,-1])      # Vision offset to use for base station prep pose
 
-    robot_pose_top_left = np.array([13.2,7.9])                   # Robot pose in global frame for top left of tile position of domino field
+    robot_pose_top_left = np.array([13.2,7.8])                   # Robot pose in global frame for top left of tile position of domino field
     domino_field_angle = -90                                     # Domino field angle (deg), global frame
     tile_placement_coarse_offset = np.array([-0.5,0.5])         # Offset position for tile placement [x,y], in robot coordinate frame
     tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])  # Offset from bottom left of tile to robot center [x,y], in robot coordinate frame     
