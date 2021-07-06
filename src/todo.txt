@@ -1,18 +1,19 @@
 
 Robot SW:
 - Systematically test as many drop locations as possible
+- Consider adjusting vision mode to take over motion as soon as mavelmind mode is close-ish and both markers are detected.
+    - Think about vision takeover when markers are seen (maybe plan decel to 0?)
 
 Robot HW:
 
 Master:
 - Add ability to run plan for just subsection of plan (without regenerating)?
+- Consider setting MM fine pose a bit further away from the dominos than the actual target point (to avoid overshoot)
 
 
 Robustify:
-- Consider setting MM fine pose a bit further away from the dominos than the actual target point (to avoid overshoot)
 - Test master action validator
     - Fix action validator choking on START_CAMERA action
-- Consider adjusting vision mode to take over motion as soon as mavelmind mode is close-ish and both markers are detected.
 
 Nice to haves:
 - Detect when tray init needs to happen again after robot estop

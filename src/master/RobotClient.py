@@ -146,7 +146,8 @@ class ClientBase:
             if resp['type'] != 'ack':
                 logging.warning('Expecting return type ack')
             elif resp['data'] != msg['type']:
-                logging.warning('Incorrect ack type')
+                logging.warning('Incorrect ack type. Expecting: {}, Got: {}'.format(msg['type'], resp['data']))
+                raise ValueError("Bad ack")
         
         return resp
 

@@ -23,7 +23,7 @@ class Config:
     AUTO_LOAD_PLAN = True
     AUTO_LOAD_PLAN_NAME = "FullPlan_DominoBros.p"
     # Set to regenerate and auto load plan on master startup
-    REGEN_PLAN = False
+    REGEN_PLAN = True
 
     # ====== PATHS ========
     
@@ -95,7 +95,7 @@ class Config:
     desired_height_dominos = tile_height * num_tiles_height
 
     # Vision offset configuration
-    default_vision_offset = (0,0,-1.4)
+    default_vision_offset = (0,0,0.5)
     vision_offset_file = os.path.join(plans_dir, 'vision_offsets_larger_testing_area.csv')
 
     # ====== ENVIRONMENT CONFIGURATION ========

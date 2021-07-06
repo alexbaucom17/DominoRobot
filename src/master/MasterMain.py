@@ -96,6 +96,8 @@ class CmdGui:
 
         self.viz_figs = {}
         self.manual_action_debounce_timer = Utils.NonBlockingTimer(1.0)
+        self.drawn_plan_grid = False
+        self.last_cycle_number_drawn = -1
 
         self._draw_environment()
 
@@ -472,34 +474,38 @@ class CmdGui:
         plan_status = plan_info[1]
         cycle_number = plan_info[2]
 
-        rect_width_height = Utils.TransformPos(np.array([self.config.field_width, self.config.field_height]), [0,0], self.config.domino_field_angle)
-        bottom_left = self.config.domino_field_origin
-        bottom_right = (bottom_left[0], bottom_left[1]+rect_width_height[1])
-        top_left = (bottom_left[0] + rect_width_height[0], bottom_left[1])
-        for i in range(1, self.config.num_tiles_width):
-            dx = Utils.TransformPos(np.array([self.config.tile_size_width_meters, 0]), [0,0], self.config.domino_field_angle)
-            p1 = list(bottom_left + dx * i)
-            p2 = list(top_left + dx * i)
-            self.viz_figs["plan_vert_{}".format(i)] = self.window['_GRAPH_'].draw_line(p1, p2, color = "grey17")
-        for i in range(1, self.config.num_tiles_height):
-            dx = Utils.TransformPos(np.array([0, self.config.tile_size_height_meters]), [0,0], self.config.domino_field_angle)
-            p1 = list(bottom_left + dx * i)
-            p2 = list(bottom_right + dx * i)
-            self.viz_figs["plan_hz_{}".format(i)] = self.window['_GRAPH_'].draw_line(p1, p2, color = "grey17")
+        if not self.drawn_plan_grid:
+            rect_width_height = Utils.TransformPos(np.array([self.config.field_width, self.config.field_height]), [0,0], self.config.domino_field_angle)
+            bottom_left = self.config.domino_field_origin
+            bottom_right = (bottom_left[0], bottom_left[1]+rect_width_height[1])
+            top_left = (bottom_left[0] + rect_width_height[0], bottom_left[1])
+            for i in range(1, self.config.num_tiles_width):
+                dx = Utils.TransformPos(np.array([self.config.tile_size_width_meters, 0]), [0,0], self.config.domino_field_angle)
+                p1 = list(bottom_left + dx * i)
+                p2 = list(top_left + dx * i)
+                self.viz_figs["plan_vert_{}".format(i)] = self.window['_GRAPH_'].draw_line(p1, p2, color = "grey17")
+            for i in range(1, self.config.num_tiles_height):
+                dx = Utils.TransformPos(np.array([0, self.config.tile_size_height_meters]), [0,0], self.config.domino_field_angle)
+                p1 = list(bottom_left + dx * i)
+                p2 = list(bottom_right + dx * i)
+                self.viz_figs["plan_hz_{}".format(i)] = self.window['_GRAPH_'].draw_line(p1, p2, color = "grey17")
+            self.drawn_plan_grid = True
 
-        tile_color = "red"
-        if plan_status in [PlanStatus.RUNNING, PlanStatus.PAUSED]:
-            tile_color = "blue"
+        if cycle_number != self.last_cycle_number_drawn:
+            tile_color = "red"
+            if plan_status in [PlanStatus.RUNNING, PlanStatus.PAUSED]:
+                tile_color = "blue"
 
-        if cycle_number <= len(plan.field.tiles):
-            if cycle_number < 0:
-                cycle_number = 0
-            if "plan_marker" in self.viz_figs:
-                self.window['_GRAPH_'].DeleteFigure(self.viz_figs["plan_marker"])
-            tile = plan.field.tiles[cycle_number]
-            location_field_frame = np.array(tile.getPlacementPositionInMeters()) + np.array([cfg.tile_size_width_meters, cfg.tile_size_height_meters])/2.0
-            location_global_frame = list(Utils.TransformPos(location_field_frame, cfg.domino_field_origin, cfg.domino_field_angle))
-            self.viz_figs["plan_marker"] = self.window['_GRAPH_'].draw_circle(location_global_frame, 0.25, fill_color=tile_color)
+            if cycle_number <= len(plan.field.tiles):
+                if cycle_number < 0:
+                    cycle_number = 0
+                if "plan_marker" in self.viz_figs:
+                    self.window['_GRAPH_'].DeleteFigure(self.viz_figs["plan_marker"])
+                tile = plan.field.tiles[cycle_number]
+                location_field_frame = np.array(tile.getPlacementPositionInMeters()) + np.array([self.config.tile_size_width_meters, self.config.tile_size_height_meters])/2.0
+                location_global_frame = list(Utils.TransformPos(location_field_frame, self.config.domino_field_origin, self.config.domino_field_angle))
+                self.viz_figs["plan_marker"] = self.window['_GRAPH_'].draw_circle(location_global_frame, 0.25, fill_color=tile_color)
+                self.last_cycle_number_drawn = cycle_number
 
 
 
