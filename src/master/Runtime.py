@@ -8,6 +8,8 @@ import json
 import copy
 import math
 
+from numpy.core.defchararray import add
+
 from MarvelMindHandler import MarvelmindWrapper, MockMarvelmindWrapper
 from RobotClient import RobotClient, BaseStationClient, MockRobotClient, MockBaseStationClient
 from FieldPlanner import ActionTypes, Action, TestPlan, RunFieldPlanning
@@ -342,19 +344,31 @@ class RuntimeManager:
         self.plan_status = status
 
     def increment_robot_cycle(self, target):
-        self._modify_cycle_state(target, 1, 0)
+        self._modify_cycle_state(target, add_cycle_id=1)
     
     def decrement_robot_cycle(self, target):
-        self._modify_cycle_state(target, - 1, 0)
+        self._modify_cycle_state(target, add_cycle_id=-1)
 
     def increment_robot_action(self, target):
-        self._modify_cycle_state(target, 0, 1)
+        self._modify_cycle_state(target, add_action_id=1)
 
     def decrement_robot_action(self, target):
-        self._modify_cycle_state(target, 0, - 1)
+        self._modify_cycle_state(target, add_action_id=-1)
+
+    def set_cycle(self, target, cycle_num):
+        self._modify_cycle_state(target, add_cycle_id=cycle_num, absolute=True)
+
+    def set_action(self, target, action_num):
+        self._modify_cycle_state(target, add_action_id=action_num, absolute=True)
 
     def get_plan_status(self):
         return self.plan_status
+
+    def get_plan_info(self):
+        if not self.plan:
+            return None
+        else:
+            return (self.plan, self.plan_status, self.next_cycle_number-1)
 
     def _load_plan_from_object(self, plan, plan_path=""):
         self.plan = plan
@@ -530,29 +544,39 @@ class RuntimeManager:
             if data['action_id'] == None and data['cycle_id'] == None:
                 self.idle_bots.add(robot)
 
-    def _modify_cycle_state(self, target, add_cycle_id, add_action_id):
+    def _modify_cycle_state(self, target, add_cycle_id=None, add_action_id=None, absolute=False):
         if self.plan_status == PlanStatus.RUNNING:
             logging.warning("Cannot update cycle state while plan is running.")
             return
         if target not in self.cycle_tracker.keys():
             logging.warning("Invalid target: {}".format(target))
             return
-
+        
         cur_cycle_id = self.cycle_tracker[target]["cycle_id"]
-        if cur_cycle_id is None:
-            cur_cycle_id = 0
-        new_cycle_id = cur_cycle_id + add_cycle_id
-        if self.plan and new_cycle_id >= len(self.plan.cycles) or new_cycle_id < 0:
-            logging.warning("Cycle id {} out of bounds".format(new_cycle_id))
-            return
-
+        new_cycle_id = cur_cycle_id
+        if add_cycle_id is not None:
+            if absolute:
+                new_cycle_id = add_cycle_id
+            else:                
+                if cur_cycle_id is None:
+                    cur_cycle_id = 0
+                new_cycle_id = cur_cycle_id + add_cycle_id
+            if self.plan and new_cycle_id >= len(self.plan.cycles) or new_cycle_id < 0:
+                logging.warning("Cycle id {} out of bounds".format(new_cycle_id))
+                return
+        
         cur_action_id = self.cycle_tracker[target]["action_id"]
-        if cur_action_id is None:
-            cur_action_id = 0
-        new_action_id = cur_action_id + add_action_id    
-        if self.plan and new_action_id >= len(self.plan.get_cycle(new_cycle_id).action_sequence) or new_action_id < 0:
-            logging.warning("Action id {} out of bounds".format(new_action_id))
-            return
+        new_action_id = cur_action_id
+        if add_action_id is not None:
+            if absolute:
+                new_action_id = add_action_id
+            else:
+                if cur_action_id is None:
+                    cur_action_id = 0
+                new_action_id = cur_action_id + add_action_id    
+            if self.plan and new_action_id >= len(self.plan.get_cycle(new_cycle_id).action_sequence) or new_action_id < 0:
+                logging.warning("Action id {} out of bounds".format(new_action_id))
+                return
 
         data = self.cycle_tracker[target]
         data['action_id'] = new_action_id

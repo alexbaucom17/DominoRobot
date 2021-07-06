@@ -5,9 +5,7 @@ Robot SW:
 Robot HW:
 
 Master:
-- Add ability to skip to specific order or coordinate in field
-- Add ability to run plan for just subsection of plan?
-- Add clear error button?
+- Add ability to run plan for just subsection of plan (without regenerating)?
 
 
 Robustify:

@@ -21,9 +21,9 @@ class Config:
     USE_TEST_PLAN = False
     # Set to auto-load this plan on master startup
     AUTO_LOAD_PLAN = True
-    AUTO_LOAD_PLAN_NAME = "LargeScale2_5x5.p"
+    AUTO_LOAD_PLAN_NAME = "FullPlan_DominoBros.p"
     # Set to regenerate and auto load plan on master startup
-    REGEN_PLAN = True
+    REGEN_PLAN = False
 
     # ====== PATHS ========
     
