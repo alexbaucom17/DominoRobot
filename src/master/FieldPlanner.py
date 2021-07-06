@@ -230,10 +230,12 @@ class DominoField:
 
     @classmethod
     def _generateTileOrderingColumns(cls, num_x, num_y):
-        def coordToOrder(coord, num_y):
+        def coordToOrderLR(coord, num_x, num_y):
             return coord[0]*num_y + num_y - coord[1] -1
+        def coordToOrderRL(coord, num_x, num_y):
+            return (num_x - coord[0] - 1)*num_y + num_y - coord[1] -1
         all_coords = [(x,y) for x in range(num_x) for y in range(num_y)]
-        order_map = {coord: coordToOrder(coord, num_y) for coord in all_coords}
+        order_map = {coord: coordToOrderRL(coord, num_x, num_y) for coord in all_coords}
         return order_map
 
     @classmethod
@@ -470,6 +472,12 @@ def generate_full_action_sequence(cfg, tile):
 
     actions = []
 
+    name = "Move to load waypoint - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.load_waypoint[2]))
+
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+
     name = "Move to near load prep - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
 
@@ -498,10 +506,19 @@ def generate_full_action_sequence(cfg, tile):
     actions.append(Action(ActionTypes.LOAD, name))
 
     name = "Move away from load - relative slow"
-    actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, -cfg.base_station_relative_offset[0], -cfg.base_station_relative_offset[1], -cfg.base_station_relative_offset[2]))
+    actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, -1.5*cfg.base_station_relative_offset[0], -1.5*cfg.base_station_relative_offset[1], -1.5*cfg.base_station_relative_offset[2]))
+
+    name = "Move to load waypoint - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.load_waypoint[2]))
+
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to enter - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, enter_field_prep_global_frame[0], enter_field_prep_global_frame[1], robot_field_angle))
+
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to near place - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
@@ -793,12 +810,12 @@ if __name__ == '__main__':
 
     plan = RunFieldPlanning(autosave=False)
 
-    # plan.field.printStats()
-    # plan.field.show_image_parsing()
-    # plan.field.render_domino_image_tiles()
-    # plan.field.show_tile_ordering()
-    # plan.draw_cycle(2)
-    # plan.draw_all_tile_poses()
+    plan.field.printStats()
+    plan.field.show_image_parsing()
+    plan.field.render_domino_image_tiles()
+    plan.field.show_tile_ordering()
+    plan.draw_cycle(2)
+    plan.draw_all_tile_poses()
 
 
     sg.change_look_and_feel('Dark Blue 3')

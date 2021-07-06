@@ -21,9 +21,9 @@ class Config:
     USE_TEST_PLAN = False
     # Set to auto-load this plan on master startup
     AUTO_LOAD_PLAN = True
-    AUTO_LOAD_PLAN_NAME = "DockingTest2.p"
+    AUTO_LOAD_PLAN_NAME = "LargeScale2_5x5.p"
     # Set to regenerate and auto load plan on master startup
-    REGEN_PLAN = False
+    REGEN_PLAN = True
 
     # ====== PATHS ========
     
@@ -56,10 +56,12 @@ class Config:
 
     # Image configuration
     image_name = os.path.join(config_dir_path, 'DominoDesign.psd')
-    num_tiles_wdith = 18
-    num_tiles_height = 19
+    # num_tiles_width = 18
+    # num_tiles_height = 19
+    num_tiles_width = 7
+    num_tiles_height = 5
     if USE_SMALL_TESTING_CONFIG:  
-        num_tiles_wdith = 2
+        num_tiles_width = 2
         num_tiles_height = 4
     dominos = np.array(
                 [('black', (0,0,0)),
@@ -89,30 +91,31 @@ class Config:
     tile_height = 20
     tile_background_color = (0.9,0.9,0.9)
     tile_edge_color = (0,0,1)
-    tile_size_width_meters = tile_width * (domino_spacing_width + domino_width)
-    tile_size_height_meters = tile_height * (domino_spacing_height + domino_height)
-    desired_width_dominos = tile_width * num_tiles_wdith
+    tile_size_width_meters = 0.930 #tile_width * (domino_spacing_width + domino_width)
+    tile_size_height_meters = 0.665 #tile_height * (domino_spacing_height + domino_height)
+    desired_width_dominos = tile_width * num_tiles_width
     desired_height_dominos = tile_height * num_tiles_height
 
     # Vision offset configuration
-    default_vision_offset = (0,0,-2)
+    default_vision_offset = (0,0,-1.4)
     vision_offset_file = os.path.join(plans_dir, 'vision_offsets_larger_testing_area.csv')
 
     # ====== ENVIRONMENT CONFIGURATION ========
 
     # Map configuration (distances in meters, angles in degrees)
     robot_boundaries = np.array([[1,-11],[15,11]])              # Bottom left, top right, global frame
+    load_waypoint = np.array([3, 8.5, 0])                    # xya (global frame) for waypoint to go to first before load prep
 
-    base_station_boundaries = np.array([[2,10],[3,11]])         # Bottom left, top right, global frame
+    base_station_boundaries = np.array([[2.5,10],[3.5,11]])         # Bottom left, top right, global frame
     base_station_target_angle = 90                              # Target angle (deg) for base station in global frame
-    base_station_relative_offset = np.array([1.1, 0, 0])           # Relative position of base station from prep pos - robot frame (x,y,a)
-    base_station_vision_offset = np.array([0.04,0.05,-1.5])     # Vision offset for base station alignment
-    base_station_prep_pos = np.array([2.0,8.2])                   # Pose outside of base station to align with before going in to dock
-    base_station_prep_vision_offset = np.array([0,0.03,2])      # Vision offset to use for base station prep pose
+    base_station_relative_offset = np.array([1.0, 0, 0])           # Relative position of base station from prep pos - robot frame (x,y,a)
+    base_station_vision_offset = np.array([0.025,0.005,-0.6])     # Vision offset for base station alignment
+    base_station_prep_pos = np.array([2.8,9.7])                   # Pose outside of base station to align with before going in to dock
+    base_station_prep_vision_offset = np.array([0,0.04,-1])      # Vision offset to use for base station prep pose
 
-    robot_pose_top_left = np.array([14,7.5])                       # Robot pose in global frame for top left of tile position of domino field
+    robot_pose_top_left = np.array([13.2,7.8])                   # Robot pose in global frame for top left of tile position of domino field
     domino_field_angle = -90                                     # Domino field angle (deg), global frame
-    tile_placement_coarse_offset = np.array([-0.5,-0.5])         # Offset position for tile placement [x,y], in robot coordinate frame
+    tile_placement_coarse_offset = np.array([-0.5,0.5])         # Offset position for tile placement [x,y], in robot coordinate frame
     tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])  # Offset from bottom left of tile to robot center [x,y], in robot coordinate frame     
     prep_position_distance = 1                                  # How far out of field boundaries to do robot prep move
     exit_position_distance = 1                                  # How far out of the field boundaries to move to exit
