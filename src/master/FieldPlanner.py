@@ -404,7 +404,7 @@ class MoveAction(Action):
 
     def draw(self, ax, text="", show_label=True):
 
-        if self.action_type == ActionTypes.MOVE_WITH_VISION:
+        if self.action_type in [ActionTypes.MOVE_WITH_VISION, ActionTypes.MOVE_REL, ActionTypes.MOVE_REL_SLOW]:
             return
 
         # Base triangle at 0 degrees
@@ -460,7 +460,7 @@ def generate_full_action_sequence(cfg, tile):
     tile_pos_in_field_frame = np.array(tile.getPlacementPositionInMeters())
     robot_placement_fine_pos_field_frame = tile_pos_in_field_frame + Utils.TransformPos(cfg.tile_to_robot_offset, [0,0], cfg.field_to_robot_frame_angle)
     robot_placement_coarse_pos_field_frame = robot_placement_fine_pos_field_frame + Utils.TransformPos(cfg.tile_placement_coarse_offset, [0,0], cfg.field_to_robot_frame_angle)
-    enter_field_prep_pos_field_frame = [robot_placement_coarse_pos_field_frame[0], - cfg.prep_position_distance]
+    enter_field_prep_pos_field_frame = [robot_placement_coarse_pos_field_frame[0] - cfg.prep_position_distance, robot_placement_coarse_pos_field_frame[1] - cfg.prep_position_distance]
     exit_field_prep_pos_field_frame = [-cfg.exit_position_distance, robot_placement_coarse_pos_field_frame[1]]
 
     # Convert positions to global frame
@@ -473,7 +473,7 @@ def generate_full_action_sequence(cfg, tile):
     actions = []
 
     name = "Move to load waypoint - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.load_waypoint[2]))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.base_station_target_angle))
 
     name = "Wait for localization"
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
@@ -509,13 +509,13 @@ def generate_full_action_sequence(cfg, tile):
     actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, -1.5*cfg.base_station_relative_offset[0], -1.5*cfg.base_station_relative_offset[1], -1.5*cfg.base_station_relative_offset[2]))
 
     name = "Move to load waypoint - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.load_waypoint[2]))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.load_waypoint_angle_leave))
 
     name = "Wait for localization"
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to enter - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, enter_field_prep_global_frame[0], enter_field_prep_global_frame[1], robot_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, enter_field_prep_global_frame[0], enter_field_prep_global_frame[1], cfg.load_waypoint_angle_leave))
 
     name = "Wait for localization"
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
@@ -545,7 +545,7 @@ def generate_full_action_sequence(cfg, tile):
     actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
 
     name = "Move to exit - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, enter_field_prep_global_frame[0], enter_field_prep_global_frame[1], robot_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, enter_field_prep_global_frame[0], enter_field_prep_global_frame[1], cfg.base_station_target_angle))
 
     return actions
 
@@ -810,10 +810,10 @@ if __name__ == '__main__':
 
     plan = RunFieldPlanning(autosave=False)
 
-    plan.field.printStats()
-    plan.field.show_image_parsing()
-    plan.field.render_domino_image_tiles()
-    plan.field.show_tile_ordering()
+    # plan.field.printStats()
+    # plan.field.show_image_parsing()
+    # plan.field.render_domino_image_tiles()
+    # plan.field.show_tile_ordering()
     plan.draw_cycle(2)
     plan.draw_all_tile_poses()
 
