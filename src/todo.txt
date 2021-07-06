@@ -1,13 +1,12 @@
 
 Robot SW:
-- Get localization working better for coarse motions
+- Systematically test as many drop locations as possible
 
 Robot HW:
-- Re-make camera covers to expose leds
 
 Master:
-- Fix hacky offset for domino field corner (I think the angle is just incorrect for that transform)
-    - Maybe document (for my own sanity), all the various frames and reference points
+- Add ability to run plan for just subsection of plan (without regenerating)?
+
 
 Robustify:
 - Consider setting MM fine pose a bit further away from the dominos than the actual target point (to avoid overshoot)
@@ -17,6 +16,8 @@ Robustify:
 
 Nice to haves:
 - Detect when tray init needs to happen again after robot estop
+- Fix hacky offset for domino field corner (I think the angle is just incorrect for that transform)
+    - Maybe document (for my own sanity), all the various frames and reference points
 - Add warnings to master screen when robot caps control effort
 - Maybe consider rewrite of FieldPlanner (for fun) and to generally improve speed and ease of use.
 - Fix motion unit tests commanding large velocities and tripping thresholding

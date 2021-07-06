@@ -24,7 +24,7 @@ def status_panel(name):
 
 
 def setup_gui_layout(config, panel_names, target_names):
-    plan_button_size = [10,2]
+    plan_button_size = [9,2]
     plan_button_pad = (2, 10)
 
     # Left hand column with status panels
@@ -37,7 +37,12 @@ def setup_gui_layout(config, panel_names, target_names):
     decremenet_cycle_button = sg.Button('Cycle -', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_DEC_CYCLE_', disabled=True) 
     incremenet_action_button = sg.Button('Action +', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_INC_ACTION_', disabled=True) 
     decremenet_action_button = sg.Button('Action -', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_DEC_ACTION_', disabled=True) 
-    cycle_buttons = [[sg.Column([[incremenet_cycle_button], [decremenet_cycle_button]]), sg.Column([[incremenet_action_button], [decremenet_action_button]])]]
+    set_cycle_field = sg.Input(key='_CYCLE_FIELD_', size=(5,1), pad=(0,20))
+    set_action_field = sg.Input(key='_ACTION_FIELD_', size=(5,1), pad=(0,20))
+    set_cycle_button = sg.Button('Set Cycle', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_SET_CYCLE_', disabled=True) 
+    set_action_button = sg.Button('Set Action', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_SET_ACTION_', disabled=True)
+    cycle_buttons = [[sg.Column([[decremenet_cycle_button], [decremenet_action_button]]), sg.Column([[incremenet_cycle_button], [incremenet_action_button]]),  
+                     sg.Column([[set_cycle_field], [set_action_field]]), sg.Column([[set_cycle_button], [set_action_button]])  ]]
     col1 += cycle_buttons
 
     # Middle column with plot and buttons
@@ -60,10 +65,11 @@ def setup_gui_layout(config, panel_names, target_names):
     button_pad = (2,10)
     estop_button = [[sg.Button('ESTOP', button_color=('white','red'), size=button_size, pad=button_pad) ]]
     manual_button = [[sg.Button('Send Command', button_color=('white','green'), size=button_size, pad=button_pad) ]]
+    clear_error_button = [[sg.Button('Clear Error', button_color=('white','orange red'), size=[10,6], pad=button_pad)]]
 
     col2 = [[sg.Graph(canvas_size=(700,700), graph_bottom_left=config.graph_bottom_left, graph_top_right=config.graph_top_right, float_values=True, key="_GRAPH_", background_color="light grey") ],
             [sg.Column(target_element), sg.Column(action_element), sg.Column(data_element)],
-            [sg.Column(plan_buttons), sg.Column(estop_button), sg.Column(manual_button)]  ]
+            [sg.Column(plan_buttons), sg.Column(estop_button), sg.Column(manual_button), sg.Column(clear_error_button)]  ]
 
     # Right hand column with text ouput
     col3 = [[sg.Output(size=(70, 50), echo_stdout_stderr=True)]]
@@ -116,10 +122,13 @@ class CmdGui:
                     return 'Exit', None
         
         # Sending a manual action (via button or pressing enter)
-        if event in ('Send Command', '\r', '\n'):
+        if event in ('Send Command', "Clear Error", '\r', '\n'):
             manual_action = None
             if self.manual_action_debounce_timer.check():
-                manual_action = self._parse_manual_action(values)
+                if event == "Clear Error":
+                    manual_action = (values['_TARGET_'], Action(ActionTypes.CLEAR_ERROR, "ClearError"))
+                else:
+                    manual_action = self._parse_manual_action(values)
             if manual_action is not None:
                 self.window['_ACTION_DATA_'].update("")
                 self.manual_action_debounce_timer = Utils.NonBlockingTimer(1.0)
@@ -144,6 +153,9 @@ class CmdGui:
 
         if event in ["_INC_CYCLE_","_DEC_CYCLE_","_INC_ACTION_","_DEC_ACTION_"]:
             return event, None
+
+        if event in ["_SET_CYCLE_", "_SET_ACTION_"]:
+            return event, (values['_CYCLE_FIELD_'], values["_ACTION_FIELD_"])
 
         if event == "ESTOP":
             return "ESTOP", None
@@ -205,6 +217,10 @@ class CmdGui:
         self.window['_DEC_CYCLE_'].update(disabled=disabled)
         self.window['_INC_ACTION_'].update(disabled=disabled)
         self.window['_DEC_ACTION_'].update(disabled=disabled)
+        self.window['_CYCLE_FIELD_'].update(disabled=disabled)
+        self.window['_ACTION_FIELD_'].update(disabled=disabled)
+        self.window['_SET_CYCLE_'].update(disabled=disabled)
+        self.window['_SET_ACTION_'].update(disabled=disabled)
 
     def _update_plan_button_status(self, plan_status):
         if plan_status == PlanStatus.NONE:
@@ -449,6 +465,44 @@ class CmdGui:
             self.viz_figs["ytick_label_{}".format(val)] = self.window['_GRAPH_'].draw_text("{}".format(val), label_location)
 
 
+    def update_plan_display(self, plan_info):
+        if plan_info is None:
+            return
+        plan = plan_info[0]
+        plan_status = plan_info[1]
+        cycle_number = plan_info[2]
+
+        rect_width_height = Utils.TransformPos(np.array([self.config.field_width, self.config.field_height]), [0,0], self.config.domino_field_angle)
+        bottom_left = self.config.domino_field_origin
+        bottom_right = (bottom_left[0], bottom_left[1]+rect_width_height[1])
+        top_left = (bottom_left[0] + rect_width_height[0], bottom_left[1])
+        for i in range(1, self.config.num_tiles_width):
+            dx = Utils.TransformPos(np.array([self.config.tile_size_width_meters, 0]), [0,0], self.config.domino_field_angle)
+            p1 = list(bottom_left + dx * i)
+            p2 = list(top_left + dx * i)
+            self.viz_figs["plan_vert_{}".format(i)] = self.window['_GRAPH_'].draw_line(p1, p2, color = "grey17")
+        for i in range(1, self.config.num_tiles_height):
+            dx = Utils.TransformPos(np.array([0, self.config.tile_size_height_meters]), [0,0], self.config.domino_field_angle)
+            p1 = list(bottom_left + dx * i)
+            p2 = list(bottom_right + dx * i)
+            self.viz_figs["plan_hz_{}".format(i)] = self.window['_GRAPH_'].draw_line(p1, p2, color = "grey17")
+
+        tile_color = "red"
+        if plan_status in [PlanStatus.RUNNING, PlanStatus.PAUSED]:
+            tile_color = "blue"
+
+        if cycle_number <= len(plan.field.tiles):
+            if cycle_number < 0:
+                cycle_number = 0
+            if "plan_marker" in self.viz_figs:
+                self.window['_GRAPH_'].DeleteFigure(self.viz_figs["plan_marker"])
+            tile = plan.field.tiles[cycle_number]
+            location_field_frame = np.array(tile.getPlacementPositionInMeters()) + np.array([cfg.tile_size_width_meters, cfg.tile_size_height_meters])/2.0
+            location_global_frame = list(Utils.TransformPos(location_field_frame, cfg.domino_field_origin, cfg.domino_field_angle))
+            self.viz_figs["plan_marker"] = self.window['_GRAPH_'].draw_circle(location_global_frame, 0.25, fill_color=tile_color)
+
+
+
 class Master:
 
     def __init__(self, cfg, gui_handle):
@@ -505,6 +559,10 @@ class Master:
             self.runtime_manager.increment_robot_action("robot1")
         if event_type == "_DEC_ACTION_":
             self.runtime_manager.decrement_robot_action("robot1")
+        if event_type == "_SET_CYCLE_":
+            self.runtime_manager.set_cycle("robot1", int(event_data[0]))
+        if event_type == "_SET_ACTION_":
+            self.runtime_manager.set_action("robot1", int(event_data[1]))
         if event_type == "ESTOP":
             self.runtime_manager.estop()
             if self.runtime_manager.get_plan_status() == PlanStatus.RUNNING:
@@ -514,6 +572,7 @@ class Master:
         # Get metrics and update the displayed info
         metrics = self.runtime_manager.get_all_metrics()
         self.cmd_gui.update_status_panels(metrics)
+        self.cmd_gui.update_plan_display(self.runtime_manager.get_plan_info())
 
         return False
 
