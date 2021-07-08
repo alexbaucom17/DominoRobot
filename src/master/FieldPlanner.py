@@ -12,6 +12,7 @@ from Utils import ActionTypes
 import config
 import pickle
 import csv
+import copy
 
 
 def generateVisionOffsetMap(cfg, max_x, max_y):
@@ -54,6 +55,8 @@ class DominoField:
         self.n_tiles_x = 0
         self.n_tiles_y = 0
         self.tiles = []
+
+    def generate(self):
 
         logging.info('Generating domino field from image...')
         self._generateField()
@@ -627,7 +630,6 @@ def generate_small_testing_action_sequence(cfg, tile):
 
     return actions
 
-
 def draw_env(cfg):
     """
     Draws a figure of the environment
@@ -720,15 +722,11 @@ class BasePlan:
         else:
             return None
 
-class Plan(BasePlan):
+class RealPlan(BasePlan):
 
-    def __init__(self, cfg, cycle_generator_fn):
+    def __init__(self, cfg, field, cycles):
         self.cfg = cfg
-        self.field = DominoField(cfg)
-
-        logging.info('Generating robot actions...')
-        cycles = generate_standard_cycles(self.cfg, self.field, cycle_generator_fn)
-        logging.info('done.')
+        self.field = field
         super().__init__(cycles)
 
     def draw_cycle(self, cycle_num):
@@ -759,6 +757,53 @@ class Plan(BasePlan):
         for cycle in self.cycles:
             cycle.draw_action(ax, tile_pose_move_idx, text=cycle.tile.order)
         plt.show()
+
+class Plan(RealPlan):
+
+    def __init__(self, cfg, cycle_generator_fn):
+        field = DominoField(cfg)
+        field.generate()
+        logging.info('Generating robot actions...')
+        cycles = generate_standard_cycles(cfg, field, cycle_generator_fn)
+        logging.info('done.')
+        super().__init__(cfg, field, cycles)
+
+
+class SubsectionPlan(RealPlan):
+
+    def __init__(self, full_plan):
+        self.full_plan = full_plan
+        self.start_coords = full_plan.cfg.start_coords
+        self.end_coords = full_plan.cfg.end_coords
+        self.delta_coords = (self.end_coords[0] - self.start_coords[0],
+                             self.end_coords[1] - self.start_coords[1] )
+        new_field = DominoField(full_plan.cfg)
+        new_field.n_tiles_x = self.delta_coords[0]
+        new_field.n_tiles_y = self.delta_coords[1]
+        counter = 0
+        new_field.tiles = []
+        new_cycles = []
+        for i in range(len(full_plan.field.tiles)):
+            tile = full_plan.field.tiles[i]
+            cycle = full_plan.cycles[i]
+            tile_coords = tile.coordinate
+            if tile_coords[0] >= self.start_coords[0] and \
+               tile_coords[0] <= self.end_coords[0] and \
+               tile_coords[1] >= self.start_coords[1] and \
+               tile_coords[1] <= self.end_coords[1]:
+                # Make new tile
+                new_tile = copy.deepcopy(tile)
+                new_tile.order = counter
+                new_field.tiles.append(new_tile)
+                # Make new cycle
+                new_cycle = copy.deepcopy(cycle)
+                new_cycle.id = counter
+                new_cycle.tile = new_tile
+                new_cycles.append(new_cycle)
+                counter += 1
+
+        super().__init__(self.full_plan.cfg, new_field, new_cycles)
+
 
 
 class TestPlan(BasePlan):
@@ -794,6 +839,9 @@ def RunFieldPlanning(autosave=False):
     else:
         plan = Plan(cfg, generate_full_action_sequence)
 
+    if cfg.USE_SUBSECTION:
+        plan = SubsectionPlan(plan)
+
     if autosave:
         fname = os.path.join(cfg.plans_dir,"autosaved.p")
         with open(fname, 'wb') as f:
@@ -818,11 +866,11 @@ if __name__ == '__main__':
     plan.draw_all_tile_poses()
 
 
-    sg.change_look_and_feel('Dark Blue 3')
-    clicked_value = sg.popup_yes_no('Save plan to file?')
-    if clicked_value == "Yes":
-        fname = sg.popup_get_file("Location to save", save_as=True)
-        with open(fname, 'wb') as f:
-            pickle.dump(plan, f)
-            logging.info("Saved plan to {}".format(fname))
+    # sg.change_look_and_feel('Dark Blue 3')
+    # clicked_value = sg.popup_yes_no('Save plan to file?')
+    # if clicked_value == "Yes":
+    #     fname = sg.popup_get_file("Location to save", save_as=True)
+    #     with open(fname, 'wb') as f:
+    #         pickle.dump(plan, f)
+    #         logging.info("Saved plan to {}".format(fname))
 
