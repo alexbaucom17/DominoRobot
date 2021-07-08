@@ -9,6 +9,7 @@ Robot HW:
 Master:
 - Add ability to run plan for just subsection of plan (without regenerating)?
 - Consider setting MM fine pose a bit further away from the dominos than the actual target point (to avoid overshoot)
+- Generate plans into pdf
 
 
 Robustify:

@@ -12,7 +12,7 @@ class Config:
     # Set to override config values for small scale testing
     USE_SMALL_TESTING_CONFIG = False
     # Set to skip connecting to robot
-    OFFLINE_TESTING = False
+    OFFLINE_TESTING = True
     # Set to skip connecting to base station
     SKIP_BASE_STATION = True
     # Set to skip connecting to Marvelmind
@@ -24,6 +24,8 @@ class Config:
     AUTO_LOAD_PLAN_NAME = "FullPlan_DominoBros.p"
     # Set to regenerate and auto load plan on master startup
     REGEN_PLAN = True
+    # Set to true to use just a subsection of the overal plan
+    USE_SUBSECTION = True
 
     # ====== PATHS ========
     
@@ -119,6 +121,11 @@ class Config:
     prep_position_distance = 1                                  # How far out of field boundaries to do robot prep move
     exit_position_distance = 1                                  # How far out of the field boundaries to move to exit
     field_to_robot_frame_angle = 90                             # In case robot frame and field frame ever need to be rotated relative to each other
+
+    # Used for testing sub-sections of the larger pattern
+    if USE_SUBSECTION:
+        start_coords = (2,2)
+        end_coords = (4,4)
 
     # Left side
     # if USE_SMALL_TESTING_CONFIG:  

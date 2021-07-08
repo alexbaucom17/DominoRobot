@@ -256,7 +256,7 @@ class CmdGui:
             self.window['_ABORT_PLAN_'].update(disabled=True)
             self._udpate_cycle_button_status(disabled=False)
         else:
-            logging.warning("Unhandled plan statusfor button state: {}".format(plan_status))
+            logging.warning("Unhandled plan status for button state: {}".format(plan_status))
 
     def _update_plan_panel(self, status_dict):
         status_str = "Plan is not running"
