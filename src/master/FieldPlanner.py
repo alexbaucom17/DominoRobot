@@ -313,18 +313,23 @@ class Tile:
         tile_end_x_px = tile_start_x_px + tile_size_x_in_px
         tile_end_y_px = tile_start_y_px + tile_size_y_in_px
 
+        self.draw_single(array, tile_start_x_px, tile_start_y_px, tile_end_x_px, tile_end_y_px)
+
+    def draw_single(self, array, tile_start_x_px, tile_start_y_px, tile_end_x_px, tile_end_y_px, draw_edge=True):
+
         # Fill in tile with background color
         array[tile_start_x_px:tile_end_x_px, tile_start_y_px:tile_end_y_px, 0] = self.cfg.tile_background_color[0]
         array[tile_start_x_px:tile_end_x_px, tile_start_y_px:tile_end_y_px, 1] = self.cfg.tile_background_color[1]
         array[tile_start_x_px:tile_end_x_px, tile_start_y_px:tile_end_y_px, 2] = self.cfg.tile_background_color[2]
 
         # Fill in tile edge color (only have to do start locations since next tile over will fill in end locations)
-        array[tile_start_x_px:tile_end_x_px, tile_start_y_px, 0] = self.cfg.tile_edge_color[0]
-        array[tile_start_x_px:tile_end_x_px, tile_start_y_px, 1] = self.cfg.tile_edge_color[1]
-        array[tile_start_x_px:tile_end_x_px, tile_start_y_px, 2] = self.cfg.tile_edge_color[2]
-        array[tile_start_x_px, tile_start_y_px:tile_end_y_px, 0] = self.cfg.tile_edge_color[0]
-        array[tile_start_x_px, tile_start_y_px:tile_end_y_px, 1] = self.cfg.tile_edge_color[1]
-        array[tile_start_x_px, tile_start_y_px:tile_end_y_px, 2] = self.cfg.tile_edge_color[2]
+        if draw_edge:
+            array[tile_start_x_px:tile_end_x_px, tile_start_y_px, 0] = self.cfg.tile_edge_color[0]
+            array[tile_start_x_px:tile_end_x_px, tile_start_y_px, 1] = self.cfg.tile_edge_color[1]
+            array[tile_start_x_px:tile_end_x_px, tile_start_y_px, 2] = self.cfg.tile_edge_color[2]
+            array[tile_start_x_px, tile_start_y_px:tile_end_y_px, 0] = self.cfg.tile_edge_color[0]
+            array[tile_start_x_px, tile_start_y_px:tile_end_y_px, 1] = self.cfg.tile_edge_color[1]
+            array[tile_start_x_px, tile_start_y_px:tile_end_y_px, 2] = self.cfg.tile_edge_color[2]
 
         # Draw dominos
         for i in range(self.cfg.tile_width):
@@ -851,6 +856,61 @@ def RunFieldPlanning(autosave=False):
     return plan
     
 
+def GeneratePDF(plan):
+
+    from reportlab.lib.pagesizes import letter
+    from reportlab.pdfgen import canvas
+    from PIL import Image
+
+    logging.info("Generating PDF")
+
+    # Initialize pdf
+    name = "domino_plan.pdf"
+    full_path = os.path.join(plan.cfg.plans_dir, name)
+    page_height, page_width = letter # Flipped to get landscape
+    c = canvas.Canvas(full_path, pagesize=(page_width, page_height))
+
+    # Pre allocate image array
+    tile_size_x_in_px = (plan.cfg.domino_width_px + plan.cfg.domino_spacing_width_px) * plan.cfg.tile_width
+    tile_size_y_in_px = (plan.cfg.domino_height_px + plan.cfg.domino_spacing_height_px) * plan.cfg.tile_height
+
+    for i in range(len(plan.field.tiles)):
+        # Get tile to draw on this page
+        tile = plan.field.tiles[i]
+
+        # Draw title
+        text_width = 0.5 * page_width
+        text_height = 0.9 * page_height
+        text = "Tile {}, Coordinate: ({}, {})".format(i, tile.coordinate[0], tile.coordinate[1])
+        c.setFont("Helvetica", 20)
+        c.drawCentredString(text_width,text_height,text)
+
+        # Draw orientation note
+        text_width = 0.5 * page_width
+        text_height = 0.1 * page_height
+        text = "This side towards robot body"
+        c.drawCentredString(text_width,text_height,text)
+
+        # Draw image
+        image_array = np.zeros((tile_size_x_in_px, tile_size_y_in_px, 3))
+        tile.draw_single(image_array, 0, 0, tile_size_x_in_px, tile_size_y_in_px, draw_edge=False)
+        image_array = np.transpose(image_array, (1, 0, 2))
+        image_array = np.flip(image_array, 0)
+        im = Image.fromarray(np.uint8(255*image_array), mode='RGB')
+        image_fraction = 0.7
+        start_width = (1-image_fraction)/2.0 * page_width
+        start_height = (1-image_fraction)/2.0 * page_height
+        image_width = image_fraction * page_width
+        image_height = image_fraction * page_height
+        c.drawInlineImage(im, start_width ,  start_height, width=image_width, height=image_height) 
+
+        # Complete page
+        c.showPage()
+
+    c.save()
+
+
+
 
 if __name__ == '__main__':
 
@@ -862,9 +922,10 @@ if __name__ == '__main__':
     # plan.field.show_image_parsing()
     # plan.field.render_domino_image_tiles()
     # plan.field.show_tile_ordering()
-    plan.draw_cycle(2)
-    plan.draw_all_tile_poses()
+    # plan.draw_cycle(2)
+    # plan.draw_all_tile_poses()
 
+    GeneratePDF(plan)
 
     # sg.change_look_and_feel('Dark Blue 3')
     # clicked_value = sg.popup_yes_no('Save plan to file?')
