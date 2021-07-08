@@ -374,6 +374,9 @@ class RuntimeManager:
         self.plan = plan
         self.plan_status = PlanStatus.LOADED
         self.plan_path = plan_path
+        for key in self.robots.keys():
+            self.set_cycle(key, 0)
+            self.set_action(key, 0)
 
     def _load_plan_from_file(self, plan_file):
         if self.config.USE_TEST_PLAN or plan_file == "testplan":
@@ -383,6 +386,9 @@ class RuntimeManager:
                 plan = pickle.load(f)
                 self._load_plan_from_object(plan, plan_file)
                 logging.info("Loaded plan from {}".format(plan_file))  
+        for key in self.robots.keys():
+            self.set_cycle(key, 0)
+            self.set_action(key, 0)
 
     def _update_plan(self):
         # If we have an idle robot, send it the next cycle to execute
@@ -553,26 +559,26 @@ class RuntimeManager:
             return
         
         cur_cycle_id = self.cycle_tracker[target]["cycle_id"]
+        if cur_cycle_id is None:
+            cur_cycle_id = 0
         new_cycle_id = cur_cycle_id
         if add_cycle_id is not None:
             if absolute:
                 new_cycle_id = add_cycle_id
             else:                
-                if cur_cycle_id is None:
-                    cur_cycle_id = 0
                 new_cycle_id = cur_cycle_id + add_cycle_id
             if self.plan and new_cycle_id >= len(self.plan.cycles) or new_cycle_id < 0:
                 logging.warning("Cycle id {} out of bounds".format(new_cycle_id))
                 return
         
         cur_action_id = self.cycle_tracker[target]["action_id"]
+        if cur_action_id is None:
+            cur_action_id = 0
         new_action_id = cur_action_id
         if add_action_id is not None:
             if absolute:
                 new_action_id = add_action_id
             else:
-                if cur_action_id is None:
-                    cur_action_id = 0
                 new_action_id = cur_action_id + add_action_id    
             if self.plan and new_action_id >= len(self.plan.get_cycle(new_cycle_id).action_sequence) or new_action_id < 0:
                 logging.warning("Action id {} out of bounds".format(new_action_id))
