@@ -32,6 +32,8 @@ class RobotController
 
     void moveWithVision(float x, float y, float a);
 
+    void stopFast();
+
     // Main update loop. Should be called as fast as possible
     void update();
 

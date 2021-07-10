@@ -19,6 +19,8 @@ class CameraTracker : public CameraTrackerBase
 
     virtual void update() override;
 
+    virtual bool running() override { return running_; };
+
     virtual void toggleDebugImageOutput() override;
 
     virtual CameraTrackerOutput getPoseFromCamera() override; 
@@ -45,6 +47,7 @@ class CameraTracker : public CameraTrackerBase
     LatchedBool side_cam_ok_filter_;
     LatchedBool rear_cam_ok_filter_;
     LatchedBool both_cams_ok_filter_;
+    bool running_;
 };
 
 

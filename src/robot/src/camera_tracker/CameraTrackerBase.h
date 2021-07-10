@@ -20,6 +20,8 @@ class CameraTrackerBase
 
     virtual void update() = 0;
 
+    virtual bool running() = 0;
+
     virtual void toggleDebugImageOutput() = 0;
 
     virtual CameraTrackerOutput getPoseFromCamera() = 0; 

@@ -14,7 +14,8 @@ CameraTracker::CameraTracker(bool start_thread)
   last_side_cam_output_(),
   side_cam_ok_filter_(0.5),
   rear_cam_ok_filter_(0.5),
-  both_cams_ok_filter_(0.5)
+  both_cams_ok_filter_(0.5),
+  running_(false)
 {
     // Target points
     robot_P_side_target_ = {cfg.lookup("vision_tracker.physical.side.target_x"), 
@@ -95,12 +96,14 @@ void CameraTracker::start()
     rear_cam_.start();
     side_cam_.start();
     camera_loop_time_averager_ = TimeRunningAverage(num_samples_to_average);
+    running_ = true;
 }
 
 void CameraTracker::stop()
 {
     rear_cam_.stop();
     side_cam_.stop();
+    running_ = false;
 }
 
 void CameraTracker::toggleDebugImageOutput()
