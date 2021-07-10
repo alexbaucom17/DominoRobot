@@ -3,11 +3,17 @@ Robot SW:
 - Systematically test as many drop locations as possible
 - Consider adjusting vision mode to take over motion as soon as mavelmind mode is close-ish and both markers are detected.
     - Think about vision takeover when markers are seen (maybe plan decel to 0?)
+- Figure out why KF localization gets stuck in local minimum sometimes
 
 Robot HW:
+- Figure out how to mitigate motor torque issue, get in touch with teknic
 
 Master:
 - Consider setting MM fine pose a bit further away from the dominos than the actual target point (to avoid overshoot)
+- Update cycle generation for rows near the back wall
+- Finish subsection highlighting
+- Generate plans for marks logo with 1 fridge (34 tiles)
+- Add marker indicating last marvelmind position
 
 
 Robustify:

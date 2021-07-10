@@ -79,8 +79,8 @@ if __name__ == '__main__':
         "color": False
     })
 
-    DISPLAY_SIDE = True;
-    DISPLAY_REAR = True;
+    DISPLAY_SIDE = True
+    DISPLAY_REAR = True
 
     if DISPLAY_SIDE:
         side_remote_path = remote_path + 'side/'

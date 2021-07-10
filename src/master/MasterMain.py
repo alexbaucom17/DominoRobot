@@ -279,6 +279,7 @@ class CmdGui:
                     status_str += "  Cycle id: {}\n".format(data["cycle_id"])
                     status_str += "  Action id: {}\n".format(data["action_id"])
                     status_str += "  Action name: {}\n".format(data["action_name"])
+                    status_str += "  Tile Coordinate: {}\n".format(data["tile_coordinate"])
                     status_str += "  Vision offset: {}\n".format(data["vision_offset"])
                 
                 # Set panel coloring based on state
@@ -489,6 +490,16 @@ class CmdGui:
                 p1 = list(bottom_left + dx * i)
                 p2 = list(bottom_right + dx * i)
                 self.viz_figs["plan_hz_{}".format(i)] = self.window['_GRAPH_'].draw_line(p1, p2, color = "grey17")
+
+            # if type(plan) is SubsectionPlan:
+            #     origin = self.config.domino_field_origin
+            #     sub_origin = plan.field.tiles[-1].getPlacementPositionInMeters()
+            #     bottom_left = (origin[0] + sub_origin[0], origin[1] + sub_origin[1])
+            #     sub_top_right = plan.field.tiles[0].getPlacementPositionInMeters()
+            #     top_right = (origin[0] + sub_top_right[0] + self.config.tile_size_width_meters,
+            #                  origin[1] + sub_top_right[1] + self.config.tile_size_height_meters)
+            #     self.viz_figs["subfield"] = self.window['_GRAPH_'].draw_rectangle(bottom_left, top_right, line_color='green', line_width=3)
+
             self.drawn_plan_grid = True
 
         if cycle_number != self.last_cycle_number_drawn:

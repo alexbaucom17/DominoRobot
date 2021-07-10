@@ -466,9 +466,10 @@ class RuntimeManager:
         robot_metrics = {}
         for id, data in self.cycle_tracker.items():
             robot_metrics[id] = {}
-            robot_metrics[id] = {'cycle_id': 'None', 'action_name': 'None', 'action_id': 'None', 'vision_offset': 'None'}
+            robot_metrics[id] = {'cycle_id': 'None', 'action_name': 'None', 'action_id': 'None', 'vision_offset': 'None','tile_coordinate': 'None'}
             if data['cycle_id'] is not None:
-                robot_metrics[id]['cycle_id'] = data['cycle_id']                
+                robot_metrics[id]['cycle_id'] = data['cycle_id'] 
+                robot_metrics[id]['tile_coordinate'] = self.plan.field.tiles[data['cycle_id']].coordinate               
             if data['action_id'] is not None:
                 robot_metrics[id]['action_id'] = data['action_id']
                 action = self.plan.get_action(data['cycle_id'], data['action_id'])
