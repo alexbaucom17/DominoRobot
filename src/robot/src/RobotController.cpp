@@ -8,6 +8,7 @@
 #include "serial/SerialCommsFactory.h"
 #include "robot_controller_modes/RobotControllerModePosition.h"
 #include "robot_controller_modes/RobotControllerModeVision.h"
+#include "robot_controller_modes/RobotControllerModeStopFast.h"
 
 
 RobotController::RobotController(StatusUpdater& statusUpdater)
@@ -143,6 +144,20 @@ void RobotController::moveWithVision(float x, float y, float a)
     else { statusUpdater_.setErrorStatus(); }
 }
 
+void RobotController::stopFast()
+{
+    reset_last_motion_logger();
+    limits_mode_ = LIMITS_MODE::FINE;
+    setCartVelLimits(limits_mode_);
+    PLOGI_(MOTION_CSV_LOG_ID).printf("Stop Fast");
+
+    auto stop_fast_mode = std::make_unique<RobotControllerModeStopFast>(fake_perfect_motion_);
+    stop_fast_mode->startMove(cartPos_, cartVel_);
+    startTraj(); 
+    controller_mode_ = std::move(stop_fast_mode);
+}
+
+
 void RobotController::startTraj()
 {
     trajRunning_ = true;
@@ -244,11 +259,14 @@ void RobotController::disableAllMotors()
 
 void RobotController::inputPosition(float x, float y, float a)
 {
-    if(limits_mode_ == LIMITS_MODE::FINE)
+    bool last_mm_used = false;
+    if(limits_mode_ == LIMITS_MODE::FINE || limits_mode_ == LIMITS_MODE::COARSE)
     {
         localization_.updatePositionReading({x,y,a});
         cartPos_ = localization_.getPosition();
+        last_mm_used = true;
     }
+    statusUpdater_.updateLastMarvelmindPose({x,y,a}, last_mm_used);
 }
 
 void RobotController::forceSetPosition(float x, float y, float a)

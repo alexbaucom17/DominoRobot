@@ -19,11 +19,15 @@ class Config:
     SKIP_MARVELMIND = True
     # Set to use fake plan instead of loading a generated one
     USE_TEST_PLAN = False
+    # MR LOGO plan
+    MR_LOGO_PLAN = False
     # Set to auto-load this plan on master startup
     AUTO_LOAD_PLAN = True
-    AUTO_LOAD_PLAN_NAME = "LargeScale2_5x5.p"
+    AUTO_LOAD_PLAN_NAME = "FullPlan_DominoBros.p"
     # Set to regenerate and auto load plan on master startup
     REGEN_PLAN = True
+    # Set to true to use just a subsection of the overal plan
+    USE_SUBSECTION = False
 
     # ====== PATHS ========
     
@@ -56,13 +60,8 @@ class Config:
 
     # Image configuration
     image_name = os.path.join(config_dir_path, 'DominoDesign.psd')
-    # num_tiles_width = 18
-    # num_tiles_height = 19
-    num_tiles_width = 7
-    num_tiles_height = 5
-    if USE_SMALL_TESTING_CONFIG:  
-        num_tiles_width = 2
-        num_tiles_height = 4
+    num_tiles_width = 18
+    num_tiles_height = 19
     dominos = np.array(
                 [('black', (0,0,0)),
                 ('red',   (1,0,0)),
@@ -71,6 +70,18 @@ class Config:
                 ('white', (1,1,1)),
                 ('brown', (1,0.51,0)),
                 ('yellow', (1,0.867,0)),
+                ], dtype=object)
+
+    if USE_SMALL_TESTING_CONFIG:  
+        num_tiles_width = 2
+        num_tiles_height = 4
+    if MR_LOGO_PLAN:
+        image_name = os.path.join(config_dir_path, 'logo.jpg')
+        num_tiles_width = 5
+        num_tiles_height = 5
+        dominos = np.array(
+                [('black', (0,0,0)),
+                ('white', (1,1,1)),
                 ], dtype=object)
 
     # Physical dimensions of dominos
@@ -97,14 +108,16 @@ class Config:
     desired_height_dominos = tile_height * num_tiles_height
 
     # Vision offset configuration
-    default_vision_offset = (0,0,-1.4)
+    default_vision_offset = (0,0,0.5)
     vision_offset_file = os.path.join(plans_dir, 'vision_offsets_larger_testing_area.csv')
 
     # ====== ENVIRONMENT CONFIGURATION ========
 
     # Map configuration (distances in meters, angles in degrees)
     robot_boundaries = np.array([[1,-11],[15,11]])              # Bottom left, top right, global frame
-    load_waypoint = np.array([3, 8.5, 0])                    # xya (global frame) for waypoint to go to first before load prep
+    highway_x = 3.0                                       # "Highway" coordinate
+    load_waypoint = np.array([highway_x, 6])                    # xya (global frame) for waypoint to go to first before load prep
+    highway_angle = 90
 
     base_station_boundaries = np.array([[2.5,10],[3.5,11]])         # Bottom left, top right, global frame
     base_station_target_angle = 90                              # Target angle (deg) for base station in global frame
@@ -113,13 +126,19 @@ class Config:
     base_station_prep_pos = np.array([2.8,9.7])                   # Pose outside of base station to align with before going in to dock
     base_station_prep_vision_offset = np.array([0,0.04,-1])      # Vision offset to use for base station prep pose
 
-    robot_pose_top_left = np.array([13.2,7.8])                   # Robot pose in global frame for top left of tile position of domino field
+    robot_pose_top_left = np.array([13.2,7.7])                   # Robot pose in global frame for top left of tile position of domino field
     domino_field_angle = -90                                     # Domino field angle (deg), global frame
     tile_placement_coarse_offset = np.array([-0.5,0.5])         # Offset position for tile placement [x,y], in robot coordinate frame
     tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])  # Offset from bottom left of tile to robot center [x,y], in robot coordinate frame     
-    prep_position_distance = 1                                  # How far out of field boundaries to do robot prep move
-    exit_position_distance = 1                                  # How far out of the field boundaries to move to exit
+    enter_position_distance = 1                                  # How far out of field boundaries to do robot prep move
+    intermediate_entry_hz_y = 0                                 # Y coordinate for horizontal intermediate position
+    intermediate_place_vt_x = 8                                 # X coordinate for vertical intermediate position
     field_to_robot_frame_angle = 90                             # In case robot frame and field frame ever need to be rotated relative to each other
+
+    # Used for testing sub-sections of the larger pattern
+    if USE_SUBSECTION:
+        start_coords = (4,0)
+        end_coords = (10,8)
 
     # Left side
     # if USE_SMALL_TESTING_CONFIG:  

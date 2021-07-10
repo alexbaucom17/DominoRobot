@@ -1,22 +1,21 @@
 
 Robot SW:
-- Get localization working better for coarse motions
+- Figure out why KF localization gets stuck in local minimum sometimes (maybe not needed?)
 
 Robot HW:
-- Re-make camera covers to expose leds
 
 Master:
-- Fix hacky offset for domino field corner (I think the angle is just incorrect for that transform)
-    - Maybe document (for my own sanity), all the various frames and reference points
+- Set up new computer with master sw
+
 
 Robustify:
-- Consider setting MM fine pose a bit further away from the dominos than the actual target point (to avoid overshoot)
 - Test master action validator
     - Fix action validator choking on START_CAMERA action
-- Consider adjusting vision mode to take over motion as soon as mavelmind mode is close-ish and both markers are detected.
 
 Nice to haves:
 - Detect when tray init needs to happen again after robot estop
+- Fix hacky offset for domino field corner (I think the angle is just incorrect for that transform)
+    - Maybe document (for my own sanity), all the various frames and reference points
 - Add warnings to master screen when robot caps control effort
 - Maybe consider rewrite of FieldPlanner (for fun) and to generally improve speed and ease of use.
 - Fix motion unit tests commanding large velocities and tripping thresholding

@@ -112,5 +112,5 @@ if __name__ == '__main__':
         local_file = os.path.join(cfg.log_folder, EXISTING_LOCAL_FILENAME)
 
     parsed_data = parse_log_file(local_file)
-    # plot_data(parsed_data, rows_to_plot=['pos_x','pos_y','pos_a'])
-    plot_rows_axes(parsed_data, ['pos','vel','target_pos','target_vel','control_vel'], ['x'])
+    # plot_data(parsed_data, rows_to_plot=['control_vel_x','control_vel_y','control_vel_a'])
+    plot_rows_axes(parsed_data, ['pos','vel','target_pos','target_vel','control_vel'], ['y'])

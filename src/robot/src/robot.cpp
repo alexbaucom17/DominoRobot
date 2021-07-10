@@ -46,6 +46,7 @@ Robot::Robot()
   wait_for_localize_helper_(statusUpdater_, cfg.lookup("localization.max_wait_time"), cfg.lookup("localization.confidence_for_wait")),
   vision_print_rate_(10),
   camera_tracker_(CameraTrackerFactory::getFactoryInstance()->get_camera_tracker()),
+  stop_fast_triggered_(false),
   curCmd_(COMMAND::NONE)
 {
     PLOGI.printf("Robot starting");
@@ -86,6 +87,13 @@ void Robot::runOnce()
     controller_.update();
     tray_controller_.update();
     camera_tracker_->update();
+
+    // Verify if MOVE_FINE_STOP_VISION needs to trigger stop
+    if(curCmd_ == COMMAND::MOVE_FINE_STOP_VISION && camera_tracker_->getPoseFromCamera().ok && !stop_fast_triggered_)
+    {
+        controller_.stopFast();
+        stop_fast_triggered_ = true;
+    }
 
     // Check if the current command has finished
     bool done = checkForCmdComplete(curCmd_);
@@ -187,6 +195,17 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
         RobotServer::PositionData data = server_.getMoveData();
         controller_.moveToPositionFine(data.x, data.y, data.a);
     }
+    else if(cmd == COMMAND::MOVE_FINE_STOP_VISION)
+    {
+        if(!camera_tracker_->running()) 
+        {
+            PLOGW << "Cannot start MOVE_FINE_STOP_VISION if camera tracker isn't running";
+            return false;
+        }
+        RobotServer::PositionData data = server_.getMoveData();
+        controller_.moveToPositionFine(data.x, data.y, data.a);
+        stop_fast_triggered_ = false;
+    }
     else if(cmd == COMMAND::MOVE_CONST_VEL)
     {
         RobotServer::VelocityData data = server_.getVelocityData();
@@ -237,7 +256,8 @@ bool Robot::checkForCmdComplete(COMMAND cmd)
             cmd == COMMAND::MOVE_FINE ||
             cmd == COMMAND::MOVE_CONST_VEL ||
             cmd == COMMAND::MOVE_WITH_VISION || 
-            cmd == COMMAND::MOVE_REL_SLOW)
+            cmd == COMMAND::MOVE_REL_SLOW || 
+            cmd == COMMAND::MOVE_FINE_STOP_VISION)
     {
         return !controller_.isTrajectoryRunning();
     }

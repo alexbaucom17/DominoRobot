@@ -146,7 +146,8 @@ class ClientBase:
             if resp['type'] != 'ack':
                 logging.warning('Expecting return type ack')
             elif resp['data'] != msg['type']:
-                logging.warning('Incorrect ack type')
+                logging.warning('Incorrect ack type. Expecting: {}, Got: {}'.format(msg['type'], resp['data']))
+                raise ValueError("Bad ack")
         
         return resp
 
@@ -204,6 +205,11 @@ class RobotClient(ClientBase):
     def move_fine(self, x, y, a):
         """ Tell robot to move to a specific location with fine precision """
         msg = {'type': 'move_fine', 'data': {'x': x, 'y': y, 'a': a}}
+        self.send_msg_and_wait_for_ack(msg)
+
+    def move_fine_stop_vision(self, x, y, a):
+        """ Tell robot to move to a specific location with fine precision but stop if vision markers are detected """
+        msg = {'type': 'move_fine_stop_vision', 'data': {'x': x, 'y': y, 'a': a}}
         self.send_msg_and_wait_for_ack(msg)
 
     def move_with_vision(self, x, y, a):

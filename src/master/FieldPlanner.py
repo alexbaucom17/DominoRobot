@@ -12,6 +12,7 @@ from Utils import ActionTypes
 import config
 import pickle
 import csv
+import copy
 
 
 def generateVisionOffsetMap(cfg, max_x, max_y):
@@ -54,6 +55,8 @@ class DominoField:
         self.n_tiles_x = 0
         self.n_tiles_y = 0
         self.tiles = []
+
+    def generate(self):
 
         logging.info('Generating domino field from image...')
         self._generateField()
@@ -148,6 +151,21 @@ class DominoField:
         # Skip A value for RGBA files
         if img.shape[2] is 4:
             img = img[:,:,:3]
+
+        # Do some modifications to MR logo to get it the right shape
+        if self.cfg.MR_LOGO_PLAN:
+
+            # Crop vertical
+            vert_size = img.shape[0]
+            crop_factor = 0.4
+            lb = int(vert_size/2 - crop_factor*vert_size)
+            ub = int(vert_size/2 + crop_factor*vert_size)
+            img = img[lb:ub,:,:]
+
+            # Padd horizontal
+            hz_size = img.shape[1]
+            pad_amount = int(0.1 * hz_size)
+            img = np.pad(img,  pad_width=[(0, 0), (pad_amount, pad_amount),(0, 0)], mode='constant')
 
         # Scaled image
         img_scaled = sktf.resize(img, (self.cfg.desired_height_dominos, self.cfg.desired_width_dominos), anti_aliasing=False)
@@ -310,18 +328,23 @@ class Tile:
         tile_end_x_px = tile_start_x_px + tile_size_x_in_px
         tile_end_y_px = tile_start_y_px + tile_size_y_in_px
 
+        self.draw_single(array, tile_start_x_px, tile_start_y_px, tile_end_x_px, tile_end_y_px)
+
+    def draw_single(self, array, tile_start_x_px, tile_start_y_px, tile_end_x_px, tile_end_y_px, draw_edge=True):
+
         # Fill in tile with background color
         array[tile_start_x_px:tile_end_x_px, tile_start_y_px:tile_end_y_px, 0] = self.cfg.tile_background_color[0]
         array[tile_start_x_px:tile_end_x_px, tile_start_y_px:tile_end_y_px, 1] = self.cfg.tile_background_color[1]
         array[tile_start_x_px:tile_end_x_px, tile_start_y_px:tile_end_y_px, 2] = self.cfg.tile_background_color[2]
 
         # Fill in tile edge color (only have to do start locations since next tile over will fill in end locations)
-        array[tile_start_x_px:tile_end_x_px, tile_start_y_px, 0] = self.cfg.tile_edge_color[0]
-        array[tile_start_x_px:tile_end_x_px, tile_start_y_px, 1] = self.cfg.tile_edge_color[1]
-        array[tile_start_x_px:tile_end_x_px, tile_start_y_px, 2] = self.cfg.tile_edge_color[2]
-        array[tile_start_x_px, tile_start_y_px:tile_end_y_px, 0] = self.cfg.tile_edge_color[0]
-        array[tile_start_x_px, tile_start_y_px:tile_end_y_px, 1] = self.cfg.tile_edge_color[1]
-        array[tile_start_x_px, tile_start_y_px:tile_end_y_px, 2] = self.cfg.tile_edge_color[2]
+        if draw_edge:
+            array[tile_start_x_px:tile_end_x_px, tile_start_y_px, 0] = self.cfg.tile_edge_color[0]
+            array[tile_start_x_px:tile_end_x_px, tile_start_y_px, 1] = self.cfg.tile_edge_color[1]
+            array[tile_start_x_px:tile_end_x_px, tile_start_y_px, 2] = self.cfg.tile_edge_color[2]
+            array[tile_start_x_px, tile_start_y_px:tile_end_y_px, 0] = self.cfg.tile_edge_color[0]
+            array[tile_start_x_px, tile_start_y_px:tile_end_y_px, 1] = self.cfg.tile_edge_color[1]
+            array[tile_start_x_px, tile_start_y_px:tile_end_y_px, 2] = self.cfg.tile_edge_color[2]
 
         # Draw dominos
         for i in range(self.cfg.tile_width):
@@ -343,7 +366,7 @@ class Action:
         self.action_type = action_type
         self.name = name
 
-    def draw(self, ax):
+    def draw(self, ax, text=""):
         pass
 
 class SetPoseAction(Action):
@@ -360,6 +383,10 @@ class SetPoseAction(Action):
         self.y = float(y)
         self.a = math.radians(float(a))
 
+class WaitAction(Action):
+    def __init__(self,action_type, name, time):
+        super().__init__(action_type, name)
+        self.time = time
 
 class MoveConstVelAction(Action):
 
@@ -404,7 +431,7 @@ class MoveAction(Action):
 
     def draw(self, ax, text="", show_label=True):
 
-        if self.action_type == ActionTypes.MOVE_WITH_VISION:
+        if self.action_type in [ActionTypes.MOVE_WITH_VISION, ActionTypes.MOVE_REL, ActionTypes.MOVE_REL_SLOW]:
             return
 
         # Base triangle at 0 degrees
@@ -434,7 +461,7 @@ class MoveAction(Action):
                                     facecolor='c'))
         text_point = points[0]
         text_to_show = self.name
-        if text:
+        if text is not "":
             text_to_show = text
         if show_label:
             ax.annotate(text_to_show, xy=text_point[:2], xytext=[1, 1], textcoords="offset points", fontsize=8, color="green")
@@ -460,65 +487,94 @@ def generate_full_action_sequence(cfg, tile):
     tile_pos_in_field_frame = np.array(tile.getPlacementPositionInMeters())
     robot_placement_fine_pos_field_frame = tile_pos_in_field_frame + Utils.TransformPos(cfg.tile_to_robot_offset, [0,0], cfg.field_to_robot_frame_angle)
     robot_placement_coarse_pos_field_frame = robot_placement_fine_pos_field_frame + Utils.TransformPos(cfg.tile_placement_coarse_offset, [0,0], cfg.field_to_robot_frame_angle)
-    enter_field_prep_pos_field_frame = [robot_placement_coarse_pos_field_frame[0], - cfg.prep_position_distance]
-    exit_field_prep_pos_field_frame = [-cfg.exit_position_distance, robot_placement_coarse_pos_field_frame[1]]
 
     # Convert positions to global frame
     robot_placement_coarse_pos_global_frame = Utils.TransformPos(robot_placement_coarse_pos_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
     robot_placement_fine_pos_global_frame = Utils.TransformPos(robot_placement_fine_pos_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
-    enter_field_prep_global_frame = Utils.TransformPos(enter_field_prep_pos_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
-    exit_field_prep_global_frame = Utils.TransformPos(exit_field_prep_pos_field_frame, cfg.domino_field_origin, cfg.domino_field_angle)
     robot_field_angle = cfg.domino_field_angle + cfg.field_to_robot_frame_angle
+
+    # Setup various entry and intermediate positions
+    intermediate_entry_pos_global_frame = np.array([cfg.highway_x, cfg.intermediate_entry_hz_y])
+    entry_y = robot_placement_coarse_pos_global_frame[1]+cfg.enter_position_distance
+    field_entry_pos_global_frame = np.array([cfg.highway_x, entry_y])
+    intermediate_place_pos_global_frame = np.array([cfg.intermediate_place_vt_x, entry_y])
+
+    # Figure out if intermediate steps are needed
+    intermediate_hz = robot_placement_coarse_pos_global_frame[1] < cfg.intermediate_entry_hz_y - 1
+    intermediate_vt = robot_placement_coarse_pos_global_frame[0] > cfg.intermediate_place_vt_x + 1
+
+    # Tiles near the back wall don't have enough space for backwards offset
+    relative_tile_offset = copy.deepcopy(cfg.tile_placement_coarse_offset)
+    if robot_placement_coarse_pos_global_frame[0] < 1:
+        robot_placement_coarse_pos_global_frame[0] = robot_placement_fine_pos_global_frame[0]
+        relative_tile_offset = np.asarray([0, 1])
 
     actions = []
 
     name = "Move to load waypoint - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.load_waypoint[2]))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.base_station_target_angle))
 
-    name = "Wait for localization"
-    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+    name = "Fake wait for loading"
+    actions.append(WaitAction(ActionTypes.WAIT, name, 20))
 
-    name = "Move to near load prep - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
+    # name = "Wait for localization"
+    # actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
-    name = "Start cameras"
-    actions.append(Action(ActionTypes.START_CAMERAS, name))
+    # name = "Move to near load prep - coarse"
+    # actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
 
-    name = "Wait for localization"
-    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+    # name = "Start cameras"
+    # actions.append(Action(ActionTypes.START_CAMERAS, name))
 
-    name = "Move to load prep - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
+    # name = "Wait for localization"
+    # actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
-    name = "Move to load prep - vision"
-    actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, cfg.base_station_prep_vision_offset[0], cfg.base_station_prep_vision_offset[1], cfg.base_station_prep_vision_offset[2]))
+    # name = "Move to load prep - fine"
+    # actions.append(MoveAction(ActionTypes.MOVE_FINE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
+
+    # name = "Move to load prep - vision"
+    # actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, cfg.base_station_prep_vision_offset[0], cfg.base_station_prep_vision_offset[1], cfg.base_station_prep_vision_offset[2]))
     
-    name = "Move to load - relative slow"
-    actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, cfg.base_station_relative_offset[0], cfg.base_station_relative_offset[1], cfg.base_station_relative_offset[2]))
+    # name = "Move to load - relative slow"
+    # actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, cfg.base_station_relative_offset[0], cfg.base_station_relative_offset[1], cfg.base_station_relative_offset[2]))
 
-    name = "Align with load"
-    actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, cfg.base_station_vision_offset[0], cfg.base_station_vision_offset[1], cfg.base_station_vision_offset[2]))
+    # name = "Align with load"
+    # actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, cfg.base_station_vision_offset[0], cfg.base_station_vision_offset[1], cfg.base_station_vision_offset[2]))
 
-    name = "Stop cameras"
-    actions.append(Action(ActionTypes.STOP_CAMERAS, name))
+    # name = "Stop cameras"
+    # actions.append(Action(ActionTypes.STOP_CAMERAS, name))
 
-    name = "Load tile"
-    actions.append(Action(ActionTypes.LOAD, name))
+    # name = "Load tile"
+    # actions.append(Action(ActionTypes.LOAD, name))
 
-    name = "Move away from load - relative slow"
-    actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, -1.5*cfg.base_station_relative_offset[0], -1.5*cfg.base_station_relative_offset[1], -1.5*cfg.base_station_relative_offset[2]))
+    # name = "Move away from load - relative slow"
+    # actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, cfg.base_station_relative_offset[0], cfg.base_station_relative_offset[1], cfg.base_station_relative_offset[2]))
 
-    name = "Move to load waypoint - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.load_waypoint[2]))
+    # name = "Move to load waypoint - coarse"
+    # actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.highway_angle))
 
-    name = "Wait for localization"
-    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+    # name = "Wait for localization"
+    # actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+
+    if intermediate_hz:
+        name = "Move to intermediate enter - coarse"
+        actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_entry_pos_global_frame[0], intermediate_entry_pos_global_frame[1], cfg.highway_angle))
+
+        name = "Wait for motor cooldown (long)"
+        actions.append(WaitAction(ActionTypes.WAIT, name, 20))
 
     name = "Move to enter - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, enter_field_prep_global_frame[0], enter_field_prep_global_frame[1], robot_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, field_entry_pos_global_frame[0], field_entry_pos_global_frame[1], cfg.highway_angle))
 
-    name = "Wait for localization"
-    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+    name = "Wait for motor cooldown"
+    actions.append(WaitAction(ActionTypes.WAIT, name, 10))
+
+    if intermediate_vt:
+        name = "Move to intermediate place - coarse"
+        actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_place_pos_global_frame[0], intermediate_place_pos_global_frame[1], robot_field_angle))
+
+        name = "Wait for motor cooldown"
+        actions.append(WaitAction(ActionTypes.WAIT, name, 10))
 
     name = "Move to near place - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
@@ -530,7 +586,7 @@ def generate_full_action_sequence(cfg, tile):
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE_STOP_VISION, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle))
 
     name = "Move to place - vision"
     actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, tile.vision_offset[0], tile.vision_offset[1], tile.vision_offset[2]))
@@ -541,11 +597,28 @@ def generate_full_action_sequence(cfg, tile):
     name = "Place tile"
     actions.append(Action(ActionTypes.PLACE, name))
 
-    name = "Move away from place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
+    name = "Move away from place - relative slow"
+    actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, relative_tile_offset[0], relative_tile_offset[1], 0))
+
+    if intermediate_vt:
+        name = "Move to intermediate place - coarse"
+        actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_place_pos_global_frame[0], intermediate_place_pos_global_frame[1], robot_field_angle))
+
+        name = "Wait for motor cooldown"
+        actions.append(WaitAction(ActionTypes.WAIT, name, 10))
 
     name = "Move to exit - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, enter_field_prep_global_frame[0], enter_field_prep_global_frame[1], robot_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, field_entry_pos_global_frame[0], field_entry_pos_global_frame[1], cfg.highway_angle))
+
+    name = "Wait for motor cooldown"
+    actions.append(WaitAction(ActionTypes.WAIT, name, 10))
+
+    if intermediate_hz:
+        name = "Move to intermediate exit - coarse"
+        actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_entry_pos_global_frame[0], intermediate_entry_pos_global_frame[1], cfg.highway_angle))
+
+        name = "Wait for motor cooldown (long)"
+        actions.append(WaitAction(ActionTypes.WAIT, name, 20))
 
     return actions
 
@@ -626,7 +699,6 @@ def generate_small_testing_action_sequence(cfg, tile):
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_pose[0], cfg.load_pose[1], cfg.load_pose[2]))
 
     return actions
-
 
 def draw_env(cfg):
     """
@@ -720,15 +792,11 @@ class BasePlan:
         else:
             return None
 
-class Plan(BasePlan):
+class RealPlan(BasePlan):
 
-    def __init__(self, cfg, cycle_generator_fn):
+    def __init__(self, cfg, field, cycles):
         self.cfg = cfg
-        self.field = DominoField(cfg)
-
-        logging.info('Generating robot actions...')
-        cycles = generate_standard_cycles(self.cfg, self.field, cycle_generator_fn)
-        logging.info('done.')
+        self.field = field
         super().__init__(cycles)
 
     def draw_cycle(self, cycle_num):
@@ -736,9 +804,8 @@ class Plan(BasePlan):
         self.get_cycle(cycle_num).draw_cycle(ax)
         plt.show()
 
-    def draw_all_tile_poses(self):
+    def find_pose_move_idx(self, cycle):
         # Figure out what id the tile pose is
-        cycle = self.get_cycle(0)
         place_idx = -1
         for i,action in enumerate(cycle.action_sequence):
             if action.action_type == ActionTypes.PLACE:
@@ -748,17 +815,68 @@ class Plan(BasePlan):
             raise ValueError("Couldn't find placement index")
         tile_pose_move_idx = -1
         for j in range(place_idx, 0, -1):
-            action = self.get_action(0, j)
+            action = cycle.action_sequence[j]
             if action.action_type == ActionTypes.MOVE_FINE or action.action_type == ActionTypes.MOVE_COARSE :
                 tile_pose_move_idx = j
                 break
         if tile_pose_move_idx == -1:
             raise ValueError("Couldn't find movement index")
+
+        return tile_pose_move_idx
             
+    def draw_all_tile_poses(self):
         ax = draw_env(self.cfg)
         for cycle in self.cycles:
+            tile_pose_move_idx = self.find_pose_move_idx(cycle)
             cycle.draw_action(ax, tile_pose_move_idx, text=cycle.tile.order)
         plt.show()
+
+class Plan(RealPlan):
+
+    def __init__(self, cfg, cycle_generator_fn):
+        field = DominoField(cfg)
+        field.generate()
+        logging.info('Generating robot actions...')
+        cycles = generate_standard_cycles(cfg, field, cycle_generator_fn)
+        logging.info('done.')
+        super().__init__(cfg, field, cycles)
+
+
+class SubsectionPlan(RealPlan):
+
+    def __init__(self, full_plan):
+        self.full_plan = full_plan
+        self.start_coords = full_plan.cfg.start_coords
+        self.end_coords = full_plan.cfg.end_coords
+        self.delta_coords = (self.end_coords[0] - self.start_coords[0],
+                             self.end_coords[1] - self.start_coords[1] )
+        new_field = DominoField(full_plan.cfg)
+        new_field.n_tiles_x = self.delta_coords[0]
+        new_field.n_tiles_y = self.delta_coords[1]
+        counter = 0
+        new_field.tiles = []
+        new_cycles = []
+        for i in range(len(full_plan.field.tiles)):
+            tile = full_plan.field.tiles[i]
+            cycle = full_plan.cycles[i]
+            tile_coords = tile.coordinate
+            if tile_coords[0] >= self.start_coords[0] and \
+               tile_coords[0] <= self.end_coords[0] and \
+               tile_coords[1] >= self.start_coords[1] and \
+               tile_coords[1] <= self.end_coords[1]:
+                # Make new tile
+                new_tile = copy.deepcopy(tile)
+                new_tile.order = counter
+                new_field.tiles.append(new_tile)
+                # Make new cycle
+                new_cycle = copy.deepcopy(cycle)
+                new_cycle.id = counter
+                new_cycle.tile = new_tile
+                new_cycles.append(new_cycle)
+                counter += 1
+
+        super().__init__(self.full_plan.cfg, new_field, new_cycles)
+
 
 
 class TestPlan(BasePlan):
@@ -794,6 +912,9 @@ def RunFieldPlanning(autosave=False):
     else:
         plan = Plan(cfg, generate_full_action_sequence)
 
+    if cfg.USE_SUBSECTION:
+        plan = SubsectionPlan(plan)
+
     if autosave:
         fname = os.path.join(cfg.plans_dir,"autosaved.p")
         with open(fname, 'wb') as f:
@@ -803,6 +924,63 @@ def RunFieldPlanning(autosave=False):
     return plan
     
 
+def GeneratePDF(plan):
+
+    from reportlab.lib.pagesizes import letter
+    from reportlab.pdfgen import canvas
+    from PIL import Image
+
+    logging.info("Generating PDF")
+
+    # Initialize pdf
+    name = "domino_plan.pdf"
+    if plan.cfg.MR_LOGO_PLAN:
+        name = "domnino_plan_logo.pdf"
+    full_path = os.path.join(plan.cfg.plans_dir, name)
+    page_height, page_width = letter # Flipped to get landscape
+    c = canvas.Canvas(full_path, pagesize=(page_width, page_height))
+
+    # Pre allocate image array
+    tile_size_x_in_px = (plan.cfg.domino_width_px + plan.cfg.domino_spacing_width_px) * plan.cfg.tile_width
+    tile_size_y_in_px = (plan.cfg.domino_height_px + plan.cfg.domino_spacing_height_px) * plan.cfg.tile_height
+
+    for i in range(len(plan.field.tiles)):
+        # Get tile to draw on this page
+        tile = plan.field.tiles[i]
+
+        # Draw title
+        text_width = 0.5 * page_width
+        text_height = 0.9 * page_height
+        text = "Tile {}, Coordinate: ({}, {})".format(i, tile.coordinate[0], tile.coordinate[1])
+        c.setFont("Helvetica", 20)
+        c.drawCentredString(text_width,text_height,text)
+
+        # Draw orientation note
+        text_width = 0.5 * page_width
+        text_height = 0.1 * page_height
+        text = "This side towards robot body"
+        c.drawCentredString(text_width,text_height,text)
+
+        # Draw image
+        image_array = np.zeros((tile_size_x_in_px, tile_size_y_in_px, 3))
+        tile.draw_single(image_array, 0, 0, tile_size_x_in_px, tile_size_y_in_px, draw_edge=False)
+        image_array = np.transpose(image_array, (1, 0, 2))
+        image_array = np.flip(image_array, 0)
+        im = Image.fromarray(np.uint8(255*image_array), mode='RGB')
+        image_fraction = 0.7
+        start_width = (1-image_fraction)/2.0 * page_width
+        start_height = (1-image_fraction)/2.0 * page_height
+        image_width = image_fraction * page_width
+        image_height = image_fraction * page_height
+        c.drawInlineImage(im, start_width ,  start_height, width=image_width, height=image_height) 
+
+        # Complete page
+        c.showPage()
+
+    c.save()
+
+
+
 
 if __name__ == '__main__':
 
@@ -810,19 +988,22 @@ if __name__ == '__main__':
 
     plan = RunFieldPlanning(autosave=False)
 
-    plan.field.printStats()
-    plan.field.show_image_parsing()
-    plan.field.render_domino_image_tiles()
-    plan.field.show_tile_ordering()
-    plan.draw_cycle(2)
-    plan.draw_all_tile_poses()
+    # plan.field.printStats()
+    # plan.field.show_image_parsing()
+    # plan.field.render_domino_image_tiles()
+    # plan.field.show_tile_ordering()
+    plan.draw_cycle(7)
+    # plan.draw_cycle(17)
+    # plan.draw_cycle(18)
+    # plan.draw_all_tile_poses()
 
+    # GeneratePDF(plan)
 
-    sg.change_look_and_feel('Dark Blue 3')
-    clicked_value = sg.popup_yes_no('Save plan to file?')
-    if clicked_value == "Yes":
-        fname = sg.popup_get_file("Location to save", save_as=True)
-        with open(fname, 'wb') as f:
-            pickle.dump(plan, f)
-            logging.info("Saved plan to {}".format(fname))
+    # sg.change_look_and_feel('Dark Blue 3')
+    # clicked_value = sg.popup_yes_no('Save plan to file?')
+    # if clicked_value == "Yes":
+    #     fname = sg.popup_get_file("Location to save", save_as=True)
+    #     with open(fname, 'wb') as f:
+    #         pickle.dump(plan, f)
+    #         logging.info("Saved plan to {}".format(fname))
 

@@ -24,7 +24,7 @@ def status_panel(name):
 
 
 def setup_gui_layout(config, panel_names, target_names):
-    plan_button_size = [10,2]
+    plan_button_size = [9,2]
     plan_button_pad = (2, 10)
 
     # Left hand column with status panels
@@ -37,7 +37,12 @@ def setup_gui_layout(config, panel_names, target_names):
     decremenet_cycle_button = sg.Button('Cycle -', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_DEC_CYCLE_', disabled=True) 
     incremenet_action_button = sg.Button('Action +', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_INC_ACTION_', disabled=True) 
     decremenet_action_button = sg.Button('Action -', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_DEC_ACTION_', disabled=True) 
-    cycle_buttons = [[sg.Column([[incremenet_cycle_button], [decremenet_cycle_button]]), sg.Column([[incremenet_action_button], [decremenet_action_button]])]]
+    set_cycle_field = sg.Input(key='_CYCLE_FIELD_', size=(5,1), pad=(0,20))
+    set_action_field = sg.Input(key='_ACTION_FIELD_', size=(5,1), pad=(0,20))
+    set_cycle_button = sg.Button('Set Cycle', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_SET_CYCLE_', disabled=True) 
+    set_action_button = sg.Button('Set Action', button_color=('white','blue'), size=plan_button_size, pad=plan_button_pad, key='_SET_ACTION_', disabled=True)
+    cycle_buttons = [[sg.Column([[decremenet_cycle_button], [decremenet_action_button]]), sg.Column([[incremenet_cycle_button], [incremenet_action_button]]),  
+                     sg.Column([[set_cycle_field], [set_action_field]]), sg.Column([[set_cycle_button], [set_action_button]])  ]]
     col1 += cycle_buttons
 
     # Middle column with plot and buttons
@@ -60,10 +65,11 @@ def setup_gui_layout(config, panel_names, target_names):
     button_pad = (2,10)
     estop_button = [[sg.Button('ESTOP', button_color=('white','red'), size=button_size, pad=button_pad) ]]
     manual_button = [[sg.Button('Send Command', button_color=('white','green'), size=button_size, pad=button_pad) ]]
+    clear_error_button = [[sg.Button('Clear Error', button_color=('white','orange red'), size=[10,6], pad=button_pad)]]
 
     col2 = [[sg.Graph(canvas_size=(700,700), graph_bottom_left=config.graph_bottom_left, graph_top_right=config.graph_top_right, float_values=True, key="_GRAPH_", background_color="light grey") ],
             [sg.Column(target_element), sg.Column(action_element), sg.Column(data_element)],
-            [sg.Column(plan_buttons), sg.Column(estop_button), sg.Column(manual_button)]  ]
+            [sg.Column(plan_buttons), sg.Column(estop_button), sg.Column(manual_button), sg.Column(clear_error_button)]  ]
 
     # Right hand column with text ouput
     col3 = [[sg.Output(size=(70, 50), echo_stdout_stderr=True)]]
@@ -90,6 +96,8 @@ class CmdGui:
 
         self.viz_figs = {}
         self.manual_action_debounce_timer = Utils.NonBlockingTimer(1.0)
+        self.drawn_plan_grid = False
+        self.last_cycle_number_drawn = -1
 
         self._draw_environment()
 
@@ -116,10 +124,13 @@ class CmdGui:
                     return 'Exit', None
         
         # Sending a manual action (via button or pressing enter)
-        if event in ('Send Command', '\r', '\n'):
+        if event in ('Send Command', "Clear Error", '\r', '\n'):
             manual_action = None
             if self.manual_action_debounce_timer.check():
-                manual_action = self._parse_manual_action(values)
+                if event == "Clear Error":
+                    manual_action = (values['_TARGET_'], Action(ActionTypes.CLEAR_ERROR, "ClearError"))
+                else:
+                    manual_action = self._parse_manual_action(values)
             if manual_action is not None:
                 self.window['_ACTION_DATA_'].update("")
                 self.manual_action_debounce_timer = Utils.NonBlockingTimer(1.0)
@@ -145,6 +156,9 @@ class CmdGui:
         if event in ["_INC_CYCLE_","_DEC_CYCLE_","_INC_ACTION_","_DEC_ACTION_"]:
             return event, None
 
+        if event in ["_SET_CYCLE_", "_SET_ACTION_"]:
+            return event, (values['_CYCLE_FIELD_'], values["_ACTION_FIELD_"])
+
         if event == "ESTOP":
             return "ESTOP", None
 
@@ -167,7 +181,8 @@ class CmdGui:
         name = 'ManualAction'
 
         action = None
-        if action_type in [ActionTypes.MOVE_COARSE, ActionTypes.MOVE_REL, ActionTypes.MOVE_REL_SLOW, ActionTypes.MOVE_FINE]:
+        if action_type in [ActionTypes.MOVE_COARSE, ActionTypes.MOVE_REL, ActionTypes.MOVE_REL_SLOW, 
+                           ActionTypes.MOVE_FINE, ActionTypes.MOVE_FINE_STOP_VISION]:
             data = data_str.split(',')
             data = [x.strip() for x in data]
             if len(data) != 3:
@@ -195,6 +210,10 @@ class CmdGui:
                 data = (0,0,0)
                 logging.warning("Assuming position of (0,0,0) for vision move")
             action = MoveAction(action_type, name, data[0], data[1], data[2])
+        elif action_type == ActionTypes.WAIT:
+            data = data_str.split(',')
+            data = [x.strip() for x in data]
+            action = WaitAction(action_type, name, float(data[0]))
         else:
             action = Action(action_type, name)
 
@@ -205,6 +224,10 @@ class CmdGui:
         self.window['_DEC_CYCLE_'].update(disabled=disabled)
         self.window['_INC_ACTION_'].update(disabled=disabled)
         self.window['_DEC_ACTION_'].update(disabled=disabled)
+        self.window['_CYCLE_FIELD_'].update(disabled=disabled)
+        self.window['_ACTION_FIELD_'].update(disabled=disabled)
+        self.window['_SET_CYCLE_'].update(disabled=disabled)
+        self.window['_SET_ACTION_'].update(disabled=disabled)
 
     def _update_plan_button_status(self, plan_status):
         if plan_status == PlanStatus.NONE:
@@ -238,7 +261,7 @@ class CmdGui:
             self.window['_ABORT_PLAN_'].update(disabled=True)
             self._udpate_cycle_button_status(disabled=False)
         else:
-            logging.warning("Unhandled plan statusfor button state: {}".format(plan_status))
+            logging.warning("Unhandled plan status for button state: {}".format(plan_status))
 
     def _update_plan_panel(self, status_dict):
         status_str = "Plan is not running"
@@ -261,6 +284,7 @@ class CmdGui:
                     status_str += "  Cycle id: {}\n".format(data["cycle_id"])
                     status_str += "  Action id: {}\n".format(data["action_id"])
                     status_str += "  Action name: {}\n".format(data["action_name"])
+                    status_str += "  Tile Coordinate: {}\n".format(data["tile_coordinate"])
                     status_str += "  Vision offset: {}\n".format(data["vision_offset"])
                 
                 # Set panel coloring based on state
@@ -279,8 +303,11 @@ class CmdGui:
         if status_dict:
             try:
                 robot_pose = [status_dict['pos_x'], status_dict['pos_y'], math.degrees(status_dict['pos_a'])]
+                last_mm_pose = [status_dict['last_mm_x'],status_dict['last_mm_y'], math.degrees(status_dict['last_mm_a']), status_dict['last_mm_used']]
                 status_str = ""
                 status_str += "Position: [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(robot_pose[0], robot_pose[1], robot_pose[2])
+                status_str += "Last MM Pose: [{:.3f} m, {:.3f} m, {:.2f} deg]\n".format(
+                        last_mm_pose[0], last_mm_pose[1], last_mm_pose[2])
                 status_str += "Velocity: [{0:.3f} m/s, {1:.3f} m/s, {2:.2f} deg/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], math.degrees(status_dict['vel_a']))
                 status_str += "Vision Pose : [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(status_dict['vision_x'],status_dict['vision_y'], math.degrees(status_dict['vision_a']))
                 status_str += "Camera Raw Pose : [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(status_dict['cam_pose_x'],status_dict['cam_pose_y'], math.degrees(status_dict['cam_pose_a']))
@@ -301,6 +328,7 @@ class CmdGui:
 
                 # Also update the visualization position
                 self._update_robot_viz_position(robot_id, robot_pose)
+                self._update_last_mm_pose(robot_id, last_mm_pose)
                 # If there is target position data populated, draw the target too
                 if 'current_move_data' in status_dict.keys():
                     self._update_target_viz_position(robot_id, robot_pose, status_dict['current_move_data'])
@@ -333,6 +361,36 @@ class CmdGui:
             self.viz_figs[viz_key] = self._draw_robot(target_pose, use_target_color=True)
             self.viz_figs[viz_key].append(target_line)  
 
+    def _update_last_mm_pose(self, robot_id, last_mm_pose):
+        viz_key = "{}_last_mm".format(robot_id)
+        if viz_key in self.viz_figs.keys():
+            for f in self.viz_figs[viz_key]:
+                self.window['_GRAPH_'].DeleteFigure(f)
+
+        used = last_mm_pose[3]
+        if used:
+            color = 'green'
+            thickness = 2
+        else:
+            color = 'red'
+            thickness = 2
+        global_pose_2d = np.array(last_mm_pose[:2])
+        angle = last_mm_pose[2]
+        viz_handles = []
+
+        direction_pt = np.array([self.config.robot_direction_indicator_length, 0])
+        direction_arrow_x = self.config.robot_direction_indicator_arrow_length*math.cos(math.radians(self.config.robot_direction_indicator_arrow_angle))
+        direction_arrow_y = self.config.robot_direction_indicator_arrow_length*math.sin(math.radians(self.config.robot_direction_indicator_arrow_angle))
+        direction_arrow_left =  direction_pt + np.array([-direction_arrow_x,  direction_arrow_y])
+        direction_arrow_right = direction_pt + np.array([-direction_arrow_x, -direction_arrow_y])
+        global_direction_pt = Utils.TransformPos(direction_pt, global_pose_2d, angle)
+        viz_handles.append(self.window['_GRAPH_'].draw_line(point_from=list(global_pose_2d), point_to=list(global_direction_pt), color=color, width=thickness))
+        global_direction_arrow_left = Utils.TransformPos(direction_arrow_left, global_pose_2d, angle)
+        viz_handles.append(self.window['_GRAPH_'].draw_line(point_from=list(global_direction_pt), point_to=list(global_direction_arrow_left), color=color, width=thickness))
+        global_direction_arrow_right = Utils.TransformPos(direction_arrow_right, global_pose_2d, angle)
+        viz_handles.append(self.window['_GRAPH_'].draw_line(point_from=list(global_direction_pt), point_to=list(global_direction_arrow_right), color=color, width=thickness))
+        self.viz_figs[viz_key] = viz_handles
+
     def _draw_robot(self, robot_pose, use_target_color):
 
         robot_line_color = 'black'
@@ -361,11 +419,13 @@ class CmdGui:
         tile_br = tile_bl + np.array([0, -self.config.tile_size_width_meters])
         tile_fl = tile_bl + np.array([self.config.tile_size_height_meters, 0])
         tile_fr = tile_br + np.array([self.config.tile_size_height_meters, 0])
+        tile_front_center = (tile_fl + tile_fr) / 2.0
 
         # Robot direction indicator
-        direction_pt = np.array([self.config.robot_direction_indicator_length, 0])
-        direction_arrow_x = self.config.robot_direction_indicator_arrow_length*math.cos(math.radians(self.config.robot_direction_indicator_arrow_angle))
-        direction_arrow_y = self.config.robot_direction_indicator_arrow_length*math.sin(math.radians(self.config.robot_direction_indicator_arrow_angle))
+        scale_factor = 0.7
+        direction_pt = np.array([scale_factor*self.config.robot_direction_indicator_length, 0])
+        direction_arrow_x = scale_factor*self.config.robot_direction_indicator_arrow_length*math.cos(math.radians(self.config.robot_direction_indicator_arrow_angle))
+        direction_arrow_y = scale_factor*self.config.robot_direction_indicator_arrow_length*math.sin(math.radians(self.config.robot_direction_indicator_arrow_angle))
         direction_arrow_left =  direction_pt + np.array([-direction_arrow_x,  direction_arrow_y])
         direction_arrow_right = direction_pt + np.array([-direction_arrow_x, -direction_arrow_y])
 
@@ -392,11 +452,12 @@ class CmdGui:
             robot_fig_handles.append(self.window['_GRAPH_'].draw_line(point_from=start_pt, point_to=end_pt, color=robot_line_color, width = robot_line_thickness))
 
         # Draw angle indicator line
-        global_direction_pt = Utils.TransformPos(direction_pt, robot_global_pos_2d, robot_angle)
-        robot_fig_handles.append(self.window['_GRAPH_'].draw_line(point_from=list(robot_global_pos_2d), point_to=list(global_direction_pt), color=direction_line_color, width=direction_line_thickness))
-        global_direction_arrow_left = Utils.TransformPos(direction_arrow_left, robot_global_pos_2d, robot_angle)
+        angle_root_pt = Utils.TransformPos(tile_front_center, robot_global_pos_2d, robot_angle)
+        global_direction_pt = Utils.TransformPos(direction_pt, angle_root_pt, robot_angle)
+        robot_fig_handles.append(self.window['_GRAPH_'].draw_line(point_from=list(angle_root_pt), point_to=list(global_direction_pt), color=direction_line_color, width=direction_line_thickness))
+        global_direction_arrow_left = Utils.TransformPos(direction_arrow_left, angle_root_pt, robot_angle)
         robot_fig_handles.append(self.window['_GRAPH_'].draw_line(point_from=list(global_direction_pt), point_to=list(global_direction_arrow_left), color=direction_line_color, width=direction_line_thickness))
-        global_direction_arrow_right = Utils.TransformPos(direction_arrow_right, robot_global_pos_2d, robot_angle)
+        global_direction_arrow_right = Utils.TransformPos(direction_arrow_right, angle_root_pt, robot_angle)
         robot_fig_handles.append(self.window['_GRAPH_'].draw_line(point_from=list(global_direction_pt), point_to=list(global_direction_arrow_right), color=direction_line_color, width=direction_line_thickness))
 
         return robot_fig_handles
@@ -411,7 +472,7 @@ class CmdGui:
         rect_width_height = Utils.TransformPos(np.array([self.config.field_width, self.config.field_height]), [0,0], self.config.domino_field_angle)
         top_left = (bottom_left[0], bottom_left[1]+rect_width_height[1])
         bottom_right = (bottom_left[0] + rect_width_height[0], bottom_left[1])
-        self.viz_figs["field"] = self.window['_GRAPH_'].draw_rectangle(top_left, bottom_right, line_color='green')
+        self.viz_figs["field"] = self.window['_GRAPH_'].draw_rectangle(top_left, bottom_right, line_color='green', line_width=2)
 
         # Base station
         base_station_top_left = (self.config.base_station_boundaries[0][0], self.config.base_station_boundaries[1][1])
@@ -447,6 +508,56 @@ class CmdGui:
             self.viz_figs["ytick_{}".format(val)] = self.window['_GRAPH_'].draw_line(left, right, color="black")
             label_location = (right[0], right[1]+self.config.axes_label_offset)
             self.viz_figs["ytick_label_{}".format(val)] = self.window['_GRAPH_'].draw_text("{}".format(val), label_location)
+
+
+    def update_plan_display(self, plan_info):
+        if plan_info is None:
+            return
+        plan = plan_info[0]
+        plan_status = plan_info[1]
+        cycle_number = plan_info[2]
+
+        if not self.drawn_plan_grid:
+            rect_width_height = Utils.TransformPos(np.array([self.config.field_width, self.config.field_height]), [0,0], self.config.domino_field_angle)
+            bottom_left = self.config.domino_field_origin
+            bottom_right = (bottom_left[0], bottom_left[1]+rect_width_height[1])
+            top_left = (bottom_left[0] + rect_width_height[0], bottom_left[1])
+            for i in range(1, self.config.num_tiles_width):
+                dx = Utils.TransformPos(np.array([self.config.tile_size_width_meters, 0]), [0,0], self.config.domino_field_angle)
+                p1 = list(bottom_left + dx * i)
+                p2 = list(top_left + dx * i)
+                self.viz_figs["plan_vert_{}".format(i)] = self.window['_GRAPH_'].draw_line(p1, p2, color = "grey17")
+            for i in range(1, self.config.num_tiles_height):
+                dx = Utils.TransformPos(np.array([0, self.config.tile_size_height_meters]), [0,0], self.config.domino_field_angle)
+                p1 = list(bottom_left + dx * i)
+                p2 = list(bottom_right + dx * i)
+                self.viz_figs["plan_hz_{}".format(i)] = self.window['_GRAPH_'].draw_line(p1, p2, color = "grey17")
+
+            if type(plan) is SubsectionPlan:
+                origin = self.config.domino_field_origin
+                bottom_left = Utils.TransformPos(np.array(plan.field.tiles[-1].getPlacementPositionInMeters()), origin, self.config.domino_field_angle)
+                top_right = Utils.TransformPos(np.array(plan.field.tiles[0].getPlacementPositionInMeters())+
+                    np.array((self.config.tile_size_width_meters,self.config.tile_size_height_meters)), origin, self.config.domino_field_angle)
+                self.viz_figs["subfield"] = self.window['_GRAPH_'].draw_rectangle(bottom_left, top_right, line_color='green', line_width=3)
+
+            self.drawn_plan_grid = True
+
+        if cycle_number != self.last_cycle_number_drawn:
+            tile_color = "red"
+            if plan_status in [PlanStatus.RUNNING, PlanStatus.PAUSED]:
+                tile_color = "blue"
+
+            if cycle_number <= len(plan.field.tiles):
+                if cycle_number < 0:
+                    cycle_number = 0
+                if "plan_marker" in self.viz_figs:
+                    self.window['_GRAPH_'].DeleteFigure(self.viz_figs["plan_marker"])
+                tile = plan.field.tiles[cycle_number]
+                location_field_frame = np.array(tile.getPlacementPositionInMeters()) + np.array([self.config.tile_size_width_meters, self.config.tile_size_height_meters])/2.0
+                location_global_frame = list(Utils.TransformPos(location_field_frame, self.config.domino_field_origin, self.config.domino_field_angle))
+                self.viz_figs["plan_marker"] = self.window['_GRAPH_'].draw_circle(location_global_frame, 0.25, fill_color=tile_color)
+                self.last_cycle_number_drawn = cycle_number
+
 
 
 class Master:
@@ -505,6 +616,10 @@ class Master:
             self.runtime_manager.increment_robot_action("robot1")
         if event_type == "_DEC_ACTION_":
             self.runtime_manager.decrement_robot_action("robot1")
+        if event_type == "_SET_CYCLE_":
+            self.runtime_manager.set_cycle("robot1", int(event_data[0]))
+        if event_type == "_SET_ACTION_":
+            self.runtime_manager.set_action("robot1", int(event_data[1]))
         if event_type == "ESTOP":
             self.runtime_manager.estop()
             if self.runtime_manager.get_plan_status() == PlanStatus.RUNNING:
@@ -514,6 +629,7 @@ class Master:
         # Get metrics and update the displayed info
         metrics = self.runtime_manager.get_all_metrics()
         self.cmd_gui.update_status_panels(metrics)
+        self.cmd_gui.update_plan_display(self.runtime_manager.get_plan_info())
 
         return False
 

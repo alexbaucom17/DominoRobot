@@ -44,6 +44,7 @@ enum class COMMAND
     START_CAMERAS,
     STOP_CAMERAS,
     MOVE_REL_SLOW,
+    MOVE_FINE_STOP_VISION,
 };
 
 #endif

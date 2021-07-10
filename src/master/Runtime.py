@@ -8,6 +8,8 @@ import json
 import copy
 import math
 
+from numpy.core.defchararray import add
+
 from MarvelMindHandler import MarvelmindWrapper, MockMarvelmindWrapper
 from RobotClient import RobotClient, BaseStationClient, MockRobotClient, MockBaseStationClient
 from FieldPlanner import ActionTypes, Action, TestPlan, RunFieldPlanning
@@ -25,6 +27,8 @@ class RobotInterface:
         self.current_action = ActionTypes.NONE
         self.current_move_data = []
         self.current_action_timer = None
+        self.wait_timer = None
+        self.waiting_active = False
 
     def bring_online(self, use_mock=False):
         self._bring_comms_online(use_mock)
@@ -37,6 +41,8 @@ class RobotInterface:
         if metrics and type(metrics) is dict:
             metrics['current_action'] = str(self.current_action)
             metrics['current_move_data'] = self.current_move_data
+        if metrics and self.waiting_active:
+            metrics['in_progress'] = True
         return metrics
 
     def _setup_action_map(self):
@@ -94,6 +100,11 @@ class RobotInterface:
                     self.comms_online = False
                     self.last_status = "{} offline".format(self.robot_id)
 
+            if self.waiting_active:
+                if self.wait_timer.check():
+                    self.waiting_active = False
+                    self.wait_timer = None
+
     def run_action(self, action):
         
         if not self.comms_online:
@@ -115,6 +126,9 @@ class RobotInterface:
             elif action.action_type == ActionTypes.MOVE_FINE:
                 self.robot_client.move_fine(action.x, action.y, action.a)
                 self.current_move_data = [action.x, action.y, action.getAngleDegrees()]
+            elif action.action_type == ActionTypes.MOVE_FINE_STOP_VISION:
+                self.robot_client.move_fine_stop_vision(action.x, action.y, action.a)
+                self.current_move_data = [action.x, action.y, action.getAngleDegrees()]
             elif action.action_type == ActionTypes.MOVE_WITH_VISION:
                 self.robot_client.move_with_vision(action.x, action.y, action.a)
             elif action.action_type == ActionTypes.MOVE_CONST_VEL:
@@ -124,6 +138,9 @@ class RobotInterface:
             elif action.action_type == ActionTypes.NET:
                 status = self.robot_client.net_status()
                 logging.info("Robot {} network status is: {}".format(self.robot_id, status))
+            elif action.action_type == ActionTypes.WAIT:
+                self.wait_timer = NonBlockingTimer(action.time)
+                self.waiting_active = True
             elif action.action_type in self.simple_action_map.keys():
                 self.simple_action_map[action.action_type]()
             else:
@@ -342,24 +359,39 @@ class RuntimeManager:
         self.plan_status = status
 
     def increment_robot_cycle(self, target):
-        self._modify_cycle_state(target, 1, 0)
+        self._modify_cycle_state(target, add_cycle_id=1)
     
     def decrement_robot_cycle(self, target):
-        self._modify_cycle_state(target, - 1, 0)
+        self._modify_cycle_state(target, add_cycle_id=-1)
 
     def increment_robot_action(self, target):
-        self._modify_cycle_state(target, 0, 1)
+        self._modify_cycle_state(target, add_action_id=1)
 
     def decrement_robot_action(self, target):
-        self._modify_cycle_state(target, 0, - 1)
+        self._modify_cycle_state(target, add_action_id=-1)
+
+    def set_cycle(self, target, cycle_num):
+        self._modify_cycle_state(target, add_cycle_id=cycle_num, absolute=True)
+
+    def set_action(self, target, action_num):
+        self._modify_cycle_state(target, add_action_id=action_num, absolute=True)
 
     def get_plan_status(self):
         return self.plan_status
+
+    def get_plan_info(self):
+        if not self.plan:
+            return None
+        else:
+            return (self.plan, self.plan_status, self.next_cycle_number-1)
 
     def _load_plan_from_object(self, plan, plan_path=""):
         self.plan = plan
         self.plan_status = PlanStatus.LOADED
         self.plan_path = plan_path
+        for key in self.robots.keys():
+            self.set_cycle(key, 0)
+            self.set_action(key, 0)
 
     def _load_plan_from_file(self, plan_file):
         if self.config.USE_TEST_PLAN or plan_file == "testplan":
@@ -369,6 +401,9 @@ class RuntimeManager:
                 plan = pickle.load(f)
                 self._load_plan_from_object(plan, plan_file)
                 logging.info("Loaded plan from {}".format(plan_file))  
+        for key in self.robots.keys():
+            self.set_cycle(key, 0)
+            self.set_action(key, 0)
 
     def _update_plan(self):
         # If we have an idle robot, send it the next cycle to execute
@@ -446,9 +481,10 @@ class RuntimeManager:
         robot_metrics = {}
         for id, data in self.cycle_tracker.items():
             robot_metrics[id] = {}
-            robot_metrics[id] = {'cycle_id': 'None', 'action_name': 'None', 'action_id': 'None', 'vision_offset': 'None'}
+            robot_metrics[id] = {'cycle_id': 'None', 'action_name': 'None', 'action_id': 'None', 'vision_offset': 'None','tile_coordinate': 'None'}
             if data['cycle_id'] is not None:
-                robot_metrics[id]['cycle_id'] = data['cycle_id']                
+                robot_metrics[id]['cycle_id'] = data['cycle_id'] 
+                robot_metrics[id]['tile_coordinate'] = self.plan.field.tiles[data['cycle_id']].coordinate               
             if data['action_id'] is not None:
                 robot_metrics[id]['action_id'] = data['action_id']
                 action = self.plan.get_action(data['cycle_id'], data['action_id'])
@@ -530,29 +566,39 @@ class RuntimeManager:
             if data['action_id'] == None and data['cycle_id'] == None:
                 self.idle_bots.add(robot)
 
-    def _modify_cycle_state(self, target, add_cycle_id, add_action_id):
+    def _modify_cycle_state(self, target, add_cycle_id=None, add_action_id=None, absolute=False):
         if self.plan_status == PlanStatus.RUNNING:
             logging.warning("Cannot update cycle state while plan is running.")
             return
         if target not in self.cycle_tracker.keys():
             logging.warning("Invalid target: {}".format(target))
             return
-
+        
         cur_cycle_id = self.cycle_tracker[target]["cycle_id"]
         if cur_cycle_id is None:
             cur_cycle_id = 0
-        new_cycle_id = cur_cycle_id + add_cycle_id
-        if self.plan and new_cycle_id >= len(self.plan.cycles) or new_cycle_id < 0:
-            logging.warning("Cycle id {} out of bounds".format(new_cycle_id))
-            return
-
+        new_cycle_id = cur_cycle_id
+        if add_cycle_id is not None:
+            if absolute:
+                new_cycle_id = add_cycle_id
+            else:                
+                new_cycle_id = cur_cycle_id + add_cycle_id
+            if self.plan and new_cycle_id >= len(self.plan.cycles) or new_cycle_id < 0:
+                logging.warning("Cycle id {} out of bounds".format(new_cycle_id))
+                return
+        
         cur_action_id = self.cycle_tracker[target]["action_id"]
         if cur_action_id is None:
             cur_action_id = 0
-        new_action_id = cur_action_id + add_action_id    
-        if self.plan and new_action_id >= len(self.plan.get_cycle(new_cycle_id).action_sequence) or new_action_id < 0:
-            logging.warning("Action id {} out of bounds".format(new_action_id))
-            return
+        new_action_id = cur_action_id
+        if add_action_id is not None:
+            if absolute:
+                new_action_id = add_action_id
+            else:
+                new_action_id = cur_action_id + add_action_id    
+            if self.plan and new_action_id >= len(self.plan.get_cycle(new_cycle_id).action_sequence) or new_action_id < 0:
+                logging.warning("Action id {} out of bounds".format(new_action_id))
+                return
 
         data = self.cycle_tracker[target]
         data['action_id'] = new_action_id

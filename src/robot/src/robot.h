@@ -54,6 +54,7 @@ class Robot
     WaitForLocalizeHelper wait_for_localize_helper_;
     RateController vision_print_rate_;
     CameraTrackerBase* camera_tracker_;
+    bool stop_fast_triggered_;
 
     COMMAND curCmd_;
 };
