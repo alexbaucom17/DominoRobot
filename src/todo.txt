@@ -12,7 +12,7 @@ Robot HW:
 Master:
 - Consider setting MM fine pose a bit further away from the dominos than the actual target point (to avoid overshoot)
 - Update cycle generation for rows near the back wall
-- Add gui marker indicating last marvelmind position
+- Set up new computer with master sw
 
 
 Robustify:

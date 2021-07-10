@@ -12,7 +12,7 @@ class Config:
     # Set to override config values for small scale testing
     USE_SMALL_TESTING_CONFIG = False
     # Set to skip connecting to robot
-    OFFLINE_TESTING = True
+    OFFLINE_TESTING = False
     # Set to skip connecting to base station
     SKIP_BASE_STATION = True
     # Set to skip connecting to Marvelmind

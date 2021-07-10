@@ -298,8 +298,11 @@ class CmdGui:
         if status_dict:
             try:
                 robot_pose = [status_dict['pos_x'], status_dict['pos_y'], math.degrees(status_dict['pos_a'])]
+                last_mm_pose = [status_dict['last_mm_x'],status_dict['last_mm_y'], math.degrees(status_dict['last_mm_a']), status_dict['last_mm_used']]
                 status_str = ""
                 status_str += "Position: [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(robot_pose[0], robot_pose[1], robot_pose[2])
+                status_str += "Last MM Pose: [{:.3f} m, {:.3f} m, {:.2f} deg]\n".format(
+                        last_mm_pose[0], last_mm_pose[1], last_mm_pose[2])
                 status_str += "Velocity: [{0:.3f} m/s, {1:.3f} m/s, {2:.2f} deg/s]\n".format(status_dict['vel_x'],status_dict['vel_y'], math.degrees(status_dict['vel_a']))
                 status_str += "Vision Pose : [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(status_dict['vision_x'],status_dict['vision_y'], math.degrees(status_dict['vision_a']))
                 status_str += "Camera Raw Pose : [{0:.3f} m, {1:.3f} m, {2:.2f} deg]\n".format(status_dict['cam_pose_x'],status_dict['cam_pose_y'], math.degrees(status_dict['cam_pose_a']))
@@ -320,6 +323,7 @@ class CmdGui:
 
                 # Also update the visualization position
                 self._update_robot_viz_position(robot_id, robot_pose)
+                self._update_last_mm_pose(robot_id, last_mm_pose)
                 # If there is target position data populated, draw the target too
                 if 'current_move_data' in status_dict.keys():
                     self._update_target_viz_position(robot_id, robot_pose, status_dict['current_move_data'])
@@ -352,6 +356,36 @@ class CmdGui:
             self.viz_figs[viz_key] = self._draw_robot(target_pose, use_target_color=True)
             self.viz_figs[viz_key].append(target_line)  
 
+    def _update_last_mm_pose(self, robot_id, last_mm_pose):
+        viz_key = "{}_last_mm".format(robot_id)
+        if viz_key in self.viz_figs.keys():
+            for f in self.viz_figs[viz_key]:
+                self.window['_GRAPH_'].DeleteFigure(f)
+
+        used = last_mm_pose[3]
+        if used:
+            color = 'green'
+            thickness = 2
+        else:
+            color = 'red'
+            thickness = 2
+        global_pose_2d = np.array(last_mm_pose[:2])
+        angle = last_mm_pose[2]
+        viz_handles = []
+
+        direction_pt = np.array([self.config.robot_direction_indicator_length, 0])
+        direction_arrow_x = self.config.robot_direction_indicator_arrow_length*math.cos(math.radians(self.config.robot_direction_indicator_arrow_angle))
+        direction_arrow_y = self.config.robot_direction_indicator_arrow_length*math.sin(math.radians(self.config.robot_direction_indicator_arrow_angle))
+        direction_arrow_left =  direction_pt + np.array([-direction_arrow_x,  direction_arrow_y])
+        direction_arrow_right = direction_pt + np.array([-direction_arrow_x, -direction_arrow_y])
+        global_direction_pt = Utils.TransformPos(direction_pt, global_pose_2d, angle)
+        viz_handles.append(self.window['_GRAPH_'].draw_line(point_from=list(global_pose_2d), point_to=list(global_direction_pt), color=color, width=thickness))
+        global_direction_arrow_left = Utils.TransformPos(direction_arrow_left, global_pose_2d, angle)
+        viz_handles.append(self.window['_GRAPH_'].draw_line(point_from=list(global_direction_pt), point_to=list(global_direction_arrow_left), color=color, width=thickness))
+        global_direction_arrow_right = Utils.TransformPos(direction_arrow_right, global_pose_2d, angle)
+        viz_handles.append(self.window['_GRAPH_'].draw_line(point_from=list(global_direction_pt), point_to=list(global_direction_arrow_right), color=color, width=thickness))
+        self.viz_figs[viz_key] = viz_handles
+
     def _draw_robot(self, robot_pose, use_target_color):
 
         robot_line_color = 'black'
@@ -380,11 +414,13 @@ class CmdGui:
         tile_br = tile_bl + np.array([0, -self.config.tile_size_width_meters])
         tile_fl = tile_bl + np.array([self.config.tile_size_height_meters, 0])
         tile_fr = tile_br + np.array([self.config.tile_size_height_meters, 0])
+        tile_front_center = (tile_fl + tile_fr) / 2.0
 
         # Robot direction indicator
-        direction_pt = np.array([self.config.robot_direction_indicator_length, 0])
-        direction_arrow_x = self.config.robot_direction_indicator_arrow_length*math.cos(math.radians(self.config.robot_direction_indicator_arrow_angle))
-        direction_arrow_y = self.config.robot_direction_indicator_arrow_length*math.sin(math.radians(self.config.robot_direction_indicator_arrow_angle))
+        scale_factor = 0.7
+        direction_pt = np.array([scale_factor*self.config.robot_direction_indicator_length, 0])
+        direction_arrow_x = scale_factor*self.config.robot_direction_indicator_arrow_length*math.cos(math.radians(self.config.robot_direction_indicator_arrow_angle))
+        direction_arrow_y = scale_factor*self.config.robot_direction_indicator_arrow_length*math.sin(math.radians(self.config.robot_direction_indicator_arrow_angle))
         direction_arrow_left =  direction_pt + np.array([-direction_arrow_x,  direction_arrow_y])
         direction_arrow_right = direction_pt + np.array([-direction_arrow_x, -direction_arrow_y])
 
@@ -411,11 +447,12 @@ class CmdGui:
             robot_fig_handles.append(self.window['_GRAPH_'].draw_line(point_from=start_pt, point_to=end_pt, color=robot_line_color, width = robot_line_thickness))
 
         # Draw angle indicator line
-        global_direction_pt = Utils.TransformPos(direction_pt, robot_global_pos_2d, robot_angle)
-        robot_fig_handles.append(self.window['_GRAPH_'].draw_line(point_from=list(robot_global_pos_2d), point_to=list(global_direction_pt), color=direction_line_color, width=direction_line_thickness))
-        global_direction_arrow_left = Utils.TransformPos(direction_arrow_left, robot_global_pos_2d, robot_angle)
+        angle_root_pt = Utils.TransformPos(tile_front_center, robot_global_pos_2d, robot_angle)
+        global_direction_pt = Utils.TransformPos(direction_pt, angle_root_pt, robot_angle)
+        robot_fig_handles.append(self.window['_GRAPH_'].draw_line(point_from=list(angle_root_pt), point_to=list(global_direction_pt), color=direction_line_color, width=direction_line_thickness))
+        global_direction_arrow_left = Utils.TransformPos(direction_arrow_left, angle_root_pt, robot_angle)
         robot_fig_handles.append(self.window['_GRAPH_'].draw_line(point_from=list(global_direction_pt), point_to=list(global_direction_arrow_left), color=direction_line_color, width=direction_line_thickness))
-        global_direction_arrow_right = Utils.TransformPos(direction_arrow_right, robot_global_pos_2d, robot_angle)
+        global_direction_arrow_right = Utils.TransformPos(direction_arrow_right, angle_root_pt, robot_angle)
         robot_fig_handles.append(self.window['_GRAPH_'].draw_line(point_from=list(global_direction_pt), point_to=list(global_direction_arrow_right), color=direction_line_color, width=direction_line_thickness))
 
         return robot_fig_handles
