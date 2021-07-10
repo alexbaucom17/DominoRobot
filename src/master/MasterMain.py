@@ -181,7 +181,8 @@ class CmdGui:
         name = 'ManualAction'
 
         action = None
-        if action_type in [ActionTypes.MOVE_COARSE, ActionTypes.MOVE_REL, ActionTypes.MOVE_REL_SLOW, ActionTypes.MOVE_FINE]:
+        if action_type in [ActionTypes.MOVE_COARSE, ActionTypes.MOVE_REL, ActionTypes.MOVE_REL_SLOW, 
+                           ActionTypes.MOVE_FINE, ActionTypes.MOVE_FINE_STOP_VISION]:
             data = data_str.split(',')
             data = [x.strip() for x in data]
             if len(data) != 3:
@@ -209,6 +210,10 @@ class CmdGui:
                 data = (0,0,0)
                 logging.warning("Assuming position of (0,0,0) for vision move")
             action = MoveAction(action_type, name, data[0], data[1], data[2])
+        elif action_type == ActionTypes.WAIT:
+            data = data_str.split(',')
+            data = [x.strip() for x in data]
+            action = WaitAction(action_type, name, float(data[0]))
         else:
             action = Action(action_type, name)
 

@@ -27,6 +27,8 @@ class RobotInterface:
         self.current_action = ActionTypes.NONE
         self.current_move_data = []
         self.current_action_timer = None
+        self.wait_timer = None
+        self.waiting_active = False
 
     def bring_online(self, use_mock=False):
         self._bring_comms_online(use_mock)
@@ -39,6 +41,8 @@ class RobotInterface:
         if metrics and type(metrics) is dict:
             metrics['current_action'] = str(self.current_action)
             metrics['current_move_data'] = self.current_move_data
+        if metrics and self.waiting_active:
+            metrics['in_progress'] = True
         return metrics
 
     def _setup_action_map(self):
@@ -96,6 +100,11 @@ class RobotInterface:
                     self.comms_online = False
                     self.last_status = "{} offline".format(self.robot_id)
 
+            if self.waiting_active:
+                if self.wait_timer.check():
+                    self.waiting_active = False
+                    self.wait_timer = None
+
     def run_action(self, action):
         
         if not self.comms_online:
@@ -117,6 +126,9 @@ class RobotInterface:
             elif action.action_type == ActionTypes.MOVE_FINE:
                 self.robot_client.move_fine(action.x, action.y, action.a)
                 self.current_move_data = [action.x, action.y, action.getAngleDegrees()]
+            elif action.action_type == ActionTypes.MOVE_FINE_STOP_VISION:
+                self.robot_client.move_fine_stop_vision(action.x, action.y, action.a)
+                self.current_move_data = [action.x, action.y, action.getAngleDegrees()]
             elif action.action_type == ActionTypes.MOVE_WITH_VISION:
                 self.robot_client.move_with_vision(action.x, action.y, action.a)
             elif action.action_type == ActionTypes.MOVE_CONST_VEL:
@@ -126,6 +138,9 @@ class RobotInterface:
             elif action.action_type == ActionTypes.NET:
                 status = self.robot_client.net_status()
                 logging.info("Robot {} network status is: {}".format(self.robot_id, status))
+            elif action.action_type == ActionTypes.WAIT:
+                self.wait_timer = NonBlockingTimer(action.time)
+                self.waiting_active = True
             elif action.action_type in self.simple_action_map.keys():
                 self.simple_action_map[action.action_type]()
             else:

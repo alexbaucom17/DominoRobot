@@ -116,7 +116,7 @@ class Config:
     # Map configuration (distances in meters, angles in degrees)
     robot_boundaries = np.array([[1,-11],[15,11]])              # Bottom left, top right, global frame
     highway_x = 3.0                                       # "Highway" coordinate
-    load_waypoint = np.array([highway_x, 8.5])                    # xya (global frame) for waypoint to go to first before load prep
+    load_waypoint = np.array([highway_x, 6])                    # xya (global frame) for waypoint to go to first before load prep
     highway_angle = 90
 
     base_station_boundaries = np.array([[2.5,10],[3.5,11]])         # Bottom left, top right, global frame
@@ -132,7 +132,7 @@ class Config:
     tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])  # Offset from bottom left of tile to robot center [x,y], in robot coordinate frame     
     enter_position_distance = 1                                  # How far out of field boundaries to do robot prep move
     intermediate_entry_hz_y = 0                                 # Y coordinate for horizontal intermediate position
-    intermediate_place_vt_x = 5                                 # X coordinate for vertical intermediate position
+    intermediate_place_vt_x = 8                                 # X coordinate for vertical intermediate position
     field_to_robot_frame_angle = 90                             # In case robot frame and field frame ever need to be rotated relative to each other
 
     # Used for testing sub-sections of the larger pattern
