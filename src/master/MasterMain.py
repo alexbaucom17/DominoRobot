@@ -430,7 +430,7 @@ class CmdGui:
         rect_width_height = Utils.TransformPos(np.array([self.config.field_width, self.config.field_height]), [0,0], self.config.domino_field_angle)
         top_left = (bottom_left[0], bottom_left[1]+rect_width_height[1])
         bottom_right = (bottom_left[0] + rect_width_height[0], bottom_left[1])
-        self.viz_figs["field"] = self.window['_GRAPH_'].draw_rectangle(top_left, bottom_right, line_color='green')
+        self.viz_figs["field"] = self.window['_GRAPH_'].draw_rectangle(top_left, bottom_right, line_color='green', line_width=2)
 
         # Base station
         base_station_top_left = (self.config.base_station_boundaries[0][0], self.config.base_station_boundaries[1][1])
@@ -491,14 +491,12 @@ class CmdGui:
                 p2 = list(bottom_right + dx * i)
                 self.viz_figs["plan_hz_{}".format(i)] = self.window['_GRAPH_'].draw_line(p1, p2, color = "grey17")
 
-            # if type(plan) is SubsectionPlan:
-            #     origin = self.config.domino_field_origin
-            #     sub_origin = plan.field.tiles[-1].getPlacementPositionInMeters()
-            #     bottom_left = (origin[0] + sub_origin[0], origin[1] + sub_origin[1])
-            #     sub_top_right = plan.field.tiles[0].getPlacementPositionInMeters()
-            #     top_right = (origin[0] + sub_top_right[0] + self.config.tile_size_width_meters,
-            #                  origin[1] + sub_top_right[1] + self.config.tile_size_height_meters)
-            #     self.viz_figs["subfield"] = self.window['_GRAPH_'].draw_rectangle(bottom_left, top_right, line_color='green', line_width=3)
+            if type(plan) is SubsectionPlan:
+                origin = self.config.domino_field_origin
+                bottom_left = Utils.TransformPos(np.array(plan.field.tiles[-1].getPlacementPositionInMeters()), origin, self.config.domino_field_angle)
+                top_right = Utils.TransformPos(np.array(plan.field.tiles[0].getPlacementPositionInMeters())+
+                    np.array((self.config.tile_size_width_meters,self.config.tile_size_height_meters)), origin, self.config.domino_field_angle)
+                self.viz_figs["subfield"] = self.window['_GRAPH_'].draw_rectangle(bottom_left, top_right, line_color='green', line_width=3)
 
             self.drawn_plan_grid = True
 

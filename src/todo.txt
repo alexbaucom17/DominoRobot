@@ -7,13 +7,14 @@ Robot SW:
 
 Robot HW:
 - Figure out how to mitigate motor torque issue, get in touch with teknic
+    - Update plans to drive straight as much as possible and have intermediate stops for long motions
 
 Master:
 - Consider setting MM fine pose a bit further away from the dominos than the actual target point (to avoid overshoot)
 - Update cycle generation for rows near the back wall
 - Finish subsection highlighting
 - Generate plans for marks logo with 1 fridge (34 tiles)
-- Add marker indicating last marvelmind position
+- Add gui marker indicating last marvelmind position
 
 
 Robustify:

@@ -12,7 +12,7 @@ class Config:
     # Set to override config values for small scale testing
     USE_SMALL_TESTING_CONFIG = False
     # Set to skip connecting to robot
-    OFFLINE_TESTING = False
+    OFFLINE_TESTING = True
     # Set to skip connecting to base station
     SKIP_BASE_STATION = True
     # Set to skip connecting to Marvelmind
@@ -25,7 +25,7 @@ class Config:
     # Set to regenerate and auto load plan on master startup
     REGEN_PLAN = True
     # Set to true to use just a subsection of the overal plan
-    USE_SUBSECTION = True
+    USE_SUBSECTION = False
 
     # ====== PATHS ========
     
@@ -124,8 +124,8 @@ class Config:
 
     # Used for testing sub-sections of the larger pattern
     if USE_SUBSECTION:
-        start_coords = (10,0)
-        end_coords = (12,2)
+        start_coords = (4,0)
+        end_coords = (10,8)
 
     # Left side
     # if USE_SMALL_TESTING_CONFIG:  
