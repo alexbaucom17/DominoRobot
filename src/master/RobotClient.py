@@ -207,6 +207,11 @@ class RobotClient(ClientBase):
         msg = {'type': 'move_fine', 'data': {'x': x, 'y': y, 'a': a}}
         self.send_msg_and_wait_for_ack(msg)
 
+    def move_fine_stop_vision(self, x, y, a):
+        """ Tell robot to move to a specific location with fine precision but stop if vision markers are detected """
+        msg = {'type': 'move_fine_stop_vision', 'data': {'x': x, 'y': y, 'a': a}}
+        self.send_msg_and_wait_for_ack(msg)
+
     def move_with_vision(self, x, y, a):
         """ Tell robot to move to a location relative to the vision measurements from cameras"""
         msg = {'type': 'move_vision', 'data': {'x': x, 'y': y, 'a': a}}

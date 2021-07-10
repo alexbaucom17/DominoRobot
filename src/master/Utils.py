@@ -23,6 +23,8 @@ class ActionTypes(enum.Enum):
     START_CAMERAS = 16,
     STOP_CAMERAS = 17,
     MOVE_REL_SLOW = 18,
+    WAIT = 19,
+    MOVE_FINE_STOP_VISION = 20,
 
 class NonBlockingTimer:
 

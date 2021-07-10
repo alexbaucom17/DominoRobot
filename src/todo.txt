@@ -1,18 +1,11 @@
 
 Robot SW:
-- Systematically test as many drop locations as possible
-- Consider adjusting vision mode to take over motion as soon as mavelmind mode is close-ish and both markers are detected.
-    - Think about vision takeover when markers are seen (maybe plan decel to 0?)
-- Figure out why KF localization gets stuck in local minimum sometimes
+- Figure out why KF localization gets stuck in local minimum sometimes (maybe not needed?)
 
 Robot HW:
-- Figure out how to mitigate motor torque issue, get in touch with teknic
-    - Update plans to drive straight as much as possible and have intermediate stops for long motions
 
 Master:
-- Consider setting MM fine pose a bit further away from the dominos than the actual target point (to avoid overshoot)
-- Update cycle generation for rows near the back wall
-- Add gui marker indicating last marvelmind position
+- Set up new computer with master sw
 
 
 Robustify:
