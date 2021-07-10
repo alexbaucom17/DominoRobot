@@ -12,8 +12,6 @@ Robot HW:
 Master:
 - Consider setting MM fine pose a bit further away from the dominos than the actual target point (to avoid overshoot)
 - Update cycle generation for rows near the back wall
-- Finish subsection highlighting
-- Generate plans for marks logo with 1 fridge (34 tiles)
 - Add gui marker indicating last marvelmind position
 
 

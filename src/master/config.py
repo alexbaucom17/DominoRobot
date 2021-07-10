@@ -19,6 +19,8 @@ class Config:
     SKIP_MARVELMIND = True
     # Set to use fake plan instead of loading a generated one
     USE_TEST_PLAN = False
+    # MR LOGO plan
+    MR_LOGO_PLAN = False
     # Set to auto-load this plan on master startup
     AUTO_LOAD_PLAN = True
     AUTO_LOAD_PLAN_NAME = "FullPlan_DominoBros.p"
@@ -71,6 +73,15 @@ class Config:
                 ('white', (1,1,1)),
                 ('brown', (1,0.51,0)),
                 ('yellow', (1,0.867,0)),
+                ], dtype=object)
+
+    if MR_LOGO_PLAN:
+        image_name = os.path.join(config_dir_path, 'logo.jpg')
+        num_tiles_width = 5
+        num_tiles_height = 5
+        dominos = np.array(
+                [('black', (0,0,0)),
+                ('white', (1,1,1)),
                 ], dtype=object)
 
     # Physical dimensions of dominos

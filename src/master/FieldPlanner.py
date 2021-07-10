@@ -152,6 +152,21 @@ class DominoField:
         if img.shape[2] is 4:
             img = img[:,:,:3]
 
+        # Do some modifications to MR logo to get it the right shape
+        if self.cfg.MR_LOGO_PLAN:
+
+            # Crop vertical
+            vert_size = img.shape[0]
+            crop_factor = 0.4
+            lb = int(vert_size/2 - crop_factor*vert_size)
+            ub = int(vert_size/2 + crop_factor*vert_size)
+            img = img[lb:ub,:,:]
+
+            # Padd horizontal
+            hz_size = img.shape[1]
+            pad_amount = int(0.1 * hz_size)
+            img = np.pad(img,  pad_width=[(0, 0), (pad_amount, pad_amount),(0, 0)], mode='constant')
+
         # Scaled image
         img_scaled = sktf.resize(img, (self.cfg.desired_height_dominos, self.cfg.desired_width_dominos), anti_aliasing=False)
 
@@ -866,6 +881,8 @@ def GeneratePDF(plan):
 
     # Initialize pdf
     name = "domino_plan.pdf"
+    if plan.cfg.MR_LOGO_PLAN:
+        name = "domnino_plan_logo.pdf"
     full_path = os.path.join(plan.cfg.plans_dir, name)
     page_height, page_width = letter # Flipped to get landscape
     c = canvas.Canvas(full_path, pagesize=(page_width, page_height))
@@ -918,14 +935,14 @@ if __name__ == '__main__':
 
     plan = RunFieldPlanning(autosave=False)
 
-    # plan.field.printStats()
-    # plan.field.show_image_parsing()
-    # plan.field.render_domino_image_tiles()
+    plan.field.printStats()
+    plan.field.show_image_parsing()
+    plan.field.render_domino_image_tiles()
     # plan.field.show_tile_ordering()
     # plan.draw_cycle(2)
     # plan.draw_all_tile_poses()
 
-    GeneratePDF(plan)
+    # GeneratePDF(plan)
 
     # sg.change_look_and_feel('Dark Blue 3')
     # clicked_value = sg.popup_yes_no('Save plan to file?')
