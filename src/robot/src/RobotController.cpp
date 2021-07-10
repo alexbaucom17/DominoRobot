@@ -244,11 +244,14 @@ void RobotController::disableAllMotors()
 
 void RobotController::inputPosition(float x, float y, float a)
 {
+    bool last_mm_used = false;
     if(limits_mode_ == LIMITS_MODE::FINE || limits_mode_ == LIMITS_MODE::COARSE)
     {
         localization_.updatePositionReading({x,y,a});
         cartPos_ = localization_.getPosition();
+        last_mm_used = true;
     }
+    statusUpdater_.updateLastMarvelmindPose({x,y,a}, last_mm_used);
 }
 
 void RobotController::forceSetPosition(float x, float y, float a)

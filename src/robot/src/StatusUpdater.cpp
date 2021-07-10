@@ -62,3 +62,11 @@ void StatusUpdater::updateVisionControllerPose(Point pose)
   currentStatus_.vision_y = pose.y;
   currentStatus_.vision_a = pose.a;
 }
+
+void StatusUpdater::updateLastMarvelmindPose(Point pose, bool pose_used)
+{
+  currentStatus_.last_mm_x = pose.x;
+  currentStatus_.last_mm_y = pose.y;
+  currentStatus_.last_mm_a = pose.a;
+  currentStatus_.last_mm_used = pose_used;
+}

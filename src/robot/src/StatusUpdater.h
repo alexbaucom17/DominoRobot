@@ -41,6 +41,8 @@ class StatusUpdater
     void updateCameraDebug(CameraDebug camera_debug) {currentStatus_.camera_debug = camera_debug;};
 
     void updateVisionControllerPose(Point pose);
+    
+    void updateLastMarvelmindPose(Point pose, bool pose_used);
 
     struct Status
     {
@@ -56,6 +58,12 @@ class StatusUpdater
       float vision_x;
       float vision_y;
       float vision_a;
+
+      // Last pose from mm
+      float last_mm_x;
+      float last_mm_y;
+      float last_mm_a;
+      bool last_mm_used;
 
       // Loop times
       int controller_loop_ms;
@@ -83,6 +91,10 @@ class StatusUpdater
       vision_x(0.0),
       vision_y(0.0),
       vision_a(0.0),
+      last_mm_x(0.0),
+      last_mm_y(0.0),
+      last_mm_a(0.0),
+      last_mm_used(false),
       controller_loop_ms(999),
       position_loop_ms(999),
       in_progress(false),
@@ -142,6 +154,10 @@ class StatusUpdater
         doc["vision_x"] = vision_x;
         doc["vision_y"] = vision_y;
         doc["vision_a"] = vision_a;
+        doc["last_mm_x"] = last_mm_x;
+        doc["last_mm_y"] = last_mm_y;
+        doc["last_mm_a"] = last_mm_a;
+        doc["last_mm_used"] = last_mm_used;
 
         // Serialize and return string
         std::string msg;
