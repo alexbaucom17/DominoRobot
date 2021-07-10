@@ -5,7 +5,7 @@
 #include <thread>
 #include "SocketMultiThreadWrapperBase.h"
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 2048
 
 class SocketMultiThreadWrapper : public SocketMultiThreadWrapperBase
 {
