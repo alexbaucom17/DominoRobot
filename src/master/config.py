@@ -62,9 +62,6 @@ class Config:
     image_name = os.path.join(config_dir_path, 'DominoDesign.psd')
     num_tiles_width = 18
     num_tiles_height = 19
-    if USE_SMALL_TESTING_CONFIG:  
-        num_tiles_width = 2
-        num_tiles_height = 4
     dominos = np.array(
                 [('black', (0,0,0)),
                 ('red',   (1,0,0)),
@@ -75,6 +72,9 @@ class Config:
                 ('yellow', (1,0.867,0)),
                 ], dtype=object)
 
+    if USE_SMALL_TESTING_CONFIG:  
+        num_tiles_width = 2
+        num_tiles_height = 4
     if MR_LOGO_PLAN:
         image_name = os.path.join(config_dir_path, 'logo.jpg')
         num_tiles_width = 5
@@ -115,8 +115,9 @@ class Config:
 
     # Map configuration (distances in meters, angles in degrees)
     robot_boundaries = np.array([[1,-11],[15,11]])              # Bottom left, top right, global frame
-    load_waypoint = np.array([3, 8.5])                    # xya (global frame) for waypoint to go to first before load prep
-    load_waypoint_angle_leave = -90
+    highway_x = 3.0                                       # "Highway" coordinate
+    load_waypoint = np.array([highway_x, 8.5])                    # xya (global frame) for waypoint to go to first before load prep
+    highway_angle = 90
 
     base_station_boundaries = np.array([[2.5,10],[3.5,11]])         # Bottom left, top right, global frame
     base_station_target_angle = 90                              # Target angle (deg) for base station in global frame
@@ -129,8 +130,9 @@ class Config:
     domino_field_angle = -90                                     # Domino field angle (deg), global frame
     tile_placement_coarse_offset = np.array([-0.5,0.5])         # Offset position for tile placement [x,y], in robot coordinate frame
     tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])  # Offset from bottom left of tile to robot center [x,y], in robot coordinate frame     
-    prep_position_distance = 1                                  # How far out of field boundaries to do robot prep move
-    exit_position_distance = 1                                  # How far out of the field boundaries to move to exit
+    enter_position_distance = 1                                  # How far out of field boundaries to do robot prep move
+    intermediate_entry_hz_y = 0                                 # Y coordinate for horizontal intermediate position
+    intermediate_place_vt_x = 5                                 # X coordinate for vertical intermediate position
     field_to_robot_frame_angle = 90                             # In case robot frame and field frame ever need to be rotated relative to each other
 
     # Used for testing sub-sections of the larger pattern
