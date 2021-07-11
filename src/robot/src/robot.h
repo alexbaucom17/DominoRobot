@@ -42,6 +42,8 @@ class Robot
 
     bool checkForCmdComplete(COMMAND cmd);
     bool tryStartNewCmd(COMMAND cmd);
+    bool checkForCameraStopTrigger();
+    void resetCameraStopTriggers();
 
     StatusUpdater statusUpdater_;
     RobotServer server_;
@@ -54,7 +56,10 @@ class Robot
     WaitForLocalizeHelper wait_for_localize_helper_;
     RateController vision_print_rate_;
     CameraTrackerBase* camera_tracker_;
-    bool stop_fast_triggered_;
+    ClockTimePoint camera_motion_start_time_;
+    ClockTimePoint camera_trigger_time_1_;
+    ClockTimePoint camera_trigger_time_2_;
+    bool camera_stop_triggered_;
 
     COMMAND curCmd_;
 };

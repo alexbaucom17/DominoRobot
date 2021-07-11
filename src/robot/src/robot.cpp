@@ -46,7 +46,10 @@ Robot::Robot()
   wait_for_localize_helper_(statusUpdater_, cfg.lookup("localization.max_wait_time"), cfg.lookup("localization.confidence_for_wait")),
   vision_print_rate_(10),
   camera_tracker_(CameraTrackerFactory::getFactoryInstance()->get_camera_tracker()),
-  stop_fast_triggered_(false),
+  camera_motion_start_time_(ClockTimePoint::min()),
+  camera_trigger_time_1_(ClockTimePoint::min()),
+  camera_trigger_time_2_(ClockTimePoint::min()),
+  camera_stop_triggered_(false),
   curCmd_(COMMAND::NONE)
 {
     PLOGI.printf("Robot starting");
@@ -89,10 +92,10 @@ void Robot::runOnce()
     camera_tracker_->update();
 
     // Verify if MOVE_FINE_STOP_VISION needs to trigger stop
-    if(curCmd_ == COMMAND::MOVE_FINE_STOP_VISION && camera_tracker_->getPoseFromCamera().ok && !stop_fast_triggered_)
+    if(checkForCameraStopTrigger())
     {
         controller_.stopFast();
-        stop_fast_triggered_ = true;
+        camera_stop_triggered_ = true;
     }
 
     // Check if the current command has finished
@@ -204,7 +207,9 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
         }
         RobotServer::PositionData data = server_.getMoveData();
         controller_.moveToPositionFine(data.x, data.y, data.a);
-        stop_fast_triggered_ = false;
+        resetCameraStopTriggers();
+        camera_motion_start_time_ = ClockFactory::getFactoryInstance()->get_clock()->now();
+    
     }
     else if(cmd == COMMAND::MOVE_CONST_VEL)
     {
@@ -277,4 +282,46 @@ bool Robot::checkForCmdComplete(COMMAND cmd)
         return true;
     }
         
+}
+
+bool Robot::checkForCameraStopTrigger()
+{
+    if(curCmd_ != COMMAND::MOVE_FINE_STOP_VISION) return false;
+    if(camera_stop_triggered_) return false;
+
+    CameraTrackerOutput camera_output = camera_tracker_->getPoseFromCamera();
+    if(camera_output.ok)
+    {
+        bool camera_trigger_1_ = camera_trigger_time_1_ > camera_motion_start_time_;
+        bool camera_trigger_2 = camera_trigger_time_2_ > camera_motion_start_time_;
+        bool timestamp_after_1 = camera_output.timestamp > camera_trigger_time_1_;
+        bool timestamp_after_2 = camera_output.timestamp > camera_trigger_time_2_;
+
+        if(camera_trigger_1_ && camera_trigger_2 && timestamp_after_1 && timestamp_after_2)
+        {
+            return true;
+        }
+        else if(camera_trigger_1_ && timestamp_after_1)
+        {
+            camera_trigger_time_2_ = camera_output.timestamp;
+            return false;
+        }
+        else
+        {
+            camera_trigger_time_1_ = camera_output.timestamp;
+            return false;
+        }
+    }
+    else
+    {
+        resetCameraStopTriggers();
+    }
+    return false;
+}
+
+void Robot::resetCameraStopTriggers()
+{
+    camera_stop_triggered_ = false;
+    camera_trigger_time_1_ = ClockTimePoint::min();
+    camera_trigger_time_2_ = ClockTimePoint::min();
 }
