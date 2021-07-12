@@ -296,12 +296,13 @@ bool Robot::checkForCameraStopTrigger()
         bool camera_trigger_2 = camera_trigger_time_2_ > camera_motion_start_time_;
         bool timestamp_after_1 = camera_output.timestamp > camera_trigger_time_1_;
         bool timestamp_after_2 = camera_output.timestamp > camera_trigger_time_2_;
+        bool timestamp_difference = std::chrono::duration_cast<FpSeconds>(camera_output.timestamp - camera_trigger_time_1_).count() > 0;
 
         if(camera_trigger_1_ && camera_trigger_2 && timestamp_after_1 && timestamp_after_2)
         {
             return true;
         }
-        else if(camera_trigger_1_ && timestamp_after_1)
+        else if(camera_trigger_1_ && timestamp_after_1 && timestamp_difference)
         {
             camera_trigger_time_2_ = camera_output.timestamp;
             return false;
