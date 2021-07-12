@@ -485,7 +485,8 @@ def generate_full_action_sequence(cfg, tile):
 
     # Setup positions in field frame
     tile_pos_in_field_frame = np.array(tile.getPlacementPositionInMeters())
-    robot_placement_fine_pos_field_frame = tile_pos_in_field_frame + Utils.TransformPos(cfg.tile_to_robot_offset, [0,0], cfg.field_to_robot_frame_angle)
+    robot_placement_pos_field_frame = tile_pos_in_field_frame + Utils.TransformPos(cfg.tile_to_robot_offset, [0,0], cfg.field_to_robot_frame_angle)
+    robot_placement_fine_pos_field_frame = robot_placement_pos_field_frame + Utils.TransformPos(cfg.tile_placement_fine_offset, [0,0], cfg.field_to_robot_frame_angle)
     robot_placement_coarse_pos_field_frame = robot_placement_fine_pos_field_frame + Utils.TransformPos(cfg.tile_placement_coarse_offset, [0,0], cfg.field_to_robot_frame_angle)
 
     # Convert positions to global frame

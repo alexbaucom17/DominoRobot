@@ -1,11 +1,14 @@
 
 Robot SW:
 - Figure out why KF localization gets stuck in local minimum sometimes (maybe not needed?)
+- Consider setting domino vision to 92.5 for y axis as many markers measure that
+- Figure out why MM somtimes stops transmiting data to pi
 
 Robot HW:
 
 Master:
 - Set up new computer with master sw
+- Maybe set entry position for end of column a bit further away
 
 
 Robustify:
