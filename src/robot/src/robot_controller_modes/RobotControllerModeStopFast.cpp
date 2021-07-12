@@ -42,7 +42,7 @@ void RobotControllerModeStopFast::startMove(Point current_position, Velocity cur
         -initial_vel_sign_[1] * max_decel_[1],
         -initial_vel_sign_[2] * max_decel_[2],
     };
-    PLOGI.printf("Starting STOP_FAST from velocity %s at decel: %f,%f,%f",current_velocity.toString().c_str(),
+    PLOGW.printf("Starting STOP_FAST from velocity %s at decel: %f,%f,%f",current_velocity.toString().c_str(),
         current_decel_[0],current_decel_[1], current_decel_[2]);
     RobotControllerModeBase::startMove();
 }

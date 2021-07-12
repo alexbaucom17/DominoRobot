@@ -9,7 +9,7 @@ CameraTracker::CameraTracker(bool start_thread)
 : camera_loop_time_averager_(num_samples_to_average),
   rear_cam_(CAMERA_ID::REAR, start_thread),
   side_cam_(CAMERA_ID::SIDE, start_thread),
-  output_({{0,0,0}, false, ClockFactory::getFactoryInstance()->get_clock()->now()}),
+  output_({{0,0,0}, false, ClockFactory::getFactoryInstance()->get_clock()->now(), false}),
   last_rear_cam_output_(),
   last_side_cam_output_(),
   side_cam_ok_filter_(0.5),
@@ -30,6 +30,7 @@ void CameraTracker::update()
 {
     CameraPipelineOutput side_output = side_cam_.getData();
     CameraPipelineOutput rear_output = rear_cam_.getData();
+    output_.raw_detection = side_output.ok && rear_output.ok;
     debug_.side_ok = side_cam_ok_filter_.update(side_output.ok);
     debug_.rear_ok = rear_cam_ok_filter_.update(rear_output.ok);
     bool new_output_pose_ready = false;
