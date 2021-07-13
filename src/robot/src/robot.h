@@ -60,6 +60,7 @@ class Robot
     ClockTimePoint camera_trigger_time_1_;
     ClockTimePoint camera_trigger_time_2_;
     bool camera_stop_triggered_;
+    Point fine_move_target_;
 
     COMMAND curCmd_;
 };

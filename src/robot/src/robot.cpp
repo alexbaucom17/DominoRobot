@@ -209,6 +209,7 @@ bool Robot::tryStartNewCmd(COMMAND cmd)
         controller_.moveToPositionFine(data.x, data.y, data.a);
         resetCameraStopTriggers();
         camera_motion_start_time_ = ClockFactory::getFactoryInstance()->get_clock()->now();
+        fine_move_target_ = {data.x, data.y, data.a};
     
     }
     else if(cmd == COMMAND::MOVE_CONST_VEL)
@@ -297,8 +298,11 @@ bool Robot::checkForCameraStopTrigger()
         bool timestamp_after_1 = camera_output.timestamp > camera_trigger_time_1_;
         bool timestamp_after_2 = camera_output.timestamp > camera_trigger_time_2_;
         bool timestamp_difference = std::chrono::duration_cast<FpSeconds>(camera_output.timestamp - camera_trigger_time_1_).count() > 0;
+        Point current_pos = controller_.getCurrentPosition();
+        Eigen::Vector2f dp = {fine_move_target_.x - current_pos.x, fine_move_target_.y - current_pos.y};
+        bool pos_in_tolerance = dp.norm() < 0.5;
 
-        if(camera_trigger_1_ && camera_trigger_2 && timestamp_after_1 && timestamp_after_2)
+        if(camera_trigger_1_ && camera_trigger_2 && timestamp_after_1 && timestamp_after_2 && pos_in_tolerance)
         {
             return true;
         }
