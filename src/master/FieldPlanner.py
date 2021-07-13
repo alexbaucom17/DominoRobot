@@ -498,7 +498,7 @@ def generate_full_action_sequence(cfg, tile):
     intermediate_entry_pos_global_frame = np.array([cfg.highway_x, cfg.intermediate_entry_hz_y])
     entry_y = robot_placement_coarse_pos_global_frame[1]+cfg.enter_position_distance
     field_entry_pos_global_frame = np.array([cfg.highway_x, entry_y])
-    intermediate_place_pos_global_frame = np.array([cfg.intermediate_place_vt_x, entry_y])
+    intermediate_place_pos_global_frame = np.array([robot_placement_coarse_pos_global_frame[0], entry_y])
 
     # Figure out if intermediate steps are needed
     intermediate_hz = robot_placement_coarse_pos_global_frame[1] < cfg.intermediate_entry_hz_y - 1
@@ -557,25 +557,31 @@ def generate_full_action_sequence(cfg, tile):
     # name = "Wait for localization"
     # actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
-    if intermediate_hz:
-        name = "Move to intermediate enter - coarse"
-        actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_entry_pos_global_frame[0], intermediate_entry_pos_global_frame[1], cfg.highway_angle))
+    # if intermediate_hz:
+    #     name = "Move to intermediate enter - coarse"
+    #     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_entry_pos_global_frame[0], intermediate_entry_pos_global_frame[1], cfg.highway_angle))
 
-        name = "Wait for motor cooldown (long)"
-        actions.append(WaitAction(ActionTypes.WAIT, name, 20))
+    #     name = "Wait for motor cooldown (long)"
+    #     actions.append(WaitAction(ActionTypes.WAIT, name, 20))
 
     name = "Move to enter - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, field_entry_pos_global_frame[0], field_entry_pos_global_frame[1], cfg.highway_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, field_entry_pos_global_frame[0], field_entry_pos_global_frame[1], robot_field_angle))
 
-    name = "Wait for motor cooldown"
-    actions.append(WaitAction(ActionTypes.WAIT, name, 10))
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
-    if intermediate_vt:
-        name = "Move to intermediate place - coarse"
-        actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_place_pos_global_frame[0], intermediate_place_pos_global_frame[1], robot_field_angle))
+    # name = "Wait for motor cooldown"
+    # actions.append(WaitAction(ActionTypes.WAIT, name, 10))
 
-        name = "Wait for motor cooldown"
-        actions.append(WaitAction(ActionTypes.WAIT, name, 10))
+    # if intermediate_vt:
+    name = "Move to intermediate place - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_place_pos_global_frame[0], intermediate_place_pos_global_frame[1], robot_field_angle))
+
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+
+    #     name = "Wait for motor cooldown"
+    #     actions.append(WaitAction(ActionTypes.WAIT, name, 10))
 
     name = "Move to near place - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
@@ -601,25 +607,28 @@ def generate_full_action_sequence(cfg, tile):
     name = "Move away from place - relative slow"
     actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, relative_tile_offset[0], relative_tile_offset[1], 0))
 
-    if intermediate_vt:
-        name = "Move to intermediate place - coarse"
-        actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_place_pos_global_frame[0], intermediate_place_pos_global_frame[1], robot_field_angle))
+    # if intermediate_vt:
+    #     name = "Move to intermediate place - coarse"
+    #     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_place_pos_global_frame[0], intermediate_place_pos_global_frame[1], robot_field_angle))
 
-        name = "Wait for motor cooldown"
-        actions.append(WaitAction(ActionTypes.WAIT, name, 10))
+    #     name = "Wait for motor cooldown"
+    #     actions.append(WaitAction(ActionTypes.WAIT, name, 10))
 
     name = "Move to exit - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, field_entry_pos_global_frame[0], field_entry_pos_global_frame[1], cfg.highway_angle))
 
-    name = "Wait for motor cooldown"
-    actions.append(WaitAction(ActionTypes.WAIT, name, 10))
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
-    if intermediate_hz:
-        name = "Move to intermediate exit - coarse"
-        actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_entry_pos_global_frame[0], intermediate_entry_pos_global_frame[1], cfg.highway_angle))
+    # name = "Wait for motor cooldown"
+    # actions.append(WaitAction(ActionTypes.WAIT, name, 10))
 
-        name = "Wait for motor cooldown (long)"
-        actions.append(WaitAction(ActionTypes.WAIT, name, 20))
+    # if intermediate_hz:
+    #     name = "Move to intermediate exit - coarse"
+    #     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_entry_pos_global_frame[0], intermediate_entry_pos_global_frame[1], cfg.highway_angle))
+
+    #     name = "Wait for motor cooldown (long)"
+    #     actions.append(WaitAction(ActionTypes.WAIT, name, 20))
 
     return actions
 

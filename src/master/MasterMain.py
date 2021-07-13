@@ -576,8 +576,13 @@ class Master:
 
         ready_to_exit = False
         while not ready_to_exit:
-            self.runtime_manager.update()
-            ready_to_exit = self.update_gui_and_handle_input()
+            try:
+                self.runtime_manager.update()
+                ready_to_exit = self.update_gui_and_handle_input()
+            except Exception as e:
+                logging.warning("Unhandled exception {}".format(str(e)))
+                if self.runtime_manager.get_plan_status() is PlanStatus.RUNNING:
+                    self.runtime_manager.set_plan_status(PlanStatus.PAUSED)
 
         # Clean up whenever loop exits
         self.runtime_manager.shutdown(self.keep_mm_running)

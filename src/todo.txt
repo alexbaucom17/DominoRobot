@@ -1,17 +1,20 @@
 
 Robot SW:
-- Figure out why KF localization gets stuck in local minimum sometimes (maybe not needed?)
-- Consider setting domino vision to 92.5 for y axis as many markers measure that
-- Figure out why MM somtimes stops transmiting data to pi
+- ? Consider setting domino vision to 92.5 for y axis as many markers measure that
+- ? Figure out why MM somtimes stops transmiting data to pi
 
 Robot HW:
 
 Master:
 - Set up new computer with master sw
-- Maybe set entry position for end of column a bit further away
+- Add method to easily provide offset for vision based on entire row/column
+    - Also use this to provide offsets for fine motion offset
+- ? Maybe set entry position for end of column a bit further away
 
 
 Robustify:
+- Try re-printing marvelmind stands for more robustness
+- Figure out why KF localization gets stuck in local minimum sometimes (maybe not needed?)
 - Test master action validator
     - Fix action validator choking on START_CAMERA action
 

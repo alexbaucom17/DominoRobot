@@ -27,7 +27,7 @@ class Config:
     # Set to regenerate and auto load plan on master startup
     REGEN_PLAN = True
     # Set to true to use just a subsection of the overal plan
-    USE_SUBSECTION = False
+    USE_SUBSECTION = True
 
     # ====== PATHS ========
     
@@ -138,8 +138,8 @@ class Config:
 
     # Used for testing sub-sections of the larger pattern
     if USE_SUBSECTION:
-        start_coords = (4,0)
-        end_coords = (10,8)
+        start_coords = (4,16)
+        end_coords = (13,19)
 
     # Left side
     # if USE_SMALL_TESTING_CONFIG:  
