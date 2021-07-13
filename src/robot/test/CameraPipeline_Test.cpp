@@ -91,6 +91,9 @@ TEST_CASE("Marker Detection", "[Camera]")
         {.name = "20210712180528_side_img_raw.jpg",
         .expected_detection = true,
         .id = CAMERA_ID::SIDE},
+        {.name = "20210712182429_side_img_raw.jpg",
+        .expected_detection = true,
+        .id = CAMERA_ID::SIDE},
     };
 
     for (const auto& item : test_images) 
