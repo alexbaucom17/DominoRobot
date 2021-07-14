@@ -435,7 +435,10 @@ class RuntimeManager:
             self.cycle_tracker[expected_robot]['action_id'] = None
 
     def _run_action(self, target, action):
-        if target == 'base':
+        if action.action_type == ActionTypes.PAUSE_PLAN:
+            self.set_plan_status(PlanStatus.PAUSED)
+            self.increment_robot_action(target)
+        elif target == 'base':
             self.base_station.run_action(action)
         elif 'robot' in target:
             self.robots[target].run_action(action)

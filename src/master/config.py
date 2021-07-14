@@ -116,15 +116,15 @@ class Config:
     # Map configuration (distances in meters, angles in degrees)
     robot_boundaries = np.array([[1,-11],[15,11]])              # Bottom left, top right, global frame
     highway_x = 3.0                                       # "Highway" coordinate
-    load_waypoint = np.array([highway_x, 5])                    # xya (global frame) for waypoint to go to first before load prep
+    load_waypoint = np.array([highway_x, 7])                    # xya (global frame) for waypoint to go to first before load prep
     highway_angle = 90
 
     base_station_boundaries = np.array([[2.5,10],[3.5,11]])         # Bottom left, top right, global frame
     base_station_target_angle = 90                              # Target angle (deg) for base station in global frame
-    base_station_relative_offset = np.array([1.0, 0, 0])           # Relative position of base station from prep pos - robot frame (x,y,a)
-    base_station_vision_offset = np.array([0.025,0.005,-0.6])     # Vision offset for base station alignment
-    base_station_prep_pos = np.array([2.8,9.7])                   # Pose outside of base station to align with before going in to dock
-    base_station_prep_vision_offset = np.array([0,0.04,-1])      # Vision offset to use for base station prep pose
+    base_station_relative_offset = np.array([0.9, 0, 0])           # Relative position of base station from prep pos - robot frame (x,y,a)
+    base_station_vision_offset = np.array([0.005,0.005,-0.7])     # Vision offset for base station alignment
+    base_station_prep_pos = np.array([2.8,9.6])                   # Pose outside of base station to align with before going in to dock
+    base_station_prep_vision_offset = np.array([0,0.01,-1])      # Vision offset to use for base station prep pose
 
     robot_pose_top_left = np.array([13.2,7.7])                   # Robot pose in global frame for top left of tile position of domino field
     domino_field_angle = -90                                     # Domino field angle (deg), global frame
@@ -138,8 +138,8 @@ class Config:
 
     # Used for testing sub-sections of the larger pattern
     if USE_SUBSECTION:
-        start_coords = (4,15)
-        end_coords = (13,19)
+        start_coords = (4,12)
+        end_coords = (13,15)
 
     # Left side
     # if USE_SMALL_TESTING_CONFIG:  
