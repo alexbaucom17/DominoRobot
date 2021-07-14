@@ -138,7 +138,7 @@ class Config:
 
     # Used for testing sub-sections of the larger pattern
     if USE_SUBSECTION:
-        start_coords = (4,16)
+        start_coords = (4,15)
         end_coords = (13,19)
 
     # Left side
@@ -156,6 +156,13 @@ class Config:
         domino_field_angle = -90
         tile_placement_coarse_offset = np.array([-0.5,-0.5])
         tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0 ])    
+
+    # Fine motion y offset adjustments
+    y_offset_cols = np.linspace(0.05, 0, num_tiles_height)
+    y_offset_rows = np.linspace(0, 0.05, num_tiles_width)
+    # Angle adjustment for fine motion to try and prevent wheel from hitting
+    angle_adjust_fine = 2   # degrees
+
 
     # Computed - don't change
     field_width = tile_size_width_meters * desired_width_dominos/tile_width

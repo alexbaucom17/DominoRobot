@@ -500,6 +500,13 @@ def generate_full_action_sequence(cfg, tile):
     field_entry_pos_global_frame = np.array([cfg.highway_x, entry_y])
     intermediate_place_pos_global_frame = np.array([robot_placement_coarse_pos_global_frame[0], entry_y])
 
+    # Make pose adjustments based on config
+    coord = tile.coordinate
+    y_offset_row = cfg.y_offset_rows[coord[0]]
+    y_offset_col = cfg.y_offset_cols[coord[1]]
+    extra_y_offset_fine = y_offset_col + y_offset_row
+    robot_placement_fine_pos_global_frame[1] += extra_y_offset_fine
+
     # Figure out if intermediate steps are needed
     intermediate_hz = robot_placement_coarse_pos_global_frame[1] < cfg.intermediate_entry_hz_y - 1
     intermediate_vt = robot_placement_coarse_pos_global_frame[0] > cfg.intermediate_place_vt_x + 1
@@ -593,16 +600,16 @@ def generate_full_action_sequence(cfg, tile):
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE_STOP_VISION, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle + cfg.angle_adjust_fine))
 
-    name = "Move to place - vision"
-    actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, tile.vision_offset[0], tile.vision_offset[1], tile.vision_offset[2]))
+    # name = "Move to place - vision"
+    # actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, tile.vision_offset[0], tile.vision_offset[1], tile.vision_offset[2]))
 
     name = "Stop cameras"
     actions.append(Action(ActionTypes.STOP_CAMERAS, name))
 
-    name = "Place tile"
-    actions.append(Action(ActionTypes.PLACE, name))
+    # name = "Place tile"
+    # actions.append(Action(ActionTypes.PLACE, name))
 
     name = "Move away from place - relative slow"
     actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, relative_tile_offset[0], relative_tile_offset[1], 0))

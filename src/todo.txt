@@ -8,8 +8,6 @@ Robot HW:
 Master:
 - Set up new computer with master sw
 - Add method to easily provide offset for vision based on entire row/column
-    - Also use this to provide offsets for fine motion offset
-- ? Maybe set entry position for end of column a bit further away
 
 
 Robustify:
