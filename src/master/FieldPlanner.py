@@ -23,20 +23,25 @@ def generateVisionOffsetMap(cfg, max_x, max_y):
         for idx,row in enumerate(reader):
             if idx == 0:
                 continue
-            tile_x = int(row[0])
-            tile_y = int(row[1])
+            if row[0] == 'X':
+                tile_x = [x for x in range(max_x)]
+            else:
+                tile_x = [int(row[0])]
+            
+            if row[1] == 'X':
+                tile_y = [ y for y in range(max_y)]
+            else:
+                tile_y = [int(row[1])]
+
             offset_x_meters = int(row[2]) / 1000.0
             offset_y_meters = int(row[3]) / 1000.0
             offset_a_degrees = float(row[4])
-            add_to_default = bool(row[5])
-            key = (tile_x,tile_y)
-            value = (offset_x_meters,offset_y_meters,offset_a_degrees)
-            if add_to_default:
-                value = (   cfg.default_vision_offset[0] + offset_x_meters,
-                            cfg.default_vision_offset[1] + offset_y_meters,
-                            cfg.default_vision_offset[2] + offset_a_degrees
-                        )
-            vision_offset_map[key] = value
+
+            for x in tile_x:
+                for y in tile_y:
+                    key = (x,y)
+                    add_value = np.array((offset_x_meters,offset_y_meters,offset_a_degrees))
+                    vision_offset_map[key] = vision_offset_map[key] + add_value
 
     return vision_offset_map
 

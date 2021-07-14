@@ -12,7 +12,7 @@ class Config:
     # Set to override config values for small scale testing
     USE_SMALL_TESTING_CONFIG = False
     # Set to skip connecting to robot
-    OFFLINE_TESTING = False
+    OFFLINE_TESTING = True
     # Set to skip connecting to base station
     SKIP_BASE_STATION = True
     # Set to skip connecting to Marvelmind
@@ -27,7 +27,7 @@ class Config:
     # Set to regenerate and auto load plan on master startup
     REGEN_PLAN = True
     # Set to true to use just a subsection of the overal plan
-    USE_SUBSECTION = True
+    USE_SUBSECTION = False
 
     # ====== PATHS ========
     
@@ -108,8 +108,8 @@ class Config:
     desired_height_dominos = tile_height * num_tiles_height
 
     # Vision offset configuration
-    default_vision_offset = (0,0,-2.5)
-    vision_offset_file = os.path.join(plans_dir, 'vision_offsets_larger_testing_area.csv')
+    default_vision_offset = np.array((0,0,-2.5))
+    vision_offset_file = os.path.join(plans_dir, 'vision_offsets_full_plan.csv')
 
     # ====== ENVIRONMENT CONFIGURATION ========
 
