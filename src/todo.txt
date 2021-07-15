@@ -8,12 +8,15 @@ Robot HW:
 
 Master:
 - Set up new computer with master sw
+- Figure out how to un-stick ack issue
+- Adjust getting to close issue
 - Write out manual action sequence for Lily entrance
-    - Move rel into room
-    - Reset localization somehow?
-    - Coarse move to 7,0,0
+    - Reboot, shut off MM
+    - Tray init
+    - Move coarse 5,0,-90
+    - Move coarse 7,-9.5,0
     - Place
-    - Back up relative 2,0,0 or so
+    - Move rel -2,0,0
 
 Robustify:
 - Try re-printing marvelmind stands for more robustness

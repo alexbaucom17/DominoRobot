@@ -605,7 +605,7 @@ def generate_full_action_sequence(cfg, tile):
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle + cfg.angle_adjust_fine))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE_STOP_VISION, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle + cfg.angle_adjust_fine))
 
     name = "Move to place - vision"
     actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, tile.vision_offset[0], tile.vision_offset[1], tile.vision_offset[2]))

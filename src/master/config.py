@@ -12,7 +12,7 @@ class Config:
     # Set to override config values for small scale testing
     USE_SMALL_TESTING_CONFIG = False
     # Set to skip connecting to robot
-    OFFLINE_TESTING = True
+    OFFLINE_TESTING = False
     # Set to skip connecting to base station
     SKIP_BASE_STATION = True
     # Set to skip connecting to Marvelmind
@@ -22,12 +22,12 @@ class Config:
     # MR LOGO plan
     MR_LOGO_PLAN = False
     # Set to auto-load this plan on master startup
-    AUTO_LOAD_PLAN = True
+    AUTO_LOAD_PLAN = False
     AUTO_LOAD_PLAN_NAME = "FullPlan_DominoBros.p"
     # Set to regenerate and auto load plan on master startup
     REGEN_PLAN = True
     # Set to true to use just a subsection of the overal plan
-    USE_SUBSECTION = False
+    USE_SUBSECTION = True
 
     # ====== PATHS ========
     
@@ -122,8 +122,8 @@ class Config:
     base_station_boundaries = np.array([[2.5,10],[3.5,11]])         # Bottom left, top right, global frame
     base_station_target_angle = 90                              # Target angle (deg) for base station in global frame
     base_station_relative_offset = np.array([0.9, 0, 0])           # Relative position of base station from prep pos - robot frame (x,y,a)
-    base_station_vision_offset = np.array([0.005,0.005,-0.7])     # Vision offset for base station alignment
-    base_station_prep_pos = np.array([2.8,9.6])                   # Pose outside of base station to align with before going in to dock
+    base_station_vision_offset = np.array([0.01,0.010,-0.5])     # Vision offset for base station alignment
+    base_station_prep_pos = np.array([2.8,9.65])                   # Pose outside of base station to align with before going in to dock
     base_station_prep_vision_offset = np.array([0,0.01,-1])      # Vision offset to use for base station prep pose
 
     robot_pose_top_left = np.array([13.2,7.7])                   # Robot pose in global frame for top left of tile position of domino field
@@ -138,8 +138,8 @@ class Config:
 
     # Used for testing sub-sections of the larger pattern
     if USE_SUBSECTION:
-        start_coords = (4,12)
-        end_coords = (13,15)
+        start_coords = (1,14)
+        end_coords = (7,18)
 
     # Left side
     # if USE_SMALL_TESTING_CONFIG:  
@@ -158,10 +158,10 @@ class Config:
         tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0 ])    
 
     # Fine motion y offset adjustments
-    y_offset_cols = np.linspace(0.05, 0, num_tiles_height)
+    y_offset_cols = np.linspace(0.1, 0, num_tiles_height)
     y_offset_rows = np.linspace(0, 0.05, num_tiles_width)
     # Angle adjustment for fine motion to try and prevent wheel from hitting
-    angle_adjust_fine = 2   # degrees
+    angle_adjust_fine = 3   # degrees
 
 
     # Computed - don't change
