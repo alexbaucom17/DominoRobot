@@ -59,7 +59,7 @@ class Config:
     # ====== PLAN GENERATION ========
 
     # Image configuration
-    image_name = os.path.join(config_dir_path, 'DominoDesign.psd')
+    image_name = os.path.join(config_dir_path, 'DominoDesign-Questions.psd')
     num_tiles_width = 18
     num_tiles_height = 19
     dominos = np.array(
