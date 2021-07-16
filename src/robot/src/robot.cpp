@@ -309,7 +309,7 @@ bool Robot::checkForCameraStopTrigger()
         else if(camera_trigger_1_ && timestamp_after_1 && timestamp_difference)
         {
             camera_trigger_time_2_ = camera_output.timestamp;
-            return false;
+            return true;
         }
         else
         {

@@ -11,9 +11,9 @@ RobotControllerModeStopFast::RobotControllerModeStopFast(bool fake_perfect_motio
     fine_tolerances_.trans_vel_err = cfg.lookup("motion.translation.velocity_threshold.fine");
     fine_tolerances_.ang_vel_err = cfg.lookup("motion.rotation.velocity_threshold.fine");
 
-    max_decel_ = {cfg.lookup("motion.translation.max_acc.fine"),
-                  cfg.lookup("motion.translation.max_acc.fine"),
-                  cfg.lookup("motion.rotation.max_acc.fine")};
+    max_decel_ = {cfg.lookup("motion.translation.max_acc.coarse"),
+                  cfg.lookup("motion.translation.max_acc.coarse"),
+                  cfg.lookup("motion.rotation.max_acc.coarse")};
                           
     PositionController::Gains position_gains;
     position_gains.kp = cfg.lookup("motion.translation.gains.kp");
