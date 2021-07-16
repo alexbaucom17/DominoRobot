@@ -518,56 +518,60 @@ def generate_full_action_sequence(cfg, tile):
 
     # Tiles near the back wall don't have enough space for backwards offset
     relative_tile_offset = copy.deepcopy(cfg.tile_placement_coarse_offset)
-    if robot_placement_coarse_pos_global_frame[0] < 1:
+    if robot_placement_coarse_pos_global_frame[0] < 2:
+        intermediate_place_pos_global_frame[0] = robot_placement_fine_pos_global_frame[0]
         robot_placement_coarse_pos_global_frame[0] = robot_placement_fine_pos_global_frame[0]
         relative_tile_offset = np.asarray([0, 1])
 
     actions = []
 
     name = "Move to load waypoint - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.base_station_target_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.highway_angle))
 
-    name = "Wait for localization"
-    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+    # name = "Wait for localization"
+    # actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
-    name = "Move to near load prep - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1]-0.3, cfg.base_station_target_angle))
+    name = "Move to near load area - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
 
-    name = "Start cameras"
-    actions.append(Action(ActionTypes.START_CAMERAS, name))
+    # name = "Pause plan for load"
+    # actions.append(Action(ActionTypes.PAUSE_PLAN, name))
 
-    name = "Wait for localization"
-    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+    # name = "Start cameras"
+    # actions.append(Action(ActionTypes.START_CAMERAS, name))
 
-    name = "Move to load prep - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
+    # name = "Wait for localization"
+    # actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
-    name = "Move to load prep - vision"
-    actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, cfg.base_station_prep_vision_offset[0], cfg.base_station_prep_vision_offset[1], cfg.base_station_prep_vision_offset[2]))
+    # name = "Move to load prep - fine"
+    # actions.append(MoveAction(ActionTypes.MOVE_FINE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
+
+    # name = "Move to load prep - vision"
+    # actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, cfg.base_station_prep_vision_offset[0], cfg.base_station_prep_vision_offset[1], cfg.base_station_prep_vision_offset[2]))
     
-    name = "Move to load - relative slow"
-    actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, cfg.base_station_relative_offset[0], cfg.base_station_relative_offset[1], cfg.base_station_relative_offset[2]))
+    # name = "Move to load - relative slow"
+    # actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, cfg.base_station_relative_offset[0], cfg.base_station_relative_offset[1], cfg.base_station_relative_offset[2]))
 
-    name = "Align with load"
-    actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, cfg.base_station_vision_offset[0], cfg.base_station_vision_offset[1], cfg.base_station_vision_offset[2]))
+    # name = "Align with load"
+    # actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, cfg.base_station_vision_offset[0], cfg.base_station_vision_offset[1], cfg.base_station_vision_offset[2]))
 
-    name = "Stop cameras"
-    actions.append(Action(ActionTypes.STOP_CAMERAS, name))
+    # name = "Stop cameras"
+    # actions.append(Action(ActionTypes.STOP_CAMERAS, name))
 
     name = "Load tile"
     actions.append(Action(ActionTypes.LOAD, name))
 
-    name = "Move away from load - relative slow"
-    actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, -1.3*cfg.base_station_relative_offset[0], -1.3*cfg.base_station_relative_offset[1], -1.3*cfg.base_station_relative_offset[2]))
+    # name = "Move away from load - relative slow"
+    # actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, -1.3*cfg.base_station_relative_offset[0], -1.3*cfg.base_station_relative_offset[1], -1.3*cfg.base_station_relative_offset[2]))
 
-    name = "Pause plan for QC"
-    actions.append(Action(ActionTypes.PAUSE_PLAN, name))
+    # name = "Pause plan for QC"
+    # actions.append(Action(ActionTypes.PAUSE_PLAN, name))
 
     name = "Move to load waypoint - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.highway_angle))
 
-    name = "Wait for localization"
-    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+    # name = "Wait for localization"
+    # actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     # if intermediate_hz:
     #     name = "Move to intermediate enter - coarse"
@@ -610,6 +614,9 @@ def generate_full_action_sequence(cfg, tile):
     name = "Move to place - vision"
     actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, tile.vision_offset[0], tile.vision_offset[1], tile.vision_offset[2]))
 
+    name = "Pause plan for QC"
+    actions.append(Action(ActionTypes.PAUSE_PLAN, name))
+
     name = "Stop cameras"
     actions.append(Action(ActionTypes.STOP_CAMERAS, name))
 
@@ -625,6 +632,9 @@ def generate_full_action_sequence(cfg, tile):
 
     #     name = "Wait for motor cooldown"
     #     actions.append(WaitAction(ActionTypes.WAIT, name, 10))
+
+    name = "Move to intermediate place - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_place_pos_global_frame[0], intermediate_place_pos_global_frame[1], robot_field_angle))
 
     name = "Move to exit - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, field_entry_pos_global_frame[0], field_entry_pos_global_frame[1], cfg.highway_angle))
@@ -1014,9 +1024,9 @@ if __name__ == '__main__':
     # plan.field.show_image_parsing()
     # plan.field.render_domino_image_tiles()
     # plan.field.show_tile_ordering()
-    plan.draw_cycle(7)
-    # plan.draw_cycle(17)
-    # plan.draw_cycle(18)
+    # plan.draw_cycle(7)
+    plan.draw_cycle(17)
+    plan.draw_cycle(18)
     # plan.draw_all_tile_poses()
 
     # GeneratePDF(plan)
