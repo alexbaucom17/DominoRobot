@@ -23,20 +23,25 @@ def generateVisionOffsetMap(cfg, max_x, max_y):
         for idx,row in enumerate(reader):
             if idx == 0:
                 continue
-            tile_x = int(row[0])
-            tile_y = int(row[1])
+            if row[0] == 'X':
+                tile_x = [x for x in range(max_x)]
+            else:
+                tile_x = [int(row[0])]
+            
+            if row[1] == 'X':
+                tile_y = [ y for y in range(max_y)]
+            else:
+                tile_y = [int(row[1])]
+
             offset_x_meters = int(row[2]) / 1000.0
             offset_y_meters = int(row[3]) / 1000.0
             offset_a_degrees = float(row[4])
-            add_to_default = bool(row[5])
-            key = (tile_x,tile_y)
-            value = (offset_x_meters,offset_y_meters,offset_a_degrees)
-            if add_to_default:
-                value = (   cfg.default_vision_offset[0] + offset_x_meters,
-                            cfg.default_vision_offset[1] + offset_y_meters,
-                            cfg.default_vision_offset[2] + offset_a_degrees
-                        )
-            vision_offset_map[key] = value
+
+            for x in tile_x:
+                for y in tile_y:
+                    key = (x,y)
+                    add_value = np.array((offset_x_meters,offset_y_meters,offset_a_degrees))
+                    vision_offset_map[key] = vision_offset_map[key] + add_value
 
     return vision_offset_map
 
@@ -500,6 +505,13 @@ def generate_full_action_sequence(cfg, tile):
     field_entry_pos_global_frame = np.array([cfg.highway_x, entry_y])
     intermediate_place_pos_global_frame = np.array([robot_placement_coarse_pos_global_frame[0], entry_y])
 
+    # Make pose adjustments based on config
+    coord = tile.coordinate
+    y_offset_row = cfg.y_offset_rows[coord[0]]
+    y_offset_col = cfg.y_offset_cols[coord[1]]
+    extra_y_offset_fine = y_offset_col + y_offset_row
+    robot_placement_fine_pos_global_frame[1] += extra_y_offset_fine
+
     # Figure out if intermediate steps are needed
     intermediate_hz = robot_placement_coarse_pos_global_frame[1] < cfg.intermediate_entry_hz_y - 1
     intermediate_vt = robot_placement_coarse_pos_global_frame[0] > cfg.intermediate_place_vt_x + 1
@@ -515,47 +527,47 @@ def generate_full_action_sequence(cfg, tile):
     name = "Move to load waypoint - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.base_station_target_angle))
 
-    name = "Fake wait for loading"
-    actions.append(WaitAction(ActionTypes.WAIT, name, 20))
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
-    # name = "Wait for localization"
-    # actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+    name = "Move to near load prep - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1]-0.3, cfg.base_station_target_angle))
 
-    # name = "Move to near load prep - coarse"
-    # actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
+    name = "Start cameras"
+    actions.append(Action(ActionTypes.START_CAMERAS, name))
 
-    # name = "Start cameras"
-    # actions.append(Action(ActionTypes.START_CAMERAS, name))
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
-    # name = "Wait for localization"
-    # actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+    name = "Move to load prep - fine"
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
 
-    # name = "Move to load prep - fine"
-    # actions.append(MoveAction(ActionTypes.MOVE_FINE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
-
-    # name = "Move to load prep - vision"
-    # actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, cfg.base_station_prep_vision_offset[0], cfg.base_station_prep_vision_offset[1], cfg.base_station_prep_vision_offset[2]))
+    name = "Move to load prep - vision"
+    actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, cfg.base_station_prep_vision_offset[0], cfg.base_station_prep_vision_offset[1], cfg.base_station_prep_vision_offset[2]))
     
-    # name = "Move to load - relative slow"
-    # actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, cfg.base_station_relative_offset[0], cfg.base_station_relative_offset[1], cfg.base_station_relative_offset[2]))
+    name = "Move to load - relative slow"
+    actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, cfg.base_station_relative_offset[0], cfg.base_station_relative_offset[1], cfg.base_station_relative_offset[2]))
 
-    # name = "Align with load"
-    # actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, cfg.base_station_vision_offset[0], cfg.base_station_vision_offset[1], cfg.base_station_vision_offset[2]))
+    name = "Align with load"
+    actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, cfg.base_station_vision_offset[0], cfg.base_station_vision_offset[1], cfg.base_station_vision_offset[2]))
 
-    # name = "Stop cameras"
-    # actions.append(Action(ActionTypes.STOP_CAMERAS, name))
+    name = "Stop cameras"
+    actions.append(Action(ActionTypes.STOP_CAMERAS, name))
 
-    # name = "Load tile"
-    # actions.append(Action(ActionTypes.LOAD, name))
+    name = "Load tile"
+    actions.append(Action(ActionTypes.LOAD, name))
 
-    # name = "Move away from load - relative slow"
-    # actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, cfg.base_station_relative_offset[0], cfg.base_station_relative_offset[1], cfg.base_station_relative_offset[2]))
+    name = "Move away from load - relative slow"
+    actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, -1.3*cfg.base_station_relative_offset[0], -1.3*cfg.base_station_relative_offset[1], -1.3*cfg.base_station_relative_offset[2]))
 
-    # name = "Move to load waypoint - coarse"
-    # actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.highway_angle))
+    name = "Pause plan for QC"
+    actions.append(Action(ActionTypes.PAUSE_PLAN, name))
 
-    # name = "Wait for localization"
-    # actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+    name = "Move to load waypoint - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.highway_angle))
+
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     # if intermediate_hz:
     #     name = "Move to intermediate enter - coarse"
@@ -593,7 +605,7 @@ def generate_full_action_sequence(cfg, tile):
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE_STOP_VISION, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle + cfg.angle_adjust_fine))
 
     name = "Move to place - vision"
     actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, tile.vision_offset[0], tile.vision_offset[1], tile.vision_offset[2]))

@@ -25,6 +25,7 @@ class ActionTypes(enum.Enum):
     MOVE_REL_SLOW = 18,
     WAIT = 19,
     MOVE_FINE_STOP_VISION = 20,
+    PAUSE_PLAN = 21,
 
 class NonBlockingTimer:
 

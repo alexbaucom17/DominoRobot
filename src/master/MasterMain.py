@@ -577,7 +577,7 @@ class Master:
         ready_to_exit = False
         while not ready_to_exit:
             try:
-                self.runtime_manager.update()
+                self.runtime_manager.update()   
                 ready_to_exit = self.update_gui_and_handle_input()
             except Exception as e:
                 logging.warning("Unhandled exception {}".format(str(e)))
