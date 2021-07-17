@@ -655,6 +655,32 @@ def generate_full_action_sequence(cfg, tile):
     return actions
 
 
+def generate_hax_action_sequence(cfg, tile):
+
+    actions = []
+
+    x_pose = 7
+
+    name = "Move 1 - coarse 90"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, x_pose, 5, 90))
+    name = "Move 1 - coarse 0"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, x_pose, 5, 0))
+    name = "Move 1 - coarse -90"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, x_pose, 5, -90))
+    name = "Wait 1"
+    actions.append(WaitAction(ActionTypes.WAIT, name, 5))
+    name = "Move 2 - coarse -90"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, x_pose, -3.5, -90))
+    name = "Move 2 - coarse 0 "
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, x_pose, -3.5, 0))
+    name = "Move 2 - coarse 90"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, x_pose, -3.5, 90))
+    name = "Wait 2"
+    actions.append(WaitAction(ActionTypes.WAIT, name, 5))
+
+    return actions
+
+
 def generate_small_testing_action_sequence(cfg, tile):
     """
     Short sequence for testing
@@ -943,6 +969,7 @@ def RunFieldPlanning(autosave=False):
         plan = Plan(cfg, generate_small_testing_action_sequence)
     else:
         plan = Plan(cfg, generate_full_action_sequence)
+        # plan = Plan(cfg, generate_hax_action_sequence)
 
     if cfg.USE_SUBSECTION:
         plan = SubsectionPlan(plan)
