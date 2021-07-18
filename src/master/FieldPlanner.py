@@ -507,9 +507,11 @@ def generate_full_action_sequence(cfg, tile):
 
     # Make pose adjustments based on config
     coord = tile.coordinate
+    x_offset_row = cfg.x_offset_rows[coord[1]]
     y_offset_row = cfg.y_offset_rows[coord[0]]
     y_offset_col = cfg.y_offset_cols[coord[1]]
     extra_y_offset_fine = y_offset_col + y_offset_row
+    robot_placement_fine_pos_global_frame[0] += x_offset_row
     robot_placement_fine_pos_global_frame[1] += extra_y_offset_fine
 
     # Figure out if intermediate steps are needed

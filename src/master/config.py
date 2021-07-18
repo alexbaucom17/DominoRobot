@@ -120,7 +120,7 @@ class Config:
     # tile_size_height_meters = grid_tile_height
 
     # Vision offset configuration
-    default_vision_offset = np.array((0,0,-2.5))
+    default_vision_offset = np.array((0,0,-1.5))
     vision_offset_file = os.path.join(plans_dir, 'vision_offsets_full_plan.csv')
 
     # ====== ENVIRONMENT CONFIGURATION ========
@@ -140,7 +140,7 @@ class Config:
 
     robot_pose_top_left = grid_top_left                   # Robot pose in global frame for top left of tile position of domino field
     domino_field_angle = -90                                     # Domino field angle (deg), global frame
-    tile_placement_fine_offset = np.array([0, 0.08])              # Offset position for fine tile placement [x,y], in robot coordinate frame (to avoid hitting next column)
+    tile_placement_fine_offset = np.array([0, 0.26])              # Offset position for fine tile placement [x,y], in robot coordinate frame (to avoid hitting next column)
     tile_placement_coarse_offset = np.array([-0.5,0.5])         # Offset position for tile placement [x,y], in robot coordinate frame
     tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])  # Offset from bottom left of tile to robot center [x,y], in robot coordinate frame     
     enter_position_distance = 1.5                                  # How far out of field boundaries to do robot prep move
@@ -173,8 +173,21 @@ class Config:
     # y_offset_cols = np.linspace(0.05, 0, num_tiles_height)
     y_offset_cols = np.linspace(0.0, 0, num_tiles_height)
     y_offset_rows = np.linspace(0, 0.0, num_tiles_width)
+    x_offset_rows = np.linspace(0, 0.3, num_tiles_height)
+    x_offset_rows[0:2] = 0
     # Angle adjustment for fine motion to try and prevent wheel from hitting
     angle_adjust_fine = 4   # degrees
+
+    # Y offset
+    # Pre col 4: 0.05
+    # col 4: 0.08
+    # col 5: 0.1
+    # col 6: 0.12
+    # col 7: 0.18
+    # col 8: 0.20
+    # col 9: 0.23
+    # col 10: 0.26
+    # col 11: 0.30
 
 
     # Computed - don't change

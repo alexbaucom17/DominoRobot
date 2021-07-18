@@ -91,7 +91,7 @@ class CmdGui:
         target_names.remove('plan')
         layout = setup_gui_layout(config, panel_names, target_names)
 
-        self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True)
+        self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True, use_default_focus=False)
         self.window.finalize()
 
         self.viz_figs = {}
@@ -159,7 +159,7 @@ class CmdGui:
         if event in ["_SET_CYCLE_", "_SET_ACTION_"]:
             return event, (values['_CYCLE_FIELD_'], values["_ACTION_FIELD_"])
 
-        if event == "ESTOP":
+        if event == "ESTOP" or event == " ":
             return "ESTOP", None
 
         return None, None
