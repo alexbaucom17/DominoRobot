@@ -616,11 +616,11 @@ def generate_full_action_sequence(cfg, tile):
     name = "Move to place - vision"
     actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, tile.vision_offset[0], tile.vision_offset[1], tile.vision_offset[2]))
 
-    name = "Pause plan for QC"
-    actions.append(Action(ActionTypes.PAUSE_PLAN, name))
-
     name = "Stop cameras"
     actions.append(Action(ActionTypes.STOP_CAMERAS, name))
+
+    name = "Pause plan for QC"
+    actions.append(Action(ActionTypes.PAUSE_PLAN, name))
 
     name = "Place tile"
     actions.append(Action(ActionTypes.PLACE, name))
