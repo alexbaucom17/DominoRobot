@@ -54,6 +54,7 @@ Hardware info
 - Base battery 
     - 2x 25.2V battery - 6x4.2V
         - Min safe voltage is 3.4Vx6 = 20.4 V
+        - In series this is 40.8V
     - 2x 29.4V battery - 7x4.2V
         - Min safe voltage is 3.4Vx7 = 23.8 V
 - Other Dimensions
