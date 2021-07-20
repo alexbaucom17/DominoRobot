@@ -502,7 +502,7 @@ def generate_full_action_sequence(cfg, tile):
     # Setup various entry and intermediate positions
     intermediate_entry_pos_global_frame = np.array([cfg.highway_x, cfg.intermediate_entry_hz_y])
     entry_y = robot_placement_coarse_pos_global_frame[1]+cfg.enter_position_distance
-    field_entry_pos_global_frame = np.array([cfg.highway_x, entry_y])
+    field_entry_pos_global_frame = np.array([cfg.highway_x+0.75, entry_y])
     intermediate_place_pos_global_frame = np.array([robot_placement_coarse_pos_global_frame[0], entry_y])
 
     # Make pose adjustments based on config
@@ -595,11 +595,11 @@ def generate_full_action_sequence(cfg, tile):
     # actions.append(WaitAction(ActionTypes.WAIT, name, 10))
 
     # if intermediate_vt:
-    name = "Move to intermediate place - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_place_pos_global_frame[0], intermediate_place_pos_global_frame[1], robot_field_angle))
+    # name = "Move to intermediate place - coarse"
+    # actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_place_pos_global_frame[0], intermediate_place_pos_global_frame[1], robot_field_angle))
 
-    name = "Wait for localization"
-    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+    # name = "Wait for localization"
+    # actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     #     name = "Wait for motor cooldown"
     #     actions.append(WaitAction(ActionTypes.WAIT, name, 10))
@@ -622,8 +622,8 @@ def generate_full_action_sequence(cfg, tile):
     name = "Stop cameras"
     actions.append(Action(ActionTypes.STOP_CAMERAS, name))
 
-    name = "Pause plan for QC"
-    actions.append(Action(ActionTypes.PAUSE_PLAN, name))
+    # name = "Pause plan for QC"
+    # actions.append(Action(ActionTypes.PAUSE_PLAN, name))
 
     name = "Place tile"
     actions.append(Action(ActionTypes.PLACE, name))
@@ -1052,16 +1052,16 @@ if __name__ == '__main__':
 
     plan = RunFieldPlanning(autosave=False)
 
-    plan.field.printStats()
-    plan.field.show_image_parsing()
-    plan.field.render_domino_image_tiles()
+    # plan.field.printStats()
+    # plan.field.show_image_parsing()
+    # plan.field.render_domino_image_tiles()
     # plan.field.show_tile_ordering()
-    # plan.draw_cycle(7)
-    # plan.draw_cycle(17)
-    # plan.draw_cycle(18)
-    # plan.draw_all_tile_poses()
+    plan.draw_cycle(0)
+    plan.draw_cycle(10)
+    plan.draw_cycle(19)
+    plan.draw_all_tile_poses()
 
-    GeneratePDF(plan)
+    # GeneratePDF(plan)
 
     # sg.change_look_and_feel('Dark Blue 3')
     # clicked_value = sg.popup_yes_no('Save plan to file?')

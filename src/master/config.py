@@ -27,7 +27,7 @@ class Config:
     # Set to regenerate and auto load plan on master startup
     REGEN_PLAN = True
     # Set to true to use just a subsection of the overal plan
-    USE_SUBSECTION = False
+    USE_SUBSECTION = True
 
     # ====== PATHS ========
     
@@ -120,22 +120,22 @@ class Config:
     # tile_size_height_meters = grid_tile_height
 
     # Vision offset configuration
-    default_vision_offset = np.array((0,0,-1.5))
+    default_vision_offset = np.array((0,0,-0.5))
     vision_offset_file = os.path.join(plans_dir, 'vision_offsets_full_plan.csv')
 
     # ====== ENVIRONMENT CONFIGURATION ========
 
     # Map configuration (distances in meters, angles in degrees)
     robot_boundaries = np.array([[1,-11],[15,11]])              # Bottom left, top right, global frame
-    highway_x = 3.5                                       # "Highway" coordinate
-    load_waypoint = np.array([highway_x, 8.5])                    # xya (global frame) for waypoint to go to first before load prep
-    highway_angle = 90
+    highway_x = 2.5                                       # "Highway" coordinate
+    load_waypoint = np.array([highway_x, -8.5])                    # xya (global frame) for waypoint to go to first before load prep
+    highway_angle = -90
 
     base_station_boundaries = np.array([[2.5,10],[3.5,11]])         # Bottom left, top right, global frame
-    base_station_target_angle = 175                             # Target angle (deg) for base station in global frame
+    base_station_target_angle = -90                             # Target angle (deg) for base station in global frame
     base_station_relative_offset = np.array([0.9, 0, 0])           # Relative position of base station from prep pos - robot frame (x,y,a)
     base_station_vision_offset = np.array([0.01,0.010,-0.5])     # Vision offset for base station alignment
-    base_station_prep_pos = np.array([3.4, 9.5])                   # Pose outside of base station to align with before going in to dock
+    base_station_prep_pos = np.array([highway_x, -10.5])                   # Pose outside of base station to align with before going in to dock
     base_station_prep_vision_offset = np.array([0,0.01,-1])      # Vision offset to use for base station prep pose
 
     robot_pose_top_left = grid_top_left                   # Robot pose in global frame for top left of tile position of domino field
@@ -143,15 +143,17 @@ class Config:
     tile_placement_fine_offset = np.array([0, 0])              # Offset position for fine tile placement [x,y], in robot coordinate frame (to avoid hitting next column)
     tile_placement_coarse_offset = np.array([-0.5,0.5])         # Offset position for tile placement [x,y], in robot coordinate frame
     tile_to_robot_offset = np.array([-0.3, -tile_size_width_meters/2.0])  # Offset from bottom left of tile to robot center [x,y], in robot coordinate frame     
-    enter_position_distance = 1.5                                  # How far out of field boundaries to do robot prep move
+    enter_position_distance = 0.25                                  # How far out of field boundaries to do robot prep move
     intermediate_entry_hz_y = 0                                 # Y coordinate for horizontal intermediate position
     intermediate_place_vt_x = 8                                 # X coordinate for vertical intermediate position
     field_to_robot_frame_angle = 90                             # In case robot frame and field frame ever need to be rotated relative to each other
 
     # Used for testing sub-sections of the larger pattern
     if USE_SUBSECTION:
-        start_coords = (1,14)
-        end_coords = (7,18)
+        start_coords = (6, 5)
+        end_coords = (18, 6)
+        # start_coords = (8, 4)
+        # end_coords = (18, 4)
 
     # Left side
     # if USE_SMALL_TESTING_CONFIG:  
@@ -177,20 +179,6 @@ class Config:
     x_offset_rows[0:2] = 0
     # Angle adjustment for fine motion to try and prevent wheel from hitting
     angle_adjust_fine = 4   # degrees
-
-    # Y offset
-    # Pre col 4: 0.05
-    # col 4: 0.08
-    # col 5: 0.1
-    # col 6: 0.12
-    # col 7: 0.18
-    # col 8: 0.20
-    # col 9: 0.23
-    # col 10: 0.26
-    # col 11: 0.30
-    # col 12: 0.33
-    # col 13: 0.36
-
 
     # Computed - don't change
     field_width = tile_size_width_meters * desired_width_dominos/tile_width
