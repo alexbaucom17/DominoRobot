@@ -23,20 +23,25 @@ def generateVisionOffsetMap(cfg, max_x, max_y):
         for idx,row in enumerate(reader):
             if idx == 0:
                 continue
-            tile_x = int(row[0])
-            tile_y = int(row[1])
+            if row[0] == 'X':
+                tile_x = [x for x in range(max_x)]
+            else:
+                tile_x = [int(row[0])]
+            
+            if row[1] == 'X':
+                tile_y = [ y for y in range(max_y)]
+            else:
+                tile_y = [int(row[1])]
+
             offset_x_meters = int(row[2]) / 1000.0
             offset_y_meters = int(row[3]) / 1000.0
             offset_a_degrees = float(row[4])
-            add_to_default = bool(row[5])
-            key = (tile_x,tile_y)
-            value = (offset_x_meters,offset_y_meters,offset_a_degrees)
-            if add_to_default:
-                value = (   cfg.default_vision_offset[0] + offset_x_meters,
-                            cfg.default_vision_offset[1] + offset_y_meters,
-                            cfg.default_vision_offset[2] + offset_a_degrees
-                        )
-            vision_offset_map[key] = value
+
+            for x in tile_x:
+                for y in tile_y:
+                    key = (x,y)
+                    add_value = np.array((offset_x_meters,offset_y_meters,offset_a_degrees))
+                    vision_offset_map[key] = vision_offset_map[key] + add_value
 
     return vision_offset_map
 
@@ -485,7 +490,8 @@ def generate_full_action_sequence(cfg, tile):
 
     # Setup positions in field frame
     tile_pos_in_field_frame = np.array(tile.getPlacementPositionInMeters())
-    robot_placement_fine_pos_field_frame = tile_pos_in_field_frame + Utils.TransformPos(cfg.tile_to_robot_offset, [0,0], cfg.field_to_robot_frame_angle)
+    robot_placement_pos_field_frame = tile_pos_in_field_frame + Utils.TransformPos(cfg.tile_to_robot_offset, [0,0], cfg.field_to_robot_frame_angle)
+    robot_placement_fine_pos_field_frame = robot_placement_pos_field_frame + Utils.TransformPos(cfg.tile_placement_fine_offset, [0,0], cfg.field_to_robot_frame_angle)
     robot_placement_coarse_pos_field_frame = robot_placement_fine_pos_field_frame + Utils.TransformPos(cfg.tile_placement_coarse_offset, [0,0], cfg.field_to_robot_frame_angle)
 
     # Convert positions to global frame
@@ -497,7 +503,19 @@ def generate_full_action_sequence(cfg, tile):
     intermediate_entry_pos_global_frame = np.array([cfg.highway_x, cfg.intermediate_entry_hz_y])
     entry_y = robot_placement_coarse_pos_global_frame[1]+cfg.enter_position_distance
     field_entry_pos_global_frame = np.array([cfg.highway_x, entry_y])
-    intermediate_place_pos_global_frame = np.array([cfg.intermediate_place_vt_x, entry_y])
+    intermediate_place_pos_global_frame = np.array([robot_placement_coarse_pos_global_frame[0], entry_y])
+
+    # Make pose adjustments based on config
+    coord = tile.coordinate
+    x_offset_row = cfg.x_offset_rows[coord[1]]
+    y_offset_row = cfg.y_offset_rows[coord[1]]
+    y_offset_col = cfg.y_offset_cols[coord[0]]
+    extra_y_offset_fine = y_offset_col + y_offset_row
+    robot_placement_fine_pos_global_frame[0] += x_offset_row
+    robot_placement_fine_pos_global_frame[1] += extra_y_offset_fine
+    robot_placement_coarse_pos_global_frame[1] += extra_y_offset_fine
+    intermediate_place_pos_global_frame[1] += extra_y_offset_fine
+    field_entry_pos_global_frame[1] += extra_y_offset_fine
 
     # Figure out if intermediate steps are needed
     intermediate_hz = robot_placement_coarse_pos_global_frame[1] < cfg.intermediate_entry_hz_y - 1
@@ -505,23 +523,24 @@ def generate_full_action_sequence(cfg, tile):
 
     # Tiles near the back wall don't have enough space for backwards offset
     relative_tile_offset = copy.deepcopy(cfg.tile_placement_coarse_offset)
-    if robot_placement_coarse_pos_global_frame[0] < 1:
+    if robot_placement_coarse_pos_global_frame[0] < 2:
+        intermediate_place_pos_global_frame[0] = robot_placement_fine_pos_global_frame[0]
         robot_placement_coarse_pos_global_frame[0] = robot_placement_fine_pos_global_frame[0]
         relative_tile_offset = np.asarray([0, 1])
 
     actions = []
 
     name = "Move to load waypoint - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.base_station_target_angle))
-
-    name = "Fake wait for loading"
-    actions.append(WaitAction(ActionTypes.WAIT, name, 20))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.highway_angle))
 
     # name = "Wait for localization"
     # actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
-    # name = "Move to near load prep - coarse"
-    # actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
+    name = "Move to near load area - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.base_station_prep_pos[0], cfg.base_station_prep_pos[1], cfg.base_station_target_angle))
+
+    # name = "Pause plan for load"
+    # actions.append(Action(ActionTypes.PAUSE_PLAN, name))
 
     # name = "Start cameras"
     # actions.append(Action(ActionTypes.START_CAMERAS, name))
@@ -544,37 +563,46 @@ def generate_full_action_sequence(cfg, tile):
     # name = "Stop cameras"
     # actions.append(Action(ActionTypes.STOP_CAMERAS, name))
 
-    # name = "Load tile"
-    # actions.append(Action(ActionTypes.LOAD, name))
+    name = "Load tile"
+    actions.append(Action(ActionTypes.LOAD, name))
 
     # name = "Move away from load - relative slow"
-    # actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, cfg.base_station_relative_offset[0], cfg.base_station_relative_offset[1], cfg.base_station_relative_offset[2]))
+    # actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, -1.3*cfg.base_station_relative_offset[0], -1.3*cfg.base_station_relative_offset[1], -1.3*cfg.base_station_relative_offset[2]))
 
-    # name = "Move to load waypoint - coarse"
-    # actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.highway_angle))
+    # name = "Pause plan for QC"
+    # actions.append(Action(ActionTypes.PAUSE_PLAN, name))
+
+    name = "Move to load waypoint - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, cfg.load_waypoint[0], cfg.load_waypoint[1], cfg.highway_angle))
 
     # name = "Wait for localization"
     # actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
-    if intermediate_hz:
-        name = "Move to intermediate enter - coarse"
-        actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_entry_pos_global_frame[0], intermediate_entry_pos_global_frame[1], cfg.highway_angle))
+    # if intermediate_hz:
+    #     name = "Move to intermediate enter - coarse"
+    #     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_entry_pos_global_frame[0], intermediate_entry_pos_global_frame[1], cfg.highway_angle))
 
-        name = "Wait for motor cooldown (long)"
-        actions.append(WaitAction(ActionTypes.WAIT, name, 20))
+    #     name = "Wait for motor cooldown (long)"
+    #     actions.append(WaitAction(ActionTypes.WAIT, name, 20))
 
     name = "Move to enter - coarse"
-    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, field_entry_pos_global_frame[0], field_entry_pos_global_frame[1], cfg.highway_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, field_entry_pos_global_frame[0], field_entry_pos_global_frame[1], robot_field_angle))
 
-    name = "Wait for motor cooldown"
-    actions.append(WaitAction(ActionTypes.WAIT, name, 10))
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
-    if intermediate_vt:
-        name = "Move to intermediate place - coarse"
-        actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_place_pos_global_frame[0], intermediate_place_pos_global_frame[1], robot_field_angle))
+    # name = "Wait for motor cooldown"
+    # actions.append(WaitAction(ActionTypes.WAIT, name, 10))
 
-        name = "Wait for motor cooldown"
-        actions.append(WaitAction(ActionTypes.WAIT, name, 10))
+    # if intermediate_vt:
+    name = "Move to intermediate place - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_place_pos_global_frame[0], intermediate_place_pos_global_frame[1], robot_field_angle))
+
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
+
+    #     name = "Wait for motor cooldown"
+    #     actions.append(WaitAction(ActionTypes.WAIT, name, 10))
 
     name = "Move to near place - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, robot_placement_coarse_pos_global_frame[0], robot_placement_coarse_pos_global_frame[1], robot_field_angle))
@@ -586,7 +614,7 @@ def generate_full_action_sequence(cfg, tile):
     actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
     name = "Move to place - fine"
-    actions.append(MoveAction(ActionTypes.MOVE_FINE_STOP_VISION, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle))
+    actions.append(MoveAction(ActionTypes.MOVE_FINE_STOP_VISION, name, robot_placement_fine_pos_global_frame[0], robot_placement_fine_pos_global_frame[1], robot_field_angle + cfg.angle_adjust_fine))
 
     name = "Move to place - vision"
     actions.append(MoveAction(ActionTypes.MOVE_WITH_VISION, name, tile.vision_offset[0], tile.vision_offset[1], tile.vision_offset[2]))
@@ -594,31 +622,66 @@ def generate_full_action_sequence(cfg, tile):
     name = "Stop cameras"
     actions.append(Action(ActionTypes.STOP_CAMERAS, name))
 
+    name = "Pause plan for QC"
+    actions.append(Action(ActionTypes.PAUSE_PLAN, name))
+
     name = "Place tile"
     actions.append(Action(ActionTypes.PLACE, name))
 
     name = "Move away from place - relative slow"
     actions.append(MoveAction(ActionTypes.MOVE_REL_SLOW, name, relative_tile_offset[0], relative_tile_offset[1], 0))
 
-    if intermediate_vt:
-        name = "Move to intermediate place - coarse"
-        actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_place_pos_global_frame[0], intermediate_place_pos_global_frame[1], robot_field_angle))
+    # if intermediate_vt:
+    #     name = "Move to intermediate place - coarse"
+    #     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_place_pos_global_frame[0], intermediate_place_pos_global_frame[1], robot_field_angle))
 
-        name = "Wait for motor cooldown"
-        actions.append(WaitAction(ActionTypes.WAIT, name, 10))
+    #     name = "Wait for motor cooldown"
+    #     actions.append(WaitAction(ActionTypes.WAIT, name, 10))
+
+    name = "Move to intermediate place - coarse"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_place_pos_global_frame[0], intermediate_place_pos_global_frame[1], robot_field_angle))
 
     name = "Move to exit - coarse"
     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, field_entry_pos_global_frame[0], field_entry_pos_global_frame[1], cfg.highway_angle))
 
-    name = "Wait for motor cooldown"
-    actions.append(WaitAction(ActionTypes.WAIT, name, 10))
+    name = "Wait for localization"
+    actions.append(Action(ActionTypes.WAIT_FOR_LOCALIZATION, name))
 
-    if intermediate_hz:
-        name = "Move to intermediate exit - coarse"
-        actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_entry_pos_global_frame[0], intermediate_entry_pos_global_frame[1], cfg.highway_angle))
+    # name = "Wait for motor cooldown"
+    # actions.append(WaitAction(ActionTypes.WAIT, name, 10))
 
-        name = "Wait for motor cooldown (long)"
-        actions.append(WaitAction(ActionTypes.WAIT, name, 20))
+    # if intermediate_hz:
+    #     name = "Move to intermediate exit - coarse"
+    #     actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, intermediate_entry_pos_global_frame[0], intermediate_entry_pos_global_frame[1], cfg.highway_angle))
+
+    #     name = "Wait for motor cooldown (long)"
+    #     actions.append(WaitAction(ActionTypes.WAIT, name, 20))
+
+    return actions
+
+
+def generate_hax_action_sequence(cfg, tile):
+
+    actions = []
+
+    x_pose = 7
+
+    name = "Move 1 - coarse 90"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, x_pose, 5, 90))
+    name = "Move 1 - coarse 0"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, x_pose, 5, 0))
+    name = "Move 1 - coarse -90"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, x_pose, 5, -90))
+    name = "Wait 1"
+    actions.append(WaitAction(ActionTypes.WAIT, name, 5))
+    name = "Move 2 - coarse -90"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, x_pose, -3.5, -90))
+    name = "Move 2 - coarse 0 "
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, x_pose, -3.5, 0))
+    name = "Move 2 - coarse 90"
+    actions.append(MoveAction(ActionTypes.MOVE_COARSE, name, x_pose, -3.5, 90))
+    name = "Wait 2"
+    actions.append(WaitAction(ActionTypes.WAIT, name, 5))
 
     return actions
 
@@ -911,6 +974,7 @@ def RunFieldPlanning(autosave=False):
         plan = Plan(cfg, generate_small_testing_action_sequence)
     else:
         plan = Plan(cfg, generate_full_action_sequence)
+        # plan = Plan(cfg, generate_hax_action_sequence)
 
     if cfg.USE_SUBSECTION:
         plan = SubsectionPlan(plan)
@@ -988,16 +1052,16 @@ if __name__ == '__main__':
 
     plan = RunFieldPlanning(autosave=False)
 
-    # plan.field.printStats()
-    # plan.field.show_image_parsing()
-    # plan.field.render_domino_image_tiles()
+    plan.field.printStats()
+    plan.field.show_image_parsing()
+    plan.field.render_domino_image_tiles()
     # plan.field.show_tile_ordering()
-    plan.draw_cycle(7)
+    # plan.draw_cycle(7)
     # plan.draw_cycle(17)
     # plan.draw_cycle(18)
     # plan.draw_all_tile_poses()
 
-    # GeneratePDF(plan)
+    GeneratePDF(plan)
 
     # sg.change_look_and_feel('Dark Blue 3')
     # clicked_value = sg.popup_yes_no('Save plan to file?')

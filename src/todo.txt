@@ -1,16 +1,20 @@
 
 Robot SW:
-- Figure out why KF localization gets stuck in local minimum sometimes (maybe not needed?)
 
 Robot HW:
+- Hook US sensors back up to robot for show (still needed?)
 
 Master:
-- Set up new computer with master sw
-
+- Adjust getting too close issue
+    - Try cranking up accel and decrease pause time for vision stop? Since the vision seems more robust now?
 
 Robustify:
+- Try re-printing marvelmind stands for more robustness
+- Figure out why KF localization gets stuck in local minimum sometimes (maybe not needed?)
 - Test master action validator
     - Fix action validator choking on START_CAMERA action
+- Consider setting domino vision to 92.5 for y axis as many markers measure that
+- Figure out why MM somtimes stops transmiting data to pi
 
 Nice to haves:
 - Detect when tray init needs to happen again after robot estop
@@ -21,6 +25,18 @@ Nice to haves:
 - Fix motion unit tests commanding large velocities and tripping thresholding
 - Fix localization tests
 - Add more unit tests for camera and vision controller
+
+
+Top Left:
+13.3, 7.9
+13.1, 6.9
+Top Right
+13.3, -10.07 (19 cols)
+Bottom Left
+1.18, X   (Confirm)
+1.2, 6.8
+Bottom Right 
+1.18, X (Confirm) (19 rows)
 
 
 Misc notes:
@@ -38,6 +54,7 @@ Hardware info
 - Base battery 
     - 2x 25.2V battery - 6x4.2V
         - Min safe voltage is 3.4Vx6 = 20.4 V
+        - In series this is 40.8V
     - 2x 29.4V battery - 7x4.2V
         - Min safe voltage is 3.4Vx7 = 23.8 V
 - Other Dimensions
@@ -51,3 +68,11 @@ Hardware info
 - Camera mounts
     - 80/20 - 38mm square
     - Screw depth (min/max): 5mm-10mm
+
+Action sequence for Lily entrance
+    - Reboot, shut off MM
+    - Tray init
+    - Move coarse 5,0,-90
+    - Move coarse 7,-9.5,0
+    - Place
+    - Move rel -2,0,0

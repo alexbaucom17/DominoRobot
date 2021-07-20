@@ -55,6 +55,8 @@ class RobotController
     // Stops the currently running motion
     void estop();
 
+    Point getCurrentPosition() { return cartPos_; };
+
   private:
 
     //Internal methods

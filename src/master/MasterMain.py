@@ -91,7 +91,7 @@ class CmdGui:
         target_names.remove('plan')
         layout = setup_gui_layout(config, panel_names, target_names)
 
-        self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True)
+        self.window = sg.Window('Robot Controller', layout, return_keyboard_events=True, use_default_focus=False)
         self.window.finalize()
 
         self.viz_figs = {}
@@ -159,7 +159,7 @@ class CmdGui:
         if event in ["_SET_CYCLE_", "_SET_ACTION_"]:
             return event, (values['_CYCLE_FIELD_'], values["_ACTION_FIELD_"])
 
-        if event == "ESTOP":
+        if event == "ESTOP" or event == " ":
             return "ESTOP", None
 
         return None, None
@@ -576,8 +576,13 @@ class Master:
 
         ready_to_exit = False
         while not ready_to_exit:
-            self.runtime_manager.update()
-            ready_to_exit = self.update_gui_and_handle_input()
+            try:
+                self.runtime_manager.update()   
+                ready_to_exit = self.update_gui_and_handle_input()
+            except Exception as e:
+                logging.warning("Unhandled exception {}".format(str(e)))
+                if self.runtime_manager.get_plan_status() is PlanStatus.RUNNING:
+                    self.runtime_manager.set_plan_status(PlanStatus.PAUSED)
 
         # Clean up whenever loop exits
         self.runtime_manager.shutdown(self.keep_mm_running)

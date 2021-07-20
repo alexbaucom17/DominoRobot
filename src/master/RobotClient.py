@@ -139,17 +139,30 @@ class ClientBase:
         """
 
         self.client.send(json.dumps(msg,separators=(',',':')), print_debug=print_debug) # Make sure json dump is compact for transmission
-        resp = self.wait_for_server_response(expected_msg_type='ack', print_debug=print_debug)
-        if not resp:
-            logging.warning('Did not recieve ack')
+        num_wait_checks = 3
+        counter = 0
+        resp_ok = False
+        while counter < num_wait_checks and not resp_ok:
+            counter += 1
+            resp = self.wait_for_server_response(expected_msg_type='ack', print_debug=print_debug)
+            if not resp:
+                logging.warning("Did not recieve ack. Try {} of {}".format(counter, num_wait_checks))
+                continue
+            else:
+                if resp['type'] != 'ack':
+                    logging.warning("Expecting return type ack. Try {} of {}".format(counter, num_wait_checks))
+                    continue
+                elif resp['data'] != msg['type']:
+                    logging.warning("Incorrect ack type. Expecting: {}, Got: {}. Try {} of {}".format(
+                        msg['type'], resp['data'], counter, num_wait_checks))
+                    continue
+
+            resp_ok = True
+
+        if resp_ok:           
+            return resp
         else:
-            if resp['type'] != 'ack':
-                logging.warning('Expecting return type ack')
-            elif resp['data'] != msg['type']:
-                logging.warning('Incorrect ack type. Expecting: {}, Got: {}'.format(msg['type'], resp['data']))
-                raise ValueError("Bad ack")
-        
-        return resp
+            raise ValueError("Bad/no response")
 
     def net_status(self):
         """ Check if the network connection is ok"""

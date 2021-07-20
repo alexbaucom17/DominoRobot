@@ -17,7 +17,7 @@ class CameraTrackerMock : public CameraTrackerBase
 
     virtual void toggleDebugImageOutput() override {};
 
-    virtual CameraTrackerOutput getPoseFromCamera() override { return {{0,0,0},false, ClockFactory::getFactoryInstance()->get_clock()->now()};};
+    virtual CameraTrackerOutput getPoseFromCamera() override { return {{0,0,0},false, ClockFactory::getFactoryInstance()->get_clock()->now(),false};};
 
     virtual CameraDebug getCameraDebug() override {return CameraDebug(); }; 
 };

@@ -32,8 +32,8 @@ TEST_CASE("Robot coords from image coords", "[Camera]")
         float u = 0;
         float v = 0;
         Eigen::Vector2f xy_world = c.cameraToRobot({u,v});
-        CHECK(xy_world[0] > side_offset_x);
-        CHECK(xy_world[1] < side_offset_y);
+        CHECK(xy_world[0] < side_offset_x);
+        CHECK(xy_world[1] > side_offset_y);
     }
 }
 
@@ -47,73 +47,58 @@ TEST_CASE("Marker Detection", "[Camera]")
         CAMERA_ID id;
         Eigen::Vector2f expected_point_px = {-1, -1};
     };
-    
+
     std::vector<TestImageMetadata> test_images = {
-        {.name = "test_img_1.jpg",
-         .expected_detection = true,
-         .id = CAMERA_ID::REAR},
-        {.name = "test_img_2.jpg",
-         .expected_detection = true,
-         .id = CAMERA_ID::REAR},
-        {.name = "20210628184243_side_img_raw.jpg",
-         .expected_detection = true,
-         .id = CAMERA_ID::SIDE},
-        {.name = "20210628184249_rear_img_raw.jpg",
-         .expected_detection = true,
-         .id = CAMERA_ID::REAR},
-        {.name = "20210628184432_side_img_raw.jpg",
-         .expected_detection = true,
-         .id = CAMERA_ID::SIDE},
-        {.name = "20210628184442_rear_img_raw.jpg",
-         .expected_detection = false,
-         .id = CAMERA_ID::REAR},
-        {.name = "20210628184635_side_img_raw.jpg",
-         .expected_detection = true,
-         .id = CAMERA_ID::SIDE},
-        {.name = "20210628184657_rear_img_raw.jpg",
-         .expected_detection = true,
-         .id = CAMERA_ID::REAR},
-        {.name = "20210628191307_side_img_raw.jpg",
-         .expected_detection = true,
-         .id = CAMERA_ID::SIDE},
-        {.name = "20210628191313_rear_img_raw.jpg",
-         .expected_detection = false,
-         .id = CAMERA_ID::REAR},
-        {.name = "20210628191540_side_img_raw.jpg",
-         .expected_detection = false,
-         .id = CAMERA_ID::SIDE},
-        {.name = "20210628191547_rear_img_raw.jpg",
-         .expected_detection = true,
-         .id = CAMERA_ID::REAR},
-        {.name = "20210628191650_rear_img_raw.jpg",
-         .expected_detection = false,
-         .id = CAMERA_ID::REAR},
-        {.name = "20210628191730_rear_img_raw.jpg",
-         .expected_detection = false,
-         .id = CAMERA_ID::REAR},
-        {.name = "20210628191824_rear_img_raw.jpg",
-         .expected_detection = true,
-         .id = CAMERA_ID::REAR},
-        {.name = "20210628191922_rear_img_raw.jpg",
-         .expected_detection = true,
-         .id = CAMERA_ID::REAR},
-        {.name = "20210628192009_rear_img_raw.jpg",
-         .expected_detection = true,
-         .id = CAMERA_ID::REAR},
-        {.name = "20210628192105_rear_img_raw.jpg",
-         .expected_detection = true,
-         .id = CAMERA_ID::REAR},
-        {.name = "20210701210116_rear_img_raw.jpg",
-         .expected_detection = true,
-         .id = CAMERA_ID::REAR},
-        // {.name = "20210701210351_rear_img_raw.jpg",
-        //  .expected_detection = true,
-        //  .id = CAMERA_ID::REAR},
+        {.name = "20210712175430_side_img_raw.jpg",
+        .expected_detection = true,
+        .id = CAMERA_ID::SIDE},
+        {.name = "20210712175436_rear_img_raw.jpg",
+        .expected_detection = true,
+        .id = CAMERA_ID::REAR},
+        {.name = "20210712175519_side_img_raw.jpg",
+        .expected_detection = true,
+        .id = CAMERA_ID::SIDE},
+        {.name = "20210712175525_rear_img_raw.jpg",
+        .expected_detection = true,
+        .id = CAMERA_ID::REAR},
+        {.name = "20210712175606_side_img_raw.jpg",
+        .expected_detection = false,
+        .id = CAMERA_ID::SIDE},
+        {.name = "20210712175612_rear_img_raw.jpg",
+        .expected_detection = false,
+        .id = CAMERA_ID::REAR},
+        {.name = "20210712175719_side_img_raw.jpg",
+        .expected_detection = false,
+        .id = CAMERA_ID::SIDE},
+        {.name = "20210712175728_rear_img_raw.jpg",
+        .expected_detection = false,
+        .id = CAMERA_ID::REAR},
+        {.name = "20210712175942_rear_img_raw.jpg",
+        .expected_detection = true,
+        .id = CAMERA_ID::REAR},
+        {.name = "20210712180047_rear_img_raw.jpg",
+        .expected_detection = true,
+        .id = CAMERA_ID::REAR},
+        {.name = "20210712180208_side_img_raw.jpg",
+        .expected_detection = true,
+        .id = CAMERA_ID::SIDE},
+        {.name = "20210712180322_side_img_raw.jpg",
+        .expected_detection = true,
+        .id = CAMERA_ID::SIDE},
+        {.name = "20210712180446_side_img_raw.jpg",
+        .expected_detection = true,
+        .id = CAMERA_ID::SIDE},
+        {.name = "20210712180528_side_img_raw.jpg",
+        .expected_detection = true,
+        .id = CAMERA_ID::SIDE},
+        {.name = "20210712182429_side_img_raw.jpg",
+        .expected_detection = true,
+        .id = CAMERA_ID::SIDE},
     };
 
     for (const auto& item : test_images) 
     {
-        std::string image_dir = "/home/pi/DominoRobot/src/robot/test/testdata/images/";
+        std::string image_dir = "/home/pi/DominoRobot/src/robot/test/testdata/new_images/";
         std::string image_path = image_dir + item.name;
         SafeConfigModifier<bool> config_modifier_1("vision_tracker.debug.use_debug_image", true);
         SafeConfigModifier<std::string> config_modifier_2("vision_tracker.side.debug_image", image_path);

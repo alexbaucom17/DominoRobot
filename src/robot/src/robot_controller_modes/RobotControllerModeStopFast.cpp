@@ -11,9 +11,9 @@ RobotControllerModeStopFast::RobotControllerModeStopFast(bool fake_perfect_motio
     fine_tolerances_.trans_vel_err = cfg.lookup("motion.translation.velocity_threshold.fine");
     fine_tolerances_.ang_vel_err = cfg.lookup("motion.rotation.velocity_threshold.fine");
 
-    max_decel_ = {cfg.lookup("motion.translation.max_acc.fine"),
-                  cfg.lookup("motion.translation.max_acc.fine"),
-                  cfg.lookup("motion.rotation.max_acc.fine")};
+    max_decel_ = {cfg.lookup("motion.translation.max_acc.coarse"),
+                  cfg.lookup("motion.translation.max_acc.coarse"),
+                  cfg.lookup("motion.rotation.max_acc.coarse")};
                           
     PositionController::Gains position_gains;
     position_gains.kp = cfg.lookup("motion.translation.gains.kp");
@@ -42,7 +42,7 @@ void RobotControllerModeStopFast::startMove(Point current_position, Velocity cur
         -initial_vel_sign_[1] * max_decel_[1],
         -initial_vel_sign_[2] * max_decel_[2],
     };
-    PLOGI.printf("Starting STOP_FAST from velocity %s at decel: %f,%f,%f",current_velocity.toString().c_str(),
+    PLOGW.printf("Starting STOP_FAST from velocity %s at decel: %f,%f,%f",current_velocity.toString().c_str(),
         current_decel_[0],current_decel_[1], current_decel_[2]);
     RobotControllerModeBase::startMove();
 }

@@ -23,6 +23,7 @@ SerialComms comm(Serial);
 #define STEPS_PER_REV 800
 #define MOTOR_MAX_VEL_STEPS_PER_SECOND 10000
 #define MOTOR_MAX_ACC_STEPS_PER_SECOND_SQUARED 2600
+#define MAX_BASE_MSG_TIMEOUT 200
 const float sq3 = sqrt(3.0);
 const float rOver3 = WHEEL_RADIUS / 3.0;
 const float radsPerSecondToStepsPerSecond = STEPS_PER_REV / (2 * PI);
@@ -114,6 +115,11 @@ struct MotorVelocity
         char s[100];
         sprintf(s, "[v0: %.4f, v1: %.4f, v2: %.4f]", v0, v1, v2);
         return static_cast<String>(s);
+    }
+
+    bool nonzero() const
+    {
+      return v0 != 0 && v1 != 0 && v2 != 0;
     }
 };
 
@@ -373,6 +379,7 @@ void lifter_update(String msg)
 //                Base control functions
 // --------------------------------------------------
 
+unsigned long last_base_msg_millis = millis();
 
 CartVelocity decodeBaseMsg(String msg)
 {
@@ -539,7 +546,15 @@ bool isValidBaseMessage(String msg)
 
 void base_update(String msg)
 {    
+    MotorVelocity cur_motor_v = ReadMotorSpeeds();
+    if(millis() - last_base_msg_millis > MAX_BASE_MSG_TIMEOUT && cur_motor_v.nonzero()) 
+    {
+      SendCommandsToMotors({0,0,0});
+      handlePowerRequests("Power:OFF");
+    }
+    
     if(!isValidBaseMessage(msg)) { return; }
+    last_base_msg_millis = millis();
 
     // Strip base identifier
     String new_msg = msg.substring(5);
