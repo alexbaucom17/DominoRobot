@@ -1,4 +1,4 @@
-# **Warning! This is probably out of date and might be inaccurate.**
+# **Warning! This is probably out of date and might be inaccurate. Use at your own risk.**
 
 # Master
 This is the top level 'Master' software for controlling the Domino Robot System. It is the central hub for communication and control of all other robots, provides a GUI for visualization and debugging, and handles executing the top level plan to set up all the dominos.
@@ -10,7 +10,7 @@ There are two programs that can be run within the master software:
 # Table of Contents
 <!-- TOC -->
 
-- [**Warning! This is probably out of date and might be inaccurate**](#warning-this-is-probably-out-of-date-and-might-be-inaccurate)
+- [**Warning! This is probably out of date and might be inaccurate. Use at your own risk.**](#warning-this-is-probably-out-of-date-and-might-be-inaccurate-use-at-your-own-risk)
 - [Master](#master)
 - [Table of Contents](#table-of-contents)
 - [Installation](#installation)

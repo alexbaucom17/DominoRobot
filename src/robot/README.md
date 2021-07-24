@@ -1,4 +1,4 @@
-# **Warning! This is probably out of date and might be inaccurate.**
+# **Warning! This is probably out of date and might be inaccurate. Use at your own risk.**
 
 ## Libraries needed for installation on Raspberry Pi
 Required header libraries at src/robot/lib
