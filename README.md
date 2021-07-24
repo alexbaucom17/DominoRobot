@@ -1,8 +1,11 @@
 # Domino Robot
 
-This is the code for Mark Rober's Domino Robot project. You can find a bunch more info about the project, inluding details about the software architecture [on my website](baucomrobotics.com/domino-robot).
+This is the code for Mark Rober's Domino Robot project. You can find a bunch more info about the project, including details about the software architecture [on my website](www.baucomrobotics.com/domino-robot).
 
-If you are interested in browsing the files in this repo, here is the general structure:
+![](doc/MarkAndDom.png)
+
+## Folder structure
+If you are interested in browsing the files in this repo, here is the general structure to get you oriented.
 - `doc`: Some high level documentation stuff, much of it is probably out of date
 - `experimental_testing`: Various experimental files
 - `src`: The real stuff
