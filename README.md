@@ -1,21 +1,17 @@
 # Domino Robot
 
-**WORK IN PROGRESS**
+This is the code for Mark Rober's Domino Robot project. You can find a bunch more info about the project, inluding details about the software architecture [on my website](baucomrobotics.com/domino-robot).
 
-This is a project that uses a robot to setup a field of dominos. 
-
-## Folder structure
-
-- `doc`: Some high level documentation stuff, some of it is probably out of date
+If you are interested in browsing the files in this repo, here is the general structure:
+- `doc`: Some high level documentation stuff, much of it is probably out of date
 - `experimental_testing`: Various experimental files
 - `src`: The real stuff
-    - `base_station`: Code for the domino distribution station
-    - `esp_wifi_server`: Code for an ESP8266 chip to make a passthrough wifi server to communicate with Arduinos over wifi
     - `master`: Code for running the master controller and GUI
     - `robot`: Code that runs on the Raspberry Pi of the robot
     - `robot_motor_driver`: Code that runs on the ClearCore of the robot
     - `tools`: Some various utility scripts
 
-## Usage
+## Usage (Not Recommended)
+This repository exists mostly for those who are interested in browsing the code to see how it works. It is almost certainly a bad idea to try and download this code and use it unless you have identical hardware to the robot in the video and/or really know what you are doing. You should consider this code completely unsupported as I do not plan to make future updates or fix any bugs you may find.
 
-Check out the [README for the master code](src/master/README.md) for installaiton and usage instructions
+If for some reason you really want to try and run this code, there are some (out of date) instructions on how to run the [the master code](src/master/README.md) and also some (possibly also out of date) info on which libraries are used for compiling [the robot code](src/robot/README.md). Good luck.

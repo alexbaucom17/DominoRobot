@@ -1,3 +1,6 @@
+# **Warning! This is probably out of date and might be inaccurate.**
+
+## Libraries needed for installation on Raspberry Pi
 Required header libraries at src/robot/lib
 - ArduinoJson
 - Catch (for tests)
@@ -14,3 +17,8 @@ Required libraries at /usr/local/lib
 
 Required libraries installed with apt-get
  - libconfig++-dev
+
+ ## Build and run
+ Go to `DominoRobot/src/robot` folder and run `make` to build. You can build tests with `make test` and remove all outputs with `make clean`.
+
+ Run main or test using `build/robot-main` or `build/robot-test` respectively. The Raspberry Pi on the robot has these aliased to `run_robot` and `run_test` for ease of use.
