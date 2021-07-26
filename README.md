@@ -2,7 +2,8 @@
 
 This is the code for Mark Rober's Domino Robot project. You can find a bunch more info about the project, including details about the software architecture [on my website](https://www.baucomrobotics.com/domino-robot).
 
-![](doc/MarkAndDom.png)
+Here is the video that Mark made about the project:
+[![Marks video](https://img.youtube.com/vi/8HEfIJlcFbs/0.jpg)](https://www.youtube.com/watch?v=8HEfIJlcFbs)
 
 ## Folder structure
 If you are interested in browsing the files in this repo, here is the general structure to get you oriented.
