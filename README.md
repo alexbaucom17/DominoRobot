@@ -1,6 +1,6 @@
 # Domino Robot
 
-This is the code for Mark Rober's Domino Robot project. You can find a bunch more info about the project, including details about the software architecture [on my website](www.baucomrobotics.com/domino-robot).
+This is the code for Mark Rober's Domino Robot project. You can find a bunch more info about the project, including details about the software architecture [on my website](https://www.baucomrobotics.com/domino-robot).
 
 ![](doc/MarkAndDom.png)
 
